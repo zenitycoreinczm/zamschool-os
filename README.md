@@ -1,244 +1,76 @@
 # ZamSchool OS
 
-ZamSchool OS is a production-grade school management system for Zambia, designed to streamline educational administration and enhance the learning experience. Built with Next.js 16 and Supabase, it provides a unified platform for administrators, teachers, parents, students, and school staff.
+ZamSchool OS is a school administration platform for Zambia. You use it to manage classes, subjects, timetables, attendance, results, fees, messaging, and announcements. The application is multi-tenant: every school is a tenant, every user belongs to one school, every query is scoped to a school.
 
-## Key Features
+The documentation set is small and focused. You should read these in order:
 
-### Administration & Oversight
-- **School Infrastructure**: Manage classes, subjects, departments, and grade levels.
-- **Academic Planning**: Configure academic years, terms, and grading scales.
-- **Audit Logging**: Track system actions for security and compliance.
-- **User Management**: Unified role-based access for 14 user roles.
-- **Staff Invitations**: Send and manage staff onboarding via access codes.
-- **Access Codes**: Generate and manage school registration codes.
+1. [ARCHITECTURE.md](./docs/ARCHITECTURE.md) — stack, layers, data flow, roles.
+2. [UI-UX.md](./docs/UI-UX.md) — shell patterns, component conventions, design tokens, accessibility, responsiveness.
+3. [DATA.md](./docs/DATA.md) — Postgres, migrations, caching, indexes, files.
+4. [SECURITY.md](./docs/SECURITY.md) — RLS, auth, service-role policy, MFA, rate limiting, audit.
+5. [DEVELOPMENT.md](./docs/DEVELOPMENT.md) — setup, commands, branching, PR checklist.
+6. [PRODUCTION.md](./docs/PRODUCTION.md) — readiness gates, sign-off, rollback.
+7. [OPERATIONS.md](./docs/OPERATIONS.md) — DR drills, load tests, incidents.
+8. [CHANGELOG.md](./docs/CHANGELOG.md) — notable changes.
+9. [AUDIT.md](./docs/AUDIT.md) — frontend audit findings and test freshness.
 
-### Academic Excellence
-- **Timetable Management**: Interactive scheduling for classes and subjects.
-- **Assignment Tracking**: Distribute and monitor student assignments with submissions.
-- **Grading System**: Customizable grading scales with result publishing workflow.
-- **Results Management**: Teacher upload, completeness checks, publish/unpublish workflow.
-- **Discipline Records**: Track student discipline with categories and stats.
+## Stack
 
-### Financial Management
-- **Payment Processing**: Track tuition and fees with billing and student fee management.
-- **Finance Records**: Comprehensive income and expense tracking.
-- **Payments Role**: Dedicated role for bursars and payments staff.
-- **Reporting**: Visual summaries of financial health and net balance.
+You are looking at a Next.js 16 application using the App Router, Tailwind 4 for styling, and Supabase for auth, database, and storage. The runtime is Node.js for the Next.js server plus a Cloudflare Worker for the edge gateway under `workers/gateway/`. See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the full picture.
 
-### Communication & Engagement
-- **Internal Messaging**: Secure messaging system between users.
-- **Announcements**: School-wide broadcasts for important updates.
-- **Real-time Notifications**: Instant alerts for events, payments, and academic updates.
-- **Parent Portal**: View children's attendance, results, fees, discipline, and timetable.
+- **Framework**: Next.js 16 (App Router, standalone output)
+- **Database & Auth**: Supabase (Postgres, Auth, Realtime)
+- **Styling**: Tailwind CSS 4
+- **Charts**: Recharts, React Big Calendar
+- **Forms**: React Hook Form, Zod 4
+- **Image CDN**: Cloudflare R2
+- **Edge cache**: Cloudflare
 
-### Student & Parent Portals
-- **Student Dashboard**: View assignments, attendance, results, discipline, schedule.
-- **Parent Dashboard**: Monitor multiple children across all academic dimensions.
-- **Absence Reporting**: Parents can report student absences.
+## Getting started
 
-### Security & Infrastructure
-- **Multi-Factor Authentication**: TOTP-based MFA enrollment and challenge.
-- **Row Level Security (RLS)**: Enforced at the database level for all user roles.
-- **Rate Limiting**: API routes protected against abuse via edge caching.
-- **Content Security Policy**: Strict CSP headers on all responses.
-- **CORS Protection**: Origin-validated API access.
-- **Cloudflare R2**: CDN-backed file storage for avatars and assets.
-- **Offline Support**: Read-only offline mode for intermittent connectivity.
+You need Node.js, a Supabase project, and (optionally) a Cloudflare R2 bucket.
 
----
+1. `npm install`
+2. Copy `.env.example` to `.env.local` and fill in the Supabase URL, anon key, and (if you need the strict tenant audit locally) the service role key. Add R2 credentials if you are working on uploads.
+3. Apply migrations in lexical order from `supabase/migrations/`. There are around 48 of them. See [DATA.md](./docs/DATA.md) for the policy.
+4. `npm run dev` — start the Next.js server on port 3000.
+5. `npm run cloudflare:status` — if you are working on the gateway worker.
 
-## Tech Stack
+## Project structure
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, standalone output)
-- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Auth, Realtime)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Animations**: [Motion](https://motion.dev/)
-- **Forms**: [React Hook Form](https://react-hook-form.com/) & [Zod 4](https://zod.dev/)
-- **Charts**: [Recharts](https://recharts.org/) & [React Big Calendar](https://jquense.github.io/react-big-calendar/)
-- **Image CDN**: Cloudflare R2 (S3-compatible)
-- **Caching**: Redis (ioredis)
-- **Email**: Nodemailer
-- **Notifications**: Sonner
+- `app/` — App Router pages and API routes. The authenticated workspace lives under `app/app/*`; the public landing is `app/page.tsx`; auth edges are `app/login/*`, `app/first-login/*`, `app/error.tsx`.
+- `app/api/*` — API routes. Every route uses `requireActorContext` or a role-scoped guard.
+- `components/` — shells, sidebars, header, dock, modals, widgets. Side components co-locate with their owning shell.
+- `lib/` — pure helpers: `admin-route-client`, `gateway-read-client`, `workspace-nav`, `workspace-search`, auth and rate-limit helpers.
+- `hooks/` — `use-mobile`, `useReveal`, and other micro-hooks.
+- `supabase/migrations/` — 001-048, applied in lexical order.
+- `scripts/` — healthcheck, schema-check, tenant audit, load tests, CDN preflight.
+- `workers/gateway/` — Cloudflare Worker for edge reads.
+- `__tests__/` — static-grep tests. See [AUDIT.md](./docs/AUDIT.md) for the freshness audit.
 
----
+## Common commands
 
-## Architecture
+You will use these most often:
 
-Official product charter: [docs/ZAMSCHOOL_ARCHITECTURE_CHARTER.md](docs/ZAMSCHOOL_ARCHITECTURE_CHARTER.md)
+- `npm run dev` — start the dev server.
+- `npm run build` and `npm run start` — production build and run.
+- `npm test` — run all 27 static-grep tests.
+- `npm run test:security` — run the security-focused subset.
+- `npm run lint` — ESLint across the repo.
+- `npm run schema:check` and `npm run schema:check:strict` — verify migrations.
+- `npm run audit:tenant` and `npm run audit:tenant:strict` — service-role audit.
+- `npm run load:test:<tier>` — load tests at smoke, tier1_100, tier2_500, tier3_1000.
 
-- **North star:** Publishers write once, readers get cached, filtered views, alerts instead of polling.
-- **Workspace:** Role-based shell composition with teacher workspace provider.
-- **PR checklist:** [docs/PR_CHECKLIST.md](docs/PR_CHECKLIST.md)
-- **Migration order:** [docs/MIGRATION_APPLY_ORDER.md](docs/MIGRATION_APPLY_ORDER.md)
+See [DEVELOPMENT.md](./docs/DEVELOPMENT.md) for the full list and [PRODUCTION.md](./docs/PRODUCTION.md) for the readiness gates.
 
----
+## Roles
 
-## User Roles
-
-The system supports 14 roles with granular permissions:
-
-| Role | Path Prefix |
-|------|-------------|
-| Super Admin | `/app/super-admin` |
-| Admin | `/app/admin/*` |
-| Principal | `/app/principal` |
-| Deputy Head | `/app/deputy-head` |
-| Bursar | `/app/bursar`, `/app/payments` |
-| Academic Admin | `/app/academic-admin` |
-| Discipline Admin | `/app/discipline-admin` |
-| HR Admin | `/app/hr-admin` |
-| ICT Admin | `/app/ict-admin` |
-| Guidance Office | `/app/guidance` |
-| Teacher | `/teacher/*` |
-| Student | `/student/*` |
-| Parent | `/parent/*` |
-| Payments | `/app/payments` |
-
----
-
-## Getting Started
-
-### 1. Prerequisites
-- Node.js 18+
-- A Supabase account and project
-- (Optional) Cloudflare R2 bucket for file storage
-
-### 2. Environment Setup
-
-Create a `.env.local` file in the root directory:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-R2_ENDPOINT=https://<account>.r2.cloudflarestorage.com
-R2_ACCESS_KEY_ID=your_r2_key
-R2_SECRET_ACCESS_KEY=your_r2_secret
-R2_ASSETS_BUCKET=zamschool-assets
-R2_PUBLIC_URL=https://pub-xxxx.r2.dev
-NEXT_PUBLIC_R2_PUBLIC_URL=https://pub-xxxx.r2.dev
-```
-
-### 3. Installation
-
-```bash
-npm install
-```
-
-### 4. Database Migration
-
-Apply migrations in order from `migrations/` folder following [MIGRATION_APPLY_ORDER.md](docs/MIGRATION_APPLY_ORDER.md). There are 48 migration files covering schema, RLS policies, triggers, and hardening.
-
-### 5. Running the App
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to see the application.
-
----
-
-## Project Structure
-
-```
-/app                          # Next.js App Router pages and API routes
-  /app                        # Authenticated app pages (role-based)
-    /admin/*                  # Admin dashboard and management pages
-    /teacher                  # Teacher workspace
-    /bursar                   # Bursar dashboard
-    /principal                # Principal dashboard
-    /payments                 # Payment management
-    /super-admin              # Super admin panel
-    /discipline-admin         # Discipline management
-    /academic-admin           # Academic administration
-    /deputy-head              # Deputy head dashboard
-    /hr-admin                 # HR administration
-    /ict-admin                # ICT administration
-    /guidance                 # Guidance office
-  /api                        # API routes
-    /account/*                # User account APIs
-    /admin/*                  # Admin CRUD APIs
-    /auth/*                   # Authentication (MFA, OTP, registration)
-    /teacher/*                # Teacher-specific APIs
-    /student/*                # Student-specific APIs
-    /parent/*                 # Parent-specific APIs
-    /payments/*               # Payment processing APIs
-    /files/*                  # File upload APIs
-  /teacher/*                  # Teacher-facing pages
-  /student/*                  # Student-facing pages
-  /parent/*                   # Parent-facing pages
-  /login/*                    # Login and MFA pages
-/components                   # Reusable UI components and shell layouts
-  /admin                      # Admin-specific components
-  /teacher                    # Teacher-specific components
-  /auth                       # Auth-related components
-  /payments                   # Payment components
-  /charts                     # Chart components
-  /landing                    # Landing page components
-/lib                          # Shared utilities and database clients
-/hooks                        # Custom React hooks
-/migrations                   # SQL migration scripts (001-048)
-/public                       # Static assets
-/scripts                      # Utility scripts (CDN, preflight, load testing)
-/workers                      # Edge function workers
-/cloudflare-integration       # Cloudflare R2/CDN documentation
-/docs                         # Project documentation
-```
-
----
-
-## Available Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Start development server |
-| `npm run build` | Generate production bundle |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run test suite |
-| `npm run test:all` | Run all tests |
-| `npm run test:security` | Run security-focused tests |
-| `npm run schema:check` | Validate database schema |
-| `npm run schema:check:strict` | Strict schema validation |
-| `npm run healthcheck` | Run health check |
-| `npm run audit:tenant` | Run tenant isolation audit |
-| `npm run audit:tenant:strict` | Strict tenant audit |
-| `npm run cdn:status` | Check CDN configuration |
-| `npm run cdn:cache-rules` | Verify CDN cache rules |
-| `npm run cdn:discover-r2` | Discover R2 public URL |
-| `npm run cdn:preflight` | Run CDN preflight checks |
-| `npm run load:smoke` | Load test (smoke) |
-| `npm run load:tier1` | Load test (100 users) |
-| `npm run load:tier2` | Load test (500 users) |
-| `npm run load:tier3` | Load test (1000 users) |
-| `npm run pilot:preflight` | Pilot school preflight check |
-| `npm run pilot:log-incident` | Log pilot incident |
-| `npm run production:sign-off` | Generate production sign-off |
-
----
+The system supports 14 roles with role-based shells and route prefixes. The active roles in production are admin, principal, teacher, parent, student, and payments (bursar); admin subtypes include super_admin, guidance_office, discipline_admin, it_admin, and auditor. Unknown roles fall back to the admin shell. See [ARCHITECTURE.md](./docs/ARCHITECTURE.md#roles-and-routes) for the full list and [SECURITY.md](./docs/SECURITY.md) for the authorization model.
 
 ## Security
 
-- **Row Level Security (RLS)**: Enforced at database level for all tables.
-- **Multi-Factor Authentication**: TOTP-based MFA with enrollment and challenge flow.
-- **Rate Limiting**: API routes protected via edge caching and middleware.
-- **Input Validation**: Zod 4 schemas for all data flows.
-- **Content Security Policy**: Strict CSP with nonce-based script loading.
-- **CORS**: Origin-validated API access with preflight handling.
-- **HSTS**: Strict Transport Security on HTTPS connections.
-- **Audit Logging**: All critical actions logged with user identity and timestamp.
-- **Tenant Isolation**: Service role protection with school_id scoping.
+You should treat every page as if it were public. RLS is enabled on every production table; service-role queries are audited by `npm run audit:tenant:strict`. MFA is TOTP-based with fail-closed rate limiting. See [SECURITY.md](./docs/SECURITY.md) for the threat model and the layers.
 
----
+## License
 
-## Production Readiness
-
-- **Migrations**: 48 applied in strict order
-- **RLS**: All tables hardened with row-level security
-- **Performance**: Read-optimized queries with edge caching
-- **CDN**: Cloudflare R2 for static asset delivery
-- **Monitoring**: Health check endpoint, audit logs
-- **Disaster Recovery**: Documented runbook with RPO/RTO targets
-- **Load Testing**: Tiered load test scenarios (smoke, 100, 500, 1000 users)
+Internal. Not for redistribution.
