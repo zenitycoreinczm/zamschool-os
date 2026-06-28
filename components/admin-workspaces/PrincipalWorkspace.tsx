@@ -27,7 +27,7 @@ import { SectionIntro } from "@/components/workspace/SectionIntro";
 import { metricsToStatCards } from "@/components/workspace/metricIcons";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
-import type { WorkspaceMetric } from "@/lib/workspace-summary";
+import type { WorkspaceMetric } from "@/lib/workspace/summary";
 
 type InitResults = Record<
   string,

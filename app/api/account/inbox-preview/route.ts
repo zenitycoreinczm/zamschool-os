@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { requireActorContext } from "@/lib/server-auth";
-import { loadNotificationsForUser } from "@/lib/inbox-queries";
+import { loadNotificationsForUser } from "@/lib/inbox/queries";
 import {
   loadProfilesByIdentityIds,
   summarizeParticipant,
-} from "@/lib/message-participants";
+} from "@/lib/messages/participants";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";

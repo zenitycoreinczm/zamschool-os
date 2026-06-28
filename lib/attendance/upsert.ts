@@ -1,4 +1,4 @@
-import type { AttendanceStatus } from "./attendance-status.ts";
+import type { AttendanceStatus } from "./status.ts";
 
 export type { AttendanceStatus };
 

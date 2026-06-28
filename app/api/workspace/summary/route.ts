@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireActorContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { KNOWN_ROLES } from "@/lib/roles";
-import { buildWorkspaceSummary } from "@/lib/workspace-summary";
+import { buildWorkspaceSummary } from "@/lib/workspace/summary";
 import { EDGE_CACHE } from "@/lib/edge-cache";
 
 const WORKSPACE_ROLES = KNOWN_ROLES.filter((role) => role !== "SUPER_ADMIN");

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Search } from "lucide-react";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
-import { ws } from "@/lib/workspace-design";
+import { ws } from "@/lib/workspace/design";
 import {
   filterWorkspacePageItems,
   groupWorkspaceSearchResults,
@@ -13,7 +13,7 @@ import {
   WORKSPACE_SEARCH_DEBOUNCE_MS,
   WORKSPACE_SEARCH_MIN_QUERY,
   type WorkspaceSearchResult,
-} from "@/lib/workspace-search";
+} from "@/lib/workspace/search";
 
 type WorkspaceGlobalSearchProps = {
   pageItems: WorkspaceSearchResult[];

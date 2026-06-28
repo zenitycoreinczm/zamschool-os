@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { invalidateWorkspaceContext } from "@/lib/workspace-context-client";
+import { invalidateWorkspaceContext } from "./context-client";
 
 /**
  * Leaves the workspace cleanly: clears cached context, signs out locally,

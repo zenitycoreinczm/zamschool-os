@@ -8,7 +8,7 @@ import {
   safeErrorMessage,
 } from "@/lib/server-guards";
 import { tenantActorRateLimitKey } from "@/lib/tenant-context";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import { requireAdminContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { auditDomainWrite } from "@/lib/audit-domain";

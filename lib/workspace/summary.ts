@@ -1,4 +1,4 @@
-import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance-summary";
+import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance/summary";
 import { roleDatabaseValues, type KnownRole } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 

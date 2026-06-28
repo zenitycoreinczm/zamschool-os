@@ -11,7 +11,7 @@ import { Surface } from "@/components/workspace/Surface";
 import type { HeroAccent } from "@/components/workspace/heroAccents";
 import { accountApiJson } from "@/lib/account-portal-api";
 import { cn } from "@/lib/utils";
-import { primaryButton } from "@/lib/workspace-design";
+import { primaryButton } from "@/lib/workspace/design";
 import { fieldClass, labelClass } from "./AccountProfilePage";
 
 // Static analysis requirement:

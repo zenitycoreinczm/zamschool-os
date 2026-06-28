@@ -10,7 +10,7 @@ import {
   sanitizeWorkspaceSearchQuery,
   toWorkspaceSearchPattern,
   type WorkspaceSearchResult,
-} from "@/lib/workspace-search";
+} from "./search";
 import type { ActorContext } from "@/lib/server-auth-core";
 
 const RESULT_LIMIT = 6;

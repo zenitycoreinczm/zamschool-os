@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
-import type { WorkspaceMetric } from "@/lib/workspace-summary";
+import type { WorkspaceMetric } from "@/lib/workspace/summary";
 
 type SummaryPayload = {
   data?: {

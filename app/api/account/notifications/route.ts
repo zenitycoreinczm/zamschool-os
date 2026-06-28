@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { authenticateAccountPortalRequest } from "@/lib/account-portal-auth";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import {
   loadNotificationsForUser,
   markAllNotificationsReadForUser,
   markNotificationReadForUser,
-} from "@/lib/inbox-queries";
+} from "@/lib/inbox/queries";
 import { safeErrorMessage } from "@/lib/server-guards";
 
 export async function GET(req: Request) {

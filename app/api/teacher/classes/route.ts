@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   buildStudentRosterScope,
   canTeacherAccessLesson,
-} from "@/lib/attendance-access";
+} from "@/lib/attendance/access";
 import { buildAttendanceSessionKey } from "@/lib/live-schema-adapters";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import {

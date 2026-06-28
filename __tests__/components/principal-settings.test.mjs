@@ -11,7 +11,7 @@ const pagePath = resolve(
   "settings",
   "page.tsx",
 );
-const navPath = resolve(process.cwd(), "lib", "workspace-nav.ts");
+const navPath = resolve(process.cwd(), "lib", "workspace/nav.ts");
 const routePath = resolve(
   process.cwd(),
   "app",

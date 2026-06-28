@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ws } from "@/lib/workspace-design";
+import { ws } from "@/lib/workspace/design";
 
 type WorkspaceLoaderProps = {
   label?: string;

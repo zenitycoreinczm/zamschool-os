@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ProfileAvatarImage } from "@/components/ProfileAvatarImage";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { resolveAppWorkspaceHome } from "@/lib/auth-routing";
 import { normalizeRole } from "@/lib/roles";
@@ -12,16 +11,15 @@ import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { getDisplayInitials } from "@/lib/display-initials";
-import { ws } from "@/lib/workspace-design";
+import { WorkspaceShellHeader } from "@/components/workspace/WorkspaceShellHeader";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
-import { performWorkspaceSignOut } from "@/lib/workspace-sign-out";
-import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
-import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
+import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
 import { MobileDock } from "@/components/workspace/MobileDock";
 import {
   navItemsToWorkspacePages,
   type WorkspaceSearchResult,
-} from "@/lib/workspace-search";
+} from "@/lib/workspace/search";
 import {
   buildRoleMobileDock,
   getRoleNavItems,
@@ -29,8 +27,8 @@ import {
   type WorkspaceNavItem,
   type WorkspaceNavSection,
   type WorkspaceRoleKey,
-} from "@/lib/workspace-nav";
-import { LogOut, Menu, MoreHorizontal, Settings, Users, X } from "lucide-react";
+} from "@/lib/workspace/nav";
+import { LogOut, X } from "lucide-react";
 
 type WorkspaceRole = WorkspaceRoleKey;
 
@@ -43,7 +41,6 @@ export default function AdminShell({
   const router = useRouter();
   const { data: workspace, loading: workspaceLoading, error: workspaceError } = useWorkspaceContext();
   const [open, setOpen] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [polledUnread, setPolledUnread] = useState<{
     messages: number;
@@ -71,14 +68,6 @@ export default function AdminShell({
   );
   const unreadSummary = polledUnread ?? workspaceUnread;
 
-  const handleUnreadChange = useCallback(
-    (counts: { messages: number; notifications: number }) =>
-      setPolledUnread(counts),
-    [],
-  );
-
-  const headerActionsRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     if (!workspace) return;
 
@@ -96,21 +85,6 @@ export default function AdminShell({
 
   // Unread counts are managed by WorkspaceInboxCenter via onUnreadChangeAction.
 
-  useEffect(() => {
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        headerActionsRef.current &&
-        !headerActionsRef.current.contains(target)
-      ) {
-        setOverflowOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, []);
-
   const activeSet = useMemo(() => new Set([pathname]), [pathname]);
   const navSections = useMemo(
     () => (role ? (roleNavSections[role] ?? []) : []),
@@ -127,14 +101,8 @@ export default function AdminShell({
     [navItems, unreadSummary],
   );
 
-  const handleHeaderNavigate = (href: string) => {
-    setOverflowOpen(false);
-    router.push(href);
-  };
-
   const logout = async () => {
     if (signingOut) return;
-    setOverflowOpen(false);
     setSigningOut(true);
     await performWorkspaceSignOut(supabase);
   };
@@ -194,49 +162,26 @@ export default function AdminShell({
       />
 
       <div className="zamschool-workspace-shell__main">
-        <header
-          className={cn(
-            ws.header,
-            "flex items-center justify-between gap-3 border-b border-workspace-border/60 px-4 py-2.5 md:px-6",
-          )}
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              className="lg:hidden p-2 -ml-2 text-slate-600"
-              onClick={() => setOpen(true)}
-              aria-expanded={open}
-              aria-controls="admin-sidebar"
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="hidden lg:block min-w-0">
-              <p className="font-semibold text-slate-900 truncate">
-                {schoolName}
-              </p>
-              <p className="text-xs text-slate-500 truncate">{yearTerm}</p>
-            </div>
-          </div>
-
-          <WorkspaceGlobalSearch
-            pageItems={workspacePageItems}
-            className="hidden min-w-0 flex-1 sm:block sm:max-w-[360px]"
-          />
-
-          <HeaderActions
-            actionsRef={headerActionsRef}
-            unreadSummary={unreadSummary}
-            onUnreadChangeAction={handleUnreadChange}
-            displayName={displayName}
-            workspaceLabel={workspaceLabel}
-            avatarUrl={avatarUrl}
-            avatarInitials={avatarInitials}
-            overflowOpen={overflowOpen}
-            onToggleOverflow={() => setOverflowOpen((current) => !current)}
-            onNavigate={handleHeaderNavigate}
-            onSignOut={logout}
-          />
-        </header>
+        <WorkspaceShellHeader
+          sidebarId="admin-sidebar"
+          sidebarOpen={open}
+          onOpenSidebar={() => setOpen(true)}
+          schoolName={schoolName}
+          yearTerm={yearTerm}
+          pageItems={workspacePageItems}
+          displayName={displayName}
+          workspaceLabel={workspaceLabel}
+          avatarUrl={avatarUrl}
+          avatarInitials={avatarInitials}
+          profileHref="/app/profile"
+          settingsHref="/app/settings"
+          apiMode="admin"
+          messagesHref="/app/messages"
+          notificationsHref="/app/notifications"
+          initialUnread={unreadSummary}
+          onUnreadChangeAction={setPolledUnread}
+          onSignOut={logout}
+        />
 
         <main id="main" className={ws.mainScroll}>
           <div className="relative z-0 zamschool-workspace-main-inner animate-enter-up space-y-5 pb-24 lg:pb-6">
@@ -335,115 +280,6 @@ function AdminSidebar({
         </div>
       </div>
     </aside>
-  );
-}
-
-type HeaderActionsProps = {
-  actionsRef: React.RefObject<HTMLDivElement | null>;
-  unreadSummary: { messages: number; notifications: number };
-  onUnreadChangeAction: (counts: { messages: number; notifications: number }) => void;
-  displayName: string;
-  workspaceLabel: string;
-  avatarUrl: string | null;
-  avatarInitials: string;
-  overflowOpen: boolean;
-  onToggleOverflow: () => void;
-  onNavigate: (href: string) => void;
-  onSignOut: ShellAction;
-};
-
-function HeaderActions({
-  actionsRef,
-  unreadSummary,
-  onUnreadChangeAction,
-  displayName,
-  workspaceLabel,
-  avatarUrl,
-  avatarInitials,
-  overflowOpen,
-  onToggleOverflow,
-  onNavigate,
-  onSignOut,
-}: HeaderActionsProps) {
-  return (
-    <div
-      ref={actionsRef}
-      className={cn("flex items-center gap-3", ws.headerActions)}
-    >
-      <WorkspaceInboxCenter
-        apiMode="admin"
-        messagesHref="/app/messages"
-        notificationsHref="/app/notifications"
-        initialUnread={unreadSummary}
-        onUnreadChangeAction={onUnreadChangeAction}
-      />
-
-      <div className="hidden sm:flex items-center gap-3 pl-2">
-        <div className="text-right leading-tight">
-          <p className="text-sm font-semibold text-slate-800">{displayName}</p>
-          <p className="text-[11px] text-slate-400">{workspaceLabel}</p>
-        </div>
-        <Link
-          href="/app/profile"
-          className="group relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 bg-slate-100 text-slate-900 grid place-items-center text-sm font-semibold shadow-sm transition-all hover:ring-2 hover:ring-sky-100 focus-visible:ring-2 focus-visible:ring-sky-100"
-        >
-          {avatarUrl ? (
-            <ProfileAvatarImage
-              src={avatarUrl}
-              alt={displayName}
-              width={40}
-              height={40}
-              className="h-full w-full object-cover"
-              fallback={avatarInitials}
-            />
-          ) : (
-            avatarInitials
-          )}
-        </Link>
-      </div>
-
-      <button
-        type="button"
-        onClick={onToggleOverflow}
-        className="hidden sm:grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-slate-50"
-      >
-        <MoreHorizontal className="w-4 h-4" />
-      </button>
-
-      {overflowOpen ? (
-        <div
-          className={cn(
-            "absolute right-0 top-12 w-56 rounded-3xl border border-slate-200 bg-white p-2 shadow-xl",
-            ws.popover,
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => onNavigate("/app/profile")}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <Users className="h-4 w-4 text-slate-400" />
-            Profile
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate("/app/settings")}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <Settings className="h-4 w-4 text-slate-400" />
-            Settings
-          </button>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-rose-600 hover:bg-rose-50"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
-        </div>
-      ) : null}
-    </div>
   );
 }
 

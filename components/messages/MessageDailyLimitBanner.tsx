@@ -2,7 +2,7 @@
 
 import { AlertCircle, GraduationCap } from "lucide-react";
 
-import type { MessageSendQuota } from "@/lib/message-quota-types";
+import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
 function formatQuotaResetTime(resetsAt: string) {
   const date = new Date(resetsAt);

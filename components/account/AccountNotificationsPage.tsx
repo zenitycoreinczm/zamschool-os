@@ -10,7 +10,7 @@ import {
 } from "@/components/workspace/NotificationsInboxView";
 import type { HeroAccent } from "@/components/workspace/heroAccents";
 import { accountApiJson } from "@/lib/account-portal-api";
-import { dispatchInboxRefresh } from "@/lib/inbox-events";
+import { dispatchInboxRefresh } from "@/lib/inbox/events";
 
 type NotificationRow = {
   id: string;

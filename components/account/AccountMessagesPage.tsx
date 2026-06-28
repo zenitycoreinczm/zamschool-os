@@ -20,10 +20,10 @@ import {
   messageFieldClass,
   messageLabelClass,
 } from "@/components/messages/message-ui";
-import { MESSAGE_BODY_MAX } from "@/lib/message-compose-limits";
+import { MESSAGE_BODY_MAX } from "@/lib/messages/compose-limits";
 import { accountApiJson } from "@/lib/account-portal-api";
-import { dispatchInboxRefresh } from "@/lib/inbox-events";
-import type { MessageSendQuota } from "@/lib/message-quota-types";
+import { dispatchInboxRefresh } from "@/lib/inbox/events";
+import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
 type MessageRow = {
   id: string;

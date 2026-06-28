@@ -11,7 +11,7 @@ import {
   parseJsonWithSchema,
   safeErrorMessage,
 } from "@/lib/server-guards";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import { requireAdminContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { auditDomainWrite } from "@/lib/audit-domain";
@@ -20,8 +20,8 @@ import {
   loadProfilesByIdentityIds,
   loadRecipientByIdentity,
   resolveMessagingIdentityId,
-} from "@/lib/message-participants";
-import { getMessageSendQuota } from "@/lib/message-send-quota";
+} from "@/lib/messages/participants";
+import { getMessageSendQuota } from "@/lib/messages/send-quota";
 
 const createMessageSchema = z.object({
   recipientId: z.string().min(1),

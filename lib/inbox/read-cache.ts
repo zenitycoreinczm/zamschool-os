@@ -4,7 +4,7 @@ import {
   invalidateInboxHotReads,
   withHotReadCache,
 } from "@/lib/hot-read-cache";
-import { countUnreadNotificationsForUser } from "@/lib/inbox-queries";
+import { countUnreadNotificationsForUser } from "./queries";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type UnreadCounts = {

@@ -6,8 +6,8 @@ import {
 } from "@/lib/platform-api-guard";
 import { requireActorContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
-import { runWorkspaceSearch } from "@/lib/workspace-search-server";
-import { sanitizeWorkspaceSearchQuery } from "@/lib/workspace-search";
+import { runWorkspaceSearch } from "@/lib/workspace/search-server";
+import { sanitizeWorkspaceSearchQuery } from "@/lib/workspace/search";
 
 const WORKSPACE_ROLES = [
   "ADMIN",

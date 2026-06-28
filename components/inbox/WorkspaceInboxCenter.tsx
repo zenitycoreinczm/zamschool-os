@@ -15,9 +15,9 @@ import {
   type InboxApiMode,
   type InboxMessagePreview,
   type InboxNotificationPreview,
-} from "@/lib/inbox-center-client";
-import { INBOX_REFRESH_EVENT, dispatchInboxRefresh } from "@/lib/inbox-events";
-import { ws } from "@/lib/workspace-design";
+} from "@/lib/inbox/center-client";
+import { INBOX_REFRESH_EVENT, dispatchInboxRefresh } from "@/lib/inbox/events";
+import { ws } from "@/lib/workspace/design";
 
 type PanelKey = "messages" | "notifications" | null;
 type DrawerKind = "message" | "notification" | null;

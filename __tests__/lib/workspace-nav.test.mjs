@@ -6,7 +6,7 @@ const {
   getRoleNavItems,
   roleNavSections,
   teacherPortalSections,
-} = await import("../../lib/workspace-nav.ts");
+} = await import("../../lib/workspace/nav.ts");
 
 test("admin nav puts messages near the top under Today", () => {
   const items = getRoleNavItems("admin");

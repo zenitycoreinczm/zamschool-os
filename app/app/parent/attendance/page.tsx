@@ -5,7 +5,7 @@ import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { CalendarCheck, AlertCircle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { buildAttendanceColor } from "@/lib/attendance-analytics";
+import { buildAttendanceColor } from "@/lib/attendance/analytics";
 
 type AttendanceRow = {
   id: string;

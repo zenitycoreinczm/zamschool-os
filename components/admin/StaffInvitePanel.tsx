@@ -21,6 +21,7 @@ import {
   SCHOOL_ADMINISTRATOR_INVITE_ROLE,
   STAFF_INVITE_ROLE_OPTIONS,
   getStaffInviteRoleLabel,
+  type StaffInviteRoleOption,
   type StaffInviteRoleValue,
 } from "@/lib/staff-invite-options";
 
@@ -67,13 +68,28 @@ type StaffInvitePanelProps = {
   id?: string;
   expanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  roleOptions?: StaffInviteRoleOption[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  primaryInviteLabel?: string;
+  secondaryInviteLabel?: string;
+  accent?: "sky" | "teal" | "indigo" | "amber" | "emerald" | "violet" | "rose" | "slate" | "green";
 };
 
 export function StaffInvitePanel({
   id = "staff-invitations",
   expanded: expandedProp,
   onExpandedChange,
+  roleOptions = STAFF_INVITE_ROLE_OPTIONS,
+  eyebrow = "Staff access",
+  title = "Staff & leadership accounts",
+  description = "Create Deputy Head, Bursar, School Administrator, ICT, HR, and other office logins instantly. Each person gets a temporary password — share it in person or by phone. They will sign in and change it on first login. For students, parents, and classroom teachers, use the tabs below instead.",
+  primaryInviteLabel = "Invite School Administrator",
+  secondaryInviteLabel = "Invite other staff",
+  accent = "emerald",
 }: StaffInvitePanelProps = {}) {
+  const defaultRole = roleOptions[0]?.value || SCHOOL_ADMINISTRATOR_INVITE_ROLE;
   const [expandedInternal, setExpandedInternal] = useState(true);
   const expanded = expandedProp ?? expandedInternal;
   const setExpanded = (value: boolean) => {
@@ -89,15 +105,17 @@ export function StaffInvitePanel({
   const [submitting, setSubmitting] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [invitations, setInvitations] = useState<InvitationRow[]>([]);
-  const [form, setForm] = useState<InviteForm>(EMPTY_FORM);
+  const [form, setForm] = useState<InviteForm>({
+    ...EMPTY_FORM,
+    role: defaultRole,
+  });
   const [issued, setIssued] = useState<IssuedInvite | null>(null);
   const [copied, setCopied] = useState(false);
 
   const selectedRoleHint = useMemo(
     () =>
-      STAFF_INVITE_ROLE_OPTIONS.find((option) => option.value === form.role)
-        ?.hint || "",
-    [form.role],
+      roleOptions.find((option) => option.value === form.role)?.hint || "",
+    [form.role, roleOptions],
   );
 
   const loadInvitations = useCallback(async () => {
@@ -125,11 +143,11 @@ export function StaffInvitePanel({
     setExpanded(true);
     setShowForm(true);
     setIssued(null);
-    setForm({ ...EMPTY_FORM, role: SCHOOL_ADMINISTRATOR_INVITE_ROLE });
+    setForm({ ...EMPTY_FORM, role: defaultRole });
   }
 
   function openStaffInvite(
-    role: StaffInviteRoleValue = SCHOOL_ADMINISTRATOR_INVITE_ROLE,
+    role: StaffInviteRoleValue = defaultRole,
   ) {
     setExpanded(true);
     setShowForm(true);
@@ -178,11 +196,10 @@ export function StaffInvitePanel({
         temporaryPassword: body.data?.temporary_password,
         credentialsEmailSent: body.data?.credentials_email_sent === true,
       });
-      setShowForm(false);
+      setForm({ ...EMPTY_FORM, role: defaultRole });
       setForm(EMPTY_FORM);
       toast.success("Staff account created — share the temporary password below.");
       await loadInvitations();
-    } catch (err: unknown) {
       toast.error(
         err instanceof Error ? err.message : "Failed to create staff account",
       );
@@ -229,20 +246,12 @@ export function StaffInvitePanel({
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-5 border-b border-workspace-border px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="ws-eyebrow text-emerald-600">Staff access</p>
+          <p className="ws-eyebrow text-emerald-600">{eyebrow}</p>
           <h2 className="mt-1.5 text-lg font-bold tracking-tight text-slate-900">
-            Staff &amp; leadership accounts
+            {title}
           </h2>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-workspace-muted">
-            Create Deputy Head, Bursar, School Administrator, ICT, HR, and other
-            office logins instantly. Each person gets a temporary password —
-            share it in person or by phone. They will sign in and change it on
-            first login. For{" "}
-            <strong className="font-semibold text-slate-700">students</strong>,{" "}
-            <strong className="font-semibold text-slate-700">parents</strong>,
-            and classroom{" "}
-            <strong className="font-semibold text-slate-700">teachers</strong>,
-            use the tabs below instead.
+            {description}
           </p>
         </div>
 
@@ -253,7 +262,7 @@ export function StaffInvitePanel({
             className="inline-flex items-center gap-2 rounded-workspace-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.98]"
           >
             <ShieldCheck className="h-4 w-4" />
-            Invite School Administrator
+            {primaryInviteLabel}
           </button>
 
           <button
@@ -262,7 +271,7 @@ export function StaffInvitePanel({
             className="inline-flex items-center gap-2 rounded-workspace-md border border-workspace-border bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-workspace-xs transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
           >
             <UserPlus className="h-4 w-4" />
-            Invite other staff
+            {secondaryInviteLabel}
           </button>
 
           <button
@@ -313,8 +322,8 @@ export function StaffInvitePanel({
                     </p>
 
                     {issued.temporaryPassword && (
-                      <div className="mt-3 rounded-workspace-md border border-emerald-300 bg-white px-4 py-3">
-                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                      <div className={cn("mt-3 rounded-workspace-md border px-4 py-3", palette.surfaceBorder, palette.subBg)}>
+                        <div className={cn("flex items-center gap-2 text-xs font-semibold uppercase tracking-wide", palette.subText)}>
                           <KeyRound className="h-3.5 w-3.5" />
                           Temporary password
                         </div>
@@ -325,7 +334,12 @@ export function StaffInvitePanel({
                           <button
                             type="button"
                             onClick={() => void copyToClipboard(issued.temporaryPassword!)}
-                            className="inline-flex items-center gap-1.5 rounded-workspace-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98]"
+                            className={cn(
+                              "inline-flex items-center gap-1.5 rounded-workspace-md border px-2.5 py-1.5 text-xs font-semibold transition active:scale-[0.98]",
+                              palette.chip,
+                              palette.chipBorder,
+                              palette.chipHover,
+                            )}
                           >
                             {copied ? (
                               <>
@@ -355,7 +369,14 @@ export function StaffInvitePanel({
                 <button
                   type="button"
                   onClick={() => setIssued(null)}
-                  className="shrink-0 rounded-workspace-md border border-emerald-200 bg-white px-3.5 py-2 text-sm font-medium text-emerald-700 shadow-workspace-xs transition hover:bg-emerald-50 hover:text-emerald-800 active:scale-[0.98]"
+                  className={cn(
+                    "shrink-0 rounded-workspace-md border px-3.5 py-2 text-sm font-medium shadow-workspace-xs transition active:scale-[0.98]",
+                    palette.dismissBorder,
+                    palette.dismissBg,
+                    palette.dismissText,
+                    palette.dismissHoverBg,
+                    palette.dismissHoverText,
+                  )}
                 >
                   Dismiss
                 </button>
@@ -372,8 +393,8 @@ export function StaffInvitePanel({
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-base font-semibold tracking-tight text-slate-900">
-                    {form.role === SCHOOL_ADMINISTRATOR_INVITE_ROLE
-                      ? "Invite School Administrator"
+                    {form.role === defaultRole
+                      ? primaryInviteLabel
                       : "Invite staff member"}
                   </h3>
                   {selectedRoleHint && (
@@ -386,7 +407,7 @@ export function StaffInvitePanel({
                   type="button"
                   onClick={() => {
                     setShowForm(false);
-                    setForm(EMPTY_FORM);
+                    setForm({ ...EMPTY_FORM, role: defaultRole });
                   }}
                   className="rounded-workspace-md p-2 text-slate-400 transition hover:bg-white hover:text-slate-600"
                   aria-label="Close invite form"
@@ -470,7 +491,7 @@ export function StaffInvitePanel({
                     }
                     className="w-full rounded-workspace-md border border-workspace-border bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-workspace-xs outline-none transition hover:border-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
                   >
-                    {STAFF_INVITE_ROLE_OPTIONS.map((option) => (
+                    {roleOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>

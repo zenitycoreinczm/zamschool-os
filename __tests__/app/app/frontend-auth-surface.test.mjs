@@ -24,7 +24,7 @@ const cookieBackedShellHelpers = ["components/OfflineStatusProvider.tsx"];
 
 const cookieBackedClientHelpers = [
   "lib/admin-route-client.ts",
-  "lib/inbox-center-client.ts",
+  "lib/inbox/center-client.ts",
 ];
 
 test("parent and student workspace pages use same-origin cookie auth for local api calls", () => {

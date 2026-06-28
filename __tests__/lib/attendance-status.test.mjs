@@ -7,7 +7,7 @@ import {
   formatAttendanceStatusLabel,
   formatLessonClockTime,
   formatAttendanceSessionDate,
-} from "../../lib/attendance-status.ts";
+} from "../../lib/attendance/status.ts";
 
 // ─── isAttendanceStatus ──────────────────────────────────────────────────
 

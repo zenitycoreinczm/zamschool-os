@@ -72,6 +72,31 @@ export function flattenNavSections(
   return items;
 }
 
+// Single source of truth for "the dashboard" per role. Replaces the
+// mixed-state /app/dashboard, /app/teacher, /app/<role> entries so the
+// first nav slot means the same thing across every workspace shell.
+export const ROLE_DASHBOARD_PATHS: Record<WorkspaceRoleKey, string> = {
+  admin: "/app/dashboard",
+  principal: "/app/principal",
+  deputy_head: "/app/deputy-head",
+  bursar: "/app/bursar",
+  guidance_office: "/app/guidance",
+  academic_admin: "/app/academic-admin",
+  hr_admin: "/app/hr-admin",
+  ict_admin: "/app/ict-admin",
+  discipline_admin: "/app/discipline-admin",
+  registrar: "/app/registrar",
+  super_admin: "/app/super-admin",
+  teacher: "/app/teacher",
+  student: "/app/student",
+  parent: "/app/parent",
+  payments: "/app/payments",
+};
+
+export function getRoleDashboardPath(role: WorkspaceRoleKey): string {
+  return ROLE_DASHBOARD_PATHS[role] ?? ROLE_DASHBOARD_PATHS.admin;
+}
+
 const adminSections: WorkspaceNavSection[] = [
   {
     label: "Today",
@@ -420,9 +445,9 @@ const appTeacherSections: WorkspaceNavSection[] = [
   {
     label: "Today",
     items: [
-      { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/app/teacher", label: "Dashboard", icon: LayoutDashboard },
       { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/teacher", label: "Schedule", icon: CalendarClock },
+      { href: "/app/teacher/teaching", label: "Schedule", icon: CalendarClock },
       { href: "/app/announcements", label: "Announcements", icon: Megaphone },
       { href: "/app/notifications", label: "Notifications", icon: Bell },
       { href: "/app/events", label: "Events", icon: Calendar },

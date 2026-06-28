@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { Surface } from "@/components/workspace/Surface";
 import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
-import { ws } from "@/lib/workspace-design";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 const shellFallback = () => <WorkspaceLoader label="Loading workspace" />;

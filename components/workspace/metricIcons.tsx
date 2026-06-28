@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
-import type { WorkspaceMetric } from "@/lib/workspace-summary";
+import type { WorkspaceMetric } from "@/lib/workspace/summary";
 
 const LABEL_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   Attendance: ClipboardCheck,

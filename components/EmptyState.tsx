@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Plus } from "lucide-react";
 
 import { Surface } from "@/components/workspace/Surface";
-import { primaryButton } from "@/lib/workspace-design";
+import { primaryButton } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {

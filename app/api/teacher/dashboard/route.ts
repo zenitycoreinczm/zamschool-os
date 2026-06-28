@@ -9,7 +9,7 @@ import {
 import { loadTeacherAccountDetail } from "@/lib/teacher-account-detail";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { requireTeacherContext } from "@/lib/server-auth";
-import { countUnreadNotificationsForUser } from "@/lib/inbox-queries";
+import { countUnreadNotificationsForUser } from "@/lib/inbox/queries";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,

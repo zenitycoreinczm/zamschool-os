@@ -6,7 +6,7 @@ import {
 } from "@/lib/platform-api-guard";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { requireActorContext } from "@/lib/server-auth";
-import { buildWorkspaceContextPayload } from "@/lib/workspace-context-server";
+import { buildWorkspaceContextPayload } from "@/lib/workspace/context-server";
 
 const WORKSPACE_ROLES = [
   "ADMIN",

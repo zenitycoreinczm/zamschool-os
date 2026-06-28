@@ -6,7 +6,7 @@ const {
   mergeWorkspaceSearchResults,
   navItemsToWorkspacePages,
   sanitizeWorkspaceSearchQuery,
-} = await import("../../lib/workspace-search.ts");
+} = await import("../../lib/workspace/search.ts");
 
 test("sanitizeWorkspaceSearchQuery trims and strips unsafe characters", () => {
   assert.equal(sanitizeWorkspaceSearchQuery("  john@school.com  "), "john@school.com");

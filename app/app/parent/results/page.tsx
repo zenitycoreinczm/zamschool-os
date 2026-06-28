@@ -12,7 +12,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { primaryButton, secondaryButton } from "@/lib/workspace-design";
+import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import {
   StatementOfResults,
   type SubjectResult,

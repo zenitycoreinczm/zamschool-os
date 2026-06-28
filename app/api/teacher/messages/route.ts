@@ -15,8 +15,8 @@ import {
   loadRecipientByIdentity,
   resolveMessagingIdentityId,
   serializeTeacherInboxMessages,
-} from "@/lib/message-participants";
-import { getMessageSendQuota } from "@/lib/message-send-quota";
+} from "@/lib/messages/participants";
+import { getMessageSendQuota } from "@/lib/messages/send-quota";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const createMessageSchema = z.object({

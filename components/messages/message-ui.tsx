@@ -13,8 +13,8 @@ import {
   X,
 } from "lucide-react";
 
-import { MESSAGE_BODY_MAX } from "@/lib/message-compose-limits";
-import type { MessageSendQuota } from "@/lib/message-quota-types";
+import { MESSAGE_BODY_MAX } from "@/lib/messages/compose-limits";
+import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
 const transitionBase = "transition-all duration-200 ease-out";
 const focusRing =

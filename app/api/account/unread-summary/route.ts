@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getUnreadCountsForUser } from "@/lib/inbox-read-cache";
+import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,

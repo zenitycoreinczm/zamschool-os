@@ -33,6 +33,10 @@ const standalonePageSource = readFileSync(
   "app/app/admin/staff-invitations/page.tsx",
   "utf8",
 );
+const staffInvitationsViewSource = readFileSync(
+  "components/staff/StaffInvitationsView.tsx",
+  "utf8",
+);
 
 // ── Migration tests ──
 
@@ -136,8 +140,13 @@ test("Head Teacher can invite essential school staff roles", () => {
 
   assert.match(
     invitationsSource,
-    /allowedRoles:\s*\[[\s\S]*?"PRINCIPAL"[\s\S]*?\]/,
-    "Staff invitation POST must allow Head Teacher accounts",
+    /STAFF_INVITATION_ROLES\s*=\s*\[[\s\S]*?"PRINCIPAL"[\s\S]*?\]/,
+    "STAFF_INVITATION_ROLES must include Head Teacher",
+  );
+  assert.match(
+    invitationsSource,
+    /allowedRoles:\s*\[\.\.\.STAFF_INVITATION_ROLES\]/,
+    "Staff invitation handlers must reference STAFF_INVITATION_ROLES via spread",
   );
   assert.match(
     accountCreatePolicySource,
@@ -305,26 +314,31 @@ test("admin GET handler 'pending' filter uses revoked_at (not accepted_at)", () 
 test("standalone page uses STAFF_INVITE_ROLE_OPTIONS (includes admin)", () => {
   assert.match(
     standalonePageSource,
+    /StaffInvitationsView/,
+    "standalone page must render StaffInvitationsView",
+  );
+  assert.match(
+    staffInvitationsViewSource,
     /STAFF_INVITE_ROLE_OPTIONS/,
-    "standalone page must use the shared role options list (includes admin role)",
+    "StaffInvitationsView must use the shared role options list (includes admin role)",
   );
   assert.doesNotMatch(
-    standalonePageSource,
+    staffInvitationsViewSource,
     /const INVITE_ROLES = \[/,
-    "standalone page must not hardcode its own role list",
+    "StaffInvitationsView must not hardcode its own role list",
   );
 });
 
 test("standalone page shows the temporary password after creation", () => {
   assert.match(
-    standalonePageSource,
+    staffInvitationsViewSource,
     /temporary_password/,
-    "standalone page must capture and display the temporary password from the API response",
+    "StaffInvitationsView must capture and display the temporary password from the API response",
   );
   assert.match(
-    standalonePageSource,
+    staffInvitationsViewSource,
     /lastCreatedPassword/,
-    "standalone page must track the last created password",
+    "StaffInvitationsView must track the last created password",
   );
 });
 

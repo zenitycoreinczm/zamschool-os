@@ -35,7 +35,7 @@ test("admin shell wires the header shortcuts and overflow menu to real actions",
 test("admin shell targets the mounted admin and shared workspace route set", async () => {
   // Navigation items were refactored from AdminShell.tsx into workspace-nav.ts
   const navSource = await readFile(
-    resolve(process.cwd(), "lib", "workspace-nav.ts"),
+    resolve(process.cwd(), "lib", "lib/workspace/nav.ts"),
     "utf8",
   );
   const shellSource = await readFile(shellPath, "utf8");

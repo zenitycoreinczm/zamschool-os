@@ -7,21 +7,21 @@ import { getDisplayInitials } from "@/lib/display-initials";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { performWorkspaceSignOut } from "@/lib/workspace-sign-out";
+import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
 import { MobileDock } from "@/components/workspace/MobileDock";
-import { navItemsToWorkspacePages } from "@/lib/workspace-search";
+import { navItemsToWorkspacePages } from "@/lib/workspace/search";
 import {
   buildRoleMobileDock,
   flattenNavSections,
   paymentsSections,
-} from "@/lib/workspace-nav";
+} from "@/lib/workspace/nav";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { ws } from "@/lib/workspace-design";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 import {
   Bell,

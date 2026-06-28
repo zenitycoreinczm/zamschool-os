@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const globalsPath = resolve(process.cwd(), "app", "globals.css");
-const designPath = resolve(process.cwd(), "lib", "workspace-design.ts");
+const designPath = resolve(process.cwd(), "lib", "workspace/design.ts");
 
 test("workspace shell CSS elevates header popovers above scrolling page content", async () => {
   const css = await readFile(globalsPath, "utf8");

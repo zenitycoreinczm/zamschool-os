@@ -23,13 +23,13 @@ import {
   fetchAccountProfile,
   type AccountProfilePayload,
 } from "@/lib/account-profile-client";
-import { invalidateWorkspaceContext as clearModuleCache } from "@/lib/workspace-context-client";
+import { invalidateWorkspaceContext as clearModuleCache } from "@/lib/workspace/context-client";
 import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
 import { adminApiFetch } from "@/lib/admin-browser-api";
 import { getRemoteImageConfigMessage } from "@/lib/remote-image-hosts";
 import { getRoleDisplayLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
-import { primaryButton, secondaryButton } from "@/lib/workspace-design";
+import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 
 export const fieldClass =
   "w-full rounded-workspace-lg border border-workspace-border bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-workspace-xs transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand/40 focus:outline-none focus:ring-2 focus:ring-brand/15";
@@ -103,6 +103,11 @@ export function AccountProfilePage({
     buildFormState(initialProfileData),
   );
   const { invalidate: invalidateWorkspace } = useWorkspaceContext();
+  const workspaceRole = useWorkspaceContext().role;
+  const resolvedSettingsHref = useMemo(
+    () => resolveSettingsPath(settingsHref, workspaceRole),
+    [settingsHref, workspaceRole],
+  );
 
   const fullName = useMemo(
     () => `${form.first_name} ${form.last_name}`.trim(),

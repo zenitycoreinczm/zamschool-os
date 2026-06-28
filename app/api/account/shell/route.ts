@@ -7,7 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { toProtectedAvatarUrl } from "@/lib/avatar-url";
 import { buildAcademicContextLabel } from "@/lib/live-schema-adapters";
-import { getUnreadCountsForUser } from "@/lib/inbox-read-cache";
+import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,

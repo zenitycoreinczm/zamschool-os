@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   detectAttendanceConflict,
   generateConflictMetadata,
-} from "../../lib/attendance-conflict.ts";
+} from "../../lib/attendance/conflict.ts";
 
 const NOW = Date.now();
 const FIVE_MIN = 5 * 60 * 1000;

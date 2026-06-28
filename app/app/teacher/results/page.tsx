@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import Papa from "papaparse";
 import { cn } from "@/lib/utils";
-import { primaryButton, secondaryButton } from "@/lib/workspace-design";
+import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiFetch, adminApiJson } from "@/lib/admin-browser-api";
 import { getECZGrade } from "@/lib/zambia-localization";
 

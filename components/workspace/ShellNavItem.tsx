@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import Link from "next/link";
 
-import { shellNavClass } from "@/lib/workspace-design";
+import { shellNavClass } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 type ShellNavAccent = "neutral" | "teal" | "indigo";

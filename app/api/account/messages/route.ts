@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { authenticateAccountPortalRequest } from "@/lib/account-portal-auth";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   enforceDailyMessageSendLimit,
@@ -15,8 +15,8 @@ import {
   loadRecipientByIdentity,
   resolveMessagingIdentityId,
   serializeAccountMessages,
-} from "@/lib/message-participants";
-import { getMessageSendQuota } from "@/lib/message-send-quota";
+} from "@/lib/messages/participants";
+import { getMessageSendQuota } from "@/lib/messages/send-quota";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const createMessageSchema = z.object({

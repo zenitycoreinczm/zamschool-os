@@ -9,7 +9,7 @@ import {
   type WorkspaceNotificationItem,
 } from "@/components/workspace/NotificationsInboxView";
 import { adminApiJson } from "@/lib/admin-browser-api";
-import { dispatchInboxRefresh } from "@/lib/inbox-events";
+import { dispatchInboxRefresh } from "@/lib/inbox/events";
 import type { InboxItem } from "@/lib/notifications-inbox";
 
 type InboxRecord = InboxItem & { recordId?: string };

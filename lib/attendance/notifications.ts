@@ -3,7 +3,7 @@ import {
   formatAttendanceStatusLabel,
   formatLessonClockTime,
   type AttendanceStatus,
-} from "./attendance-status.ts";
+} from "./status.ts";
 function normalizeSessionTime(value?: string | null) {
   const normalized = String(value || "").trim();
   if (!normalized) return "";

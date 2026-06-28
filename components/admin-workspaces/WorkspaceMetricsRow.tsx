@@ -2,7 +2,7 @@
 
 import { Loader2, type LucideProps } from "lucide-react";
 import type { ComponentType } from "react";
-import type { WorkspaceMetric } from "@/lib/workspace-summary";
+import type { WorkspaceMetric } from "@/lib/workspace/summary";
 import { cn } from "@/lib/utils";
 
 type WorkspaceMetricsRowProps = {

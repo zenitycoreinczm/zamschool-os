@@ -1,4 +1,4 @@
-import type { WorkspaceContextData } from "@/lib/workspace-context-client";
+import type { WorkspaceContextData } from "@/lib/workspace/context-client";
 import { adminApiJson } from "@/lib/admin-browser-api";
 
 export type ShellData = WorkspaceContextData & {

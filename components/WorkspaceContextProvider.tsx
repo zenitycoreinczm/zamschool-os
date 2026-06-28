@@ -16,11 +16,11 @@ import {
   invalidateWorkspaceContext,
   readCachedWorkspaceContext,
   type WorkspaceContextData,
-} from "@/lib/workspace-context-client";
+} from "@/lib/workspace/context-client";
 import {
   normalizeAppWorkspaceRole,
   type AppWorkspaceRole,
-} from "@/lib/workspace-role";
+} from "@/lib/workspace/role";
 
 type WorkspaceContextValue = {
   data: WorkspaceContextData | null;

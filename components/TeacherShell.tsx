@@ -2,31 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ProfileAvatarImage } from "@/components/ProfileAvatarImage";
 import { getDisplayInitials } from "@/lib/display-initials";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, X } from "lucide-react";
 
-import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import {
   TeacherWorkspaceProvider,
   useTeacherWorkspace,
 } from "@/components/TeacherWorkspaceProvider";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
-import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
+import { WorkspaceShellHeader } from "@/components/workspace/WorkspaceShellHeader";
 import { MobileDock } from "@/components/workspace/MobileDock";
-import { navItemsToWorkspacePages } from "@/lib/workspace-search";
+import { navItemsToWorkspacePages } from "@/lib/workspace/search";
 import {
   buildTeacherPortalDock,
   flattenNavSections,
   teacherPortalSections,
-} from "@/lib/workspace-nav";
+} from "@/lib/workspace/nav";
 
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { supabase } from "@/lib/supabase";
-import { performWorkspaceSignOut } from "@/lib/workspace-sign-out";
-import { ws } from "@/lib/workspace-design";
+import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 import { useTeacherWorkspacePreferences } from "@/lib/teacher-workspace-preferences";
 
@@ -79,6 +77,12 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
   const teacher = account?.teacher;
   const avatarUrl = account?.profile?.avatar_url || null;
+  const avatarInitials = getDisplayInitials({
+    firstName: account?.profile?.first_name || (account?.profile as any)?.firstName,
+    lastName: account?.profile?.last_name || (account?.profile as any)?.lastName,
+    displayName,
+    email: account?.profile?.email,
+  });
   const compactCards = preferences.compactCards;
   const displayStats = {
     ...stats,
@@ -212,86 +216,29 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="zamschool-workspace-shell__main flex min-w-0 flex-1 flex-col">
-        <header
-          className={cn(
-            ws.header,
-            "flex items-center justify-between gap-4 border-b border-workspace-border/60 px-4 md:px-6",
-            compactCards ? "py-3" : "py-3.5",
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <button
-              className="-ml-2 p-2 text-slate-600 lg:hidden"
-              onClick={() => setOpen(true)}
-              aria-expanded={open}
-              aria-controls="teacher-sidebar"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div className="hidden min-w-0 lg:block">
-              <p className="truncate font-semibold text-slate-900">
-                {schoolName}
-              </p>
-              <p className="truncate text-xs text-slate-500">{yearTerm}</p>
-            </div>
-          </div>
-
-          <WorkspaceGlobalSearch
-            pageItems={workspacePageItems}
-            placeholder="Search students, classes, pages…"
-            className="hidden min-w-0 flex-1 sm:block sm:max-w-[360px]"
-          />
-
-          <div className="flex items-center gap-3">
-            <WorkspaceInboxCenter
-              apiMode="teacher"
-              messagesHref="/teacher/inbox"
-              notificationsHref="/teacher/notifications"
-              initialUnread={{
-                messages: workload.unreadMessages,
-                notifications: workload.unreadNotifications,
-              }}
-            />
-            <div className="hidden items-center gap-3 pl-2 sm:flex">
-              <div className="text-right leading-tight">
-                <p className="text-sm font-semibold text-slate-800">
-                  {displayName}
-                </p>
-                <p className="text-[11px] text-slate-400">Teacher</p>
-              </div>
-              <Link
-                href="/teacher/profile"
-                className="group relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:ring-2 hover:ring-sky-100"
-              >
-                {(() => {
-                  const initials = getDisplayInitials({
-                    firstName:
-                      account?.profile?.first_name ||
-                      (account?.profile as any)?.firstName,
-                    lastName:
-                      account?.profile?.last_name ||
-                      (account?.profile as any)?.lastName,
-                    displayName,
-                    email: account?.profile?.email,
-                  });
-                  return avatarUrl ? (
-                    <ProfileAvatarImage
-                      src={avatarUrl}
-                      alt={displayName}
-                      width={40}
-                      height={40}
-                      className="h-full w-full object-cover"
-                      fallback={initials}
-                    />
-                  ) : (
-                    initials
-                  );
-                })()}
-              </Link>
-            </div>
-          </div>
-        </header>
+        <WorkspaceShellHeader
+          sidebarId="teacher-sidebar"
+          sidebarOpen={open}
+          onOpenSidebar={() => setOpen(true)}
+          schoolName={schoolName}
+          yearTerm={yearTerm}
+          pageItems={workspacePageItems}
+          searchPlaceholder="Search students, classes, pages…"
+          displayName={displayName}
+          workspaceLabel="Teacher Workspace"
+          avatarUrl={avatarUrl}
+          avatarInitials={avatarInitials}
+          profileHref="/app/teacher/profile"
+          settingsHref="/app/teacher/settings"
+          apiMode="teacher"
+          messagesHref="/app/teacher/inbox"
+          notificationsHref="/app/teacher/notifications"
+          initialUnread={{
+            messages: workload.unreadMessages,
+            notifications: workload.unreadNotifications,
+          }}
+          onSignOut={logout}
+        />
 
         {workspaceError ? (
           <div

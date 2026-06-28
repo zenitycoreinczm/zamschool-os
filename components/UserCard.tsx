@@ -6,7 +6,7 @@ import { Loader2, MoreHorizontal } from "lucide-react";
 import { isAbortLikeError } from "@/lib/async-guards";
 import { fetchDashboardSummary } from "@/lib/dashboard-client";
 import { useDashboardSummary } from "@/components/DashboardSummaryProvider";
-import { roleStatSurface, ws } from "@/lib/workspace-design";
+import { roleStatSurface, ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 type UserCardType = keyof typeof roleStatSurface;

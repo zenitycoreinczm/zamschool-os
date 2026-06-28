@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { invalidateCache } from "@/lib/enhanced-cache";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import { invalidateMiddlewareProfileRole } from "@/lib/middleware-profile-cache";
-import { invalidateWorkspaceHotRead } from "@/lib/workspace-context-server";
+import { invalidateWorkspaceHotRead } from "@/lib/workspace/context-server";
 import { shellCacheKey, workspaceCacheKey } from "@/lib/redis/keys";
 
 /** In-memory enhanced-cache entries for non-sensitive profile columns. */

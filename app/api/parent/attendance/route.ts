@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance-summary";
+import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance/summary";
 import { requireParentContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";

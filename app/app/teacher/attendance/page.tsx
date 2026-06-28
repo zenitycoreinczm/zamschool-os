@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
-import { formatAttendanceStatusLabel } from "@/lib/attendance-status";
+import { formatAttendanceStatusLabel } from "@/lib/attendance/status";
 
 type LessonRoster = {
   id: string;

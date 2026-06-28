@@ -105,10 +105,46 @@ const EMPTY_FORM: UserForm = {
   supervised_class_ids: [],
 };
 
+// Admin-subtype roles that shouldn't be using the principal user console.
+// They get bounced to their own scoped dashboard on mount.
+const ADMIN_SUBTYPE_ROLE_DASHBOARDS: Record<string, string> = {
+  DEPUTY_HEAD: "/app/deputy-head",
+  BURSAR: "/app/bursar",
+  GUIDANCE_OFFICE: "/app/guidance",
+  ACADEMIC_ADMIN: "/app/academic-admin",
+  HR_ADMIN: "/app/hr-admin",
+  ICT_ADMIN: "/app/ict-admin",
+  DISCIPLINE_ADMIN: "/app/discipline-admin",
+  REGISTRAR: "/app/registrar",
+};
+
+function adminSubtypeHomePath(role: string): string | null {
+  return ADMIN_SUBTYPE_ROLE_DASHBOARDS[role] ?? null;
+}
+
 export default function AdminUsersPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { role: workspaceRole } = useWorkspaceContext();
   const normalizedWorkspaceRole = normalizeRole(workspaceRole);
+  // /app/admin/users is the principal-only user console. Other admin
+  // subtypes (HR, ICT, discipline, registrar, guidance, deputy_head, etc.)
+  // have their own scoped routes. Bounce them to their own dashboard so
+  // they never land on controls that don't apply to their role.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const role = normalizedWorkspaceRole;
+    if (!role) return;
+    const isPrincipal =
+      role === "PRINCIPAL" ||
+      role === "SUPER_ADMIN" ||
+      role === "HEAD_TEACHER";
+    if (isPrincipal) return;
+    const fallback = adminSubtypeHomePath(role);
+    if (fallback && fallback !== "/app/admin/users") {
+      router.replace(fallback);
+    }
+  }, [normalizedWorkspaceRole, router]);
   // Only the Head Teacher (PRINCIPAL) and platform super admin can invite
   // staff members.  All other roles see only the student/teacher/parent
   // registration interface.

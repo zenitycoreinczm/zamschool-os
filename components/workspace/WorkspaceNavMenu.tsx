@@ -1,8 +1,8 @@
 "use client";
 
 import { ShellNavItem } from "@/components/workspace/ShellNavItem";
-import type { WorkspaceNavSection } from "@/lib/workspace-nav";
-import { ws } from "@/lib/workspace-design";
+import type { WorkspaceNavSection } from "@/lib/workspace/nav";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavMenuProps = {

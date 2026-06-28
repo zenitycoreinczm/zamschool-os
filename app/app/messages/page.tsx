@@ -24,9 +24,9 @@ import {
   messageLabelClass,
   messageSurfaceClass,
 } from "@/components/messages/message-ui";
-import { MESSAGE_BODY_MAX } from "@/lib/message-compose-limits";
-import { dispatchInboxRefresh } from "@/lib/inbox-events";
-import type { MessageSendQuota } from "@/lib/message-quota-types";
+import { MESSAGE_BODY_MAX } from "@/lib/messages/compose-limits";
+import { dispatchInboxRefresh } from "@/lib/inbox/events";
+import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
 const ADMIN_FILTER_OPTIONS = [
   { id: "all" as const, label: "All" },

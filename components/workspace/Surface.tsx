@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 
-import { surface, type SurfaceVariant } from "@/lib/workspace-design";
+import { surface, type SurfaceVariant } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 type SurfaceElement = "div" | "section" | "article";

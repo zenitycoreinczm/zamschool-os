@@ -10,19 +10,19 @@ import { LogOut, Menu, X } from "lucide-react";
 
 import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import { supabase } from "@/lib/supabase";
-import { performWorkspaceSignOut } from "@/lib/workspace-sign-out";
+import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
 import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
 import { MobileDock } from "@/components/workspace/MobileDock";
-import { navItemsToWorkspacePages } from "@/lib/workspace-search";
+import { navItemsToWorkspacePages } from "@/lib/workspace/search";
 import {
   buildParentPortalDock,
   flattenNavSections,
   parentPortalSections,
-} from "@/lib/workspace-nav";
+} from "@/lib/workspace/nav";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { ws } from "@/lib/workspace-design";
+import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 const parentNavItems = flattenNavSections(parentPortalSections);

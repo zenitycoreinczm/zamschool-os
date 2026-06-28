@@ -1,7 +1,7 @@
-import { getDailyUsage } from "./daily-usage-limit";
-import type { MessageSendQuota } from "./message-quota-types";
+import { getDailyUsage } from "../daily-usage-limit";
+import type { MessageSendQuota } from "./quota-types";
 
-export type { MessageSendQuota } from "./message-quota-types";
+export type { MessageSendQuota } from "./quota-types";
 
 export async function getMessageSendQuota(userId: string): Promise<MessageSendQuota> {
   const usage = await getDailyUsage(userId, "messages_send");

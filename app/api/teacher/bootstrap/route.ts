@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { formatLocalDateInputValue } from "@/lib/local-date";
 import { buildAttendanceSessionKey } from "@/lib/live-schema-adapters";
 import { requireTeacherContext } from "@/lib/server-auth";
-import { countUnreadNotificationsForUser } from "@/lib/inbox-queries";
+import { countUnreadNotificationsForUser } from "@/lib/inbox/queries";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,

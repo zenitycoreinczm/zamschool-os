@@ -7,7 +7,7 @@ import {
 } from "@/lib/hot-read-cache";
 
 export { invalidateWorkspaceHotRead };
-import { getUnreadCountsForUser } from "@/lib/inbox-read-cache";
+import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import type { ActorContext } from "@/lib/server-auth-core";
 import { toProtectedAvatarUrl } from "@/lib/avatar-url";

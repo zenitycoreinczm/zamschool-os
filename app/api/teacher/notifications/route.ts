@@ -4,8 +4,8 @@ import {
   loadNotificationsForUser,
   markAllNotificationsReadForUser,
   markNotificationReadForUser,
-} from "@/lib/inbox-queries";
-import { invalidateInboxHotReads } from "@/lib/inbox-read-cache";
+} from "@/lib/inbox/queries";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import { requireTeacherContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 

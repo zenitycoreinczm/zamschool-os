@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
-import { primaryButton } from "@/lib/workspace-design";
+import { primaryButton } from "@/lib/workspace/design";
 
 type AttendanceSummary = {
   totalStudents?: number;

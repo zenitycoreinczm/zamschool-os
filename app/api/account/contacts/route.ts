@@ -7,7 +7,7 @@ import {
 } from "@/lib/platform-api-guard";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { roleDatabaseValues, type KnownRole } from "@/lib/roles";
-import { resolveMessagingIdentityId } from "@/lib/message-participants";
+import { resolveMessagingIdentityId } from "@/lib/messages/participants";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const MESSAGING_ROLES: KnownRole[] = [

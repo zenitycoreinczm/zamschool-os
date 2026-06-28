@@ -6,7 +6,7 @@ import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { GraduationCap, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { secondaryButton } from "@/lib/workspace-design";
+import { secondaryButton } from "@/lib/workspace/design";
 import {
   StatementOfResults,
   type SubjectResult,

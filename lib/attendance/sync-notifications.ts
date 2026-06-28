@@ -1,6 +1,6 @@
-import { buildAttendanceNotificationPayloads } from "@/lib/attendance-notifications";
-import { loadParentProfileIdsByStudentRowId } from "@/lib/attendance-parent-recipients";
-import type { AttendanceStatus } from "@/lib/attendance-status";
+import { buildAttendanceNotificationPayloads } from "./notifications";
+import { loadParentProfileIdsByStudentRowId } from "./parent-recipients";
+import type { AttendanceStatus } from "./status";
 import { enqueueNotifications } from "@/lib/notification-enqueue";
 import { supabaseAdmin } from "@/lib/supabase";
 

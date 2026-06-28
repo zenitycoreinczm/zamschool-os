@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { WorkspaceNavItem } from "@/lib/workspace-nav";
+import type { WorkspaceNavItem } from "@/lib/workspace/nav";
 
 type MobileDockProps = {
   pathname: string;

@@ -4,17 +4,17 @@ import { z } from "zod";
 import {
   buildStudentRosterScope,
   canTeacherAccessLesson,
-} from "@/lib/attendance-access";
-import { syncAttendanceNotifications } from "@/lib/sync-attendance-notifications";
+} from "@/lib/attendance/access";
+import { syncAttendanceNotifications } from "@/lib/attendance/sync-notifications";
 import {
   buildAttendanceWindow,
   summarizeAttendance,
-} from "@/lib/attendance-summary";
-import { buildAttendanceUpsertRows } from "@/lib/attendance-upsert";
+} from "@/lib/attendance/summary";
+import { buildAttendanceUpsertRows } from "@/lib/attendance/upsert";
 import {
   detectAttendanceConflict,
   generateConflictMetadata,
-} from "@/lib/attendance-conflict";
+} from "@/lib/attendance/conflict";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { requireTeacherContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
