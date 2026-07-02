@@ -42,9 +42,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     // Parallel webpack worker causes intermittent manifest ENOENT on Windows.
-    // On Linux/macOS (CI, production) we allow full parallelism.
-    webpackBuildWorker: process.platform !== "win32",
-    ...(process.platform === "win32" ? { cpus: 1 } : {}),
+    // On Linux/macOS (CI, production) we enable it; on Windows we omit the
+    // key entirely so Next.js uses its own default (false) without warning.
+    ...(process.platform !== "win32"
+      ? { webpackBuildWorker: true }
+      : { cpus: 1 }),
   },
   output: "standalone",
   outputFileTracingRoot: process.cwd(),

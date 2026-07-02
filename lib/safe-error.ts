@@ -1,6 +1,11 @@
 /**
  * Safely extract a human-readable error message from any thrown value.
  *
+ * Only `Error` instances (or Error-like plain objects with a `message` string)
+ * are unwrapped. All other values — including raw strings, numbers, null, and
+ * undefined — return the fallback so callers never accidentally expose internal
+ * details to users.
+ *
  * @param err      - The caught error value (unknown).
  * @param fallback - A default message to return when the error has no useful message.
  * @returns A non-empty string describing the error.
@@ -21,9 +26,6 @@ export function safeErrorMessage(
     (err as { message?: string }).message
   ) {
     return (err as { message: string }).message;
-  }
-  if (typeof err === "string" && err) {
-    return err;
   }
   return fallback;
 }

@@ -19,7 +19,10 @@ export function ClientEnvValidator() {
       }
     }
 
-    if (result.warnings.length > 0) {
+    // Only surface optional-var warnings in development — they are expected
+    // to be unset in many deployment configurations and are not actionable
+    // noise in production.
+    if (result.warnings.length > 0 && process.env.NODE_ENV === "development") {
       console.warn(`[ClientEnv] Optional variables not set: ${result.warnings.join(", ")}`);
     }
   }, []);

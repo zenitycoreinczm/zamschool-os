@@ -25,9 +25,11 @@ export function useWorkspaceSummary() {
       const body = await adminApiJson<SummaryPayload | undefined>(
         "/api/workspace/summary",
       );
-      const data = body?.data;
-      setMetrics(Array.isArray(data?.metrics) ? data.metrics : []);
-      setHighlights(Array.isArray(data?.highlights) ? data.highlights : []);
+      // Default to an empty object so .metrics and .highlights accesses below
+      // are always safe even when the API returns undefined or an empty body.
+      const data = body?.data ?? {};
+      setMetrics(Array.isArray(data.metrics) ? data.metrics : []);
+      setHighlights(Array.isArray(data.highlights) ? data.highlights : []);
     } catch (err: unknown) {
       setMetrics([]);
       setHighlights([]);

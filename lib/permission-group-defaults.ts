@@ -136,6 +136,7 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       readUpdate("classes"),
       readOnly("attendance"),
       readOnly("grades"),
+      readOnly("announcements"),
       writable("messages"),
       writable("notifications"),
     ],
