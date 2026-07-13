@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
-export default function DisciplineAdminLoading() {
-  return <WorkspaceLoader label="Loading discipline workspace" compact />;
+export default function RoleLoading() {
+  return <PageSkeleton variant="dashboard" label="Loading discipline workspace" />;
 }

@@ -17,7 +17,8 @@ type TimetableMaps = {
 
 type TimetableArgs = TimetableMaps & {
   lessons: TimetableLesson[];
-  selectedClass: string;
+  selectedClass?: string;
+  selectedTeacher?: string;
 };
 
 type DayDef = {
@@ -73,12 +74,13 @@ export type TimetableBoard = {
 
 export function buildTimetableBoard({
   lessons,
-  selectedClass,
+  selectedClass = "all",
+  selectedTeacher = "all",
   classMap,
   subjectMap,
   teacherMap,
 }: TimetableArgs): TimetableBoard {
-  const filtered = filterLessons(lessons, selectedClass);
+  const filtered = filterLessons(lessons, selectedClass, selectedTeacher);
   const visibleLessonCards = filtered.map((lesson, index) =>
     toLessonCard(lesson, index, classMap, subjectMap, teacherMap)
   );
@@ -112,12 +114,13 @@ export function buildTimetableBoard({
 
 export function buildMobileDaySections({
   lessons,
-  selectedClass,
+  selectedClass = "all",
+  selectedTeacher = "all",
   classMap,
   subjectMap,
   teacherMap,
 }: TimetableArgs) {
-  const filtered = filterLessons(lessons, selectedClass);
+  const filtered = filterLessons(lessons, selectedClass, selectedTeacher);
   return DAYS.map((day) => {
     const dayLessons = filtered
       .filter((lesson) => getLessonDayKey(lesson) === day.key)
@@ -163,11 +166,20 @@ export function toMinutes(hhmm: string) {
   return h * 60 + m;
 }
 
-function filterLessons(lessons: TimetableLesson[], selectedClass: string) {
-  if (selectedClass === "all") {
-    return lessons;
-  }
-  return lessons.filter((lesson) => lesson.class_id === selectedClass);
+function filterLessons(
+  lessons: TimetableLesson[],
+  selectedClass = "all",
+  selectedTeacher = "all",
+) {
+  return lessons.filter((lesson) => {
+    if (selectedClass !== "all" && lesson.class_id !== selectedClass) {
+      return false;
+    }
+    if (selectedTeacher !== "all" && lesson.teacher_id !== selectedTeacher) {
+      return false;
+    }
+    return true;
+  });
 }
 
 function buildSlotWindow(lessons: TimetableLesson[]) {
@@ -178,17 +190,36 @@ function buildSlotWindow(lessons: TimetableLesson[]) {
     };
   }
 
-  let earliestMinutes = toMinutes(DEFAULT_TIMETABLE_START);
-  let latestMinutes = toMinutes(DEFAULT_TIMETABLE_END);
+  // Fit the board to actual lessons — do not force a 07:00–16:00 shell of
+  // empty rows when the day only has a few periods.
+  let earliestMinutes = Infinity;
+  let latestMinutes = -Infinity;
 
   for (const lesson of lessons) {
-    earliestMinutes = Math.min(earliestMinutes, floorToSlotMinutes(toMinutes(lesson.start_time)));
-    latestMinutes = Math.max(latestMinutes, ceilToSlotMinutes(toMinutes(lesson.end_time)));
+    earliestMinutes = Math.min(
+      earliestMinutes,
+      floorToSlotMinutes(toMinutes(lesson.start_time)),
+    );
+    latestMinutes = Math.max(
+      latestMinutes,
+      ceilToSlotMinutes(toMinutes(lesson.end_time)),
+    );
+  }
+
+  // One slot of breathing room so cards are not flush to the edge.
+  earliestMinutes = Math.max(0, earliestMinutes - SLOT_MINUTES);
+  latestMinutes = Math.min(24 * 60, latestMinutes + SLOT_MINUTES);
+
+  if (!Number.isFinite(earliestMinutes) || !Number.isFinite(latestMinutes)) {
+    return {
+      start: DEFAULT_TIMETABLE_START,
+      end: DEFAULT_TIMETABLE_END,
+    };
   }
 
   return {
     start: toHHMM(earliestMinutes),
-    end: toHHMM(latestMinutes),
+    end: toHHMM(Math.max(latestMinutes, earliestMinutes + SLOT_MINUTES)),
   };
 }
 

@@ -90,15 +90,15 @@ export default function FirstLoginPage() {
         );
 
         if (!mustChangePassword) {
-          router.replace(
-            resolveOnboardingPath({
-              role: resolvedRole,
-              emailVerified: Boolean(session.user.email_confirmed_at),
-              hasSchool: true,
-              mustChangePassword: false,
-            }),
-          );
-          router.refresh();
+          // Full navigation avoids a soft RSC race (replace + refresh aborts
+          // the in-flight flight request → "Failed to fetch RSC payload").
+          const destination = resolveOnboardingPath({
+            role: resolvedRole,
+            emailVerified: Boolean(session.user.email_confirmed_at),
+            hasSchool: true,
+            mustChangePassword: false,
+          });
+          window.location.assign(destination);
         }
       } catch (loadError: any) {
         if (!active) return;
@@ -154,15 +154,16 @@ export default function FirstLoginPage() {
 
       const refreshedSession = refreshResult.data.session;
 
-      router.replace(
-        resolveOnboardingPath({
-          role: profileRole,
-          emailVerified: Boolean(refreshedSession?.user?.email_confirmed_at),
-          hasSchool: true,
-          mustChangePassword: false,
-        }),
-      );
-      router.refresh();
+      // Hard navigation after password + session refresh so middleware and
+      // workspace providers boot cleanly. Soft router.replace + router.refresh
+      // races and aborts the RSC payload for the destination (e.g. /app/student).
+      const destination = resolveOnboardingPath({
+        role: profileRole,
+        emailVerified: Boolean(refreshedSession?.user?.email_confirmed_at),
+        hasSchool: true,
+        mustChangePassword: false,
+      });
+      window.location.assign(destination);
     } catch (submitError: any) {
       setError(submitError?.message || "Failed to finish first-login setup");
     } finally {
@@ -174,7 +175,7 @@ export default function FirstLoginPage() {
     return (
       <AuthPageShell>
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm text-slate-600 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
           <span>Preparing first-login setup...</span>
         </div>
       </AuthPageShell>

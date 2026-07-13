@@ -18,6 +18,10 @@ import {
   validateParentLinkProfile,
   validateStudentClassAssignment,
 } from "@/lib/admin-relationship-contract";
+import {
+  fetchTeacherAssignmentReferences,
+  isMissingRelationError,
+} from "@/lib/teacher-assignment-references";
 
 const relationshipMutationSchema = z.discriminatedUnion("action", [
   z.object({
@@ -643,73 +647,6 @@ async function resolveProfileRecord(profileId: string) {
   return data;
 }
 
-async function fetchTeacherAssignmentReferences(
-  schoolId: string,
-  teacherId: string | null | undefined,
-) {
-  const normalizedTeacherId = String(teacherId || "").trim();
-  if (!normalizedTeacherId) {
-    return { teacherProfiles: [], teacherRows: [] };
-  }
-
-  const teacherProfiles: Array<{
-    id: string;
-    school_id: string | null;
-    role: string | null;
-  }> = [];
-  const teacherRows: Array<{
-    id: string;
-    profile_id: string | null;
-    school_id: string | null;
-  }> = [];
-
-  const { data: directProfile, error: directProfileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", normalizedTeacherId)
-    .maybeSingle();
-
-  if (directProfileError) throw directProfileError;
-  if (directProfile) {
-    teacherProfiles.push(directProfile);
-  }
-
-  const teacherRowResult = await supabaseAdmin
-    .from("teachers")
-    .select("id, profile_id, school_id")
-    .eq("school_id", schoolId)
-    .or(`id.eq.${normalizedTeacherId},profile_id.eq.${normalizedTeacherId}`);
-
-  if (
-    teacherRowResult.error &&
-    !isMissingRelationError(teacherRowResult.error)
-  ) {
-    throw teacherRowResult.error;
-  }
-
-  for (const teacherRow of teacherRowResult.data || []) {
-    teacherRows.push(teacherRow);
-
-    if (
-      teacherRow.profile_id &&
-      !teacherProfiles.some((profile) => profile.id === teacherRow.profile_id)
-    ) {
-      const { data: rowProfile, error: rowProfileError } = await supabaseAdmin
-        .from("profiles")
-        .select("id, school_id, role")
-        .eq("id", teacherRow.profile_id)
-        .maybeSingle();
-
-      if (rowProfileError) throw rowProfileError;
-      if (rowProfile) {
-        teacherProfiles.push(rowProfile);
-      }
-    }
-  }
-
-  return { teacherProfiles, teacherRows };
-}
-
 async function ensureParentRecord(
   parentProfileId: string,
   schoolId: string,
@@ -765,17 +702,7 @@ function extractMissingColumn(message?: string) {
   return missing?.[1] || null;
 }
 
-function isMissingRelationError(
-  error: { code?: string | null; message?: string | null } | null | undefined,
-) {
-  const code = String(error?.code || "");
-  const message = String(error?.message || "").toLowerCase();
-  return (
-    code === "42P01" ||
-    code === "PGRST205" ||
-    message.includes("does not exist")
-  );
-}
+
 
 function buildDisplayName(profile: any) {
   return (

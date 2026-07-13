@@ -1,18 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Building2,
-  CheckCircle2,
-  CircleDashed,
-  Loader2,
-  Rocket,
-  ShieldCheck,
-  Sparkles,
-  Users,
-  X,
-} from "lucide-react";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { Loader2, X } from "lucide-react";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import {
   SCHOOL_SETUP_DEPARTMENT_NAMES,
   SCHOOL_SETUP_PERMISSION_GROUP_NAMES,
@@ -44,7 +34,8 @@ export default function SchoolInitializePanel({
   lastResults,
   onInitialize,
 }: SchoolInitializePanelProps) {
-  const { data: workspace } = useWorkspaceContext();
+  const ctx = useWorkspaceContext() || {};
+  const workspace = (ctx as any).data ?? null;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [successPulse, setSuccessPulse] = useState(false);
 
@@ -77,8 +68,7 @@ export default function SchoolInitializePanel({
         <div className="border-b border-slate-100 bg-slate-50 px-5 py-5 md:px-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
-                <Sparkles className="h-3.5 w-3.5" />
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
                 School initialization
               </p>
               <h2 className="mt-2 text-xl font-bold text-slate-950">
@@ -99,9 +89,7 @@ export default function SchoolInitializePanel({
               >
                 {initializing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Rocket className="h-4 w-4" />
-                )}
+                ) : null}
                 {progress.initialized ? "Re-run setup" : "Initialize school"}
               </button>
             </div>
@@ -129,8 +117,6 @@ export default function SchoolInitializePanel({
 
         <div className="grid gap-3 p-5 md:grid-cols-3 md:p-6">
           <SetupMetricCard
-            icon={Building2}
-            tone="sky"
             label="Departments"
             value={loading ? "…" : String(status?.departments ?? 0)}
             target={progress.targets.departments}
@@ -138,8 +124,6 @@ export default function SchoolInitializePanel({
             hint="Organizational units for staff and reporting."
           />
           <SetupMetricCard
-            icon={ShieldCheck}
-            tone="indigo"
             label="Permission groups"
             value={loading ? "…" : String(status?.permissionGroups ?? 0)}
             target={progress.targets.permissionGroups}
@@ -147,8 +131,6 @@ export default function SchoolInitializePanel({
             hint="Role bundles that control who can change what."
           />
           <SetupMetricCard
-            icon={Users}
-            tone="emerald"
             label="School settings"
             value={loading ? "…" : String(status?.settings ?? 0)}
             target={progress.targets.settings}
@@ -242,8 +224,8 @@ export default function SchoolInitializePanel({
                 `${SCHOOL_SETUP_PERMISSION_GROUP_NAMES.length} permission groups for leadership, finance, ICT, HR, and teaching`,
                 `${SCHOOL_SETUP_SETTING_KEYS.length} school settings (grading, portals, notifications, MFA)`,
               ].map((line) => (
-                <li key={line} className="flex items-start gap-2">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                <li key={line} className="flex items-start gap-2 text-sm text-slate-700">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" aria-hidden />
                   <span>{line}</span>
                 </li>
               ))}
@@ -263,7 +245,7 @@ export default function SchoolInitializePanel({
                 disabled={initializing}
                 className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
               >
-                {initializing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                {initializing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Run setup (~1 min)
               </button>
             </div>
@@ -275,49 +257,35 @@ export default function SchoolInitializePanel({
 }
 
 function SetupMetricCard({
-  icon: Icon,
-  tone,
   label,
   value,
   target,
   ready,
   hint,
 }: {
-  icon: typeof Building2;
-  tone: "sky" | "indigo" | "emerald";
   label: string;
   value: string;
   target: number;
   ready: boolean;
   hint: string;
 }) {
-  const toneClass =
-    tone === "indigo"
-      ? "bg-indigo-50 text-indigo-600"
-      : tone === "emerald"
-        ? "bg-emerald-50 text-emerald-600"
-        : "bg-sky-50 text-sky-600";
-
   return (
     <div
       className="rounded-xl border border-slate-100 bg-slate-50/80 p-4"
       title={hint}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${toneClass}`}>
-          <Icon className="h-5 w-5" aria-hidden />
-        </div>
+        <p className="text-xs font-medium text-slate-600">{label}</p>
         {ready ? (
-          <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-label="Ready" />
+          <span className="text-[10px] font-semibold text-emerald-600">Ready</span>
         ) : (
-          <CircleDashed className="h-5 w-5 text-slate-300" aria-label="Pending" />
+          <span className="text-[10px] font-medium text-slate-400">Pending</span>
         )}
       </div>
       <p className="mt-3 text-2xl font-bold tabular-nums text-slate-900">
         {value}
         <span className="text-base font-medium text-slate-400"> / {target}</span>
       </p>
-      <p className="mt-1 text-xs font-medium text-slate-600">{label}</p>
       <p className="mt-1 text-[11px] leading-4 text-slate-500">{hint}</p>
     </div>
   );

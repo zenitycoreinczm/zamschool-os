@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, Shield } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { getDisplayName } from "@/lib/profile-utils";
@@ -74,7 +74,7 @@ export default function AdminAuditPage() {
         className="flex items-center justify-center gap-3 p-10 text-sm text-slate-500"
         as="div"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
         <span>Loading audit logs...</span>
       </Surface>
     );
@@ -122,7 +122,7 @@ export default function AdminAuditPage() {
                   className={cn(
                     "rounded-full px-3 py-2 text-xs font-semibold capitalize transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200",
                     actionFilter === item
-                      ? "bg-sky-500 text-white"
+                      ? "bg-slate-900 text-white"
                       : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
                   )}
                 >
@@ -136,9 +136,7 @@ export default function AdminAuditPage() {
 
       <Surface variant="default" className="rounded-[28px] overflow-hidden">
         <div className="border-b border-workspace-border px-5 py-4 md:px-6">
-          <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            <Shield className="h-5 w-5 text-sky-600" /> Change log
-          </div>
+          <div className="text-lg font-semibold text-slate-900">Change log</div>
           <p className="mt-1 text-sm text-slate-500">Filtered results update immediately as you search or focus a specific action type.</p>
         </div>
 
@@ -163,14 +161,14 @@ export default function AdminAuditPage() {
                   <tr key={row.id}>
                     <td className="px-4 py-3">
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize",
                         row.action === "create"
                           ? "bg-emerald-100 text-emerald-700"
                           : row.action === "delete"
                             ? "bg-rose-100 text-rose-700"
                             : "bg-amber-100 text-amber-700"
                       )}>
-                        <Shield className="h-3 w-3" /> {row.action}
+                        {row.action}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-700">{row.entity}</td>

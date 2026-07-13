@@ -280,24 +280,18 @@ export const panelAccentStyles: Record<
 };
 
 export function moduleToneClass(tone: string) {
+  // Prefer monochrome staff UI; keep named tones soft if still referenced.
   switch (tone) {
     case "emerald":
-      return "bg-emerald-50 text-emerald-600 ring-emerald-100 group-hover:bg-emerald-100";
     case "indigo":
-      return "bg-indigo-50 text-indigo-600 ring-indigo-100 group-hover:bg-indigo-100";
     case "amber":
-      return "bg-amber-50 text-amber-600 ring-amber-100 group-hover:bg-amber-100";
     case "rose":
-      return "bg-rose-50 text-rose-600 ring-rose-100 group-hover:bg-rose-100";
     case "violet":
-      return "bg-violet-50 text-violet-600 ring-violet-100 group-hover:bg-violet-100";
     case "teal":
-      return "bg-teal-50 text-teal-600 ring-teal-100 group-hover:bg-teal-100";
-    case "slate":
-      return "bg-slate-100 text-slate-600 ring-slate-200 group-hover:bg-slate-200";
     case "green":
-      return "bg-green-50 text-green-600 ring-green-100 group-hover:bg-green-100";
+    case "sky":
+    case "slate":
     default:
-      return "bg-sky-50 text-sky-600 ring-sky-100 group-hover:bg-sky-100";
+      return "bg-slate-100 text-slate-600 ring-slate-200 group-hover:bg-slate-200";
   }
 }

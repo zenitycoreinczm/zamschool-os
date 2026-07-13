@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  CalendarCheck,
-  ClipboardCheck,
-  Loader2,
-  RefreshCw,
-  Users,
-} from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Surface } from "@/components/workspace/Surface";
@@ -63,10 +56,10 @@ export default function AdminAttendancePage() {
 
   const cards = useMemo(
     () => [
-      { label: "Students", value: summary?.totalStudents ?? "-", icon: Users },
-      { label: "Present", value: summary?.presentCount ?? summary?.summary?.PRESENT ?? "-", icon: ClipboardCheck },
-      { label: "Absent", value: summary?.absentCount ?? summary?.summary?.ABSENT ?? "-", icon: AlertTriangle },
-      { label: "Rate", value: resolveAttendanceRate(summary), icon: CalendarCheck },
+      { label: "Students", value: summary?.totalStudents ?? "-" },
+      { label: "Present", value: summary?.presentCount ?? summary?.summary?.PRESENT ?? "-" },
+      { label: "Absent", value: summary?.absentCount ?? summary?.summary?.ABSENT ?? "-" },
+      { label: "Rate", value: resolveAttendanceRate(summary) },
     ],
     [summary]
   );
@@ -96,7 +89,7 @@ export default function AdminAttendancePage() {
           aria-live="polite"
           className="grid place-items-center p-10 text-center text-sm text-slate-500"
         >
-          <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-sky-500" />
+          <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-slate-500" />
           Loading attendance summary...
         </Surface>
       ) : (
@@ -104,8 +97,7 @@ export default function AdminAttendancePage() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map((card) => (
               <Surface key={card.label} variant="default" className="p-5" as="div">
-                <card.icon className="h-5 w-5 text-sky-600" />
-                <p className="mt-4 text-2xl font-bold text-slate-900">{card.value}</p>
+                <p className="text-2xl font-bold tabular-nums text-slate-900">{card.value}</p>
                 <p className="mt-1 text-sm text-slate-500">{card.label}</p>
               </Surface>
             ))}

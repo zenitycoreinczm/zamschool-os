@@ -16,7 +16,7 @@ export type DashboardScope = {
   academicLabel: string;
 };
 
-const DASHBOARD_SUMMARY_TTL_MS = 60_000;
+const DASHBOARD_SUMMARY_TTL_MS = 3 * 60_000;
 
 let cachedSummary: { expiresAt: number; data: DashboardSummary } | null = null;
 let summaryPromise: Promise<DashboardSummary> | null = null;

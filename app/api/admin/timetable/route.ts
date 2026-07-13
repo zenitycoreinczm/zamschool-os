@@ -7,8 +7,9 @@ import {
   parseJsonWithSchema,
   safeErrorMessage,
 } from "@/lib/server-guards";
-import { requireAdminContext, requireActorContext } from "@/lib/server-auth";
+import { requireAdminContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
+import { enforceRouteAccess } from "@/lib/route-enforcement";
 import { createAuditLog } from "@/lib/audit-log";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import {
@@ -20,6 +21,10 @@ import {
   buildTeacherProfileLookup,
   hydrateTimetableRows,
 } from "@/lib/admin-route-hydration.mjs";
+import {
+  fetchTeacherAssignmentReferences,
+  isMissingRelationError,
+} from "@/lib/teacher-assignment-references";
 
 const createLessonSchema = z.object({
   title: z.string().optional().nullable(),
@@ -48,6 +53,8 @@ export async function GET(req: Request) {
   try {
     const access = await requireAdminContext(req);
     if (!access.ok) return access.response;
+    const perm = await requireFeatureAccess(access.context, "timetable", "read");
+    if (!perm.ok) return perm.response;
     const { schoolId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
@@ -71,20 +78,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const access = await requireActorContext(
-      {
-        allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
-        requireSchool: true,
-      },
-      req,
-    );
+    const access = await enforceRouteAccess(req, {
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
+      feature: "timetable",
+      featureAction: "create",
+      domain: "academic",
+      domainAction: "create",
+    });
     if (!access.ok) return access.response;
-    const perm = await requireFeatureAccess(
-      access.context,
-      "timetable",
-      "create",
-    );
-    if (!perm.ok) return perm.response;
     const { schoolId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
@@ -157,20 +158,14 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
   try {
-    const access = await requireActorContext(
-      {
-        allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
-        requireSchool: true,
-      },
-      req,
-    );
+    const access = await enforceRouteAccess(req, {
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
+      feature: "timetable",
+      featureAction: "update",
+      domain: "academic",
+      domainAction: "update",
+    });
     if (!access.ok) return access.response;
-    const perm = await requireFeatureAccess(
-      access.context,
-      "timetable",
-      "update",
-    );
-    if (!perm.ok) return perm.response;
     const { schoolId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
@@ -259,20 +254,14 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const access = await requireActorContext(
-      {
-        allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
-        requireSchool: true,
-      },
-      req,
-    );
+    const access = await enforceRouteAccess(req, {
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
+      feature: "timetable",
+      featureAction: "delete",
+      domain: "academic",
+      domainAction: "delete",
+    });
     if (!access.ok) return access.response;
-    const perm = await requireFeatureAccess(
-      access.context,
-      "timetable",
-      "delete",
-    );
-    if (!perm.ok) return perm.response;
     const { schoolId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
@@ -677,81 +666,4 @@ async function fetchLessonsForConflictCheck(input: {
   return data || [];
 }
 
-async function fetchTeacherAssignmentReferences(
-  schoolId: string,
-  teacherId: string | null | undefined,
-) {
-  const normalizedTeacherId = String(teacherId || "").trim();
-  if (!normalizedTeacherId) {
-    return { teacherProfiles: [], teacherRows: [] };
-  }
 
-  const teacherProfiles: Array<{
-    id: string;
-    school_id: string | null;
-    role: string | null;
-  }> = [];
-  const teacherRows: Array<{
-    id: string;
-    profile_id: string | null;
-    school_id: string | null;
-  }> = [];
-
-  const { data: directProfile, error: directProfileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", normalizedTeacherId)
-    .maybeSingle();
-
-  if (directProfileError) throw directProfileError;
-  if (directProfile) {
-    teacherProfiles.push(directProfile);
-  }
-
-  const teacherRowResult = await supabaseAdmin
-    .from("teachers")
-    .select("id, profile_id, school_id")
-    .eq("school_id", schoolId)
-    .or(`id.eq.${normalizedTeacherId},profile_id.eq.${normalizedTeacherId}`);
-
-  if (
-    teacherRowResult.error &&
-    !isMissingRelationError(teacherRowResult.error)
-  ) {
-    throw teacherRowResult.error;
-  }
-
-  for (const teacherRow of teacherRowResult.data || []) {
-    teacherRows.push(teacherRow);
-
-    if (
-      teacherRow.profile_id &&
-      !teacherProfiles.some((profile) => profile.id === teacherRow.profile_id)
-    ) {
-      const { data: rowProfile, error: rowProfileError } = await supabaseAdmin
-        .from("profiles")
-        .select("id, school_id, role")
-        .eq("id", teacherRow.profile_id)
-        .maybeSingle();
-
-      if (rowProfileError) throw rowProfileError;
-      if (rowProfile) {
-        teacherProfiles.push(rowProfile);
-      }
-    }
-  }
-
-  return { teacherProfiles, teacherRows };
-}
-
-function isMissingRelationError(
-  error: { code?: string | null; message?: string | null } | null | undefined,
-) {
-  const code = String(error?.code || "");
-  const message = String(error?.message || "").toLowerCase();
-  return (
-    code === "42P01" ||
-    code === "PGRST205" ||
-    message.includes("does not exist")
-  );
-}

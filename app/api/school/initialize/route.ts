@@ -103,9 +103,9 @@ const DEFAULT_PERMISSION_GROUPS = [
       },
       {
         feature_key: "classes",
-        can_create: true,
+        can_create: false,
         can_read: true,
-        can_update: true,
+        can_update: false,
         can_delete: false,
         scope: "school",
       },
@@ -134,11 +134,19 @@ const DEFAULT_PERMISSION_GROUPS = [
         scope: "school",
       },
       {
+        feature_key: "assignments",
+        can_create: true,
+        can_read: true,
+        can_update: true,
+        can_delete: false,
+        scope: "school",
+      },
+      {
         feature_key: "timetable",
         can_create: true,
         can_read: true,
         can_update: true,
-        can_delete: true,
+        can_delete: false,
         scope: "school",
       },
       {
@@ -409,7 +417,7 @@ const DEFAULT_SETTINGS = [
 export async function POST(req: Request) {
   const access = await requireActorContext(
     {
-      allowedRoles: ["PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["PRINCIPAL", "SUPER_ADMIN"],
       requireSchool: true,
     },
     req,
@@ -437,7 +445,7 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const access = await requireActorContext(
     {
-      allowedRoles: ["PRINCIPAL", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["PRINCIPAL", "SUPER_ADMIN"],
       requireSchool: true,
     },
     req,

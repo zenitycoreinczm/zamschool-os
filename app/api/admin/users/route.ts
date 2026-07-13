@@ -1,85 +1,71 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { supabaseAdmin } from "../../../../lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import {
   applyRateLimit,
   getClientIp,
   parseJsonWithSchema,
   safeErrorMessage,
-} from "../../../../lib/server-guards";
-import { tenantActorRateLimitKey } from "@/lib/tenant-context";
-import { requireAdminContext } from "../../../../lib/server-auth";
-import { requireFeatureAccess } from "../../../../lib/feature-permissions";
+} from "@/lib/server-guards";
+import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
+import { requireAdminContext } from "@/lib/server-auth";
+import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { createAuditLog } from "@/lib/audit-log";
 import {
   buildCreatedAuthUserMetadata,
   buildCreatedProfilePayload,
   generateTemporaryPassword,
-} from "../../../../lib/account-state";
-import {
-  buildUserWritePlan,
-  mergeUserDirectoryRows,
-  normalizeProfileGender,
-  toActiveFlag,
-} from "../../../../lib/admin-user-directory";
-import { loadTeacherAccountDetail } from "../../../../lib/teacher-account-detail";
+} from "@/lib/account-state";
+import { buildUserWritePlan } from "@/lib/admin-user-directory";
 import { toProtectedAvatarUrl } from "@/lib/avatar-url";
 import {
   invalidateActorCaches,
   invalidateActorCachesForProfile,
+  invalidateSchoolDashboardCaches,
 } from "@/lib/invalidate-actor-caches";
-import { invalidateByTag } from "@/lib/enhanced-cache";
-import { roleToStoredValue } from "../../../../lib/roles";
 import {
   blockedRoleCreationMessage,
   canActorCreateSchoolRole,
-} from "../../../../lib/account-create-policy";
-import { sendAccountCredentialsEmail } from "../../../../lib/send-account-credentials";
+} from "@/lib/account-create-policy";
+import { sendAccountCredentialsEmail } from "@/lib/send-account-credentials";
 import { createOrUpdateAuthUserWithTemporaryPassword } from "@/lib/auth-admin-users";
-
-const ROLE_VALUES = ["admin", "teacher", "student", "parent"] as const;
-
-const teacherAssignmentSchema = z.object({
-  classId: z.string().min(1),
-  subjectId: z.string().min(1),
-});
-
-const createUserSchema = z.object({
-  role: z.enum(ROLE_VALUES),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().optional().nullable(),
-  profileExtras: z.record(z.string(), z.any()).optional(),
-  parentExtras: z.record(z.string(), z.any()).optional(),
-  specializationSubjectIds: z.array(z.string().min(1)).optional(),
-  teachingAssignments: z.array(teacherAssignmentSchema).optional(),
-  supervisedClassIds: z.array(z.string().min(1)).optional(),
-});
-
-const updateUserSchema = z.object({
-  profileId: z.string().min(1),
-  role: z.enum(["teacher", "student", "parent"]),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.string().email(),
-  phone: z.string().optional().nullable(),
-  gender: z.string().optional().nullable(),
-  status: z.string().optional().nullable(),
-  admissionNumber: z.string().optional().nullable(),
-  classId: z.string().optional().nullable(),
-  enrollmentDate: z.string().optional().nullable(),
-  employeeId: z.string().optional().nullable(),
-  department: z.string().optional().nullable(),
-  specialization: z.string().optional().nullable(),
-  hireDate: z.string().optional().nullable(),
-  relationType: z.string().optional().nullable(),
-  occupation: z.string().optional().nullable(),
-  specializationSubjectIds: z.array(z.string().min(1)).optional(),
-  teachingAssignments: z.array(teacherAssignmentSchema).optional(),
-  supervisedClassIds: z.array(z.string().min(1)).optional(),
-});
+import {
+  ROLE_VALUES,
+  createUserSchema,
+  updateUserSchema,
+} from "./schemas";
+import {
+  normalizeOptionalZambianPhone,
+  zambianPhoneValidationError,
+} from "@/lib/zambia-localization";
+import {
+  assertClassInSchool,
+  assertTeacherHasClassAssignments,
+  buildParentDetail,
+  buildStudentDetail,
+  buildTeacherDetail,
+  buildDisplayName,
+  conflictResponse,
+  deleteParentRecords,
+  emptyTeacherAssignmentInput,
+  findUserCreateConflict,
+  loadParentRecord,
+  loadPersonProfile,
+  loadStudentRecord,
+  loadTeacherRecord,
+  loadUserDirectory,
+  mapUniqueViolationToUserCreateConflict,
+  normalizeRoleValue,
+  safeInsert,
+  safeInsertIfTableExists,
+  safeUpdateScoped,
+  sanitizeParentExtras,
+  sanitizeProfileExtras,
+  syncTeacherClassSubjectAssignments,
+  syncTeacherSpecializationRows,
+  syncTeacherSupervisedClasses,
+  validateTeacherAssignmentInput,
+} from "./helpers";
 
 export async function GET(req: Request) {
   try {
@@ -203,7 +189,12 @@ export async function POST(req: Request) {
     const email = String(body.email || "")
       .trim()
       .toLowerCase();
-    const phone = body.phone ? String(body.phone).trim() : null;
+    const phoneRaw = body.phone ? String(body.phone).trim() : null;
+    const phoneError = zambianPhoneValidationError(phoneRaw);
+    if (phoneError) {
+      return NextResponse.json({ error: phoneError }, { status: 400 });
+    }
+    const phone = normalizeOptionalZambianPhone(phoneRaw);
     const teacherAssignments =
       role === "teacher"
         ? await validateTeacherAssignmentInput({
@@ -230,7 +221,9 @@ export async function POST(req: Request) {
 
     if (!canActorCreateSchoolRole(access.context.role, role)) {
       return NextResponse.json(
-        { error: blockedRoleCreationMessage(role) },
+        {
+          error: blockedRoleCreationMessage(role, access.context.role),
+        },
         { status: 403 },
       );
     }
@@ -277,6 +270,19 @@ export async function POST(req: Request) {
       }
     }
 
+    // Fail fast on email / student number / employee number collisions so we
+    // do not create an auth user and then 500 on profiles or role-table inserts.
+    const preflightConflict = await findUserCreateConflict({
+      email,
+      role,
+      admissionNumber: profileExtras.admission_number,
+      classNumber: profileExtras.class_number ?? null,
+      classId: profileExtras.class_id ?? null,
+      schoolId,
+      employeeId: profileExtras.employee_id,
+    });
+    if (preflightConflict) return conflictResponse(preflightConflict);
+
     const tempPassword = generateTemporaryPassword();
 
     const authResult = await createOrUpdateAuthUserWithTemporaryPassword({
@@ -291,6 +297,25 @@ export async function POST(req: Request) {
 
     const authUserId = authResult.user.id;
 
+    // Auth user exists but profile may already be linked (retry after a partial
+    // failure, or email already used). Never treat that as a blank create.
+    if (!authResult.created) {
+      const { data: existingProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("id, email, role")
+        .eq("id", authUserId)
+        .maybeSingle();
+      if (existingProfile?.id) {
+        return conflictResponse({
+          status: 409,
+          code: "duplicate_profile",
+          field: "email",
+          error:
+            "A user with this email already exists. Open them in the directory to edit or reset their temporary password.",
+        });
+      }
+    }
+
     const profilePayload = buildCreatedProfilePayload({
       authUserId,
       schoolId,
@@ -302,72 +327,105 @@ export async function POST(req: Request) {
       profileExtras,
     });
 
+    let profileCreated = false;
     try {
       await safeInsert("profiles", profilePayload);
+      profileCreated = true;
       await invalidateActorCaches(authUserId);
     } catch (profileErr) {
       if (authResult.created) {
-        await supabaseAdmin.auth.admin.deleteUser(authUserId);
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(authUserId);
+        } catch {
+          // best-effort cleanup
+        }
       }
+      const conflict = mapUniqueViolationToUserCreateConflict(profileErr);
+      if (conflict) return conflictResponse(conflict);
       throw profileErr;
     }
 
-    if (role === "parent") {
-      const parentPayload: Record<string, any> = {
-        profile_id: authUserId,
-        school_id: schoolId,
-        phone,
-        ...parentExtras,
-      };
-      await safeInsertIfTableExists("parents", parentPayload);
-    }
+    const rollbackCreatedUser = async () => {
+      try {
+        if (profileCreated) {
+          await supabaseAdmin.from("profiles").delete().eq("id", authUserId);
+        }
+      } catch {
+        // best-effort cleanup
+      }
+      try {
+        if (authResult.created) {
+          await supabaseAdmin.auth.admin.deleteUser(authUserId);
+        }
+      } catch {
+        // best-effort cleanup
+      }
+    };
 
-    if (role === "teacher") {
-      await safeInsertIfTableExists("teachers", {
-        profile_id: authUserId,
-        school_id: schoolId,
-        employee_number: profileExtras.employee_id || null,
-        employee_id: profileExtras.employee_id || null,
-        department: profileExtras.department || null,
-        specialization:
-          teacherAssignments.specializationSummary ||
-          profileExtras.specialization ||
-          null,
-        hire_date: profileExtras.hire_date || null,
-        phone,
-        is_active: profileExtras.is_active ?? true,
-      });
-      await syncTeacherSpecializationRows({
-        schoolId,
-        teacherProfileId: authUserId,
-        subjectIds: teacherAssignments.specializationSubjectIds,
-      });
-      await syncTeacherClassSubjectAssignments({
-        schoolId,
-        teacherProfileId: authUserId,
-        teachingAssignments: teacherAssignments.teachingAssignments,
-      });
-      await syncTeacherSupervisedClasses({
-        schoolId,
-        teacherProfileId: authUserId,
-        supervisedClassIds: teacherAssignments.supervisedClassIds,
-      });
-    }
+    try {
+      if (role === "parent") {
+        const parentPayload: Record<string, any> = {
+          profile_id: authUserId,
+          school_id: schoolId,
+          phone,
+          ...parentExtras,
+        };
+        await safeInsertIfTableExists("parents", parentPayload);
+      }
 
-    if (role === "student") {
-      const admissionStatus = profileExtras.class_id
-        ? "class_assigned"
-        : "registered";
-      await safeInsertIfTableExists("students", {
-        profile_id: authUserId,
-        school_id: schoolId,
-        admission_number: profileExtras.admission_number || null,
-        student_number: profileExtras.admission_number || null,
-        class_id: profileExtras.class_id || null,
-        enrollment_date: profileExtras.enrollment_date || null,
-        admission_status: admissionStatus,
-        is_active: profileExtras.is_active ?? true,
-      });
+      if (role === "teacher") {
+        await safeInsertIfTableExists("teachers", {
+          profile_id: authUserId,
+          school_id: schoolId,
+          employee_number: profileExtras.employee_id || null,
+          employee_id: profileExtras.employee_id || null,
+          department: profileExtras.department || null,
+          specialization:
+            teacherAssignments.specializationSummary ||
+            profileExtras.specialization ||
+            null,
+          hire_date: profileExtras.hire_date || null,
+          phone,
+          is_active: profileExtras.is_active ?? true,
+        });
+        await syncTeacherSpecializationRows({
+          schoolId,
+          teacherProfileId: authUserId,
+          subjectIds: teacherAssignments.specializationSubjectIds,
+        });
+        await syncTeacherClassSubjectAssignments({
+          schoolId,
+          teacherProfileId: authUserId,
+          teachingAssignments: teacherAssignments.teachingAssignments,
+        });
+        await syncTeacherSupervisedClasses({
+          schoolId,
+          teacherProfileId: authUserId,
+          supervisedClassIds: teacherAssignments.supervisedClassIds,
+        });
+      }
+
+      if (role === "student") {
+        const admissionStatus = profileExtras.class_id
+          ? "class_assigned"
+          : "registered";
+        await safeInsertIfTableExists("students", {
+          profile_id: authUserId,
+          school_id: schoolId,
+          admission_number: profileExtras.admission_number || null,
+          student_number: profileExtras.admission_number || null,
+          class_number: profileExtras.class_number ?? null,
+          class_id: profileExtras.class_id || null,
+          enrollment_date: profileExtras.enrollment_date || null,
+          admission_status: admissionStatus,
+          is_active: profileExtras.is_active ?? true,
+        });
+      }
+    } catch (roleErr) {
+      await rollbackCreatedUser();
+      const conflict = mapUniqueViolationToUserCreateConflict(roleErr);
+      if (conflict) return conflictResponse(conflict);
+      throw roleErr;
     }
 
     const emailResult = await sendAccountCredentialsEmail({
@@ -386,8 +444,7 @@ export async function POST(req: Request) {
       newData: { ...profilePayload, temporaryPassword: undefined },
       ipAddress: ip,
     });
-    await invalidateByTag("dashboard");
-    await invalidateByTag("students");
+    await invalidateSchoolDashboardCaches(schoolId);
 
     return NextResponse.json({
       success: true,
@@ -397,6 +454,11 @@ export async function POST(req: Request) {
       credentialsEmailSent: emailResult.success,
     });
   } catch (error: unknown) {
+    const conflict = mapUniqueViolationToUserCreateConflict(error);
+    if (conflict) {
+      console.warn("Admin users POST conflict", conflict.code, error);
+      return conflictResponse(conflict);
+    }
     console.error("Admin users POST error", error);
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to create user") },
@@ -442,6 +504,11 @@ export async function PUT(req: Request) {
 
     const body = await parseJsonWithSchema(req, updateUserSchema);
     const role = body.role;
+    const phoneError = zambianPhoneValidationError(body.phone);
+    if (phoneError) {
+      return NextResponse.json({ error: phoneError }, { status: 400 });
+    }
+    const normalizedPhone = normalizeOptionalZambianPhone(body.phone);
     const profile = await loadPersonProfile(body.profileId, schoolId);
     if (!profile) {
       return NextResponse.json(
@@ -510,10 +577,11 @@ export async function PUT(req: Request) {
         first_name: body.firstName,
         last_name: body.lastName,
         email: body.email,
-        phone: body.phone || "",
+        phone: normalizedPhone || "",
         gender: body.gender || "",
         status: body.status || "ACTIVE",
         admission_number: body.admissionNumber || "",
+        class_number: body.classNumber ?? body.admissionNumber ?? "",
         class_id: body.classId || "",
         enrollment_date: body.enrollmentDate || "",
         employee_id: body.employeeId || "",
@@ -611,8 +679,7 @@ export async function PUT(req: Request) {
       newData: writePlan.profile,
       ipAddress: ip,
     });
-    await invalidateByTag("dashboard");
-    await invalidateByTag("students");
+    await invalidateSchoolDashboardCaches(schoolId);
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
@@ -723,8 +790,7 @@ export async function DELETE(req: Request) {
       },
       ipAddress: getClientIp(req),
     });
-    await invalidateByTag("dashboard");
-    await invalidateByTag("students");
+    await invalidateSchoolDashboardCaches(schoolId);
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
@@ -736,495 +802,3 @@ export async function DELETE(req: Request) {
   }
 }
 
-async function loadUserDirectory(schoolId: string) {
-  const [profilesRes, studentsRes, teachersRes, parentsRes, classesRes] =
-    await Promise.all([
-      supabaseAdmin
-        .from("profiles")
-        .select("*")
-        .eq("school_id", schoolId)
-        .in("role", [
-          "student",
-          "STUDENT",
-          "teacher",
-          "TEACHER",
-          "parent",
-          "PARENT",
-        ])
-        .order("created_at", { ascending: false }),
-      supabaseAdmin.from("students").select("*").eq("school_id", schoolId),
-      supabaseAdmin.from("teachers").select("*").eq("school_id", schoolId),
-      supabaseAdmin.from("parents").select("*").eq("school_id", schoolId),
-      supabaseAdmin
-        .from("classes")
-        .select("id, name")
-        .eq("school_id", schoolId),
-    ]);
-
-  if (profilesRes.error) throw profilesRes.error;
-  if (studentsRes.error) throw studentsRes.error;
-  if (teachersRes.error) throw teachersRes.error;
-  if (parentsRes.error && !isMissingRelationError(parentsRes.error))
-    throw parentsRes.error;
-  if (classesRes.error && !isMissingRelationError(classesRes.error))
-    throw classesRes.error;
-
-  const classNameById = Object.fromEntries(
-    (classesRes.data || []).flatMap((row: any) => {
-      const id = String(row?.id || "");
-      const name = String(row?.name || "").trim();
-      return id && name ? [[id, name]] : [];
-    }),
-  );
-
-  return {
-    ...mergeUserDirectoryRows({
-      profiles: profilesRes.data || [],
-      students: studentsRes.data || [],
-      teachers: teachersRes.data || [],
-      parents: parentsRes.data || [],
-      classNameById,
-    }),
-  };
-}
-
-async function loadPersonProfile(profileId: string, schoolId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("profiles")
-    .select(
-      "id, school_id, role, first_name, last_name, email, avatar_url, is_active, created_at, updated_at",
-    )
-    .eq("id", profileId)
-    .eq("school_id", schoolId)
-    .maybeSingle();
-
-  if (error) return null;
-  return data;
-}
-
-async function loadStudentRecord(profileId: string, schoolId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("students")
-    .select(
-      "id, profile_id, admission_number, class_id, enrollment_date, admission_status, is_active",
-    )
-    .eq("school_id", schoolId)
-    .or(`profile_id.eq.${profileId},id.eq.${profileId}`)
-    .limit(1);
-
-  if (error) return null;
-  return Array.isArray(data) ? data[0] || null : data;
-}
-
-async function loadTeacherRecord(profileId: string, schoolId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("teachers")
-    .select(
-      "id, profile_id, employee_id, employee_number, department, specialization, hire_date, is_active",
-    )
-    .eq("school_id", schoolId)
-    .or(`profile_id.eq.${profileId},id.eq.${profileId}`)
-    .limit(1);
-
-  if (error) return null;
-  return Array.isArray(data) ? data[0] || null : data;
-}
-
-async function loadParentRecord(profileId: string, schoolId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("parents")
-    .select("id, profile_id, phone, relation_type, occupation")
-    .eq("school_id", schoolId)
-    .eq("profile_id", profileId)
-    .limit(1);
-
-  if (error) return null;
-  return Array.isArray(data) ? data[0] || null : data;
-}
-
-async function buildStudentDetail(baseProfile: any, schoolId: string) {
-  const record = await loadStudentRecord(baseProfile.profileId, schoolId);
-  return {
-    ...baseProfile,
-    admissionNumber: record?.admission_number || null,
-    classId: record?.class_id || null,
-    enrollmentDate: record?.enrollment_date || null,
-    admissionStatus: record?.admission_status || "registered",
-    isActive: record?.is_active ?? baseProfile.status === "ACTIVE",
-  };
-}
-
-async function buildTeacherDetail(baseProfile: any, schoolId: string) {
-  try {
-    const detail = await loadTeacherAccountDetail({
-      schoolId,
-      profileId: baseProfile.profileId,
-      baseProfile,
-    });
-    return detail;
-  } catch {
-    const record = await loadTeacherRecord(baseProfile.profileId, schoolId);
-    return {
-      ...baseProfile,
-      employeeId: record?.employee_id || record?.employee_number || null,
-      department: record?.department || null,
-      specialization: record?.specialization || null,
-      hireDate: record?.hire_date || null,
-      isActive: record?.is_active ?? baseProfile.status === "ACTIVE",
-    };
-  }
-}
-
-async function buildParentDetail(baseProfile: any, schoolId: string) {
-  const record = await loadParentRecord(baseProfile.profileId, schoolId);
-  return {
-    ...baseProfile,
-    phone: record?.phone || baseProfile.email || null,
-    relationType: record?.relation_type || null,
-    occupation: record?.occupation || null,
-  };
-}
-
-async function deleteParentRecords(profileId: string, schoolId: string) {
-  // Find the parent record(s) for this profile so we can scope link deletion
-  // to only this parent — deleting by school_id alone wipes every parent's
-  // student links in the school.
-  const { data: parentRows } = await supabaseAdmin
-    .from("parents")
-    .select("id")
-    .eq("school_id", schoolId)
-    .eq("profile_id", profileId);
-
-  const parentIds = (parentRows || [])
-    .map((row: any) => String(row?.id || ""))
-    .filter(Boolean);
-
-  if (parentIds.length > 0) {
-    await supabaseAdmin
-      .from("parent_students")
-      .delete()
-      .eq("school_id", schoolId)
-      .in("parent_id", parentIds);
-  }
-
-  await supabaseAdmin
-    .from("parents")
-    .delete()
-    .eq("school_id", schoolId)
-    .eq("profile_id", profileId);
-}
-
-async function syncTeacherSpecializationRows(input: {
-  schoolId: string;
-  teacherProfileId: string;
-  subjectIds?: string[];
-}) {
-  if (!input.subjectIds) return;
-
-  await supabaseAdmin
-    .from("teacher_subject_specializations")
-    .delete()
-    .eq("school_id", input.schoolId)
-    .eq("teacher_profile_id", input.teacherProfileId);
-
-  for (const subjectId of input.subjectIds) {
-    const { error } = await supabaseAdmin
-      .from("teacher_subject_specializations")
-      .insert({
-        school_id: input.schoolId,
-        teacher_profile_id: input.teacherProfileId,
-        subject_id: subjectId,
-      });
-    if (error && !isMissingRelationError(error))
-      console.error("sync specialization error", error);
-  }
-}
-
-async function syncTeacherClassSubjectAssignments(input: {
-  schoolId: string;
-  teacherProfileId: string;
-  teachingAssignments?: { classId: string; subjectId: string }[];
-}) {
-  if (!input.teachingAssignments) return;
-
-  await supabaseAdmin
-    .from("teacher_class_subject_assignments")
-    .delete()
-    .eq("school_id", input.schoolId)
-    .eq("teacher_profile_id", input.teacherProfileId);
-
-  for (const assignment of input.teachingAssignments) {
-    const { error } = await supabaseAdmin
-      .from("teacher_class_subject_assignments")
-      .insert({
-        school_id: input.schoolId,
-        teacher_profile_id: input.teacherProfileId,
-        class_id: assignment.classId,
-        subject_id: assignment.subjectId,
-      });
-    if (error && !isMissingRelationError(error))
-      console.error("sync assignment error", error);
-  }
-}
-
-async function syncTeacherSupervisedClasses(input: {
-  schoolId: string;
-  teacherProfileId: string;
-  supervisedClassIds?: string[];
-}) {
-  if (!input.supervisedClassIds) return;
-
-  for (const classId of input.supervisedClassIds) {
-    await supabaseAdmin
-      .from("classes")
-      .update({ supervisor_id: input.teacherProfileId })
-      .eq("school_id", input.schoolId)
-      .eq("id", classId);
-  }
-}
-
-async function validateTeacherAssignmentInput(input: {
-  schoolId: string;
-  specializationSubjectIds?: string[];
-  teachingAssignments?: { classId: string; subjectId: string }[];
-  supervisedClassIds?: string[];
-}) {
-  const specializationSubjectIds = Array.isArray(input.specializationSubjectIds)
-    ? input.specializationSubjectIds.filter(Boolean)
-    : [];
-  const teachingAssignments = Array.isArray(input.teachingAssignments)
-    ? input.teachingAssignments.filter((a) => a.classId && a.subjectId)
-    : [];
-  const supervisedClassIds = Array.isArray(input.supervisedClassIds)
-    ? input.supervisedClassIds.filter(Boolean)
-    : [];
-
-  for (const classId of [
-    ...teachingAssignments.map((row) => row.classId),
-    ...supervisedClassIds,
-  ]) {
-    await assertClassInSchool(input.schoolId, classId);
-  }
-
-  const specializationSummary =
-    specializationSubjectIds.length > 0
-      ? await resolveSubjectNames(input.schoolId, specializationSubjectIds)
-      : null;
-
-  return {
-    specializationSubjectIds,
-    teachingAssignments,
-    supervisedClassIds,
-    specializationSummary,
-  };
-}
-
-function assertTeacherHasClassAssignments(input: {
-  teachingAssignments: { classId: string; subjectId: string }[];
-  supervisedClassIds: string[];
-}) {
-  if (
-    input.teachingAssignments.length > 0 ||
-    input.supervisedClassIds.length > 0
-  ) {
-    return null;
-  }
-  return NextResponse.json(
-    {
-      error:
-        "Assign this teacher to at least one class — add a teaching assignment (class + subject) or a class teacher responsibility.",
-    },
-    { status: 400 },
-  );
-}
-
-async function assertClassInSchool(schoolId: string, classId: string) {
-  const normalized = String(classId || "").trim();
-  if (!normalized) {
-    throw new Error("Class is required.");
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("classes")
-    .select("id")
-    .eq("school_id", schoolId)
-    .eq("id", normalized)
-    .maybeSingle();
-
-  if (error) {
-    console.error("assertClassInSchool", error);
-    throw new Error("Failed to validate class assignment.");
-  }
-
-  if (!data?.id) {
-    throw new Error(
-      "Selected class was not found in this school. Choose a class from the list or create one first.",
-    );
-  }
-}
-
-function emptyTeacherAssignmentInput() {
-  return {
-    specializationSubjectIds: [],
-    teachingAssignments: [],
-    supervisedClassIds: [],
-    specializationSummary: null,
-  };
-}
-
-async function resolveSubjectNames(
-  schoolId: string,
-  subjectIds: string[],
-): Promise<string | null> {
-  if (subjectIds.length === 0) return null;
-
-  const { data, error } = await supabaseAdmin
-    .from("subjects")
-    .select("name")
-    .eq("school_id", schoolId)
-    .in("id", subjectIds);
-
-  if (error || !data) return null;
-
-  const names = data
-    .map((s: any) => String(s.name || "").trim())
-    .filter(Boolean);
-  return names.length > 0 ? names.join(", ") : null;
-}
-
-function sanitizeProfileExtras(role: string, extras: Record<string, any>) {
-  const cleaned: Record<string, any> = {};
-  if (extras.employee_id)
-    cleaned.employee_id = String(extras.employee_id).trim();
-  if (extras.department) cleaned.department = String(extras.department).trim();
-  if (extras.specialization)
-    cleaned.specialization = String(extras.specialization).trim();
-  if (extras.hire_date) cleaned.hire_date = String(extras.hire_date).trim();
-  if (extras.admission_number)
-    cleaned.admission_number = String(extras.admission_number).trim();
-  if (extras.class_id) cleaned.class_id = String(extras.class_id).trim();
-  if (extras.enrollment_date)
-    cleaned.enrollment_date = String(extras.enrollment_date).trim();
-  if (typeof extras.is_active === "boolean")
-    cleaned.is_active = extras.is_active;
-  return cleaned;
-}
-
-function sanitizeParentExtras(extras?: Record<string, any>) {
-  if (!extras) return {};
-  const cleaned: Record<string, any> = {};
-  if (extras.relation_type)
-    cleaned.relation_type = String(extras.relation_type).trim();
-  if (extras.occupation) cleaned.occupation = String(extras.occupation).trim();
-  return cleaned;
-}
-
-function buildDisplayName(profile: any): string {
-  const first = String(profile?.first_name || "").trim();
-  const last = String(profile?.last_name || "").trim();
-  if (first || last) return `${first} ${last}`.trim();
-  const name = String(profile?.name || "").trim();
-  if (name) return name;
-  const email = String(profile?.email || "").trim();
-  if (email) return email.split("@")[0];
-  return "User";
-}
-
-function normalizeRoleValue(value: any): string {
-  const stored = roleToStoredValue(value);
-  if (stored) return stored;
-
-  const raw = String(value || "")
-    .trim()
-    .toLowerCase();
-  const aliases: Record<string, string> = {
-    instructor: "teacher",
-    pupil: "student",
-    guardian: "parent",
-  };
-  return aliases[raw] || raw;
-}
-
-function isMissingRelationError(error: any): boolean {
-  const message = String(error?.message || "");
-  return (
-    error?.code === "42P01" ||
-    error?.code === "PGRST205" ||
-    message.includes("does not exist")
-  );
-}
-
-async function safeInsert(table: string, payload: Record<string, any>) {
-  const MAX_RETRIES = 5;
-  let currentPayload = { ...payload };
-
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { error } = await supabaseAdmin.from(table).insert(currentPayload);
-    if (!error) return;
-
-    const message = String(error?.message || "");
-    const code = String(error?.code || "");
-    if (code === "42703" || message.includes("does not exist")) {
-      const match = message.match(
-        /column\s+(?:[a-z_]+\.)?([a-zA-Z0-9_]+)\s+does not exist/i,
-      );
-      if (match && match[1] && match[1] in currentPayload) {
-        delete currentPayload[match[1]];
-        continue;
-      }
-    }
-    throw error;
-  }
-}
-
-async function safeInsertIfTableExists(
-  table: string,
-  payload: Record<string, any>,
-) {
-  try {
-    await safeInsert(table, payload);
-  } catch (error: any) {
-    const message = String(error?.message || "");
-    const code = String(error?.code || "");
-    if (
-      code === "42P01" ||
-      code === "PGRST205" ||
-      message.includes("does not exist")
-    ) {
-      return;
-    }
-    throw error;
-  }
-}
-
-async function safeUpdateScoped(
-  table: string,
-  recordId: string,
-  schoolId: string,
-  payload: Record<string, any>,
-) {
-  const MAX_RETRIES = 5;
-  let currentPayload = { ...payload };
-
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const { error } = await supabaseAdmin
-      .from(table)
-      .update(currentPayload)
-      .eq("id", recordId)
-      .eq("school_id", schoolId);
-    if (!error) return;
-
-    const message = String(error?.message || "");
-    const code = String(error?.code || "");
-    if (code === "42703" || message.includes("does not exist")) {
-      const match = message.match(
-        /column\s+(?:[a-z_]+\.)?([a-zA-Z0-9_]+)\s+does not exist/i,
-      );
-      if (match && match[1] && match[1] in currentPayload) {
-        delete currentPayload[match[1]];
-        continue;
-      }
-    }
-    throw error;
-  }
-}

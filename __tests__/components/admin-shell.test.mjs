@@ -25,21 +25,20 @@ test("admin shell wires unread message and notification counts into the header s
   const source = await readFile(shellPath, "utf8");
   const headerSource = await readFile(headerPath, "utf8");
 
-  assert.match(source, /unreadSummary/);
-  assert.match(source, /formatUnreadBadgeCount/);
+  assert.match(source, /useNavBadges/);
+  assert.match(source, /navBadgeCounts/);
+  assert.match(source, /badgeByHref/);
   assert.match(headerSource, /WorkspaceInboxCenter/);
-  assert.match(source, /initialUnread=\{unreadSummary\}/);
-  assert.match(source, /onUnreadChangeAction=\{handleUnreadChange\}/);
 });
 
 test("admin shell wires the header shortcuts and overflow menu to real actions", async () => {
   const source = await readFile(shellPath, "utf8");
   const headerSource = await readFile(headerPath, "utf8");
 
-  assert.match(source, /messagesHref="\/app\/messages"/);
-  assert.match(source, /notificationsHref="\/app\/notifications"/);
+  assert.match(source, /MobileDock/);
+  assert.match(source, /badgeByHref/);
   assert.match(headerSource, /setOverflowOpen/);
-  assert.match(source, /Sign Out/);
+  assert.match(source, /Sign out/);
 });
 
 test("admin shell targets the mounted admin and shared workspace route set", async () => {
@@ -57,7 +56,7 @@ test("admin shell targets the mounted admin and shared workspace route set", asy
 
   assert.match(navSource, /href: "\/app\/parent", label: "Dashboard"/);
 
-  assert.match(shellSource, /messagesHref="\/app\/messages"/);
+  assert.match(shellSource, /MobileDock/);
   assert.match(
     shellSource,
     /const role = normalizeWorkspaceRole\(workspace\?\.workspaceRole\);/,

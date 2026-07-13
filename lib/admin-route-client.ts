@@ -1,20 +1,11 @@
+import {
+  captureCsrfFromResponse,
+  ensureCsrfTokenAvailable,
+  isCsrfFailureStatus,
+  readCsrfToken,
+  rememberCsrfToken,
+} from "@/lib/csrf-client";
 import { fetchWithOfflineSupport } from "./offline-fetch.ts";
-
-function getCsrfTokenFromCookie(): string | null {
-  if (typeof document === "undefined") return null;
-  const raw = document.cookie;
-  if (!raw) return null;
-  for (const pair of raw.split(";")) {
-    const idx = pair.indexOf("=");
-    if (idx === -1) continue;
-    const name = pair.substring(0, idx).trim();
-    if (name === "csrf-token") {
-      const value = pair.substring(idx + 1).trim();
-      return value || null;
-    }
-  }
-  return null;
-}
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -57,21 +48,50 @@ export async function adminRequest(
     }
   }
 
-  // Inject CSRF token for mutating requests (POST/PUT/PATCH/DELETE)
   const method = String(init.method || "GET").toUpperCase();
   if (MUTATING_METHODS.has(method)) {
-    const csrf = getCsrfTokenFromCookie();
-    if (csrf) {
-      headers.set("X-CSRF-Token", csrf);
-    }
+    const csrf = await ensureCsrfTokenAvailable();
+    headers.set("X-CSRF-Token", csrf);
+    rememberCsrfToken(csrf);
   }
 
-  const response = await fetchWithOfflineSupport(url.toString(), {
+  let response = await fetchWithOfflineSupport(url.toString(), {
     ...init,
     headers,
     cache: init.cache ?? "no-store",
     credentials: init.credentials ?? "include",
   });
+  captureCsrfFromResponse(response);
+
+  // One retry after CSRF bootstrap if the cookie was HttpOnly/stale.
+  if (MUTATING_METHODS.has(method) && response.status === 403) {
+    const clone = response.clone();
+    let body: unknown = null;
+    try {
+      body = await clone.json();
+    } catch {
+      body = null;
+    }
+    if (isCsrfFailureStatus(response.status, body)) {
+      try {
+        await ensureCsrfTokenAvailable();
+        const retryHeaders = new Headers(headers);
+        const csrf = readCsrfToken();
+        if (csrf) {
+          retryHeaders.set("X-CSRF-Token", csrf);
+          response = await fetchWithOfflineSupport(url.toString(), {
+            ...init,
+            headers: retryHeaders,
+            cache: "no-store",
+            credentials: "include",
+          });
+          captureCsrfFromResponse(response);
+        }
+      } catch {
+        // fall through to parseAdminRouteResponse error
+      }
+    }
+  }
 
   return parseAdminRouteResponse(response);
 }

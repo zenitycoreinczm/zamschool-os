@@ -69,7 +69,9 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
   authUserId?: string | null;
 }): Promise<{ user: SupabaseAuthUser; created: boolean }> {
   const email = input.email.trim().toLowerCase();
+  const temporaryPassword = String(input.temporaryPassword || "");
   if (!email) throw new Error("Auth user email is required");
+  if (!temporaryPassword) throw new Error("Temporary password is required");
 
   const existingById = input.authUserId
     ? await supabaseAdmin.auth.admin.getUserById(input.authUserId)
@@ -84,7 +86,10 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
       .trim()
       .toLowerCase();
     const updatePayload: Record<string, unknown> = {
-      password: input.temporaryPassword,
+      password: temporaryPassword,
+      // Always confirm so staff can sign in immediately with the temp password.
+      email_confirm: true,
+      ban_duration: "none",
       user_metadata: {
         ...(existingUser.user_metadata || {}),
         ...input.userMetadata,
@@ -92,7 +97,6 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
     };
     if (currentEmail && currentEmail !== email) {
       updatePayload.email = email;
-      updatePayload.email_confirm = true;
     }
     const updateAuth = await supabaseAdmin.auth.admin.updateUserById(
       existingUser.id,
@@ -105,13 +109,15 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
       );
     }
 
+    await assertTemporaryPasswordWorks(email, temporaryPassword);
+
     return { user: updateAuth.data.user as SupabaseAuthUser, created: false };
   }
 
   const createAuth = await supabaseAdmin.auth.admin.createUser({
     ...(input.authUserId ? { id: input.authUserId } : {}),
     email,
-    password: input.temporaryPassword,
+    password: temporaryPassword,
     email_confirm: true,
     user_metadata: input.userMetadata,
   });
@@ -120,5 +126,85 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
     throw createAuth.error || new Error("Failed to create auth user");
   }
 
-  return { user: createAuth.data.user as SupabaseAuthUser, created: true };
+  // Some projects race email-confirm / password apply — force a confirmed
+  // password write, then prove sign-in works before we show the password in UI.
+  const ensure = await supabaseAdmin.auth.admin.updateUserById(
+    createAuth.data.user.id,
+    {
+      password: temporaryPassword,
+      email_confirm: true,
+      ban_duration: "none",
+    },
+  );
+  if (ensure.error) {
+    throw ensure.error;
+  }
+
+  await assertTemporaryPasswordWorks(email, temporaryPassword);
+
+  return {
+    user: (ensure.data.user || createAuth.data.user) as SupabaseAuthUser,
+    created: true,
+  };
+}
+
+/**
+ * Prove the temporary password is actually accepted by Supabase Auth before
+ * we return it to the inviter. Retries once with a hard password rewrite.
+ */
+async function assertTemporaryPasswordWorks(
+  email: string,
+  temporaryPassword: string,
+): Promise<void> {
+  const { createClient } = await import("@supabase/supabase-js");
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    "";
+  if (!supabaseUrl || !anonKey) {
+    // Cannot verify without anon client — rely on admin write alone.
+    return;
+  }
+
+  const probe = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const first = await probe.auth.signInWithPassword({
+    email,
+    password: temporaryPassword,
+  });
+  if (!first.error && first.data.user) {
+    await probe.auth.signOut().catch(() => {});
+    return;
+  }
+
+  // One repair attempt: rewrite password + confirm email.
+  const user = await findAuthUserByNormalizedEmail(email);
+  if (!user?.id) {
+    throw first.error || new Error("Auth user missing after create");
+  }
+
+  const repair = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+    password: temporaryPassword,
+    email_confirm: true,
+    ban_duration: "none",
+  });
+  if (repair.error) throw repair.error;
+
+  const second = await probe.auth.signInWithPassword({
+    email,
+    password: temporaryPassword,
+  });
+  if (second.error || !second.data.user) {
+    throw (
+      second.error ||
+      new Error(
+        "Temporary password was saved but sign-in still failed. Try reset password from the staff list.",
+      )
+    );
+  }
+  await probe.auth.signOut().catch(() => {});
 }

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const access = await requireActorContext(
       {
-        allowedRoles: ["ADMIN", "TEACHER", "STUDENT", "PARENT", "PAYMENTS"],
+        allowedRoles: ["TEACHER", "STUDENT", "PARENT", "PAYMENTS"],
         requireSchool: true,
       },
       req,

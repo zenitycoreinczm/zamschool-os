@@ -1,22 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, Megaphone, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { formatDate } from "@/lib/utils";
 import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
-
-type AnnouncementRow = {
-  id: string;
-  title: string;
-  body: string | null;
-  authorName: string | null;
-  authorRole: string | null;
-  createdAt: string;
-  priority: string | null;
-};
+import {
+  normalizeAnnouncementRow,
+  type AnnouncementRow,
+} from "@/components/teacher/dashboard/types";
 
 const PRIORITY_COLORS: Record<string, string> = {
   urgent: "bg-rose-100 text-rose-700",
@@ -33,9 +27,15 @@ export default function TeacherAnnouncementsPage() {
     try {
       const body = await adminApiJson<{
         success: boolean;
-        data: AnnouncementRow[];
+        data: unknown[];
       }>("/api/teacher/announcements");
-      setAnnouncements(Array.isArray(body.data) ? body.data : []);
+      setAnnouncements(
+        Array.isArray(body.data)
+          ? body.data.map((row) =>
+              normalizeAnnouncementRow((row || {}) as Record<string, unknown>),
+            )
+          : [],
+      );
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to load announcements";
@@ -53,7 +53,7 @@ export default function TeacherAnnouncementsPage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center p-4 md:p-6">
         <section className="grid w-full max-w-lg place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-500" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-slate-500">
             Loading announcements…
           </p>
@@ -98,8 +98,7 @@ export default function TeacherAnnouncementsPage() {
 
       {announcements.length === 0 ? (
         <Surface variant="dashed" className="py-16 text-center">
-          <Megaphone className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             No announcements yet
           </p>
           <p className="mt-1 text-xs text-slate-400">

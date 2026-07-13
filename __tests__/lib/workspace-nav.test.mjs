@@ -65,8 +65,19 @@ test("teacher and student nav sections use mounted /app workspace routes", () =>
   );
   assert.ok(
     teacherPortalItems.some(
-      (item) => item.href === "/app/teacher/notifications",
+      (item) => item.href === "/app/teacher/settings",
     ),
+  );
+  assert.ok(
+    teacherPortalItems.some(
+      (item) => item.href === "/app/teacher/assignments",
+    ),
+  );
+  assert.ok(
+    teacherPortalItems.some((item) => item.href === "/app/teacher/teaching"),
+  );
+  assert.ok(
+    !teacherPortalItems.some((item) => item.href === "/app/admin/timetable"),
   );
   assert.ok(studentItems.some((item) => item.href === "/app/student"));
 

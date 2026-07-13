@@ -68,5 +68,28 @@ export async function invalidateActorCachesForProfile(
         redisDel(workspaceCacheKey(id, schoolId)),
       ]),
     );
+    // Enrolment / role changes must refresh shared school counts.
+    const { invalidateSchoolMetricsCache } = await import(
+      "@/lib/school-metrics-cache"
+    );
+    await invalidateSchoolMetricsCache(schoolId);
   }
+}
+
+/** Call after class create/delete or bulk enrolment so dashboards refresh counts. */
+export async function invalidateSchoolDashboardCaches(
+  schoolId: string | null | undefined,
+): Promise<void> {
+  const id = String(schoolId || "").trim();
+  if (!id) return;
+  const { invalidateSchoolMetricsCache } = await import(
+    "@/lib/school-metrics-cache"
+  );
+  const { invalidateByTag } = await import("@/lib/enhanced-cache");
+  await Promise.all([
+    invalidateSchoolMetricsCache(id),
+    invalidateByTag("dashboard"),
+    invalidateByTag("classes"),
+    invalidateByTag("students"),
+  ]);
 }

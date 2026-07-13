@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  Search,
-  Shield,
-} from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -103,7 +97,7 @@ export default function TeacherDisciplinePage() {
     return (
       <div className="grid min-h-[50vh] place-items-center p-4 md:p-6">
         <TeacherCard className="grid w-full max-w-lg place-items-center py-14 text-center">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-600" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-workspace-muted">
             Loading discipline records…
           </p>
@@ -118,30 +112,25 @@ export default function TeacherDisciplinePage() {
         eyebrow="Student support"
         title="Discipline Records"
         description="A calm, card-based view of conduct records for students in your teaching scope."
-        icon={Shield}
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <TeacherStatCard
-          icon={Shield}
           label="Total records"
           value={records.length}
           hint="Visible to you"
         />
         <TeacherStatCard
-          icon={AlertTriangle}
           label="Open"
           value={openRecords}
           hint="Needs follow-up"
         />
         <TeacherStatCard
-          icon={AlertTriangle}
           label="High severity"
           value={highSeverity}
           hint="Serious or critical"
         />
         <TeacherStatCard
-          icon={CheckCircle2}
           label="Showing"
           value={filtered.length}
           hint="After filters"
@@ -163,7 +152,6 @@ export default function TeacherDisciplinePage() {
 
       {filtered.length === 0 ? (
         <TeacherEmptyState
-          icon={Shield}
           title="No discipline records"
           description={
             searchTerm

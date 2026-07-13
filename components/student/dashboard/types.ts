@@ -12,6 +12,8 @@ export type StudentProfile = {
   fullName: string;
   email: string | null;
   admissionNumber: string | null;
+  /** Register number within the class (roll call / results). */
+  classNumber: number | null;
   className: string | null;
   gradeLabel: string | null;
 };

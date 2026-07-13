@@ -5,7 +5,7 @@ export default function StudentAnnouncementsPage() {
     <AccountAnnouncementsPage
       title="Announcements"
       intro="School-wide news, notices, and updates published for students."
-      accent="sky"
+      accent="slate"
     />
   );
 }

@@ -57,13 +57,16 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
     "default-src 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
+    "frame-src 'none'",
     "form-action 'self'",
     `img-src ${imgSrc.join(" ")}`,
-    "font-src 'self' data: https:",
+    "font-src 'self' data:",
     `style-src ${styleSrc.join(" ")}`,
     `script-src ${scriptSrc.join(" ")}`,
     `connect-src ${connectSrc.join(" ")}`,
     "object-src 'none'",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
   ];
 
   if (input.shouldUpgradeInsecureRequests) {

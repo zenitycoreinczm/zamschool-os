@@ -26,7 +26,7 @@ export function TeacherHero({
       description={description}
       stats={stats}
       actions={actions}
-      accent="amber"
+      accent="slate"
     />
   );
 }
@@ -51,7 +51,7 @@ export function TeacherPageHeader({
       description={description}
       icon={icon}
       actions={actions}
-      accent="amber"
+      accent="slate"
     />
   );
 }
@@ -79,41 +79,44 @@ export function TeacherStatCard({
   label,
   value,
   hint,
-  icon: Icon,
 }: {
   label: string;
   value: string | number;
   hint?: string;
-  icon: ComponentType<{ className?: string }>;
+  /** @deprecated Decorative icons removed */
+  icon?: ComponentType<{ className?: string }>;
 }) {
   return (
     <TeacherCard>
-      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-workspace-md bg-amber-50 text-amber-700 ring-1 ring-amber-100">
-        <Icon className="h-4.5 w-4.5" />
-      </div>
-      <p className="ws-tabular text-2xl font-bold tracking-tight text-slate-950">{value}</p>
+      <p className="ws-tabular text-2xl font-bold tracking-tight text-slate-950">
+        {value}
+      </p>
       <p className="text-sm font-semibold text-slate-700">{label}</p>
-      {hint ? <p className="mt-0.5 text-xs text-workspace-muted">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-0.5 text-xs text-workspace-muted">{hint}</p>
+      ) : null}
     </TeacherCard>
   );
 }
 
 export function TeacherEmptyState({
-  icon: Icon,
   title,
   description,
 }: {
-  icon: ComponentType<{ className?: string }>;
+  /** @deprecated Decorative icons removed */
+  icon?: ComponentType<{ className?: string }>;
   title: string;
   description: string;
 }) {
   return (
-    <Surface variant="dashed" className="grid place-items-center px-6 py-14 text-center">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-workspace-lg bg-slate-100 text-slate-400 ring-1 ring-slate-200">
-        <Icon className="h-5 w-5" />
-      </div>
+    <Surface
+      variant="dashed"
+      className="grid place-items-center px-6 py-14 text-center"
+    >
       <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-      <p className="mt-1 max-w-md text-sm leading-relaxed text-workspace-muted">{description}</p>
+      <p className="mt-1 max-w-md text-sm leading-relaxed text-workspace-muted">
+        {description}
+      </p>
     </Surface>
   );
 }

@@ -79,15 +79,21 @@ export function assertClientEnvValid(): void {
   }
 }
 
-export function getClientEnvStatus(): Record<string, string | undefined> {
-  const status: Record<string, string | undefined> = {};
+/**
+ * Returns only set/missing flags — never raw env values on window
+ * (anon keys and origins must not be dumpable via devtools globals).
+ */
+export function getClientEnvStatus(): Record<string, "set" | "missing"> {
+  const status: Record<string, "set" | "missing"> = {};
 
   for (const varName of REQUIRED_NEXT_PUBLIC_VARS) {
-    status[varName] = CLIENT_ENV[varName];
+    const value = CLIENT_ENV[varName];
+    status[varName] = value && value.trim() ? "set" : "missing";
   }
 
   for (const varName of OPTIONAL_NEXT_PUBLIC_VARS) {
-    status[varName] = CLIENT_ENV[varName];
+    const value = CLIENT_ENV[varName];
+    status[varName] = value && value.trim() ? "set" : "missing";
   }
 
   return status;
@@ -95,11 +101,12 @@ export function getClientEnvStatus(): Record<string, string | undefined> {
 
 declare global {
   interface Window {
-    __ZAMSCHOOL_ENV_STATUS__?: Record<string, string | undefined>;
+    __ZAMSCHOOL_ENV_STATUS__?: Record<string, "set" | "missing">;
   }
 }
 
-if (typeof window !== "undefined") {
+// Only attach the presence map in development — never in production builds.
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   window.__ZAMSCHOOL_ENV_STATUS__ = getClientEnvStatus();
 }
 

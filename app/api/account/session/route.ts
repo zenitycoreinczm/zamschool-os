@@ -6,9 +6,8 @@ import {
   platformRateLimitResponse,
 } from "@/lib/platform-api-guard";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
-import { safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
-import { normalizeRole } from "@/lib/roles";
+import { getRoleDisplayLabel, normalizeRole } from "@/lib/roles";
 
 export async function GET(req: Request) {
   try {
@@ -65,12 +64,15 @@ export async function GET(req: Request) {
     }
 
     const role = normalizeRole(profile.role);
+    const roleKey = role || profile.role || null;
 
     return NextResponse.json({
       success: true,
       data: {
         email: profile.email || null,
-        role: role || profile.role || null,
+        role: roleKey,
+        /** Human-readable role for UI (never show raw ACADEMIC_ADMIN etc.). */
+        roleLabel: getRoleDisplayLabel(roleKey),
         schoolName,
         lastLogin: profile.last_login || profile.created_at || null,
         firstName: profile.first_name || null,
@@ -78,19 +80,11 @@ export async function GET(req: Request) {
       },
     });
   } catch (error: unknown) {
-    const message = safeErrorMessage(error, "Failed to load session");
-    // Server-side log so the cause is recoverable in dev/staging logs.
-    // Without this we'd only see "Failed to load session" in the client toast.
-    if (process.env.NODE_ENV !== "production") {
-      console.error("[/api/account/session] 500", error);
-    }
-    const body: { error: string; cause?: string } = { error: message };
-    if (process.env.NODE_ENV !== "production") {
-      // Surface the underlying detail in non-prod so the dev console +
-      // the UI toast carry the real reason. Stays out of prod so we
-      // don't leak internal column names, query snippets, etc.
-      body.cause = safeErrorMessage(error, message);
-    }
-    return NextResponse.json(body, { status: 500 });
+    const { logServerError, publicErrorBody } = await import("@/lib/safe-error");
+    logServerError("account.session", error);
+    // Never attach raw causes / column names to client responses.
+    return NextResponse.json(publicErrorBody(error, "Failed to load session"), {
+      status: 500,
+    });
   }
 }

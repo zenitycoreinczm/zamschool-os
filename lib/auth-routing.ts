@@ -1,4 +1,5 @@
 import { normalizeRole } from "./roles.ts";
+import { isSafeInternalPath } from "./request-security.ts";
 
 export const TEACHER_DASHBOARD_PATH = "/app/teacher";
 export const PAYMENTS_DASHBOARD_PATH = "/app/payments";
@@ -40,7 +41,7 @@ export function isSharedProtectedPath(pathname: string): boolean {
 
 function roleToPath(role: string | null | undefined) {
   const normalized = normalizeRole(role) || "TEACHER";
-  if (normalized === "ADMIN") return ADMIN_DASHBOARD_PATH;
+  // Legacy admin normalizes to PRINCIPAL → Head Teacher home.
   if (normalized === "TEACHER") return TEACHER_DASHBOARD_PATH;
   if (normalized === "STUDENT") return STUDENT_DASHBOARD_PATH;
   if (normalized === "PARENT") return PARENT_DASHBOARD_PATH;
@@ -55,14 +56,18 @@ function roleToPath(role: string | null | undefined) {
   if (normalized === "DISCIPLINE_ADMIN") return DISCIPLINE_ADMIN_DASHBOARD_PATH;
   if (normalized === "REGISTRAR") return REGISTRAR_DASHBOARD_PATH;
   if (normalized === "SUPER_ADMIN") return SUPER_ADMIN_DASHBOARD_PATH;
-  return ADMIN_DASHBOARD_PATH;
+  return PRINCIPAL_DASHBOARD_PATH;
 }
 
+/** Relative same-app redirects only (blocks //evil.com open redirects). */
 function isSafeRedirect(
   redirectTo: string | null | undefined,
 ): redirectTo is string {
-  return typeof redirectTo === "string" && redirectTo.startsWith("/");
+  return isSafeInternalPath(redirectTo);
 }
+
+/** Public alias for post-login / query redirect validation. */
+export { isSafeInternalPath as isSafeRedirectPath };
 
 function mapTeacherSharedPath(pathname: string): string {
   if (pathname === "/app/profile") return "/app/teacher/profile";
@@ -145,7 +150,6 @@ export function resolveProtectedRolePrefix(
 ): string {
   const normalized = normalizeRole(role);
   if (!normalized) return "";
-  if (normalized === "ADMIN") return "/app";
   if (normalized === "TEACHER") return "/app/teacher";
   if (normalized === "STUDENT") return "/app/student";
   if (normalized === "PARENT") return "/app/parent";
@@ -160,7 +164,7 @@ export function resolveProtectedRolePrefix(
   if (normalized === "DISCIPLINE_ADMIN") return "/app/discipline-admin";
   if (normalized === "REGISTRAR") return "/app/registrar";
   if (normalized === "SUPER_ADMIN") return "/app/super-admin";
-  return "/app";
+  return "/app/principal";
 }
 
 export function resolvePostLoginPath(
@@ -180,6 +184,7 @@ export function resolvePostLoginPath(
   if (isSharedProtectedPath(normalizedRedirect)) return normalizedRedirect;
 
   if (normalized === "PRINCIPAL") {
+    // Old School Administrator home (/app/dashboard) → Head Teacher home.
     if (normalizedRedirect === ADMIN_DASHBOARD_PATH) {
       return PRINCIPAL_DASHBOARD_PATH;
     }
@@ -187,26 +192,6 @@ export function resolvePostLoginPath(
       normalizedRedirect === PRINCIPAL_DASHBOARD_PATH ||
       normalizedRedirect.startsWith(`${PRINCIPAL_DASHBOARD_PATH}/`) ||
       normalizedRedirect.startsWith("/app/admin")
-    ) {
-      return normalizedRedirect;
-    }
-    return fallbackPath;
-  }
-
-  if (normalized === "ADMIN") {
-    if (
-      normalizedRedirect === PRINCIPAL_DASHBOARD_PATH ||
-      normalizedRedirect.startsWith(`${PRINCIPAL_DASHBOARD_PATH}/`)
-    ) {
-      return ADMIN_DASHBOARD_PATH;
-    }
-    if (
-      normalizedRedirect === ADMIN_DASHBOARD_PATH ||
-      normalizedRedirect.startsWith(`${ADMIN_DASHBOARD_PATH}/`) ||
-      normalizedRedirect.startsWith("/app/admin") ||
-      normalizedRedirect.startsWith("/admin") ||
-      (normalizedRedirect.startsWith("/app/") &&
-        !normalizedRedirect.startsWith("/app/principal"))
     ) {
       return normalizedRedirect;
     }
@@ -248,8 +233,7 @@ export function resolveOnboardingPath({
 
   if (!emailVerified) return "/verify-email";
   if (mustChangePassword) return "/first-login";
-  if ((normalized === "ADMIN" || normalized === "PRINCIPAL") && !hasSchool)
-    return "/app/admin/school";
+  if (normalized === "PRINCIPAL" && !hasSchool) return "/app/admin/school";
 
   return resolvePostLoginPath(normalized, redirectTo);
 }
@@ -257,9 +241,7 @@ export function resolveOnboardingPath({
 /**
  * Route a user whose auth row exists but profile/school setup is incomplete.
  * Without this, verified users land on /login?error=profile_not_found with
- * no path to finish registration. For principals/admins we send them back to
- * /register?resume=school so they can complete step 3 without re-doing
- * steps 1 and 2. For non-staff roles we keep the existing error message.
+ * no path to finish registration. Head Teachers resume school registration.
  */
 export function resolveMissingProfilePath({
   role,
@@ -272,10 +254,7 @@ export function resolveMissingProfilePath({
 }): string {
   if (!emailVerified) return "/verify-email";
   const normalized = normalizeRole(role);
-  if (
-    (normalized === "ADMIN" || normalized === "PRINCIPAL" || !normalized) &&
-    !hasSchool
-  ) {
+  if ((normalized === "PRINCIPAL" || !normalized) && !hasSchool) {
     return "/register?resume=school";
   }
   return "/login?error=profile_not_found";
@@ -299,5 +278,5 @@ export function resolveAppWorkspaceHome(
   if (normalized === "DISCIPLINE_ADMIN") return DISCIPLINE_ADMIN_DASHBOARD_PATH;
   if (normalized === "REGISTRAR") return REGISTRAR_DASHBOARD_PATH;
   if (normalized === "SUPER_ADMIN") return SUPER_ADMIN_DASHBOARD_PATH;
-  return ADMIN_DASHBOARD_PATH;
+  return PRINCIPAL_DASHBOARD_PATH;
 }

@@ -50,14 +50,21 @@ function shouldLog(level: LogLevel): boolean {
 function sanitizeContext(ctx: LogContext): LogContext {
   const sanitized: LogContext = {};
   for (const [key, value] of Object.entries(ctx)) {
-    // Redact obvious secrets
+    // Redact obvious secrets and PII-bearing fields
     if (
-      /secret|password|token|key|authorization/i.test(key) &&
-      typeof value === "string"
+      /secret|password|token|key|authorization|cookie|session|credential|private/i.test(
+        key,
+      )
     ) {
       sanitized[key] = "[REDACTED]";
+    } else if (/email/i.test(key) && typeof value === "string") {
+      const at = value.indexOf("@");
+      sanitized[key] =
+        at > 1 ? `${value[0]}***${value.slice(at)}` : "[REDACTED_EMAIL]";
     } else if (value instanceof Error) {
-      sanitized[key] = value.message;
+      sanitized[key] = String(value.message || value.name).slice(0, 500);
+    } else if (typeof value === "string" && value.length > 500) {
+      sanitized[key] = `${value.slice(0, 500)}…`;
     } else if (value !== undefined) {
       sanitized[key] = value;
     }

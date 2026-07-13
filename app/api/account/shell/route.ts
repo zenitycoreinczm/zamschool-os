@@ -4,10 +4,7 @@ import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { requireActorContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { fetchProfileByIdentity } from "@/lib/profile-lookup";
-import { toProtectedAvatarUrl } from "@/lib/avatar-url";
-import { buildAcademicContextLabel } from "@/lib/live-schema-adapters";
-import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
+import { buildWorkspaceContextPayload } from "@/lib/workspace/context-server";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,
@@ -21,7 +18,6 @@ import { shellCacheKey } from "@/lib/redis/keys";
 import { REDIS_TTL } from "@/lib/redis/ttl";
 
 const SHELL_ROLES = [
-  "ADMIN",
   "PRINCIPAL",
   "TEACHER",
   "STUDENT",
@@ -71,7 +67,8 @@ export async function GET(req: Request) {
 
     const rate = await applyPlatformRateLimit({
       scope: "account-shell",
-      schoolId: schoolId ?? "",
+      // Platform super_admin has no school — share the "platform" bucket, not "".
+      schoolId: schoolId ?? "platform",
       req,
       userId,
       preset: "workspaceContext",
@@ -81,10 +78,14 @@ export async function GET(req: Request) {
     // Try Redis cache first
     const cacheKey = shellCacheKey(userId, schoolId);
     if (isRedisConfigured()) {
-      const cached = await redisGetJson<ShellPayload>(cacheKey);
-      if (cached) {
-        const response = NextResponse.json({ success: true, data: cached });
-        return applyEdgeCacheHeaders(response, "privateWorkspace");
+      try {
+        const cached = await redisGetJson<ShellPayload>(cacheKey);
+        if (cached?.userId) {
+          const response = NextResponse.json({ success: true, data: cached });
+          return applyEdgeCacheHeaders(response, "privateWorkspace");
+        }
+      } catch {
+        // Redis miss/errors must not take shell down.
       }
     }
 
@@ -93,7 +94,7 @@ export async function GET(req: Request) {
 
     // Write to Redis (fire-and-forget)
     if (isRedisConfigured()) {
-      void redisSetJson(cacheKey, payload, REDIS_TTL.shellSec);
+      void redisSetJson(cacheKey, payload, REDIS_TTL.shellSec).catch(() => {});
     }
 
     const response = NextResponse.json({ success: true, data: payload });
@@ -112,111 +113,44 @@ async function buildShellPayload(actor: {
   schoolId: string | null;
   profileId?: string | null;
 }): Promise<ShellPayload> {
-  const { userId, schoolId, role } = actor;
-
-  // Auth metadata
-  let email = "";
-  let emailConfirmed = false;
-  try {
-    const { data } = await supabaseAdmin.auth.admin.getUserById(userId);
-    email = data?.user?.email || "";
-    emailConfirmed = Boolean(data?.user?.email_confirmed_at);
-  } catch {
-    // non-blocking
-  }
-
-  // Profile
-  const { data: profile } = await fetchProfileByIdentity<{
-    id?: string;
-    role?: string | null;
-    school_id?: string | null;
-    first_name?: string | null;
-    last_name?: string | null;
-    email?: string | null;
-    avatar_url?: string | null;
-  }>(
-    supabaseAdmin as never,
-    actor.profileId || userId,
-    "id, role, school_id, first_name, last_name, email, avatar_url",
-    email,
+  // Reuse workspace context builder (Redis + hot-read caches) and load
+  // role-specific shell extras in parallel instead of re-querying profile/auth.
+  const basePromise = buildWorkspaceContextPayload({
+    ok: true,
+    userId: actor.userId,
+    profileId: actor.profileId || actor.userId,
+    schoolId: actor.schoolId,
+    role: actor.role as never,
+  });
+  const shellPromise = loadRoleShell(
+    actor.role,
+    actor.userId,
+    actor.schoolId,
+    actor.profileId || actor.userId,
   );
 
-  const profileRole = String(profile?.role || role || "").trim();
-  const profileSchoolId = profile?.school_id || schoolId;
-  const firstName = profile?.first_name?.trim() || null;
-  const lastName = profile?.last_name?.trim() || null;
-  const displayName =
-    [firstName, lastName].filter(Boolean).join(" ").trim() ||
-    profile?.email ||
-    email ||
-    "Your Account";
+  const [base, shell] = await Promise.all([basePromise, shellPromise]);
 
-  // School + academic context
-  let schoolName = "Your School";
-  let yearTerm = "Academic Context";
+  // If role-specific shell needed the resolved school from profile, retry once
+  // when actor.schoolId was null but base resolved a school.
+  let roleShell = shell;
+  const needsRoleShell =
+    ["teacher", "parent", "student"].includes(
+      String(base.role || actor.role).toLowerCase(),
+    ) && Object.keys(shell).length === 0;
 
-  if (profileSchoolId) {
-    const [schoolResult, yearResult, termResult] = await Promise.all([
-      supabaseAdmin
-        .from("schools")
-        .select("name")
-        .eq("id", profileSchoolId)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("academic_years")
-        .select("name")
-        .eq("school_id", profileSchoolId)
-        .eq("is_active", true)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("terms")
-        .select("name")
-        .eq("school_id", profileSchoolId)
-        .eq("is_active", true)
-        .maybeSingle(),
-    ]);
-
-    if (schoolResult.data?.name) schoolName = schoolResult.data.name;
-    yearTerm = buildAcademicContextLabel(
-      yearResult.data?.name,
-      termResult.data?.name,
+  if (needsRoleShell && base.schoolId) {
+    roleShell = await loadRoleShell(
+      base.role || actor.role,
+      actor.userId,
+      base.schoolId,
+      actor.profileId || actor.userId,
     );
   }
 
-  // Unread counts
-  const unread = profileSchoolId
-    ? await getUnreadCountsForUser({ userId, schoolId: profileSchoolId })
-    : { messages: 0, notifications: 0 };
-
-  // Role-specific shell data
-  const shell = await loadRoleShell(
-    profileRole,
-    userId,
-    profileSchoolId,
-    profile?.id,
-  );
-
   return {
-    userId,
-    email,
-    emailConfirmed,
-    role: profileRole,
-    workspaceRole: profileRole.toLowerCase(),
-    schoolId: profileSchoolId,
-    displayName,
-    firstName,
-    lastName,
-    avatarUrl:
-      profileSchoolId && profile?.id
-        ? toProtectedAvatarUrl(profile.avatar_url, {
-            schoolId: profileSchoolId,
-            userId: profile.id,
-          })
-        : null,
-    schoolName,
-    yearTerm,
-    unread,
-    shell,
+    ...base,
+    shell: roleShell,
   };
 }
 
@@ -261,7 +195,7 @@ async function loadParentShell(userId: string, schoolId: string) {
 async function loadStudentShell(userId: string, schoolId: string) {
   const { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("class_id, grade_id, admission_number")
+    .select("class_id, grade_id, admission_number, student_number, class_number")
     .eq("id", userId)
     .eq("school_id", schoolId)
     .maybeSingle();
@@ -282,65 +216,86 @@ async function loadStudentShell(userId: string, schoolId: string) {
     gradeLabel = classRow?.grade_level ? `Grade ${classRow.grade_level}` : null;
   }
 
+  const classNumber =
+    typeof profile?.class_number === "number"
+      ? profile.class_number
+      : parsePositiveInt(profile?.student_number) ??
+        parsePositiveInt(profile?.admission_number);
+
   return {
     classId,
     className,
     gradeLabel,
-    admissionNumber: profile?.admission_number || null,
+    classNumber,
+    admissionNumber: profile?.admission_number || profile?.student_number || null,
   };
 }
 
+function parsePositiveInt(value: unknown): number | null {
+  const raw = String(value ?? "").trim();
+  if (!/^\d{1,5}$/.test(raw)) return null;
+  const n = Number.parseInt(raw, 10);
+  return n > 0 ? n : null;
+}
+
 async function loadTeacherShell(
-  userId: string,
+  _userId: string,
   schoolId: string,
   profileId: string,
 ) {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [attendanceResult, assignmentsResult] = await Promise.all([
-    supabaseAdmin
-      .from("attendance")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .eq("date", today),
-    supabaseAdmin
-      .from("assignments")
-      .select("id, teacher_id, created_at, class_id")
-      .eq("school_id", schoolId)
-      .eq("teacher_id", profileId),
-  ]);
+  // Head counts only — never pull full result rows for shell badges.
+  const [attendanceResult, assignmentCountResult, assignmentRows] =
+    await Promise.all([
+      supabaseAdmin
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("date", today),
+      supabaseAdmin
+        .from("assignments")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .eq("teacher_id", profileId),
+      supabaseAdmin
+        .from("assignments")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("teacher_id", profileId)
+        .limit(80),
+    ]);
 
-  const assignmentIds = (assignmentsResult.data || [])
-    .map((a: any) => a.id)
-    .filter(Boolean);
+  const assignmentIds = (assignmentRows.data || [])
+    .map((a: { id?: string }) => a.id)
+    .filter(Boolean) as string[];
+
   let pendingGrades = 0;
   let draftResults = 0;
 
   if (assignmentIds.length > 0) {
-    const [pendingResult, draftResult] = await Promise.all([
+    const [pendingCount, draftCount] = await Promise.all([
       supabaseAdmin
         .from("results")
-        .select("id, created_at, score, grade")
+        .select("id", { count: "exact", head: true })
         .eq("school_id", schoolId)
-        .in("assignment_id", assignmentIds),
+        .in("assignment_id", assignmentIds)
+        .is("score", null)
+        .is("grade", null),
       supabaseAdmin
         .from("results")
-        .select("id, published_at")
+        .select("id", { count: "exact", head: true })
         .eq("school_id", schoolId)
-        .in("assignment_id", assignmentIds),
+        .in("assignment_id", assignmentIds)
+        .is("published_at", null),
     ]);
-
-    pendingGrades = (pendingResult.data || []).filter(
-      (r: any) => r.created_at && r.score == null && !r.grade,
-    ).length;
-    draftResults = (draftResult.data || []).filter(
-      (r: any) => !r.published_at,
-    ).length;
+    pendingGrades = pendingCount.count || 0;
+    draftResults = draftCount.count || 0;
   }
 
   return {
     todayAttendanceMarked: (attendanceResult.count || 0) > 0,
-    totalAssignments: assignmentIds.length,
+    totalAssignments: assignmentCountResult.count || assignmentIds.length,
     pendingGrades,
     draftResults,
   };

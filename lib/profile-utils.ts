@@ -21,7 +21,7 @@ export function normalizeRole(
     return "principal";
   }
 
-  if (canonical === "ADMIN" || canonical === "SUPER_ADMIN") {
+  if (canonical === "SUPER_ADMIN") {
     return "admin";
   }
 

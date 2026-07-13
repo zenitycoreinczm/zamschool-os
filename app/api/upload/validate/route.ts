@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   try {
     const access = await requireActorContext(
       {
-        allowedRoles: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
+        allowedRoles: ["TEACHER", "STUDENT", "PARENT"],
         requireSchool: true,
       },
       req,
@@ -133,7 +133,7 @@ export async function GET(req: Request) {
   try {
     const access = await requireActorContext(
       {
-        allowedRoles: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
+        allowedRoles: ["TEACHER", "STUDENT", "PARENT"],
         requireSchool: true,
       },
       req,

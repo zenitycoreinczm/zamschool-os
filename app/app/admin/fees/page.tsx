@@ -103,7 +103,7 @@ export default function AdminFeesPage() {
         className="flex items-center justify-center gap-3 p-10 text-sm text-slate-500"
         as="div"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
         <span>Loading payments...</span>
       </Surface>
     );
@@ -142,7 +142,7 @@ export default function AdminFeesPage() {
               aria-pressed={statusFilter === s}
               className={cn(
                 "rounded-lg px-3 py-2 text-xs font-medium capitalize transition",
-                statusFilter === s ? "bg-sky-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                statusFilter === s ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               )}
             >
               {s}

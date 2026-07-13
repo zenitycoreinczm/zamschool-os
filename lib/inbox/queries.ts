@@ -119,29 +119,25 @@ export async function countUnreadNotificationsForUser(input: {
   schoolId: string;
 }) {
   const { userId, schoolId } = input;
-  const queryAttempts = [
-    () =>
-      supabaseAdmin
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("school_id", schoolId)
-        .eq("user_id", userId)
-        .eq("is_read", false),
-    () =>
-      supabaseAdmin
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("school_id", schoolId)
-        .eq("recipient_id", userId)
-        .eq("is_read", false),
-  ];
 
-  for (const runQuery of queryAttempts) {
-    const result = await runQuery();
-    if (!result.error) {
-      return result.count || 0;
-    }
-  }
+  // Run both column variants in parallel — whichever succeeds wins.
+  // This avoids sequential round-trips when the schema uses recipient_id instead of user_id.
+  const [byUserId, byRecipientId] = await Promise.all([
+    supabaseAdmin
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .eq("user_id", userId)
+      .eq("is_read", false),
+    supabaseAdmin
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .eq("recipient_id", userId)
+      .eq("is_read", false),
+  ]);
 
+  if (!byUserId.error) return byUserId.count || 0;
+  if (!byRecipientId.error) return byRecipientId.count || 0;
   return 0;
 }

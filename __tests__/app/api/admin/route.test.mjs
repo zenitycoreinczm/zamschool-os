@@ -7,15 +7,30 @@ import { importTsModule } from "../../../../scripts/test-ts-module.mjs";
 
 const { buildCreatedAuthUserMetadata, buildCreatedProfilePayload } =
   await importTsModule("../../../../lib/account-state.ts", import.meta.url);
+const { mapUniqueViolationToUserCreateConflict } = await importTsModule(
+  "../../../../lib/user-create-conflicts.ts",
+  import.meta.url,
+);
 
 const pagePath = resolve(
   process.cwd(),
-  "app",
-  "app",
+  "components",
   "admin",
   "users",
-  "page.tsx",
+  "AdminUsersPage.tsx",
 );
+const usersUiDir = resolve(process.cwd(), "components", "admin", "users");
+
+async function readUsersUiSurface() {
+  const { readdir } = await import("node:fs/promises");
+  const names = await readdir(usersUiDir);
+  const sources = await Promise.all(
+    names
+      .filter((name) => /\.(tsx?|jsx?)$/.test(name))
+      .map((name) => readFile(resolve(usersUiDir, name), "utf8")),
+  );
+  return sources.join("\n");
+}
 const routePath = resolve(
   process.cwd(),
   "app",
@@ -24,6 +39,31 @@ const routePath = resolve(
   "users",
   "route.ts",
 );
+const usersHelpersPath = resolve(
+  process.cwd(),
+  "app",
+  "api",
+  "admin",
+  "users",
+  "helpers.ts",
+);
+const usersSchemasPath = resolve(
+  process.cwd(),
+  "app",
+  "api",
+  "admin",
+  "users",
+  "schemas.ts",
+);
+
+async function readUsersApiSurface() {
+  const [route, helpers, schemas] = await Promise.all([
+    readFile(routePath, "utf8"),
+    readFile(usersHelpersPath, "utf8"),
+    readFile(usersSchemasPath, "utf8"),
+  ]);
+  return `${route}\n${helpers}\n${schemas}`;
+}
 const teacherDetailPath = resolve(
   process.cwd(),
   "lib",
@@ -109,6 +149,71 @@ test("managed user payloads keep gender metadata for dashboard splits", () => {
   assert.equal(payload.gender, "FEMALE");
 });
 
+test("teacher profile payload omits hire_date (teachers table only)", () => {
+  const payload = buildCreatedProfilePayload({
+    authUserId: "teacher-id",
+    schoolId: "school-1",
+    role: "teacher",
+    firstName: "Jane",
+    lastName: "Doe",
+    email: "jane@example.com",
+    phone: null,
+    profileExtras: {
+      employee_id: "EMP-1",
+      department: "Science",
+      specialization: "Biology",
+      hire_date: "2024-01-15",
+    },
+  });
+
+  assert.equal(payload.employee_id, "EMP-1");
+  assert.equal(payload.department, "Science");
+  assert.equal(payload.specialization, "Biology");
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(payload, "hire_date"),
+    false,
+    "hire_date must not be written to profiles (causes PGRST204)",
+  );
+});
+
+test("admin user create maps unique constraint errors to friendly 409 conflicts", () => {
+  const studentNumber = mapUniqueViolationToUserCreateConflict({
+    code: "23505",
+    details: "Key (student_number)=(1) already exists.",
+    message:
+      'duplicate key value violates unique constraint "students_student_number_key"',
+  });
+  assert.equal(studentNumber?.status, 409);
+  assert.equal(studentNumber?.code, "duplicate_student_number");
+  assert.equal(studentNumber?.field, "admissionNumber");
+  assert.match(studentNumber?.error || "", /student number/i);
+
+  const profilePk = mapUniqueViolationToUserCreateConflict({
+    code: "23505",
+    details: "Key (id)=(8788fadd-c148-4d8f-b810-2acfe95339e0) already exists.",
+    message:
+      'duplicate key value violates unique constraint "profiles_pkey"',
+  });
+  assert.equal(profilePk?.status, 409);
+  assert.equal(profilePk?.code, "duplicate_profile");
+  assert.equal(profilePk?.field, "email");
+  assert.match(profilePk?.error || "", /email already exists/i);
+
+  const other = mapUniqueViolationToUserCreateConflict({
+    code: "42P01",
+    message: "relation does not exist",
+  });
+  assert.equal(other, null);
+});
+
+test("admin users POST handles create conflicts and preflight uniqueness", async () => {
+  const source = await readFile(routePath, "utf8");
+  assert.match(source, /findUserCreateConflict/);
+  assert.match(source, /mapUniqueViolationToUserCreateConflict/);
+  assert.match(source, /conflictResponse/);
+  assert.match(source, /rollbackCreatedUser/);
+});
+
 test("auth metadata carries the first-login fallback flag", () => {
   const teacherMetadata = buildCreatedAuthUserMetadata({
     firstName: "Teacher",
@@ -126,22 +231,22 @@ test("auth metadata carries the first-login fallback flag", () => {
 });
 
 test("admin users page explains the temporary password flow", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /one-time\s+temporary password/i);
-  assert.match(source, /first mobile login/);
+  assert.match(source, /first\s+login/);
   assert.match(source, /Temporary Password \(one-time\)/);
 });
 
 test("admin users page captures gender during managed account creation", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /label="Gender"/);
   assert.match(source, /form\.gender/);
 });
 
 test("admin users route accepts and normalizes gender profile extras", async () => {
-  const source = await readFile(routePath, "utf8");
+  const source = await readUsersApiSurface();
 
   assert.match(source, /gender/);
   assert.match(source, /normalizeProfileGender/);
@@ -167,7 +272,7 @@ test("admin users route exposes a GET detail endpoint for mobile drill-down", as
 });
 
 test("admin users route supports admin people drill-down details", async () => {
-  const routeSource = await readFile(routePath, "utf8");
+  const routeSource = await readUsersApiSurface();
   const teacherDetailSource = await readFile(teacherDetailPath, "utf8");
 
   assert.match(routeSource, /export async function GET/);
@@ -192,10 +297,10 @@ test("admin users route builds a teacher oversight dossier for admin drill-down"
 });
 
 test("admin users page exposes a teacher details action", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
-  assert.match(source, /View Details/);
-  assert.match(source, /Teacher Oversight/);
+  assert.match(source, /View details for/);
+  assert.match(source, /Teacher oversight/);
   assert.match(source, /\/api\/admin\/users\?profileId=/);
 });
 
@@ -230,7 +335,7 @@ test("admin users route PUT writes an updated audit log", async () => {
 });
 
 test("admin users page exposes a reset temporary password action", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /Reset temporary password/);
   assert.match(source, /\/api\/admin\/users\/reset-password/);
@@ -245,7 +350,7 @@ test("reset password route repairs managed accounts that are missing auth users"
 });
 
 test("admin users page routes parent-student linking through the admin relationships API", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /\/api\/admin\/relationships/);
   assert.match(source, /"link_parent_student"/);
@@ -253,7 +358,7 @@ test("admin users page routes parent-student linking through the admin relations
 });
 
 test("admin users route supports normalized teacher specialization and class assignment payloads", async () => {
-  const source = await readFile(routePath, "utf8");
+  const source = await readUsersApiSurface();
 
   assert.match(source, /specializationSubjectIds/);
   assert.match(source, /teachingAssignments/);
@@ -263,7 +368,7 @@ test("admin users route supports normalized teacher specialization and class ass
 });
 
 test("admin users page exposes structured teacher assignment controls", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /Subject specializations/);
   assert.match(source, /Teaching assignments/);
@@ -271,7 +376,7 @@ test("admin users page exposes structured teacher assignment controls", async ()
 });
 
 test("admin users page lets admins add missing subjects and classes inline", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /Add subject/);
   assert.match(source, /Add class/);
@@ -282,13 +387,13 @@ test("admin users page lets admins add missing subjects and classes inline", asy
 });
 
 test("admin users page no longer exposes an editable specialization summary field", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.doesNotMatch(source, /label="Specialization summary"/);
 });
 
 test("admin users page surfaces duplicate teacher validation and clear primary actions", async () => {
-  const source = await readFile(pagePath, "utf8");
+  const source = await readUsersUiSurface();
 
   assert.match(source, /already linked to another user/);
   assert.match(source, /already assigned to another teacher/);
@@ -296,7 +401,7 @@ test("admin users page surfaces duplicate teacher validation and clear primary a
 });
 
 test("admin users route builds teacher detail from normalized assignment tables", async () => {
-  const routeSource = await readFile(routePath, "utf8");
+  const routeSource = await readUsersApiSurface();
   const teacherDetailSource = await readFile(teacherDetailPath, "utf8");
   const builderSource = await readFile(teacherDetailBuilderPath, "utf8");
 

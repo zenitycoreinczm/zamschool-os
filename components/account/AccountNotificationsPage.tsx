@@ -113,7 +113,14 @@ export function AccountNotificationsPage({
     accent === "teal" || accent === "indigo" ? accent : "sky";
 
   if (loading) {
-    return <PageLoading label="Loading notifications" accent={loadingAccent} />;
+    return (
+      <PageLoading
+        label="Loading notifications"
+        accent={loadingAccent}
+        mode="skeleton"
+        skeletonVariant="list"
+      />
+    );
   }
 
   const heroAccent = accent === "teal" || accent === "indigo" || accent === "sky" ? accent : "sky";

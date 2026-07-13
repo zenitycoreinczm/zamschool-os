@@ -1,12 +1,9 @@
-import { Loader2 } from "lucide-react";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
 export default function WorkspaceLoading() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-sky-500" />
-        <p className="text-sm font-medium text-slate-500">Loading workspace…</p>
-      </div>
+    <div className="px-1 py-2 md:px-0">
+      <PageSkeleton variant="dashboard" label="Loading workspace" />
     </div>
   );
 }

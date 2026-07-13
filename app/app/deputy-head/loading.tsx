@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
-export default function DeputyHeadLoading() {
-  return <WorkspaceLoader label="Loading deputy head workspace" compact />;
+export default function RoleLoading() {
+  return <PageSkeleton variant="dashboard" label="Loading deputy head workspace" />;
 }

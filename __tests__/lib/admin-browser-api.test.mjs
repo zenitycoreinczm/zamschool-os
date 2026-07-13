@@ -5,10 +5,12 @@ import { resolve } from "node:path";
 
 const sourcePath = resolve(process.cwd(), "lib", "admin-browser-api.ts");
 
-test("admin browser api does not log raw cookie contents when csrf token is missing", async () => {
+test("admin browser api enforces CSRF injection for mutations", async () => {
   const source = await readFile(sourcePath, "utf8");
 
-  assert.match(source, /No 'csrf-token' cookie found\./);
+  assert.match(source, /ensureCsrfTokenAvailable/);
+  assert.match(source, /X-CSRF-Token/);
+  assert.match(source, /maybeRetryCsrf/);
   assert.doesNotMatch(source, /Available cookies:/);
   assert.doesNotMatch(source, /raw \|\| "\(none\)"/);
 });

@@ -36,7 +36,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("grading_scales")
-      .select("*")
+      .select("id, school_id, grade, min_score, max_score, remarks, created_at")
       .eq("school_id", schoolId)
       .order("min_score", { ascending: true });
 
@@ -57,7 +57,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "grading_scales",
       featureAction: "create",
       domain: "academic",
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "grading_scales",
       featureAction: "update",
       domain: "academic",
@@ -189,7 +189,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "grading_scales",
       featureAction: "delete",
       domain: "academic",

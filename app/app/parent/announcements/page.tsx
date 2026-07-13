@@ -5,7 +5,7 @@ export default function ParentAnnouncementsPage() {
     <AccountAnnouncementsPage
       title="Announcements"
       intro="School-wide news, notices, and updates that matter to parents and guardians."
-      accent="teal"
+      accent="slate"
     />
   );
 }

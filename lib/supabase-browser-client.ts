@@ -16,7 +16,8 @@ export function getOrCreateBrowserClient<T>(
 
 type BrowserClientCreator<T> = (
   supabaseUrl: string,
-  supabaseAnonKey: string
+  supabaseAnonKey: string,
+  options?: Record<string, unknown>,
 ) => T;
 
 export function createCookieBackedBrowserClient<T>({
@@ -31,6 +32,13 @@ export function createCookieBackedBrowserClient<T>({
   createBrowserClientImpl?: BrowserClientCreator<T>;
 }): T {
   return getOrCreateBrowserClient(storage, () =>
-    createBrowserClientImpl(supabaseUrl, supabaseAnonKey)
+    createBrowserClientImpl(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        // Refresh runs in the browser only; server/middleware must not call
+        // /auth/v1/token on every navigation when DNS is flaky.
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    }),
   );
 }

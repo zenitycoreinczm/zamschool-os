@@ -80,7 +80,9 @@ export async function GET(req: Request) {
 
     const { data: school, error: schoolError } = await supabaseAdmin
       .from("schools")
-      .select("*")
+      .select(
+        "id, name, code, address, phone, email, logo_url, created_at, updated_at, emis_code, province, district, school_type, ownership_type, status",
+      )
       .eq("id", profile.school_id)
       .single();
 
@@ -105,6 +107,20 @@ export async function PUT(req: Request) {
   try {
     const access = await requireAdminContext(req);
     if (!access.ok) return access.response;
+
+    // School identity is Head Teacher (or platform super admin) only.
+    // HR manages staff/departments; they must not edit school profile fields.
+    const actorRole = String(access.context.role || "").toUpperCase();
+    if (actorRole !== "PRINCIPAL" && actorRole !== "SUPER_ADMIN") {
+      return NextResponse.json(
+        {
+          error:
+            "Only the Head Teacher can update school profile details. HR manages staff and departments instead.",
+        },
+        { status: 403 },
+      );
+    }
+
     const perm = await requireFeatureAccess(
       access.context,
       "settings",

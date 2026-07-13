@@ -5,7 +5,7 @@ export default function StudentEventsPage() {
     <AccountEventsPage
       title="School Events"
       intro="Upcoming school events — assemblies, exams, sports, and activities."
-      accent="sky"
+      accent="slate"
     />
   );
 }

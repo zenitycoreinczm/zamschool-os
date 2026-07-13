@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { consumeDailyUsage, type DailyUsageResult } from "./daily-usage-limit";
 import { applyRateLimit } from "./server-guards";
-import { tenantActorRateLimitKey } from "@/lib/tenant-context";
+import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 

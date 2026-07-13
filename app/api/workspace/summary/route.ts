@@ -35,7 +35,14 @@ export async function GET(req: Request) {
       success: true,
       data: summary,
     });
-    response.headers.set("Cache-Control", EDGE_CACHE.noStore);
+    // Private short browser cache — reload within TTL reuses client/CDN path;
+    // server still prefers Redis school metrics over Supabase.
+    response.headers.set("Cache-Control", EDGE_CACHE.dashboardRead);
+    response.headers.set("CDN-Cache-Control", EDGE_CACHE.dashboardRead);
+    response.headers.set("Vary", "Cookie, Authorization");
+    if (summary.metricsSource) {
+      response.headers.set("X-Metrics-Source", summary.metricsSource);
+    }
     return response;
   } catch (error: unknown) {
     return NextResponse.json(

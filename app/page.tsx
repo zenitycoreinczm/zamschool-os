@@ -76,7 +76,7 @@ const testimonials = [
   },
   {
     name: "Mr. Chanda Mutale",
-    role: "School Administrator",
+    role: "Head Teacher",
     quote:
       "Finance tracking is clearer, faster, and easier for the whole school office.",
   },

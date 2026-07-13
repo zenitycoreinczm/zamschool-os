@@ -6,7 +6,6 @@ import { requireActorContext } from "@/lib/server-auth";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 
 const ALLOWED_ROLES = [
-  "ADMIN",
   "PRINCIPAL",
   "DEPUTY_HEAD",
   "BURSAR",

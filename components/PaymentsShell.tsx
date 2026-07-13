@@ -10,10 +10,11 @@ import { supabase } from "@/lib/supabase";
 import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
 import { MobileDock } from "@/components/workspace/MobileDock";
+import { useNavBadges } from "@/components/workspace/useNavBadges";
 import { navItemsToWorkspacePages } from "@/lib/workspace/search";
 import {
   buildRoleMobileDock,
@@ -23,6 +24,8 @@ import {
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
+import { formatKwacha } from "@/lib/zambia-localization";
+import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabel";
 import {
   Bell,
   CreditCard,
@@ -46,7 +49,10 @@ export default function PaymentsShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: workspace, loading: workspaceLoading, error: workspaceError } = useWorkspaceContext();
+  const workspaceCtx = useWorkspaceContext();
+  const workspace = workspaceCtx?.data ?? null;
+  const workspaceLoading = workspaceCtx?.loading ?? true;
+  const workspaceError = workspaceCtx?.error ?? "";
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [stats, setStats] = useState({
@@ -61,15 +67,27 @@ export default function PaymentsShell({
   const yearTerm = workspace?.yearTerm || "Academic Context";
   const displayName = workspace?.displayName || "Your Account";
   const avatarUrl = workspace?.avatarUrl || null;
-  const unreadSummary = {
-    messages: workspace?.unread?.messages ?? 0,
-    notifications: workspace?.unread?.notifications ?? 0,
-  };
   const workspacePageItems = useMemo(
     () => navItemsToWorkspacePages(paymentsNavItems),
     [],
   );
   const mobileDock = useMemo(() => buildRoleMobileDock("payments"), []);
+  const navHrefs = useMemo(
+    () => [
+      ...paymentsNavItems.map((item) => item.href),
+      ...mobileDock.map((item) => item.href),
+    ],
+    [mobileDock],
+  );
+  const { counts: navBadgeCounts, badgeByHref } = useNavBadges({
+    apiMode: "admin",
+    hrefs: navHrefs,
+    trackFeedSections: true,
+  });
+  const unreadSummary = {
+    messages: navBadgeCounts.messages,
+    notifications: navBadgeCounts.notifications,
+  };
 
   useEffect(() => {
     if (!workspace) {
@@ -159,7 +177,12 @@ export default function PaymentsShell({
   }
 
   if (!ready) {
-    return <WorkspaceLoader label="Preparing payments workspace" />;
+    return (
+      <WorkspaceLoader
+        label="Loading payments workspace"
+        hint="Syncing fees and school access"
+      />
+    );
   }
 
   return (
@@ -210,6 +233,7 @@ export default function PaymentsShell({
             <button
               className="lg:hidden p-2 text-slate-500"
               onClick={() => setOpen(false)}
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
@@ -221,12 +245,12 @@ export default function PaymentsShell({
               {[
                 {
                   label: "Revenue",
-                  value: `K${stats.totalRevenue.toLocaleString()}`,
+                  value: formatKwacha(stats.totalRevenue, { symbol: "K" }),
                   tone: "text-emerald-700",
                 },
                 {
                   label: "Pending",
-                  value: `K${stats.pendingPayments.toLocaleString()}`,
+                  value: formatKwacha(stats.pendingPayments, { symbol: "K" }),
                   tone: "text-amber-700",
                 },
                 {
@@ -265,6 +289,7 @@ export default function PaymentsShell({
               sections={paymentsSections}
               activePaths={activeSet}
               onNavigate={() => setOpen(false)}
+              badgeByHref={badgeByHref}
             />
           </div>
 
@@ -301,7 +326,13 @@ export default function PaymentsShell({
               <p className="font-semibold text-slate-900 truncate">
                 {schoolName}
               </p>
-              <p className="text-xs text-slate-500 truncate">{yearTerm}</p>
+              <p className="truncate text-xs text-slate-500">
+                <AcademicContextLabel
+                  value={yearTerm}
+                  yearClassName="font-medium text-slate-600"
+                  termClassName="text-slate-400"
+                />
+              </p>
             </div>
           </div>
 
@@ -364,8 +395,9 @@ export default function PaymentsShell({
           pathname={pathname}
           items={mobileDock}
           onClose={() => setOpen(false)}
-          activeAccent="green"
+          activeAccent="neutral"
           columns={5}
+          badgeByHref={badgeByHref}
         />
       </div>
     </div>

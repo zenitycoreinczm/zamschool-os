@@ -44,7 +44,7 @@ export default function TeacherDashboard() {
         aria-live="polite"
       >
         <section className="grid w-full max-w-lg place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-500" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-slate-500">
             Loading your workspace…
           </p>
@@ -80,7 +80,7 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex flex-col gap-5 p-4 md:gap-6 md:p-6">
       <TeacherDashboardHero
         schoolName={schoolName}
         displayName={displayName}
@@ -99,17 +99,20 @@ export default function TeacherDashboard() {
 
       <TeacherQuickActions />
 
-      <TeacherTodaySchedule lessons={todayLessons} loading={extraLoading && !todayLessons.length} />
-
-      <TeacherAnnouncementsCard
-        announcements={announcements}
-        loading={extraLoading && !announcements.length}
-      />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <TeacherWorkload workload={workload} />
-        <div className="lg:col-span-2">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
+        <div className="space-y-5 md:space-y-6">
+          <TeacherTodaySchedule
+            lessons={todayLessons}
+            loading={extraLoading && !todayLessons.length}
+          />
           <TeacherTeachingProfile teacher={teacher} />
+        </div>
+        <div className="space-y-5 md:space-y-6">
+          <TeacherWorkload workload={workload} />
+          <TeacherAnnouncementsCard
+            announcements={announcements}
+            loading={extraLoading && !announcements.length}
+          />
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
   normalizeTargetRoleForResponse,
   normalizeTargetRoleForStorage,
 } from "@/lib/audience-targeting";
+import { notifySchoolEventAudience } from "@/lib/event-notifications";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -57,12 +58,30 @@ export async function GET(req: Request) {
     );
     const targetClassId = searchParams.get("targetClassId");
     const upcomingOnly = searchParams.get("upcomingOnly") === "true";
+    const limit = Math.min(
+      Math.max(Number(searchParams.get("limit") || (upcomingOnly ? 60 : 200)), 1),
+      500,
+    );
+    const today = new Date().toISOString().slice(0, 10);
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("events")
-      .select("*")
-      .eq("school_id", schoolId)
-      .order("created_at", { ascending: false });
+      .select(
+        "id, school_id, title, description, start_date, end_date, location, category, created_by, created_at, audience, event_date, start_time, end_time, target_role, target_class_id",
+      )
+      .eq("school_id", schoolId);
+
+    // Prefer DB-side filter so the dashboard calendar does not load full history.
+    if (upcomingOnly) {
+      query = query.gte("event_date", today);
+    }
+
+    const { data, error } = await query
+      .order(upcomingOnly ? "event_date" : "created_at", {
+        ascending: upcomingOnly,
+        nullsFirst: false,
+      })
+      .limit(limit);
 
     if (error) throw error;
 
@@ -72,17 +91,19 @@ export async function GET(req: Request) {
       if (
         upcomingOnly &&
         row.event_date &&
-        row.event_date < new Date().toISOString().slice(0, 10)
+        row.event_date < today
       )
         return false;
       return true;
     });
 
-    normalized.sort((left, right) =>
-      String(left.event_date || "").localeCompare(
-        String(right.event_date || ""),
-      ),
-    );
+    if (upcomingOnly) {
+      normalized.sort((left, right) =>
+        String(left.event_date || "").localeCompare(
+          String(right.event_date || ""),
+        ),
+      );
+    }
 
     return applyEdgeCacheHeaders(
       NextResponse.json({ success: true, data: normalized }),
@@ -130,6 +151,19 @@ export async function POST(req: Request) {
     const payload = buildEventPayload({ schoolId, userId, body });
     const data = await safeInsertWithMissingColumnRetry("events", payload);
     const normalized = normalizeEventRow(data);
+
+    // Push into per-user notifications so every role's top-nav bell lights up.
+    await notifySchoolEventAudience({
+      schoolId,
+      eventId: String(data.id),
+      title: String(normalized.title || body.title || "School event"),
+      description: normalized.description ?? body.description ?? null,
+      eventDate: normalized.event_date ?? body.eventDate ?? null,
+      startTime: normalized.start_time ?? body.startTime ?? null,
+      location: normalized.location ?? body.location ?? null,
+      targetRole: normalized.target_role ?? body.targetRole ?? null,
+      targetClassId: normalized.target_class_id ?? body.targetClassId ?? null,
+    });
 
     await auditDomainWrite({
       schoolId,

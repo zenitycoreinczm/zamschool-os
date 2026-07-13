@@ -219,7 +219,9 @@ export async function PUT(req: Request) {
     const body = await parseJsonWithSchema(req, updateFinanceRecordSchema);
     const { data: existingRecord, error: existingError } = await supabaseAdmin
       .from("finance_records")
-      .select("*")
+      .select(
+        "id, school_id, transaction_type, category, amount, currency, description, payment_method, reference_number, transaction_date, recorded_by, created_at, updated_at, attachment_url, attachment_name",
+      )
       .eq("id", body.id)
       .eq("school_id", schoolId)
       .maybeSingle();
@@ -307,7 +309,9 @@ export async function DELETE(req: Request) {
 
     const { data: existingRecord, error: existingError } = await supabaseAdmin
       .from("finance_records")
-      .select("*")
+      .select(
+        "id, school_id, transaction_type, category, amount, currency, description, payment_method, reference_number, transaction_date, recorded_by, created_at, updated_at, attachment_url, attachment_name",
+      )
       .eq("id", id)
       .eq("school_id", schoolId)
       .maybeSingle();

@@ -1,5 +1,7 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
 export default function RegistrarLoading() {
-  return <WorkspaceLoader label="Loading registrar workspace" compact />;
+  return (
+    <PageSkeleton variant="dashboard" label="Loading registrar workspace" />
+  );
 }

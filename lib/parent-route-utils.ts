@@ -16,19 +16,62 @@ export type LinkedStudentsResult = {
   profileIdByStudentRowId?: Map<string, string>;
 };
 
+function emptyLinkedStudents(
+  includeRowMappings?: boolean,
+): LinkedStudentsResult {
+  return {
+    profileIds: [],
+    relationshipByProfileId: new Map(),
+    classIdByProfileId: new Map(),
+    studentNumberByProfileId: new Map(),
+    ...(includeRowMappings
+      ? {
+          studentRowIdByProfileId: new Map<string, string>(),
+          profileIdByStudentRowId: new Map<string, string>(),
+        }
+      : {}),
+  };
+}
+
+function isMissingColumnError(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+) {
+  const code = String(error?.code || "").trim();
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    message.includes("does not exist") ||
+    message.includes("could not find the")
+  );
+}
+
 export async function getParentRecord(input: {
   profileId: string;
   schoolId: string | null;
 }): Promise<ParentRecord | null> {
-  const { data, error } = await supabaseAdmin
-    .from("parents")
-    .select("id, relation_type")
-    .eq("profile_id", input.profileId)
-    .eq("school_id", input.schoolId)
-    .maybeSingle();
+  if (!input.profileId || !input.schoolId) return null;
 
-  if (error) throw error;
-  return data;
+  const selects = ["id, relation_type, profile_id", "id, profile_id", "id"];
+
+  for (let i = 0; i < selects.length; i++) {
+    const { data, error } = await supabaseAdmin
+      .from("parents")
+      .select(selects[i])
+      .eq("profile_id", input.profileId)
+      .eq("school_id", input.schoolId)
+      .maybeSingle();
+
+    if (!error) {
+      return data as ParentRecord | null;
+    }
+
+    if (!isMissingColumnError(error) || i === selects.length - 1) {
+      throw error;
+    }
+  }
+
+  return null;
 }
 
 export async function getLinkedStudents(input: {
@@ -38,44 +81,111 @@ export async function getLinkedStudents(input: {
   fallbackRelationship?: string | null;
   includeRowMappings?: boolean;
 }): Promise<LinkedStudentsResult> {
-  const [{ data: parentRows, error: parentError }, { data: links, error: linkError }] =
+  if (!input.schoolId || !input.parentRecordId) {
+    return emptyLinkedStudents(input.includeRowMappings);
+  }
+
+  const parentIdCandidates = Array.from(
+    new Set(
+      [input.parentRecordId, input.parentProfileId].filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  );
+
+  const [{ data: parentRows, error: parentError }, linksResult] =
     await Promise.all([
       supabaseAdmin
         .from("parents")
         .select("id, profile_id")
         .eq("school_id", input.schoolId)
         .in("id", [input.parentRecordId]),
+      // Prefer schema-accurate parent_id (= parents.id). Also try profile id
+      // for older link rows that may have stored profiles.id as parent_id.
       supabaseAdmin
         .from("parent_students")
         .select("parent_id, student_id, relationship")
-        .in("parent_id", [input.parentRecordId, input.parentProfileId]),
+        .in("parent_id", parentIdCandidates),
     ]);
 
   if (parentError) throw parentError;
-  if (linkError) throw linkError;
 
-  const studentIds = Array.from(
-    new Set((links || []).map((row: any) => row.student_id).filter(Boolean))
+  let links = linksResult.data || [];
+  if (linksResult.error) {
+    // Some installs only accept parents.id for parent_id FK — retry narrowly.
+    const retry = await supabaseAdmin
+      .from("parent_students")
+      .select("parent_id, student_id, relationship")
+      .eq("parent_id", input.parentRecordId);
+    if (retry.error) throw retry.error;
+    links = retry.data || [];
+  }
+
+  const linkStudentKeys = Array.from(
+    new Set(links.map((row: any) => row.student_id).filter(Boolean) as string[]),
   );
 
   let students: any[] = [];
-  if (studentIds.length > 0) {
-    const { data, error } = await supabaseAdmin
+  if (linkStudentKeys.length > 0) {
+    // parent_students.student_id may be students.id OR profiles.id depending on
+    // how the link was created historically — resolve both.
+    const byId = await supabaseAdmin
       .from("students")
       .select("id, profile_id, school_id, class_id, student_number")
       .eq("school_id", input.schoolId)
-      .in("id", studentIds);
+      .in("id", linkStudentKeys);
 
-    if (error) throw error;
-    students = data || [];
+    if (byId.error) throw byId.error;
+    students = byId.data || [];
+
+    const foundKeys = new Set<string>();
+    for (const row of students) {
+      if (row.id) foundKeys.add(row.id);
+      if (row.profile_id) foundKeys.add(row.profile_id);
+    }
+    const missingKeys = linkStudentKeys.filter((key) => !foundKeys.has(key));
+
+    if (missingKeys.length > 0) {
+      const byProfile = await supabaseAdmin
+        .from("students")
+        .select("id, profile_id, school_id, class_id, student_number")
+        .eq("school_id", input.schoolId)
+        .in("profile_id", missingKeys);
+
+      if (byProfile.error) throw byProfile.error;
+      const existingIds = new Set(students.map((row) => row.id));
+      for (const row of byProfile.data || []) {
+        if (!existingIds.has(row.id)) {
+          students.push(row);
+          existingIds.add(row.id);
+        }
+      }
+    }
   }
+
+  // Normalize links so buildParentLinkedStudentProfiles can match by students.id
+  const studentById = new Map(students.map((row) => [row.id, row]));
+  const studentByProfileId = new Map(
+    students
+      .filter((row) => row.profile_id)
+      .map((row) => [row.profile_id as string, row]),
+  );
+  const normalizedLinks = links.map((link: any) => {
+    const student =
+      studentById.get(link.student_id) ||
+      studentByProfileId.get(link.student_id) ||
+      null;
+    return student
+      ? { ...link, student_id: student.id }
+      : link;
+  });
 
   const mapped = buildParentLinkedStudentProfiles({
     actorProfileId: input.parentProfileId,
     actorSchoolId: input.schoolId,
     parents: parentRows || [],
     students,
-    links: links || [],
+    links: normalizedLinks,
   });
 
   const classIdByProfileId = new Map<string, string | null>();
@@ -103,39 +213,9 @@ export async function getLinkedStudents(input: {
     };
   }
 
-  const fallbackRel = input.fallbackRelationship || null;
-
-  const { data: legacyStudents, error: legacyError } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .eq("school_id", input.schoolId)
-    .eq("parent_id", input.parentProfileId);
-
-  if (legacyError) throw legacyError;
-
-  const relationshipByProfileId = new Map<string, string | null>();
-  const classIdByProfileIdLegacy = new Map<string, string | null>();
-  const studentNumberByProfileIdLegacy = new Map<string, string | null>();
-
-  const profileIds = (legacyStudents || []).map((row: any) => row.id);
-  for (const profileId of profileIds) {
-    relationshipByProfileId.set(profileId, fallbackRel);
-    classIdByProfileIdLegacy.set(profileId, null);
-    studentNumberByProfileIdLegacy.set(profileId, null);
-  }
-
-  return {
-    profileIds,
-    relationshipByProfileId,
-    classIdByProfileId: classIdByProfileIdLegacy,
-    studentNumberByProfileId: studentNumberByProfileIdLegacy,
-    ...(input.includeRowMappings
-      ? {
-          studentRowIdByProfileId: new Map<string, string>(),
-          profileIdByStudentRowId: new Map<string, string>(),
-        }
-      : {}),
-  };
+  // Historical fallback used profiles.parent_id, but that column does not exist
+  // on public.profiles (baseline schema). Returning empty avoids a 500.
+  return emptyLinkedStudents(input.includeRowMappings);
 }
 
 export async function getClassesById(schoolId: string | null, classIds: string[]) {

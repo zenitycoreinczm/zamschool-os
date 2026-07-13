@@ -1,5 +1,3 @@
-import { Users } from "lucide-react";
-
 import { ProfileField } from "@/components/teacher/dashboard/ProfileField";
 import type { TeacherBootstrapData } from "@/lib/teacher-route-common";
 
@@ -38,7 +36,6 @@ export function TeacherTeachingProfile({
     return (
       <section className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <Users className="mb-3 h-8 w-8 text-slate-300" />
           <p className="text-sm font-medium text-slate-500">
             Teaching profile not yet configured
           </p>

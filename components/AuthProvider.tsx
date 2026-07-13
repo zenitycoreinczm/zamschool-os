@@ -41,9 +41,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         setInitializing(false);
       });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const authListener = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
 
       if (DEV && event !== "TOKEN_REFRESHED") {
@@ -66,6 +64,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         },
       });
     });
+
+    const subscription = authListener?.data?.subscription;
+    if (!subscription) {
+      return () => {
+        isMounted = false;
+      };
+    }
 
     return () => {
       isMounted = false;

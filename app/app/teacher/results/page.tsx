@@ -529,7 +529,7 @@ export default function TeacherResultsPage() {
 
           {previewLoading && (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-              <Loader2 className="h-5 w-5 animate-spin text-sky-500" />
+              <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
               <span className="text-sm text-slate-500">
                 Parsing file and matching students…
               </span>
@@ -776,7 +776,7 @@ export default function TeacherResultsPage() {
                         {s.studentName}
                       </span>
                       <span className="ml-2 text-xs text-slate-500">
-                        #{s.examNumber}
+                        {s.examNumber}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">

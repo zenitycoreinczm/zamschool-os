@@ -33,8 +33,9 @@ export default function FinanceChart() {
       try {
         if (cancelled) return;
 
+        const year = new Date().getFullYear();
         const body = await adminApiJson<{ data?: any[] }>(
-          "/api/admin/payments",
+          `/api/admin/payments?view=chart&year=${year}`,
         );
         setRows(body.data || []);
       } catch (error) {

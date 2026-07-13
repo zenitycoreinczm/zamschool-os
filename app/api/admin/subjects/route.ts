@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("subjects")
-      .select("*")
+      .select("id, school_id, name, code, description, created_at")
       .eq("school_id", schoolId)
       .order("created_at", { ascending: false });
 
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "subjects",
       featureAction: "create",
       domain: "academic",
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "subjects",
       featureAction: "update",
       domain: "academic",
@@ -170,7 +170,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "subjects",
       featureAction: "delete",
       domain: "academic",

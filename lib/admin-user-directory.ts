@@ -18,6 +18,8 @@ type UserFormLike = {
   gender: string;
   status: string;
   admission_number: string;
+  /** Class register number (optional string form of integer). */
+  class_number?: string | number | null;
   class_id: string;
   enrollment_date: string;
   employee_id: string;
@@ -27,6 +29,17 @@ type UserFormLike = {
   relation_type: string;
   occupation: string;
 };
+
+function parseClassNumberField(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  const raw = String(value).trim();
+  if (!/^\d{1,5}$/.test(raw)) return null;
+  const n = Number.parseInt(raw, 10);
+  return n > 0 ? n : null;
+}
 
 export function normalizeProfileGender(value: unknown): "male" | "female" | null {
   const normalized = String(value || "").trim().toLowerCase();
@@ -71,7 +84,17 @@ export function mergeUserDirectoryRows(input: MergeInput) {
         profile_id: profileId,
         role_record_id: student.id || null,
         display_name: getDisplayName(profile),
-        admission_number: student.admission_number || student.student_number || profile.admission_number || "",
+        admission_number:
+          student.admission_number ||
+          student.student_number ||
+          profile.admission_number ||
+          (student.class_number != null ? String(student.class_number) : "") ||
+          (profile.class_number != null ? String(profile.class_number) : "") ||
+          "",
+        class_number:
+          student.class_number ??
+          profile.class_number ??
+          null,
         class_id: student.class_id || profile.class_id || "",
         class_name: classNameById[String(student.class_id || profile.class_id || "")] || profile.class_name || profile.class || "",
         enrollment_date: student.enrollment_date || profile.enrollment_date || "",
@@ -141,13 +164,29 @@ export function buildUserWritePlan(input: {
   };
 
   if (input.role === "student") {
+    const classNumber =
+      parseClassNumberField(input.form.class_number) ??
+      parseClassNumberField(input.form.admission_number);
+    const numberText =
+      normalizeOptionalString(input.form.admission_number) ||
+      (classNumber != null ? String(classNumber) : null);
+
     return {
-      profile,
+      profile: {
+        ...profile,
+        admission_number: numberText,
+        student_number: numberText,
+        class_number: classNumber,
+        class_id: normalizeOptionalString(input.form.class_id),
+        enrollment_date: normalizeOptionalString(input.form.enrollment_date),
+      },
       roleRecord: compactRecord({
         profile_id: input.profileId || null,
         school_id: input.schoolId,
         class_id: normalizeOptionalString(input.form.class_id),
-        student_number: normalizeOptionalString(input.form.admission_number),
+        student_number: numberText,
+        admission_number: numberText,
+        class_number: classNumber,
         enrollment_date: normalizeOptionalString(input.form.enrollment_date),
         is_active: toActiveFlag(input.form.status),
       }),

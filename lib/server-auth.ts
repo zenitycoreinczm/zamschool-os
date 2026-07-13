@@ -102,16 +102,24 @@ export async function requireActorContext(
     };
   }
 
+  // L1 memory + Redis. Super_admin with schoolId:null is a valid cached snapshot.
   const cached = await getCachedActorSnapshot(user.id);
+  const cacheUsable = Boolean(cached?.profileId);
+
   let profile: {
     id?: string | null;
     role?: string | null;
     school_id?: string | null;
-  } | null = cached
-    ? { id: cached.profileId, role: cached.role, school_id: cached.schoolId }
+  } | null = cacheUsable
+    ? {
+        id: cached!.profileId,
+        role: cached!.role,
+        // Stored roles are KnownRole enums; buildActorContext normalizes either form.
+        school_id: cached!.schoolId,
+      }
     : null;
 
-  if (!cached || !cached.profileId) {
+  if (!cacheUsable) {
     const lookup = await fetchProfileByIdentity<{
       id?: string | null;
       role?: string | null;
@@ -119,17 +127,27 @@ export async function requireActorContext(
     }>(supabaseAdmin as any, user.id, "id, role, school_id", user.email);
     profile = lookup.data;
     const profileRole = normalizeRole(profile?.role);
-    void setCachedActorSnapshot(user.id, {
-      role: profileRole,
-      schoolId: profile?.school_id ?? null,
-      profileId: profile?.id ?? null,
-    });
+    const schoolId = String(profile?.school_id || "").trim() || null;
+    const profileId = profile?.id ?? null;
+
+    // Only persist complete snapshots. Caching { schoolId: null } for school
+    // roles caused multi-minute false "no school" failures; SUPER_ADMIN is OK.
+    if (profileId && (schoolId || profileRole === "SUPER_ADMIN")) {
+      // Await so the next parallel route in the same tick can L1-hit.
+      await setCachedActorSnapshot(user.id, {
+        role: profileRole,
+        schoolId,
+        profileId,
+      });
+    }
   }
 
+  // Session touch is best-effort telemetry — never block the request path.
   void touchActiveSession({
     userId: user.id,
-    email: user.email,
     lastSeenAt: Date.now(),
+    schoolId: profile?.school_id ?? null,
+    role: normalizeRole(profile?.role) ?? null,
   });
 
   const result = buildActorContext({
@@ -157,7 +175,6 @@ export async function requireAdminContext(req?: Request) {
   return requireActorContext(
     {
       allowedRoles: [
-        "ADMIN",
         "PRINCIPAL",
         "DEPUTY_HEAD",
         "BURSAR",
@@ -179,7 +196,6 @@ export async function requireAdminSetupContext(req?: Request) {
   return requireActorContext(
     {
       allowedRoles: [
-        "ADMIN",
         "PRINCIPAL",
         "DEPUTY_HEAD",
         "BURSAR",
@@ -270,7 +286,7 @@ export async function requireParentContext(req?: Request) {
 export async function requirePaymentsContext(req?: Request) {
   return requireActorContext(
     {
-      allowedRoles: ["PAYMENTS", "BURSAR", "PRINCIPAL", "ADMIN"],
+      allowedRoles: ["PAYMENTS", "BURSAR", "PRINCIPAL"],
       requireSchool: true,
     },
     req,
@@ -321,7 +337,6 @@ export async function requireSchoolStaffContext(req?: Request) {
   return requireActorContext(
     {
       allowedRoles: [
-        "ADMIN",
         "PRINCIPAL",
         "DEPUTY_HEAD",
         "BURSAR",
@@ -350,7 +365,12 @@ export async function requireTeacherOrParentContext(req?: Request) {
 }
 
 const FINANCIAL_ROLES: KnownRole[] = ["BURSAR", "PAYMENTS", "SUPER_ADMIN"];
-const FINANCIAL_DELEGATED_READ_ROLES: KnownRole[] = ["PRINCIPAL", "ADMIN"];
+const FINANCIAL_DELEGATED_READ_ROLES: KnownRole[] = ["PRINCIPAL"];
+/** Single auth pass for chart/list reads — avoids double getUser for principals. */
+const FINANCIAL_READ_ROLES: KnownRole[] = [
+  ...FINANCIAL_ROLES,
+  ...FINANCIAL_DELEGATED_READ_ROLES,
+];
 
 export async function requireFinancialContext(req?: Request) {
   return requireActorContext(
@@ -363,18 +383,15 @@ export async function requireFinancialContext(req?: Request) {
 }
 
 /**
- * Financial read access for dedicated finance staff, plus PRINCIPAL/ADMIN only
- * when the route also checks requireFeatureAccess (explicit permission grant).
+ * Financial read access for dedicated finance staff, plus PRINCIPAL when the
+ * route also checks requireFeatureAccess (explicit permission grant).
+ * Uses one auth pass (combined roles) so dashboard chart loads do not pay
+ * double JWT/profile verification under request storms.
  */
 export async function requireFinancialReadContext(req?: Request) {
-  const financial = await requireFinancialContext(req);
-  if (financial.ok) {
-    return financial;
-  }
-
   return requireActorContext(
     {
-      allowedRoles: FINANCIAL_DELEGATED_READ_ROLES,
+      allowedRoles: FINANCIAL_READ_ROLES,
       requireSchool: true,
     },
     req,
@@ -389,7 +406,7 @@ export async function requireFinancialReadContext(req?: Request) {
 export async function requireFinancialWriteContext(req?: Request) {
   return requireActorContext(
     {
-      allowedRoles: ["BURSAR", "SUPER_ADMIN", "PRINCIPAL", "ADMIN"],
+      allowedRoles: ["BURSAR", "SUPER_ADMIN", "PRINCIPAL"],
       requireSchool: true,
     },
     req,

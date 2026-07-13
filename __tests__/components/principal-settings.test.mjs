@@ -31,16 +31,14 @@ test("principal has a dedicated /app/principal/settings page that re-uses Accoun
   // The page must use AccountSettingsPage so the password / MFA / preferences
   // surfaces stay parity with the teacher and student settings pages.
   assert.match(source, /AccountSettingsPage/, "principal settings must import AccountSettingsPage");
-  // The accent must match the principal workspace accent (indigo) so that a
-  // head teacher does not see the emerald accent of the fallback
-  // app/app/settings page.
+  // Account settings use a neutral slate accent across all roles so the
+  // settings surface stays visually consistent between desks.
   assert.match(
     source,
-    /accent="indigo"/,
-    "principal settings must use accent=\"indigo\" to match PrincipalWorkspace",
+    /accent="slate"/,
+    "principal settings must use accent=\"slate\" for shared account settings chrome",
   );
-  // The session label must be specific to the head-teacher role so the
-  // session card on the page reads correctly.
+  // The account card label must be specific to the head-teacher role.
   assert.match(
     source,
     /sessionTitle="[^"]*[Hh]ead [Tt]eacher/,
@@ -63,28 +61,36 @@ test("workspace-nav.ts routes the principal Settings nav to /app/principal/setti
 
 test("/api/account/session logs the underlying error before returning 500", async () => {
   const source = await readFile(routePath, "utf8");
-  // The catch block must call console.error in non-prod so the cause
-  // is reproducible from server logs.
+  // Errors must be logged server-side (never raw on the client).
   assert.match(
     source,
-    /process\.env\.NODE_ENV\s*!==\s*"production"[\s\S]{0,200}console\.error/,
-    "/api/account/session must log to the server in non-prod",
+    /logServerError\s*\(\s*["']account\.session["']/,
+    "/api/account/session must log errors with logServerError",
   );
-  // The response body in non-prod must include a `cause` field so the
-  // client can show the real reason in its toast.
+  // Client body must use sanitized publicErrorBody — no raw cause/stack.
   assert.match(
     source,
-    /body\.cause\s*=|cause:\s*safeErrorMessage/,
-    "/api/account/session must populate `cause` for non-prod responses",
+    /publicErrorBody\s*\(/,
+    "/api/account/session must return publicErrorBody to the client",
+  );
+  assert.doesNotMatch(
+    source,
+    /body\.cause\s*=/,
+    "/api/account/session must not attach raw `cause` to client responses",
   );
 });
 
-test("accountApiJson prefers `cause` over `error` when reporting non-OK responses", async () => {
+test("accountApiJson surfaces sanitized error text from API bodies", async () => {
   const source = await readFile(apiClientPath, "utf8");
-  // The thrown Error must read `cause` first, then fall back to `error`.
+  // Client only surfaces the public `error` field — never raw stacks.
   assert.match(
     source,
-    /errBody\.cause\s*\|\|\s*errBody\.error/,
-    "accountApiJson must prefer cause over error",
+    /error\?:\s*string[\s\S]{0,80}\?\.error|body as \{ error\?: string \}/,
+    "accountApiJson must read the public error field from API JSON",
+  );
+  assert.doesNotMatch(
+    source,
+    /stack|details|hint/,
+    "accountApiJson must not read internal stack/details/hint from API bodies",
   );
 });

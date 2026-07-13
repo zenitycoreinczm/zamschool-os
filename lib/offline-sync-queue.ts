@@ -80,13 +80,19 @@ export async function processSyncQueue(): Promise<{ processed: number; failed: n
         "Content-Type": "application/json",
       };
 
-      // Inject CSRF token from cookie for mutating requests
-      const csrfMatch = document.cookie
-        .split(";")
-        .map((c) => c.trim())
-        .find((c) => c.startsWith("csrf-token="));
-      if (csrfMatch) {
-        headers["X-CSRF-Token"] = csrfMatch.split("=")[1] || "";
+      // Inject CSRF token (cookie / remembered bootstrap) for mutations
+      try {
+        const { readCsrfToken } = await import("@/lib/csrf-client");
+        const csrf = readCsrfToken();
+        if (csrf) headers["X-CSRF-Token"] = csrf;
+      } catch {
+        const csrfMatch = document.cookie
+          .split(";")
+          .map((c) => c.trim())
+          .find((c) => c.startsWith("csrf-token="));
+        if (csrfMatch) {
+          headers["X-CSRF-Token"] = csrfMatch.split("=")[1] || "";
+        }
       }
 
       const response = await fetch(item.endpoint, {

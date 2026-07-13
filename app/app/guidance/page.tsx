@@ -1,5 +1,7 @@
-import AdminRoleWorkspace from "@/components/admin-workspaces/AdminRoleWorkspace";
+"use client";
+
+import GuidanceDashboard from "@/components/role-workspaces/GuidanceDashboard";
 
 export default function GuidanceWorkspacePage() {
-  return <AdminRoleWorkspace role="guidance_office" />;
+  return <GuidanceDashboard />;
 }

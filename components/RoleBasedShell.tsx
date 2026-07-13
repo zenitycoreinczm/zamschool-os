@@ -3,11 +3,16 @@
 import dynamic from "next/dynamic";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { Surface } from "@/components/workspace/Surface";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
-const shellFallback = () => <WorkspaceLoader label="Loading workspace" />;
+const shellFallback = () => (
+  <WorkspaceLoader
+    label="Loading workspace"
+    hint="Opening your school portal"
+  />
+);
 
 const AdminShell = dynamic(() => import("@/components/AdminShell"), {
   loading: shellFallback,
@@ -25,6 +30,25 @@ const StudentShell = dynamic(() => import("@/components/StudentShell"), {
   loading: shellFallback,
 });
 
+/** Roles that intentionally use AdminShell (school staff + platform). */
+const ADMIN_SHELL_ROLES = new Set([
+  "principal",
+  "deputy_head",
+  "guidance_office",
+  "academic_admin",
+  "hr_admin",
+  "ict_admin",
+  "discipline_admin",
+  "registrar",
+  // Platform operator: uses AdminShell chrome + super-admin nav (not a gap).
+  "super_admin",
+  // Legacy alias collapsed into principal; keep mapped so we never warn.
+  "admin",
+]);
+
+/** Warn once per role per page session — never spam React re-renders. */
+const warnedUnmappedRoles = new Set<string>();
+
 export default function RoleBasedShell({
   children,
 }: {
@@ -36,7 +60,12 @@ export default function RoleBasedShell({
   const error = workspaceCtx?.error ?? "";
 
   if (loading) {
-    return <WorkspaceLoader label="Loading workspace" />;
+    return (
+      <WorkspaceLoader
+        label="Loading workspace"
+        hint="Opening your school portal"
+      />
+    );
   }
 
   if (error) {
@@ -66,28 +95,21 @@ export default function RoleBasedShell({
     return <ParentShell>{children}</ParentShell>;
   }
 
-  if (
-    role === "principal" ||
-    role === "deputy_head" ||
-    role === "guidance_office" ||
-    role === "academic_admin" ||
-    role === "hr_admin" ||
-    role === "ict_admin" ||
-    role === "discipline_admin" ||
-    role === "registrar"
-  ) {
-    return <AdminShell>{children}</AdminShell>;
-  }
-
   if (role === "student") {
     return <StudentShell>{children}</StudentShell>;
   }
 
-  // Unknown / unmapped role. Log so audits surface the gap instead of
-  // silently rendering the admin shell for a role that wasn't accounted for.
-  if (typeof window !== "undefined" && role) {
+  if (role && ADMIN_SHELL_ROLES.has(role)) {
+    return <AdminShell>{children}</AdminShell>;
+  }
+
+  // Truly unknown role only — log once so audits still catch gaps.
+  if (typeof window !== "undefined" && role && !warnedUnmappedRoles.has(role)) {
+    warnedUnmappedRoles.add(role);
     // eslint-disable-next-line no-console
-    console.warn(`[RoleBasedShell] No shell mapped for role "${role}". Falling back to AdminShell.`);
+    console.warn(
+      `[RoleBasedShell] No shell mapped for role "${role}". Falling back to AdminShell.`,
+    );
   }
   return <AdminShell>{children}</AdminShell>;
 }

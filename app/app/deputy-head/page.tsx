@@ -1,5 +1,7 @@
-import AdminRoleWorkspace from "@/components/admin-workspaces/AdminRoleWorkspace";
+"use client";
+
+import DeputyHeadDashboard from "@/components/role-workspaces/DeputyHeadDashboard";
 
 export default function DeputyHeadWorkspacePage() {
-  return <AdminRoleWorkspace role="deputy_head" />;
+  return <DeputyHeadDashboard />;
 }

@@ -20,12 +20,25 @@ export function getSupabaseAdmin() {
       persistSession: false,
     },
     global: {
-      fetch: (url, options) => {
-        // Add timeout to all fetch calls (10 seconds)
+      // 20s budget: instrumentation may wait up to ~5s for the per-process
+      // Supabase rate guard before the real HTTP call starts. A hard 10s
+      // abort was racing that wait and cascading timeouts on dashboard load.
+      fetch: (url, options = {}) => {
+        const TIMEOUT_MS = 20_000;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        return fetch(url, { ...options, signal: controller.signal }).finally(() =>
-          clearTimeout(timeoutId)
+        const external = options.signal;
+        if (external) {
+          if (external.aborted) {
+            controller.abort();
+          } else {
+            external.addEventListener("abort", () => controller.abort(), {
+              once: true,
+            });
+          }
+        }
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        return fetch(url, { ...options, signal: controller.signal }).finally(
+          () => clearTimeout(timeoutId),
         );
       },
     },

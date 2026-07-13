@@ -5,15 +5,24 @@
  * when 100+ users are active simultaneously. Uses a queue system
  * with configurable concurrency limits.
  *
- * Each user gets their own queue position, and the pool ensures
- * we don't exceed Supabase's rate limits while handling bursty traffic.
+ * Note: In serverless, module state is per-isolate (not global across
+ * instances). That is intentional — each isolate self-throttles so a
+ * single cold start cannot open unbounded concurrent Supabase calls.
  */
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
-const MAX_CONCURRENT_REQUESTS = 10; // Max simultaneous Supabase requests
-const MAX_QUEUE_SIZE = 100; // Max queued requests before rejecting
-const QUEUE_TIMEOUT_MS = 30_000; // 30s timeout for queued requests
+function envInt(name: string, fallback: number, min: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.floor(n));
+}
+
+const MAX_CONCURRENT_REQUESTS = envInt("SUPABASE_POOL_MAX_CONCURRENT", 10, 1);
+const MAX_QUEUE_SIZE = envInt("SUPABASE_POOL_MAX_QUEUE", 100, 1);
+const QUEUE_TIMEOUT_MS = envInt("SUPABASE_POOL_QUEUE_TIMEOUT_MS", 30_000, 1000);
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -22,28 +31,60 @@ interface QueueItem {
   reject: (err: Error) => void;
   createdAt: number;
   userId?: string;
-  /** Set to true by the timeout handler so processQueue skips it in O(1). */
+  /** Set true when acquired or timed out so timeout/process never double-settle. */
+  settled?: boolean;
   cancelled?: boolean;
 }
 
 let activeRequests = 0;
 const requestQueue: QueueItem[] = [];
 let processing = false;
+let cancelledPending = 0;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Compact cancelled items from the front of the queue.
+ * Full compaction only when cancelled density is high (amortized O(1)).
+ */
+function compactCancelledHead(): void {
+  while (requestQueue.length > 0 && requestQueue[0]?.cancelled) {
+    requestQueue.shift();
+    if (cancelledPending > 0) cancelledPending--;
+  }
+
+  if (
+    cancelledPending > 0 &&
+    requestQueue.length > 0 &&
+    cancelledPending >= Math.max(8, Math.floor(requestQueue.length / 2))
+  ) {
+    const kept = requestQueue.filter((item) => !item.cancelled);
+    requestQueue.length = 0;
+    requestQueue.push(...kept);
+    cancelledPending = 0;
+  }
+}
 
 function processQueue(): void {
   if (processing) return;
   processing = true;
 
   try {
-    while (requestQueue.length > 0 && activeRequests < MAX_CONCURRENT_REQUESTS) {
+    compactCancelledHead();
+
+    while (
+      requestQueue.length > 0 &&
+      activeRequests < MAX_CONCURRENT_REQUESTS
+    ) {
       const item = requestQueue.shift();
       if (!item) continue;
 
-      // Skip items cancelled by their timeout handler (O(1) flag check).
-      if (item.cancelled) continue;
+      if (item.cancelled || item.settled) {
+        if (item.cancelled && cancelledPending > 0) cancelledPending--;
+        continue;
+      }
 
+      item.settled = true;
       activeRequests++;
       item.resolve();
     }
@@ -68,13 +109,18 @@ export function acquireConnection(userId?: string): Promise<void> {
       return;
     }
 
+    compactCancelledHead();
+
     // Queue full - reject immediately
     if (requestQueue.length >= MAX_QUEUE_SIZE) {
-      reject(new Error(`Connection pool full (${MAX_QUEUE_SIZE} queued). Try again later.`));
+      reject(
+        new Error(
+          `Connection pool full (${MAX_QUEUE_SIZE} queued). Try again later.`,
+        ),
+      );
       return;
     }
 
-    // Add to queue with timeout
     const item: QueueItem = {
       resolve,
       reject,
@@ -83,17 +129,17 @@ export function acquireConnection(userId?: string): Promise<void> {
     };
 
     requestQueue.push(item);
-
-    // Start processing queue
     processQueue();
 
-    // Set timeout for queued request.
-    // Marks the item as cancelled (O(1)) instead of scanning the queue (O(n)).
+    // O(1) timeout: mark cancelled; processQueue drops without scanning.
     setTimeout(() => {
-      if (!item.cancelled) {
-        item.cancelled = true;
-        reject(new Error(`Request timed out after ${QUEUE_TIMEOUT_MS}ms in queue`));
-      }
+      if (item.settled || item.cancelled) return;
+      item.cancelled = true;
+      item.settled = true;
+      cancelledPending++;
+      reject(
+        new Error(`Request timed out after ${QUEUE_TIMEOUT_MS}ms in queue`),
+      );
     }, QUEUE_TIMEOUT_MS);
   });
 }
@@ -105,7 +151,6 @@ export function releaseConnection(): void {
   if (activeRequests > 0) {
     activeRequests--;
   }
-  // Process more queued requests
   processQueue();
 }
 
@@ -118,13 +163,17 @@ export function getPoolStats(): {
   maxConcurrent: number;
   maxQueue: number;
   utilization: number;
+  cancelledPending: number;
 } {
   return {
     active: activeRequests,
     queued: requestQueue.length,
     maxConcurrent: MAX_CONCURRENT_REQUESTS,
     maxQueue: MAX_QUEUE_SIZE,
-    utilization: Math.round((activeRequests / MAX_CONCURRENT_REQUESTS) * 100),
+    utilization: Math.round(
+      (activeRequests / MAX_CONCURRENT_REQUESTS) * 100,
+    ),
+    cancelledPending,
   };
 }
 
@@ -134,7 +183,7 @@ export function getPoolStats(): {
  */
 export async function withConnection<T>(
   fn: () => Promise<T>,
-  userId?: string
+  userId?: string,
 ): Promise<T> {
   await acquireConnection(userId);
   try {

@@ -43,7 +43,7 @@ export function StaffInvitationsView({
       eyebrow="Staff access"
       title={title}
       description={description}
-      primaryInviteLabel="Invite School Administrator"
+      primaryInviteLabel="Invite Deputy Head"
       secondaryInviteLabel="Invite other staff"
     />
   );

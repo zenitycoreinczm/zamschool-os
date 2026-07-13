@@ -1,14 +1,20 @@
 /**
  * Upstash Redis (REST API) — server-only, approved use cases only.
  *
+ * Web-app jobs Redis owns here:
+ * - Rate limiting (atomic sliding window)
+ * - Login brute-force lockouts
+ * - Active session metadata (no JWT, no email PII)
+ * - Role/school actor snapshots
+ * - Shell + workspace bootstrap cache (short TTL)
+ * - OTP throttle / temp tokens / email attestation
+ * - Daily feature quotas
+ *
  * DO NOT use for: dashboards, student lists, attendance, exam data, or general API caching.
  * See lib/redis/keys.ts, lib/supabase-protection.ts (TTL/dev-bucket policy), and .env.example.
  *
- * Uses @upstash/redis which communicates over HTTP — no persistent TCP connections.
- * This avoids connection-exhaustion issues on Vercel serverless.
- *
- * Upstash free tier: 10,000 commands/day, 256MB storage.
- * The app always sets EX TTL on writes so keys expire automatically.
+ * Uses @upstash/redis over HTTPS REST — no TCP pools (safe on Vercel serverless).
+ * Every write must use a TTL (setex / EX / PEXPIRE / clampRedisTtl).
  */
 
 import { isApprovedRedisKey } from "@/lib/redis/keys";
@@ -19,29 +25,86 @@ type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
 const CIRCUIT_THRESHOLD = 5;
 const CIRCUIT_COOLDOWN_MS = 30_000;
+/** DNS / permanent host failures — stay open longer and log less. */
+const CIRCUIT_COOLDOWN_DNS_MS = 5 * 60_000;
+const LOG_THROTTLE_MS = 60_000;
 
 let circuitState: CircuitState = "CLOSED";
 let consecutiveFailures = 0;
 let lastFailureTime = 0;
+let lastLoggedErrorAt = 0;
+let lastLoggedErrorKey = "";
+let dnsFailureMode = false;
+let lastOpenLogAt = 0;
+
+function errorKey(err: unknown): string {
+  if (!err || typeof err !== "object") return String(err);
+  const e = err as {
+    message?: string;
+    code?: string;
+    cause?: { code?: string; hostname?: string; message?: string };
+  };
+  return [
+    e.code || "",
+    e.cause?.code || "",
+    e.cause?.hostname || "",
+    e.message || e.cause?.message || "",
+  ]
+    .join("|")
+    .slice(0, 160);
+}
+
+function isDnsOrHostUnreachableError(err: unknown): boolean {
+  const key = errorKey(err).toLowerCase();
+  return (
+    key.includes("enotfound") ||
+    key.includes("eai_again") ||
+    key.includes("getaddrinfo") ||
+    key.includes("name not resolved")
+  );
+}
+
+function logRedisError(err: unknown) {
+  const key = errorKey(err);
+  const now = Date.now();
+  if (key === lastLoggedErrorKey && now - lastLoggedErrorAt < LOG_THROTTLE_MS) {
+    return;
+  }
+  lastLoggedErrorKey = key;
+  lastLoggedErrorAt = now;
+  console.error("[Redis] Operation error:", err);
+}
 
 function recordSuccess() {
   if (circuitState === "HALF_OPEN") {
     console.warn("[Redis] Circuit breaker: HALF_OPEN → CLOSED (recovered)");
     circuitState = "CLOSED";
     consecutiveFailures = 0;
+    dnsFailureMode = false;
   } else if (consecutiveFailures > 0) {
     consecutiveFailures = 0;
+    dnsFailureMode = false;
   }
 }
 
-function recordFailure() {
+function recordFailure(err?: unknown) {
   consecutiveFailures++;
   lastFailureTime = Date.now();
+  if (err && isDnsOrHostUnreachableError(err)) {
+    dnsFailureMode = true;
+  }
 
   if (circuitState === "CLOSED" && consecutiveFailures >= CIRCUIT_THRESHOLD) {
-    console.warn(
-      `[Redis] Circuit breaker: CLOSED → OPEN after ${consecutiveFailures} failures`,
-    );
+    const now = Date.now();
+    if (now - lastOpenLogAt > LOG_THROTTLE_MS) {
+      console.warn(
+        `[Redis] Circuit breaker: CLOSED → OPEN after ${consecutiveFailures} failures` +
+          (dnsFailureMode ? " (DNS/host unreachable — long cooldown)" : ""),
+      );
+      lastOpenLogAt = now;
+    }
+    circuitState = "OPEN";
+  } else if (circuitState === "HALF_OPEN") {
     circuitState = "OPEN";
   }
 }
@@ -50,10 +113,17 @@ export function isRedisAvailable(): boolean {
   if (!isRedisConfigured()) return false;
 
   if (circuitState === "OPEN") {
-    if (Date.now() - lastFailureTime >= CIRCUIT_COOLDOWN_MS) {
-      console.warn(
-        "[Redis] Circuit breaker: OPEN → HALF_OPEN (testing recovery)",
-      );
+    const cooldown = dnsFailureMode
+      ? CIRCUIT_COOLDOWN_DNS_MS
+      : CIRCUIT_COOLDOWN_MS;
+    if (Date.now() - lastFailureTime >= cooldown) {
+      const now = Date.now();
+      if (now - lastOpenLogAt > LOG_THROTTLE_MS) {
+        console.warn(
+          "[Redis] Circuit breaker: OPEN → HALF_OPEN (testing recovery)",
+        );
+        lastOpenLogAt = now;
+      }
       circuitState = "HALF_OPEN";
       consecutiveFailures = 0;
       return true;
@@ -88,8 +158,8 @@ async function getRedisClient(): Promise<
     redisClient = Redis.fromEnv();
     recordSuccess();
   } catch (err) {
-    recordFailure();
-    console.error("[Redis] Failed to initialize:", err);
+    recordFailure(err);
+    logRedisError(err);
     redisClient = null;
   }
 
@@ -114,8 +184,8 @@ async function withCircuitBreaker<T>(
     recordSuccess();
     return result;
   } catch (err) {
-    console.error("[Redis] Operation error:", err);
-    recordFailure();
+    logRedisError(err);
+    recordFailure(err);
     return fallback;
   }
 }
@@ -206,7 +276,32 @@ export async function redisExpire(
   );
 }
 
-/** Sliding-window rate limit (sorted set) — official Upstash pattern. */
+/**
+ * Atomic sliding-window rate limit (sorted set + Lua).
+ * Single round-trip; safe under concurrent serverless invocations.
+ */
+const SLIDING_WINDOW_LUA = `
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local window = tonumber(ARGV[2])
+local max = tonumber(ARGV[3])
+local member = ARGV[4]
+redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+local count = redis.call('ZCARD', key)
+if count >= max then
+  local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+  local reset = now + window
+  if type(oldest) == 'table' and oldest[2] then
+    reset = tonumber(oldest[2]) + window
+  end
+  return {0, 0, reset}
+end
+redis.call('ZADD', key, now, member)
+redis.call('PEXPIRE', key, window)
+return {1, max - count - 1, now + window}
+`;
+
+/** Sliding-window rate limit (sorted set) — atomic Upstash/Lua pattern. */
 export async function redisSlidingWindowHit(params: {
   key: string;
   windowMs: number;
@@ -217,43 +312,37 @@ export async function redisSlidingWindowHit(params: {
   if (!redis) return null;
 
   const now = Date.now();
-  const windowStart = now - params.windowMs;
+  const member = `${now}-${Math.random().toString(36).slice(2, 10)}`;
 
   return withCircuitBreaker(async () => {
-    // Pipeline: batch zremrangebyscore + zcard in 1 HTTP request
-    const pipeline = redis.pipeline();
-    pipeline.zremrangebyscore(params.key, 0, windowStart);
-    pipeline.zcard(params.key);
-    const results = await pipeline.exec();
+    const raw = (await redis.eval(
+      SLIDING_WINDOW_LUA,
+      [params.key],
+      [now, params.windowMs, params.maxRequests, member],
+    )) as unknown;
 
-    const currentCount = Number(results[1]) || 0;
-
-    if (currentCount >= params.maxRequests) {
-      // Get oldest entry to calculate reset time
-      // @upstash/redis withScores returns flat array: [member, score, member, score, ...]
-      const oldest = await redis.zrange(params.key, 0, 0, { withScores: true });
-      const resetTime =
-        oldest.length > 1
-          ? Number(oldest[1]) + params.windowMs
-          : now + params.windowMs;
-      return { allowed: false, remaining: 0, resetTime };
-    }
-
-    // Pipeline: add current request + set expiry in 1 HTTP request
-    const addPipeline = redis.pipeline();
-    addPipeline.zadd(params.key, {
-      score: now,
-      member: `${now}-${Math.random()}`,
-    });
-    addPipeline.pexpire(params.key, params.windowMs);
-    await addPipeline.exec();
+    const tuple = Array.isArray(raw) ? raw : [];
+    const allowedFlag = Number(tuple[0]);
+    const remaining = Number(tuple[1]);
+    const resetTime = Number(tuple[2]) || now + params.windowMs;
 
     return {
-      allowed: true,
-      remaining: params.maxRequests - currentCount - 1,
-      resetTime: now + params.windowMs,
+      allowed: allowedFlag === 1,
+      remaining: Number.isFinite(remaining) ? Math.max(0, remaining) : 0,
+      resetTime,
     };
   }, null);
+}
+
+/** Lightweight liveness for health checks / ops. */
+export async function redisPing(): Promise<boolean> {
+  if (!isRedisConfigured()) return false;
+  const redis = await getRedisClient();
+  if (!redis) return false;
+  return withCircuitBreaker(async () => {
+    const pong = await redis.ping();
+    return String(pong).toUpperCase() === "PONG";
+  }, false);
 }
 
 export async function redisDecr(key: string): Promise<void> {

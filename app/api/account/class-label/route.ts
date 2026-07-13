@@ -5,7 +5,6 @@ import { requireActorContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const ALLOWED_ROLES = [
-  "ADMIN",
   "PRINCIPAL",
   "TEACHER",
   "STUDENT",

@@ -37,7 +37,9 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("discipline_categories")
-      .select("*")
+      .select(
+        "id, school_id, name, description, severity, is_active, created_at, updated_at",
+      )
       .eq("school_id", schoolId)
       .order("severity", { ascending: true })
       .order("name", { ascending: true });

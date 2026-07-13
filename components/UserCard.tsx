@@ -8,6 +8,7 @@ import { fetchDashboardSummary } from "@/lib/dashboard-client";
 import { useDashboardSummary } from "@/components/DashboardSummaryProvider";
 import { roleStatSurface, ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
+import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabel";
 
 type UserCardType = keyof typeof roleStatSurface;
 
@@ -67,8 +68,12 @@ export default function UserCard({ type }: { type: UserCardType }) {
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="max-w-[9rem] truncate rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-2xs ring-1 ring-black/5">
-          {academicLabel}
+        <span className="inline-flex max-w-[10.5rem] items-baseline gap-1 truncate rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-2xs ring-1 ring-black/5">
+          <AcademicContextLabel
+            value={academicLabel}
+            yearClassName="text-[10px] font-semibold text-slate-800"
+            termClassName="text-[9px] font-medium uppercase tracking-[0.1em] text-slate-500"
+          />
         </span>
         <span
           className="text-slate-500/80 transition group-hover:scale-110 group-hover:text-slate-900"

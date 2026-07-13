@@ -44,3 +44,23 @@ test("admin timetable route deletes inside the school boundary", async () => {
   // school A cannot delete a lesson from school B.
   assert.match(source, /\.eq\("school_id",\s*schoolId\)/);
 });
+
+test("admin timetable mutations allow Academic Admin through academic domain enforcement", async () => {
+  const source = await readFile(routePath, "utf8");
+
+  assert.match(source, /enforceRouteAccess/);
+  assert.match(source, /allowedRoles:\s*\[[^\]]*"ACADEMIC_ADMIN"/);
+  assert.match(source, /feature:\s*"timetable"/);
+  assert.match(source, /domain:\s*"academic"/);
+  assert.match(source, /featureAction:\s*"create"/);
+  assert.match(source, /domainAction:\s*"create"/);
+});
+
+test("admin timetable GET requires timetable read permission", async () => {
+  const source = await readFile(routePath, "utf8");
+
+  assert.match(
+    source,
+    /requireFeatureAccess\(access\.context,\s*"timetable",\s*"read"\)/,
+  );
+});

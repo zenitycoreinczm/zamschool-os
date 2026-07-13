@@ -1,5 +1,5 @@
-import AdminRoleWorkspace from "@/components/admin-workspaces/AdminRoleWorkspace";
+import IctAdminDashboard from "@/components/role-workspaces/IctAdminDashboard";
 
 export default function IctAdminWorkspacePage() {
-  return <AdminRoleWorkspace role="ict_admin" />;
+  return <IctAdminDashboard />;
 }

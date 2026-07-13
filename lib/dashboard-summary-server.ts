@@ -65,7 +65,7 @@ async function buildDashboardSummary(schoolId: string): Promise<DashboardSummary
     countSchoolRows("teachers", schoolId),
     countSchoolRows("parents", schoolId),
     // Count admin-role profiles directly in the DB.
-    countProfilesByRoles(schoolId, ["admin", "principal", "super_admin", "deputy_head", "academic_admin", "hr_admin", "ict_admin"]),
+    countProfilesByRoles(schoolId, ["PRINCIPAL", "super_admin", "deputy_head", "academic_admin", "hr_admin", "ict_admin"]),
     // Gender breakdown via targeted count queries on profiles.
     countProfilesByGenders(schoolId, ["male", "m", "boy", "boys"]),
     countProfilesByGenders(schoolId, ["female", "f", "girl", "girls"]),

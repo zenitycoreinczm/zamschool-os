@@ -93,8 +93,78 @@ export const ROLE_DASHBOARD_PATHS: Record<WorkspaceRoleKey, string> = {
   payments: "/app/payments",
 };
 
+/** Role-owned settings path (includes MFA via AccountSettingsPage). */
+export const ROLE_SETTINGS_PATHS: Record<WorkspaceRoleKey, string> = {
+  admin: "/app/settings",
+  principal: "/app/principal/settings",
+  deputy_head: "/app/deputy-head/settings",
+  bursar: "/app/bursar/settings",
+  guidance_office: "/app/guidance/settings",
+  academic_admin: "/app/academic-admin/settings",
+  hr_admin: "/app/hr-admin/settings",
+  ict_admin: "/app/ict-admin/settings",
+  discipline_admin: "/app/discipline-admin/settings",
+  registrar: "/app/registrar/settings",
+  super_admin: "/app/settings",
+  teacher: "/app/teacher/settings",
+  student: "/app/student/settings",
+  parent: "/app/parent/settings",
+  payments: "/app/payments/settings",
+};
+
 export function getRoleDashboardPath(role: WorkspaceRoleKey): string {
   return ROLE_DASHBOARD_PATHS[role] ?? ROLE_DASHBOARD_PATHS.admin;
+}
+
+export function getRoleSettingsPath(role: WorkspaceRoleKey): string {
+  return ROLE_SETTINGS_PATHS[role] ?? "/app/settings";
+}
+
+/**
+ * Shared "Today" strip for staff / leadership sidebars.
+ * Home + school feed so messages, notifications, announcements, and events
+ * are always discoverable without memorizing URLs.
+ */
+export function staffTodayItems(options: {
+  homeHref: string;
+  homeLabel?: string;
+  /** When false, omit Events (rare). Default true. */
+  includeEvents?: boolean;
+  /** When false, omit Notifications. Default true. */
+  includeNotifications?: boolean;
+  /** When false, omit Announcements. Default true. */
+  includeAnnouncements?: boolean;
+}): WorkspaceNavItem[] {
+  const {
+    homeHref,
+    homeLabel = "Dashboard",
+    includeEvents = true,
+    includeNotifications = true,
+    includeAnnouncements = true,
+  } = options;
+
+  const items: WorkspaceNavItem[] = [
+    { href: homeHref, label: homeLabel, icon: LayoutDashboard },
+    { href: "/app/messages", label: "Messages", icon: MessageSquare },
+  ];
+  if (includeNotifications) {
+    items.push({
+      href: "/app/notifications",
+      label: "Notifications",
+      icon: Bell,
+    });
+  }
+  if (includeAnnouncements) {
+    items.push({
+      href: "/app/announcements",
+      label: "Announcements",
+      icon: Megaphone,
+    });
+  }
+  if (includeEvents) {
+    items.push({ href: "/app/events", label: "Events", icon: Calendar });
+  }
+  return items;
 }
 
 const adminSections: WorkspaceNavSection[] = [
@@ -149,18 +219,16 @@ const adminSections: WorkspaceNavSection[] = [
 const principalSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/principal", label: "Overview", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-      { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/app/events", label: "Events", icon: Calendar },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/principal",
+      homeLabel: "Overview",
+    }),
   },
   {
     label: "Governance",
     items: [
       { href: "/app/principal/staff", label: "Invite staff", icon: UserPlus },
+      { href: "/app/admin/users", label: "Users directory", icon: Users },
       { href: "/app/admin/audit", label: "Audit trail", icon: Shield },
       { href: "/app/admin/school", label: "School profile", icon: Building2 },
       {
@@ -190,16 +258,10 @@ const principalSections: WorkspaceNavSection[] = [
 const deputyHeadSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      {
-        href: "/app/deputy-head",
-        label: "Quality Hub",
-        icon: LayoutDashboard,
-      },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-      { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/deputy-head",
+      homeLabel: "Quality Hub",
+    }),
   },
   {
     label: "Academic review",
@@ -225,18 +287,19 @@ const deputyHeadSections: WorkspaceNavSection[] = [
   },
   {
     label: "Account",
-    items: [{ href: "/app/deputy-head/settings", label: "Settings", icon: Settings }],
+    items: [
+      { href: "/app/deputy-head/settings", label: "Settings", icon: Settings },
+    ],
   },
 ];
 
 const bursarSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/bursar", label: "Finance Hub", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/bursar",
+      homeLabel: "Finance Hub",
+    }),
   },
   {
     label: "Finance",
@@ -260,11 +323,10 @@ const bursarSections: WorkspaceNavSection[] = [
 const guidanceSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/guidance", label: "Welfare Desk", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/guidance",
+      homeLabel: "Dashboard",
+    }),
   },
   {
     label: "Student care",
@@ -275,38 +337,45 @@ const guidanceSections: WorkspaceNavSection[] = [
         label: "Attendance",
         icon: ClipboardList,
       },
+      {
+        href: "/app/discipline-admin",
+        label: "Conduct records",
+        icon: Shield,
+      },
     ],
   },
   {
     label: "Account",
-    items: [{ href: "/app/guidance/settings", label: "Settings", icon: Settings }],
+    items: [
+      { href: "/app/guidance/settings", label: "Settings", icon: Settings },
+    ],
   },
 ];
 
 const academicAdminSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      {
-        href: "/app/academic-admin",
-        label: "Academic Hub",
-        icon: LayoutDashboard,
-      },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/academic-admin",
+      homeLabel: "Dashboard",
+    }),
   },
   {
     label: "Timetable",
     items: [
       {
-        href: "/app/admin/timetable",
-        label: "Class Timetables",
-        icon: CalendarClock,
+        href: "/app/admin/timetable/classes",
+        label: "Class timetable",
+        icon: GraduationCap,
+      },
+      {
+        href: "/app/admin/timetable/teachers",
+        label: "Teacher timetable",
+        icon: Users,
       },
       {
         href: "/app/admin/academic",
-        label: "Academic Years & Terms",
+        label: "Years & terms",
         icon: Calendar,
       },
     ],
@@ -314,12 +383,11 @@ const academicAdminSections: WorkspaceNavSection[] = [
   {
     label: "Curriculum",
     items: [
-      { href: "/app/admin/classes", label: "Classes", icon: GraduationCap },
       { href: "/app/admin/subjects", label: "Subjects", icon: FileText },
       { href: "/app/admin/assignments", label: "Assignments", icon: FileText },
       {
         href: "/app/admin/grading-scales",
-        label: "Grades & Scales",
+        label: "Grading scales",
         icon: ClipboardList,
       },
     ],
@@ -333,24 +401,18 @@ const academicAdminSections: WorkspaceNavSection[] = [
 const hrAdminSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/hr-admin", label: "HR Hub", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/hr-admin",
+      homeLabel: "HR hub",
+    }),
   },
   {
-    label: "People lifecycle",
+    label: "People",
     items: [
-      { href: "/app/admin/users", label: "Staff & students", icon: Users },
-    ],
-  },
-  {
-    label: "Departments",
-    items: [
+      { href: "/app/admin/users", label: "Staff directory", icon: Users },
       {
-        href: "/app/admin/school",
-        label: "School & departments",
+        href: "/app/admin/departments",
+        label: "Departments",
         icon: Building2,
       },
     ],
@@ -364,18 +426,17 @@ const hrAdminSections: WorkspaceNavSection[] = [
 const ictAdminSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/ict-admin", label: "ICT Hub", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/ict-admin",
+      homeLabel: "Dashboard",
+    }),
   },
   {
     label: "Support",
     items: [
-      { href: "/app/admin/users", label: "User Recovery", icon: Users },
-      { href: "/app/admin/audit", label: "Audit", icon: Shield },
-      { href: "/app/admin/school", label: "School", icon: Building2 },
+      { href: "/app/admin/users", label: "User recovery", icon: Users },
+      { href: "/app/admin/audit", label: "Audit trail", icon: Shield },
+      { href: "/app/admin/school", label: "School profile", icon: Building2 },
     ],
   },
   {
@@ -387,18 +448,13 @@ const ictAdminSections: WorkspaceNavSection[] = [
 const disciplineAdminSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      {
-        href: "/app/discipline-admin",
-        label: "Conduct Desk",
-        icon: LayoutDashboard,
-      },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/discipline-admin",
+      homeLabel: "Dashboard",
+    }),
   },
   {
-    label: "Students",
+    label: "Conduct",
     items: [
       { href: "/app/admin/users", label: "Students", icon: Users },
       { href: "/app/admin/classes", label: "Classes", icon: GraduationCap },
@@ -418,26 +474,23 @@ const disciplineAdminSections: WorkspaceNavSection[] = [
 const registrarSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      {
-        href: "/app/registrar",
-        label: "Admissions Desk",
-        icon: LayoutDashboard,
-      },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/registrar",
+      homeLabel: "Dashboard",
+    }),
   },
   {
-    label: "Admissions",
+    label: "Enrolment",
     items: [
-      { href: "/app/registrar/people", label: "Students, Teachers & Parents", icon: Users },
+      { href: "/app/registrar/people", label: "People", icon: Users },
       { href: "/app/registrar/classes", label: "Classes", icon: GraduationCap },
     ],
   },
   {
     label: "Account",
-    items: [{ href: "/app/registrar/settings", label: "Settings", icon: Settings }],
+    items: [
+      { href: "/app/registrar/settings", label: "Settings", icon: Settings },
+    ],
   },
 ];
 
@@ -487,11 +540,10 @@ const appStudentSections: WorkspaceNavSection[] = [
 export const paymentsSections: WorkspaceNavSection[] = [
   {
     label: "Today",
-    items: [
-      { href: "/app/payments", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-    ],
+    items: staffTodayItems({
+      homeHref: "/app/payments",
+      homeLabel: "Dashboard",
+    }),
   },
   {
     label: "Billing",
@@ -508,37 +560,57 @@ export const paymentsSections: WorkspaceNavSection[] = [
     label: "Account",
     items: [
       { href: "/app/profile", label: "Profile", icon: Users },
-      { href: "/app/settings", label: "Settings", icon: Settings },
+      { href: "/app/payments/settings", label: "Settings", icon: Settings },
     ],
   },
 ];
 
 export const teacherPortalSections: WorkspaceNavSection[] = [
   {
-    label: "Today",
+    label: "Classroom",
     items: [
       { href: "/app/teacher", label: "Dashboard", icon: LayoutDashboard },
       { href: "/app/teacher/inbox", label: "Messages", icon: MessageSquare },
-      {
-        href: "/app/teacher/notifications",
-        label: "Notifications",
-        icon: Bell,
-      },
+      { href: "/app/teacher/students", label: "Students", icon: Users },
+      { href: "/app/teacher/classes", label: "Classes", icon: GraduationCap },
     ],
   },
   {
     label: "Teaching",
     items: [
-      { href: "/app/teacher/students", label: "Students", icon: Users },
-      { href: "/app/teacher/teaching", label: "Teaching", icon: GraduationCap },
-      { href: "/app/teacher/classes", label: "Classes", icon: GraduationCap },
+      {
+        href: "/app/teacher/teaching",
+        label: "Schedule",
+        icon: CalendarClock,
+      },
       {
         href: "/app/teacher/attendance",
         label: "Attendance",
         icon: ClipboardList,
       },
+      {
+        href: "/app/teacher/assignments",
+        label: "Assignments",
+        icon: FileText,
+      },
       { href: "/app/teacher/results", label: "Results", icon: GraduationCap },
-      { href: "/app/teacher/discipline", label: "Discipline", icon: Shield },
+      { href: "/app/teacher/discipline", label: "Conduct", icon: Shield },
+    ],
+  },
+  {
+    label: "School",
+    items: [
+      {
+        href: "/app/teacher/announcements",
+        label: "Announcements",
+        icon: Megaphone,
+      },
+      { href: "/app/teacher/events", label: "Events", icon: Calendar },
+      {
+        href: "/app/teacher/notifications",
+        label: "Notifications",
+        icon: Bell,
+      },
     ],
   },
   {
@@ -552,25 +624,19 @@ export const teacherPortalSections: WorkspaceNavSection[] = [
 
 export const studentPortalSections: WorkspaceNavSection[] = [
   {
-    label: "Today",
+    label: "School",
     items: [
       { href: "/app/student", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/app/student/messages", label: "Messages", icon: MessageSquare },
-      {
-        href: "/app/student/notifications",
-        label: "Notifications",
-        icon: Bell,
-      },
       {
         href: "/app/student/announcements",
         label: "Announcements",
         icon: Megaphone,
       },
-      { href: "/app/student/events", label: "Events", icon: Calendar },
+      { href: "/app/student/messages", label: "Messages", icon: MessageSquare },
     ],
   },
   {
-    label: "School work",
+    label: "My work",
     items: [
       {
         href: "/app/student/assignments",
@@ -597,53 +663,45 @@ export const studentPortalSections: WorkspaceNavSection[] = [
 
 export const parentPortalSections: WorkspaceNavSection[] = [
   {
-    label: "Today",
+    label: "Home",
     items: [
       { href: "/app/parent", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/app/parent/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/parent/notifications", label: "Notifications", icon: Bell },
       {
         href: "/app/parent/announcements",
         label: "Announcements",
         icon: Megaphone,
       },
-      { href: "/app/parent/events", label: "Events", icon: Calendar },
+      { href: "/app/parent/messages", label: "Messages", icon: MessageSquare },
     ],
   },
   {
     label: "My children",
     items: [
-      { href: "/app/parent/children", label: "My Children", icon: Users },
+      { href: "/app/parent/children", label: "Children", icon: Users },
       {
         href: "/app/parent/attendance",
         label: "Attendance",
         icon: CalendarCheck,
       },
       { href: "/app/parent/results", label: "Results", icon: GraduationCap },
-      { href: "/app/parent/discipline", label: "Conduct", icon: Shield },
       {
         href: "/app/parent/reports",
-        label: "Report Cards",
+        label: "Report cards",
         icon: FileSpreadsheet,
       },
-      {
-        href: "/app/parent/timetable",
-        label: "Timetable",
-        icon: CalendarClock,
-      },
-      { href: "/app/parent/teachers", label: "Teachers", icon: BookOpen },
+      { href: "/app/parent/discipline", label: "Conduct", icon: Shield },
     ],
   },
   {
-    label: "Finance",
+    label: "School",
     items: [
-      { href: "/app/parent/fees", label: "School Fees", icon: CreditCard },
+      { href: "/app/parent/fees", label: "Fees", icon: CreditCard },
+      { href: "/app/parent/absence", label: "Report absence", icon: AlertTriangle },
     ],
   },
   {
     label: "Account",
     items: [
-      { href: "/app/parent/absence", label: "Absence", icon: AlertTriangle },
       { href: "/app/parent/profile", label: "Profile", icon: User },
       { href: "/app/parent/settings", label: "Settings", icon: Settings },
     ],
@@ -713,7 +771,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/messages"),
         pickDockItem(items, "/app/admin/users"),
         pickDockItem(items, "/app/admin/finance"),
-        { href: "/app/profile", label: "Profile", icon: Settings },
+        {
+          href: getRoleSettingsPath(role === "principal" ? "principal" : "admin"),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     case "deputy_head":
     case "guidance_office":
@@ -727,7 +789,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/messages"),
         pickDockItem(items, "/app/admin/users"),
         items.find((item) => item.href.includes("/admin/")) || items[1],
-        { href: "/app/settings", label: "Settings", icon: Settings },
+        {
+          href: getRoleSettingsPath(role),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     case "bursar":
     case "payments":
@@ -736,7 +802,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/messages"),
         pickDockItem(items, "/app/payments/students"),
         pickDockItem(items, "/app/payments/fees"),
-        { href: "/app/profile", label: "Profile", icon: Settings },
+        {
+          href: getRoleSettingsPath(role),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     case "teacher":
       return uniqueDockItems([
@@ -744,7 +814,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/messages"),
         pickDockItem(items, "/app/teacher"),
         pickDockItem(items, "/app/announcements"),
-        { href: "/app/profile", label: "Profile", icon: Settings },
+        {
+          href: getRoleSettingsPath("teacher"),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     case "student":
       return uniqueDockItems([
@@ -752,7 +826,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/messages"),
         pickDockItem(items, "/app/announcements"),
         { href: "/app/profile", label: "Profile", icon: Users },
-        { href: "/app/settings", label: "Settings", icon: Settings },
+        {
+          href: getRoleSettingsPath("student"),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     case "parent":
       return uniqueDockItems([
@@ -760,7 +838,11 @@ export function buildRoleMobileDock(
         pickDockItem(items, "/app/parent/messages"),
         pickDockItem(items, "/app/parent/children"),
         pickDockItem(items, "/app/parent/attendance"),
-        pickDockItem(items, "/app/parent/fees"),
+        {
+          href: getRoleSettingsPath("parent"),
+          label: "Settings",
+          icon: Settings,
+        },
       ]);
     default:
       return items.slice(0, 5);
@@ -773,8 +855,8 @@ export function buildTeacherPortalDock(): WorkspaceNavItem[] {
     pickDockItem(items, "/app/teacher"),
     pickDockItem(items, "/app/teacher/inbox"),
     pickDockItem(items, "/app/teacher/students"),
-    pickDockItem(items, "/app/teacher/teaching"),
-    pickDockItem(items, "/app/teacher/settings"),
+    pickDockItem(items, "/app/teacher/attendance"),
+    pickDockItem(items, "/app/teacher/profile"),
   ].filter(Boolean) as WorkspaceNavItem[];
 }
 

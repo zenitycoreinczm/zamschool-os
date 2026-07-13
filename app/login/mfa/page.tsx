@@ -132,7 +132,7 @@ export default function MfaChallengePage() {
           </div>
           <h1 className="text-xl font-bold text-slate-900">Two-factor authentication</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Enter the code from your authenticator app to continue
+            Enter the 6-digit code from your authenticator app to continue
           </p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -195,6 +195,18 @@ export default function MfaChallengePage() {
             </button>
           </div>
         </div>
+
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+          <p className="font-semibold">Can’t open your authenticator app?</p>
+          <p className="mt-1.5 leading-relaxed text-amber-900/90">
+            If you cannot provide the codes from your authenticator app, you
+            must contact the <strong>ICT admin at your school</strong>. They can
+            turn off the authenticator step so you can sign in with your email
+            and password only. After you regain access, re-enable two-factor
+            authentication in Settings.
+          </p>
+        </div>
+
         <div className="text-center">
           <button
             onClick={async () => {

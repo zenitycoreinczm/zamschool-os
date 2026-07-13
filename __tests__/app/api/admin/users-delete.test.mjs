@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 // specific parent, not the entire school. The old code wiped every
 // parent-child link in the school when deleting a single parent.
 
-const source = readFileSync("app/api/admin/users/route.ts", "utf8");
+const source = readFileSync("app/api/admin/users/helpers.ts", "utf8");
 
 // Extract just the deleteParentRecords function body
 const fnMatch = source.match(

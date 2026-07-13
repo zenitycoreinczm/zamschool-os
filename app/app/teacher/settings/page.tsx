@@ -10,12 +10,12 @@ export default function TeacherSettingsPage() {
 
   return (
     <AccountSettingsPage
-      pageTitle="Settings"
-      intro="Manage your teacher workspace preferences, security, and session."
-      accent="amber"
+      pageTitle="Account settings"
+      intro="Manage your account, notifications, password, and two-factor authentication for teaching."
+      accent="slate"
       preferencesStorageKey="teacher-workspace-settings"
-      sessionTitle="Teacher session"
-      sessionBody="Signed-in teacher account on this device."
+      sessionTitle="Your account"
+      sessionBody="Email, role, and school for the signed-in account."
       eyebrow="Teacher workspace"
     >
       <Surface variant="default" className="p-5" as="div">

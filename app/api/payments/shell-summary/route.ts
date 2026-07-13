@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 
 import { requireFeatureAccess } from "@/lib/feature-permissions";
+import { CACHE_CONFIGS, withCache } from "@/lib/enhanced-cache";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { requirePaymentsContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { READ_MOSTLY_PRIVATE_CACHE } from "@/lib/teacher-route-common";
+
+type PaymentsShellSummary = {
+  totalRevenue: number;
+  pendingPayments: number;
+  overduePayments: number;
+  totalStudents: number;
+};
 
 export async function GET(req: Request) {
   try {
@@ -22,42 +30,22 @@ export async function GET(req: Request) {
           pendingPayments: 0,
           overduePayments: 0,
           totalStudents: 0,
-        },
+        } satisfies PaymentsShellSummary,
       });
     }
 
-    const [paymentsResult, studentCountResult] = await Promise.all([
-      supabaseAdmin
-        .from("payments")
-        .select("amount, status")
-        .eq("school_id", schoolId),
-      supabaseAdmin
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("school_id", schoolId)
-        .eq("role", "STUDENT"),
-    ]);
-
-    if (paymentsResult.error) {
-      throw paymentsResult.error;
-    }
-
-    const payments = paymentsResult.data || [];
-    const totalRevenue = payments
-      .filter((payment) => payment.status === "PAID")
-      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    const pendingPayments = payments
-      .filter((payment) => payment.status === "PENDING")
-      .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const data = await withCache(
+      `payments-shell:${schoolId}`,
+      () => loadPaymentsShellSummary(schoolId),
+      {
+        ...CACHE_CONFIGS.admin.analytics,
+        tags: ["fees", "dashboard"],
+      },
+    );
 
     const response = NextResponse.json({
       success: true,
-      data: {
-        totalRevenue,
-        pendingPayments,
-        overduePayments: 0,
-        totalStudents: studentCountResult.count || 0,
-      },
+      data,
     });
 
     response.headers.set("Cache-Control", READ_MOSTLY_PRIVATE_CACHE);
@@ -68,4 +56,43 @@ export async function GET(req: Request) {
       { status: 500 },
     );
   }
+}
+
+async function loadPaymentsShellSummary(
+  schoolId: string,
+): Promise<PaymentsShellSummary> {
+  // Fetch only amount + status (not full payment rows) and count students via head.
+  const [paymentsResult, studentCountResult] = await Promise.all([
+    supabaseAdmin
+      .from("payments")
+      .select("amount, status")
+      .eq("school_id", schoolId),
+    supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("school_id", schoolId)
+      .in("role", ["STUDENT", "student"]),
+  ]);
+
+  if (paymentsResult.error) {
+    throw paymentsResult.error;
+  }
+
+  const payments = paymentsResult.data || [];
+  let totalRevenue = 0;
+  let pendingPayments = 0;
+
+  for (const payment of payments) {
+    const amount = Number(payment.amount) || 0;
+    const status = String(payment.status || "").toUpperCase();
+    if (status === "PAID") totalRevenue += amount;
+    else if (status === "PENDING") pendingPayments += amount;
+  }
+
+  return {
+    totalRevenue,
+    pendingPayments,
+    overduePayments: 0,
+    totalStudents: studentCountResult.count || 0,
+  };
 }

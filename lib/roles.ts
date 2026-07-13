@@ -1,5 +1,4 @@
 export const KNOWN_ROLES = [
-  "ADMIN",
   "TEACHER",
   "STUDENT",
   "PARENT",
@@ -18,21 +17,41 @@ export const KNOWN_ROLES = [
 
 export type KnownRole = (typeof KNOWN_ROLES)[number];
 
+/**
+ * Canonical school leadership:
+ * - PRINCIPAL = Head Teacher (school owner; created at registration)
+ * - DEPUTY_HEAD = Deputy Head Teacher
+ * - SUPER_ADMIN = platform operator (not a school job title)
+ *
+ * Staff specialties: teacher, bursar, registrar, ict_admin, etc.
+ *
+ * Legacy "admin" / "School Administrator" is collapsed into Head Teacher so
+ * we do not keep two near-duplicate school-owner roles.
+ */
 const ROLE_ALIASES: Record<string, KnownRole> = {
-  ADMINISTRATOR: "ADMIN",
+  // Legacy school administrator → Head Teacher
+  ADMIN: "PRINCIPAL",
+  ADMINISTRATOR: "PRINCIPAL",
+  SCHOOL_ADMINISTRATOR: "PRINCIPAL",
+  // Head Teacher aliases
   HEAD_TEACHER: "PRINCIPAL",
   HEADTEACHER: "PRINCIPAL",
   PRINCIPAL: "PRINCIPAL",
+  // Deputy
   DEPUTY_HEAD_TEACHER: "DEPUTY_HEAD",
   DEPUTY_HEADTEACHER: "DEPUTY_HEAD",
   DEPUTY_HEAD: "DEPUTY_HEAD",
+  // Finance
   FINANCE_OFFICER: "BURSAR",
   FINANCE: "BURSAR",
+  // Guidance
   GUIDANCE_OFFICER: "GUIDANCE_OFFICE",
   GUIDANCE: "GUIDANCE_OFFICE",
+  // ICT
   IT_ADMIN: "ICT_ADMIN",
   IT_ADMINISTRATOR: "ICT_ADMIN",
   ICT_ADMINISTRATOR: "ICT_ADMIN",
+  // Admissions
   ADMISSIONS_OFFICER: "REGISTRAR",
   ADMISSIONS: "REGISTRAR",
   SCHOOL_SECRETARY: "REGISTRAR",
@@ -40,7 +59,6 @@ const ROLE_ALIASES: Record<string, KnownRole> = {
 };
 
 const STORED_ROLE_VALUES: Record<KnownRole, string> = {
-  ADMIN: "admin",
   TEACHER: "teacher",
   STUDENT: "student",
   PARENT: "parent",
@@ -96,22 +114,33 @@ export function roleDatabaseValues(role: string | null | undefined): string[] {
     }
   }
 
+  // Legacy profile rows may still store "admin" for Head Teacher.
+  if (normalized === "PRINCIPAL") {
+    values.add("admin");
+    values.add("ADMIN");
+    values.add("administrator");
+  }
+
   return Array.from(values);
 }
 
+/** School leadership + specialty office roles that use admin-style tools. */
 export function isAdminRole(role: string | null | undefined): boolean {
   const normalized = normalizeRole(role);
   return Boolean(
     normalized &&
-    [
-      "ADMIN",
-      "PRINCIPAL",
-      "SUPER_ADMIN",
-      "DEPUTY_HEAD",
-      "ACADEMIC_ADMIN",
-      "HR_ADMIN",
-      "ICT_ADMIN",
-    ].includes(normalized),
+      [
+        "PRINCIPAL",
+        "SUPER_ADMIN",
+        "DEPUTY_HEAD",
+        "ACADEMIC_ADMIN",
+        "HR_ADMIN",
+        "ICT_ADMIN",
+        "REGISTRAR",
+        "DISCIPLINE_ADMIN",
+        "GUIDANCE_OFFICE",
+        "BURSAR",
+      ].includes(normalized),
   );
 }
 
@@ -119,7 +148,7 @@ export function isSensitiveRole(role: string | null | undefined): boolean {
   const normalized = normalizeRole(role);
   return Boolean(
     normalized &&
-    ["SUPER_ADMIN", "PRINCIPAL", "BURSAR", "ICT_ADMIN"].includes(normalized),
+      ["SUPER_ADMIN", "PRINCIPAL", "BURSAR", "ICT_ADMIN"].includes(normalized),
   );
 }
 
@@ -128,9 +157,10 @@ export function isFinancialRole(role: string | null | undefined): boolean {
   return Boolean(normalized && ["BURSAR", "PAYMENTS"].includes(normalized));
 }
 
-/** Human-readable labels for stored profile roles (Zambia school terminology). */
+/** Human-readable labels (Zambia school terminology). */
 export const ROLE_DISPLAY_LABELS: Record<string, string> = {
-  admin: "School Administrator",
+  // Legacy key still maps to Head Teacher for old UI/DB strings
+  admin: "Head Teacher",
   principal: "Head Teacher",
   deputy_head: "Deputy Head Teacher",
   teacher: "Teacher",
@@ -139,10 +169,10 @@ export const ROLE_DISPLAY_LABELS: Record<string, string> = {
   payments: "Payments Officer",
   bursar: "Bursar",
   guidance_office: "Guidance Office",
-  academic_admin: "Academic Administrator",
-  hr_admin: "HR Administrator",
-  ict_admin: "ICT Administrator",
-  discipline_admin: "Discipline Administrator",
+  academic_admin: "Academic admin",
+  hr_admin: "HR admin",
+  ict_admin: "ICT admin",
+  discipline_admin: "Discipline admin",
   registrar: "Registrar / Admissions",
   super_admin: "Platform Super Admin",
 };
@@ -176,14 +206,26 @@ export function isPrincipalRole(role: string | null | undefined): boolean {
   return normalizeRole(role) === "PRINCIPAL";
 }
 
+/**
+ * @deprecated School Administrator was removed as a separate role.
+ * Legacy admin profiles normalize to Head Teacher (principal).
+ */
 export function isSchoolAdministratorRole(
   role: string | null | undefined,
 ): boolean {
-  return normalizeRole(role) === "ADMIN";
+  return false;
 }
 
 export function isPlatformSuperAdminRole(
   role: string | null | undefined,
 ): boolean {
   return normalizeRole(role) === "SUPER_ADMIN";
+}
+
+/** Leadership roles at a school (not platform super admin, not specialty staff). */
+export function isSchoolLeadershipRole(
+  role: string | null | undefined,
+): boolean {
+  const normalized = normalizeRole(role);
+  return normalized === "PRINCIPAL" || normalized === "DEPUTY_HEAD";
 }

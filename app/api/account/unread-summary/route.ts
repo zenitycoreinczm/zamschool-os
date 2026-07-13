@@ -8,30 +8,13 @@ import {
 import { requireActorContext } from "@/lib/server-auth";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { safeErrorMessage } from "@/lib/server-guards";
-
-const UNREAD_SUMMARY_ROLES = [
-  "ADMIN",
-  "PRINCIPAL",
-  "TEACHER",
-  "STUDENT",
-  "PARENT",
-  "PAYMENTS",
-  "DEPUTY_HEAD",
-  "BURSAR",
-  "ACADEMIC_ADMIN",
-  "HR_ADMIN",
-  "ICT_ADMIN",
-  "DISCIPLINE_ADMIN",
-  "REGISTRAR",
-  "GUIDANCE_OFFICE",
-  "SUPER_ADMIN",
-] as const;
+import { KNOWN_ROLES } from "@/lib/roles";
 
 export async function GET(req: Request) {
   try {
     const access = await requireActorContext(
       {
-        allowedRoles: [...UNREAD_SUMMARY_ROLES],
+        allowedRoles: [...KNOWN_ROLES],
         requireSchool: false,
         allowMetadataRoleFallback: true,
       },
@@ -39,16 +22,15 @@ export async function GET(req: Request) {
     );
     if (!access.ok) return access.response;
 
-    if (access.context.schoolId) {
-      const rate = await applyPlatformRateLimit({
-        scope: "account-unread-summary",
-        schoolId: access.context.schoolId,
-        req,
-        userId: access.context.userId,
-        preset: "unreadSummary",
-      });
-      if (!rate.allowed) return platformRateLimitResponse(rate);
-    }
+    // Rate-limit all callers regardless of school context.
+    const rate = await applyPlatformRateLimit({
+      scope: "account-unread-summary",
+      schoolId: access.context.schoolId ?? "platform",
+      req,
+      userId: access.context.userId,
+      preset: "unreadSummary",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
 
     const counts = access.context.schoolId
       ? await getUnreadCountsForUser({

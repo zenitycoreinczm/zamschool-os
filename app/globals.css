@@ -202,6 +202,35 @@ body {
         infinite;
 }
 
+/* Soft shimmer for skeleton placeholders (page / route loading) */
+@keyframes workspace-shimmer {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+.workspace-skeleton {
+    background: linear-gradient(
+        105deg,
+        rgb(241 245 249) 0%,
+        rgb(241 245 249) 35%,
+        rgb(226 232 240 / 0.95) 50%,
+        rgb(241 245 249) 65%,
+        rgb(241 245 249) 100%
+    );
+    background-size: 200% 100%;
+    animation: workspace-shimmer 1.35s var(--ease-workspace-in-out) infinite;
+}
+
+.workspace-skeleton-block {
+    border: 1px solid rgb(226 232 240 / 0.9);
+    background-color: #fff;
+    box-shadow: var(--shadow-workspace-xs);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .animate-enter-up {
         animation: none;
@@ -217,6 +246,11 @@ body {
     .workspace-loader-ring {
         animation: none;
         opacity: 0.25;
+    }
+
+    .workspace-skeleton {
+        animation: none;
+        background: rgb(241 245 249);
     }
 }
 

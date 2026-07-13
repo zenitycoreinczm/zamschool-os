@@ -58,6 +58,20 @@ export async function GET(req: Request) {
       .map((profileId) => linked.studentRowIdByProfileId?.get(profileId))
       .filter(Boolean) as string[];
 
+    if (scopedProfileIds.length === 0) {
+      return jsonResponse({
+        success: true,
+        data: {
+          range,
+          startDate,
+          endDate,
+          summary: summarizeAttendance([]),
+          children: [],
+          rows: [],
+        },
+      });
+    }
+
     const { data: studentRows, error: studentError } = await supabaseAdmin
       .from("profiles")
       .select("id, school_id, first_name, last_name, email")
@@ -76,28 +90,35 @@ export async function GET(req: Request) {
     ) as string[];
 
     const classesById = await getClassesById(schoolId, classIds);
-    const { data: attendanceRows, error: attendanceError } = await supabaseAdmin
-      .from("attendance")
-      .select(
-        "id, student_id, class_id, date, attendance_date, status, remarks, notes, recorded_by, session_name, session_time, created_at"
-      )
-      .eq("school_id", schoolId)
-      .in("student_id", scopedStudentRowIds)
-      .gte("date", startDate)
-      .lte("date", endDate)
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false });
 
-    if (attendanceError) throw attendanceError;
+    // Empty `.in()` filters error in PostgREST — skip attendance query when
+    // we only have profile ids and no students-row mappings.
+    let attendanceRows: any[] = [];
+    if (scopedStudentRowIds.length > 0) {
+      const attendanceResult = await supabaseAdmin
+        .from("attendance")
+        .select(
+          "id, student_id, class_id, date, attendance_date, status, remarks, notes, recorded_by, session_name, session_time, created_at"
+        )
+        .eq("school_id", schoolId)
+        .in("student_id", scopedStudentRowIds)
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (attendanceResult.error) throw attendanceResult.error;
+      attendanceRows = attendanceResult.data || [];
+    }
 
     const recordedByIds = Array.from(
-      new Set((attendanceRows || []).map((row: any) => row.recorded_by).filter(Boolean))
+      new Set(attendanceRows.map((row: any) => row.recorded_by).filter(Boolean))
     );
     const teachersById = await getProfilesById(schoolId, recordedByIds);
     const studentsById = new Map((studentRows || []).map((row: any) => [row.id, row]));
     const studentProfileIdByStudentRowId = linked.profileIdByStudentRowId;
 
-    const rows = (attendanceRows || []).flatMap((row: any) => {
+    const rows = attendanceRows.flatMap((row: any) => {
       const studentProfileId = studentProfileIdByStudentRowId?.get(row.student_id);
       if (!studentProfileId) return [];
 

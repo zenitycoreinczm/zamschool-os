@@ -11,7 +11,7 @@ type ShellResponse = {
   error?: string;
 };
 
-const SHELL_TTL_MS = 30_000;
+const SHELL_TTL_MS = 2 * 60_000;
 
 let cachedShell: { expiresAt: number; data: ShellData } | null = null;
 let shellPromise: Promise<ShellData> | null = null;
@@ -60,8 +60,9 @@ export async function fetchShell(
  */
 async function requestShell(_token?: string): Promise<ShellData> {
   const payload = await adminApiJson<ShellResponse>("/api/account/shell");
-  if (!payload.data) {
-    throw new Error(payload.error || "Failed to load shell");
+  const data = payload?.data;
+  if (!data) {
+    throw new Error(payload?.error || "Failed to load shell");
   }
-  return payload.data;
+  return data;
 }

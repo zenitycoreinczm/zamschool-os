@@ -1,7 +1,17 @@
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { supabaseAdmin } from "@/lib/supabase";
 
-const ADMINISH_ROLES = ["ADMIN", "admin", "PAYMENTS", "payments"];
+const ADMINISH_ROLES = [
+  "PRINCIPAL",
+  "principal",
+  "DEPUTY_HEAD",
+  "deputy_head",
+  "PAYMENTS",
+  "payments",
+  // legacy DB values still stored as admin
+  "ADMIN",
+  "admin",
+];
 const PARENT_ROLES = ["PARENT", "parent"];
 const STUDENT_ROLES = ["STUDENT", "student"];
 const TEACHER_ROLES = ["TEACHER", "teacher"];

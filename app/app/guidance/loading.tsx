@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
-export default function GuidanceLoading() {
-  return <WorkspaceLoader label="Loading guidance workspace" compact />;
+export default function RoleLoading() {
+  return <PageSkeleton variant="dashboard" label="Loading guidance workspace" />;
 }

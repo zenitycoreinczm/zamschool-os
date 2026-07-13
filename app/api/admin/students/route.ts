@@ -27,7 +27,6 @@ const transitionSchema = z.object({
 const ADMISSION_ROLES = [
   "PRINCIPAL",
   "DEPUTY_HEAD",
-  "ADMIN",
   "ACADEMIC_ADMIN",
   "REGISTRAR",
   "ICT_ADMIN",

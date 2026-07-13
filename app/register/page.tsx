@@ -7,33 +7,13 @@ import { Suspense, useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  Loader2,
-  AlertCircle,
-  Building2,
-  MapPin,
-  Phone,
-  Mail,
-  User,
-  Hash,
-  Eye,
-  EyeOff,
-  Lock,
-  ShieldCheck,
-  CheckCircle2,
-  ChevronRight,
-  ArrowLeft,
-  KeyRound,
-  Sparkles,
-  School,
-  UserCheck,
-  GraduationCap,
-  ClipboardCheck,
-  Info,
-} from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { cn } from "@/lib/utils";
+import {
+  normalizeZambianPhone,
+  zambianPhoneValidationError,
+} from "@/lib/zambia-localization";
 
 // ── Zambian Provinces & Districts ────────────────────────────────────────────
 
@@ -191,11 +171,15 @@ const accountSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z
     .string()
-    .min(10, "Phone number must be at least 10 digits")
-    .regex(
-      /^(\+?260|0)?[97]\d{8}$/,
-      "Enter a valid Zambian phone number (e.g. +260 97 123 4567)",
-    ),
+    .trim()
+    .min(1, "Phone number is required")
+    .superRefine((value, ctx) => {
+      const err = zambianPhoneValidationError(value, { required: true });
+      if (err) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: err });
+      }
+    })
+    .transform((value) => normalizeZambianPhone(value) || value),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -276,7 +260,7 @@ const inputClass = (err?: string) =>
     baseInput,
     err
       ? "border-red-300 focus:ring-red-400"
-      : "border-slate-200 focus:ring-emerald-400 hover:border-slate-300",
+      : "border-slate-200 focus:ring-slate-400 hover:border-slate-300",
   );
 
 const readOnlyInputClass =
@@ -363,18 +347,15 @@ function OtpInput({
               error
                 ? "border-red-300 focus:ring-red-400 text-red-600"
                 : value[i]
-                  ? "border-emerald-400 focus:ring-emerald-400 text-slate-900 bg-emerald-50/50"
-                  : "border-slate-200 focus:ring-emerald-400 text-slate-700 hover:border-slate-300",
+                  ? "border-slate-900 bg-white text-slate-900 focus:ring-slate-400"
+                  : "border-slate-200 text-slate-700 hover:border-slate-300 focus:ring-slate-400",
             )}
           />
         ))}
       </div>
-      {error && (
-        <p className="flex items-center gap-1.5 text-xs text-red-600">
-          <AlertCircle className="w-3 h-3 shrink-0" />
-          {error}
-        </p>
-      )}
+      {error ? (
+        <p className="text-xs font-medium text-red-600">{error}</p>
+      ) : null}
     </div>
   );
 }
@@ -394,32 +375,25 @@ function StepIndicator({
   const active = current === step;
 
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2">
       <div
         className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all duration-300",
-          done && "bg-emerald-500 text-white shadow-sm shadow-emerald-200",
-          active &&
-            "bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-md",
-          !done &&
-            !active &&
-            "border-2 border-slate-200 bg-white text-slate-400",
+          "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold tabular-nums",
+          done && "bg-slate-900 text-white",
+          active && "bg-slate-900 text-white ring-4 ring-slate-200",
+          !done && !active && "border border-slate-200 bg-white text-slate-400",
         )}
       >
-        {done ? <CheckCircle2 className="w-4 h-4" /> : step}
+        {done ? "✓" : step}
       </div>
-      <div className="hidden sm:block">
-        <span
-          className={cn(
-            "text-sm font-semibold transition-colors",
-            active && "text-slate-900",
-            done && "text-emerald-600",
-            !done && !active && "text-slate-400",
-          )}
-        >
-          {label}
-        </span>
-      </div>
+      <span
+        className={cn(
+          "hidden text-sm font-medium sm:inline",
+          active || done ? "text-slate-900" : "text-slate-400",
+        )}
+      >
+        {label}
+      </span>
     </div>
   );
 }
@@ -432,7 +406,7 @@ export default function RegisterPage() {
       fallback={
         <AuthPageShell>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
           </div>
         </AuthPageShell>
       }
@@ -702,107 +676,79 @@ function RegisterContent() {
 
   return (
     <AuthPageShell contentClassName="py-8">
-      <div className="w-full max-w-xl">
-        {/* Header */}
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 h-14 w-14 overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5">
-            <Image
-              src="/icon.png"
-              alt="ZamSchool OS"
-              width={56}
-              height={56}
-              className="h-full w-full object-cover"
-              priority
-            />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            {step === 2
-              ? "Create Your Account"
-              : step === 3
-                ? "Register Your School"
-                : "Let's Set Up Your School"}
+      <div className="w-full max-w-lg">
+        <div className="mb-8 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            School registration
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            {step === 1 && "Access code"}
+            {step === 2 && "Head Teacher account"}
+            {step === 3 && "School details"}
           </h1>
-          <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
-            {step === 2 &&
-              "Just a few details to get you started as the school leader"}
-            {step === 3 && "Tell us about your school — you're almost done"}
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
             {step === 1 &&
-              "Enter the 6-digit access code provided by your ZamSchool Super Admin"}
+              "Enter the 6-digit code from your ZamSchool Super Admin to open registration."}
+            {step === 2 &&
+              "Create the Head Teacher login. You will invite staff after the school is set up."}
+            {step === 3 &&
+              "Add the school’s official details. You can finish setup inside the app later."}
           </p>
         </div>
 
-        {/* Step Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <StepIndicator step={1} current={step} label="Verify Code" />
-            <div
-              className={cn(
-                "h-0.5 flex-1 mx-3 rounded-full transition-colors duration-500",
-                step > 1 ? "bg-emerald-400" : "bg-slate-200",
-              )}
-            />
-            <StepIndicator step={2} current={step} label="Your Account" />
-            <div
-              className={cn(
-                "h-0.5 flex-1 mx-3 rounded-full transition-colors duration-500",
-                step > 2 ? "bg-emerald-400" : "bg-slate-200",
-              )}
-            />
-            <StepIndicator step={3} current={step} label="School Details" />
-          </div>
+        <div className="mb-8 flex items-center justify-between gap-2">
+          <StepIndicator step={1} current={step} label="Code" />
+          <div
+            className={cn(
+              "h-px flex-1",
+              step > 1 ? "bg-slate-900" : "bg-slate-200",
+            )}
+          />
+          <StepIndicator step={2} current={step} label="Account" />
+          <div
+            className={cn(
+              "h-px flex-1",
+              step > 2 ? "bg-slate-900" : "bg-slate-200",
+            )}
+          />
+          <StepIndicator step={3} current={step} label="School" />
         </div>
 
-        {/* Main Card */}
         <div
           className={cn(
-            "rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all duration-200",
-            stepTransition ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100",
+            "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8",
+            stepTransition ? "opacity-0" : "opacity-100",
           )}
         >
-          {/* Error Banner */}
-          {error && (
-            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold mb-0.5">Something went wrong</p>
+          {error ? (
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              <div className="flex items-start justify-between gap-3">
                 <p>{error}</p>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="shrink-0 text-red-500 hover:text-red-700"
+                  aria-label="Dismiss error"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setError(null)}
-                className="ml-auto shrink-0 text-red-400 hover:text-red-600 transition-colors"
-              >
-                ×
-              </button>
             </div>
-          )}
+          ) : null}
 
-          {/* ═══════════════ STEP 1: ACCESS CODE ═══════════════ */}
           {step === 1 && (
             <form
               onSubmit={codeForm.handleSubmit(onVerifyCode)}
               className="space-y-6"
             >
-              <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                  <KeyRound className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-amber-800">
-                    Super Admin Access Code Required
-                  </h3>
-                  <p className="mt-1 text-xs text-amber-700/80 leading-relaxed">
-                    Each new school registration requires a unique 6-digit code
-                    issued by a ZamSchool OS Super Admin. Students and parents
-                    do not register through this portal — the Head Teacher adds
-                    them after setup.
-                  </p>
-                </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Only schools with a Super Admin access code can register. Parents
+                and students are added later by the Head Teacher.
               </div>
 
-              <div className="space-y-4">
-                <label className="block text-center text-sm font-semibold text-slate-700">
-                  Enter your 6-digit access code
+              <div className="space-y-3">
+                <label className="block text-center text-sm font-medium text-slate-700">
+                  6-digit access code
                 </label>
                 <OtpInput
                   value={codeValue}
@@ -814,107 +760,43 @@ function RegisterContent() {
               <button
                 type="submit"
                 disabled={loading || codeValue.length !== 6}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Verifying…
                   </>
                 ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4" /> Verify & Continue
-                  </>
+                  "Continue"
                 )}
               </button>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-100" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-white px-3 text-xs text-slate-400">
-                    Need help?
-                  </span>
-                </div>
-              </div>
               <p className="text-center text-xs text-slate-500">
-                Don&apos;t have an access code? Contact your{" "}
-                <span className="font-semibold text-slate-700">
-                  ZamSchool OS Super Admin
-                </span>{" "}
-                to request one.
+                No code? Ask your ZamSchool Super Admin to issue one.
               </p>
             </form>
           )}
 
-          {/* ═══════════════ STEP 2: HEAD TEACHER ACCOUNT ═══════════════ */}
           {step === 2 && (
             <form
               onSubmit={accountForm.handleSubmit(onCreateAccount)}
               className="space-y-5"
             >
-              {/* Verified badge */}
-              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="text-sm text-emerald-800">
-                  Code{" "}
-                  <span className="font-mono font-bold tracking-wider">
-                    {verifiedCode}
-                  </span>{" "}
-                  verified — you&apos;re authorised to register
-                </div>
-              </div>
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Code{" "}
+                <span className="font-mono font-semibold tracking-wider text-slate-900">
+                  {verifiedCode}
+                </span>{" "}
+                verified. Create the Head Teacher account for this school.
+              </p>
 
-              {/* Welcome Section */}
-              <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-teal-50 to-white p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                    <GraduationCap className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-emerald-900">
-                      Welcome, School Leader!
-                    </h3>
-                    <p className="mt-1 text-sm text-emerald-700/80 leading-relaxed">
-                      As the <strong>Head Teacher</strong>, you are the primary
-                      account holder for your school. You&apos;ll be able to
-                      invite other staff members (administrators, teachers,
-                      bursar, etc.) once your school is set up.
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700/70">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Full access to all school features
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700/70">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Manage staff, students & parents
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700/70">
-                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Oversee finances & academic records
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Fields — Personal Info */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider">
-                  <User className="w-4 h-4" />
-                  <span>Personal Information</span>
-                </div>
-
-                {/* Full Name */}
                 <div>
                   <label
                     htmlFor="headTeacherName"
-                    className="mb-1.5 block text-sm font-semibold text-slate-700"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
                   >
-                    Full Name <span className="text-red-400">*</span>
+                    Full name
                   </label>
                   <input
                     {...accountForm.register("headTeacherName")}
@@ -926,253 +808,195 @@ function RegisterContent() {
                     autoComplete="name"
                     autoFocus
                   />
-                  <p className="mt-1 text-xs text-slate-400">
-                    Enter your full legal name as it will appear in school
-                    records.
-                  </p>
-                  {accountForm.formState.errors.headTeacherName && (
-                    <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-                      <AlertCircle className="w-3 h-3" />{" "}
+                  {accountForm.formState.errors.headTeacherName ? (
+                    <p className="mt-1.5 text-xs text-red-600">
                       {accountForm.formState.errors.headTeacherName.message}
                     </p>
-                  )}
+                  ) : null}
                 </div>
 
-                {/* Email + Phone Grid */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label
                       htmlFor="email"
-                      className="mb-1.5 block text-sm font-semibold text-slate-700"
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
                     >
-                      Email Address <span className="text-red-400">*</span>
+                      Email
                     </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        {...accountForm.register("email")}
-                        type="email"
-                        className={cn(
-                          inputClass(
-                            accountForm.formState.errors.email?.message,
-                          ),
-                          "pl-10",
-                        )}
-                        placeholder="headteacher@school.edu.zm"
-                        id="email"
-                        autoComplete="email"
-                      />
-                    </div>
+                    <input
+                      {...accountForm.register("email")}
+                      type="email"
+                      className={inputClass(
+                        accountForm.formState.errors.email?.message,
+                      )}
+                      placeholder="headteacher@school.edu.zm"
+                      id="email"
+                      autoComplete="email"
+                    />
                     <p className="mt-1 text-xs text-slate-400">
-                      This will be your login username.
+                      Used to sign in
                     </p>
-                    {accountForm.formState.errors.email && (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-                        <AlertCircle className="w-3 h-3" />{" "}
+                    {accountForm.formState.errors.email ? (
+                      <p className="mt-1.5 text-xs text-red-600">
                         {accountForm.formState.errors.email.message}
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   <div>
                     <label
                       htmlFor="phone"
-                      className="mb-1.5 block text-sm font-semibold text-slate-700"
+                      className="mb-1.5 block text-sm font-medium text-slate-700"
                     >
-                      Phone Number <span className="text-red-400">*</span>
+                      Phone
                     </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        {...accountForm.register("phone")}
-                        type="tel"
-                        className={cn(
-                          inputClass(
-                            accountForm.formState.errors.phone?.message,
-                          ),
-                          "pl-10",
-                        )}
-                        placeholder="+260 97 123 4567"
-                        id="phone"
-                        autoComplete="tel"
-                      />
-                    </div>
+                    <input
+                      {...accountForm.register("phone")}
+                      type="tel"
+                      className={inputClass(
+                        accountForm.formState.errors.phone?.message,
+                      )}
+                      placeholder="0770 234 564"
+                      id="phone"
+                      autoComplete="tel"
+                      inputMode="tel"
+                    />
                     <p className="mt-1 text-xs text-slate-400">
-                      Zambian number for system notifications and account
-                      recovery.
+                      Airtel 097/077 · MTN 096/076 · Zamtel 095/075
                     </p>
-                    {accountForm.formState.errors.phone && (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-                        <AlertCircle className="w-3 h-3" />{" "}
+                    {accountForm.formState.errors.phone ? (
+                      <p className="mt-1.5 text-xs text-red-600">
                         {accountForm.formState.errors.phone.message}
                       </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                    <Lock className="w-4 h-4" />
-                    <span>Account Security</span>
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label
-                      htmlFor="password"
-                      className="mb-1.5 block text-sm font-semibold text-slate-700"
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="mb-1.5 block text-sm font-medium text-slate-700"
+                  >
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      {...accountForm.register("password")}
+                      type={showPassword ? "text" : "password"}
+                      className={cn(
+                        inputClass(
+                          accountForm.formState.errors.password?.message,
+                        ),
+                        "pr-12",
+                      )}
+                      placeholder="Min. 8 characters, 1 capital, 1 number"
+                      id="password"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      tabIndex={-1}
                     >
-                      Create Password <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                      <input
-                        {...accountForm.register("password")}
-                        type={showPassword ? "text" : "password"}
-                        className={cn(
-                          inputClass(
-                            accountForm.formState.errors.password?.message,
-                          ),
-                          "pl-10 pr-12",
-                        )}
-                        placeholder="Minimum 8 characters"
-                        id="password"
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3.5 text-slate-400 transition-colors hover:text-slate-700"
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
-                        tabIndex={-1}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Password strength bar */}
-                    {accountPassword && (
-                      <div className="mt-3">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="h-1.5 flex-1 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full rounded-full transition-all duration-300",
-                                passwordStrength.color,
-                                passwordStrength.width,
-                              )}
-                            />
-                          </div>
-                          <span className="text-xs font-medium text-slate-500 min-w-[4rem] text-right">
-                            {passwordStrength.label}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-2.5 space-y-1">
-                      <PasswordRule
-                        met={accountPassword.length >= 8}
-                        label="At least 8 characters"
-                      />
-                      <PasswordRule
-                        met={/[A-Z]/.test(accountPassword)}
-                        label="One uppercase letter (A-Z)"
-                      />
-                      <PasswordRule
-                        met={/[0-9]/.test(accountPassword)}
-                        label="One number (0-9)"
-                      />
-                    </div>
-                    {accountForm.formState.errors.password && (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-                        <AlertCircle className="w-3 h-3" />{" "}
-                        {accountForm.formState.errors.password.message}
-                      </p>
-                    )}
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
+
+                  {accountPassword ? (
+                    <div className="mt-2">
+                      <div className="mb-1 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              passwordStrength.color,
+                              passwordStrength.width,
+                            )}
+                          />
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-2 space-y-1">
+                    <PasswordRule
+                      met={accountPassword.length >= 8}
+                      label="At least 8 characters"
+                    />
+                    <PasswordRule
+                      met={/[A-Z]/.test(accountPassword)}
+                      label="One uppercase letter"
+                    />
+                    <PasswordRule
+                      met={/[0-9]/.test(accountPassword)}
+                      label="One number"
+                    />
+                  </div>
+                  {accountForm.formState.errors.password ? (
+                    <p className="mt-1.5 text-xs text-red-600">
+                      {accountForm.formState.errors.password.message}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
-              {/* Important Note */}
-              <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50/50 p-4">
-                <Info className="w-4 h-4 shrink-0 text-amber-500 mt-0.5" />
-                <div className="text-xs text-amber-700">
-                  <p className="font-semibold mb-0.5">
-                    Please use a real email address
-                  </p>
-                  <p className="leading-relaxed">
-                    Your email will be used for account verification, password
-                    recovery, and official school communications. It cannot be
-                    changed without Super Admin assistance.
-                  </p>
-                </div>
-              </div>
+              <p className="text-xs leading-relaxed text-slate-500">
+                Use a real email — you will verify it before the school is
+                created.
+              </p>
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setStep(1);
                     setError(null);
                   }}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300"
+                  className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Back
+                  Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Creating
-                      account...
+                      <Loader2 className="h-4 w-4 animate-spin" /> Creating…
                     </>
                   ) : (
-                    <>
-                      Continue to School Details{" "}
-                      <ChevronRight className="w-4 h-4" />
-                    </>
+                    "Continue"
                   )}
                 </button>
               </div>
             </form>
           )}
 
-          {/* ═══════════════ STEP 3: SCHOOL DETAILS ═══════════════ */}
           {step === 3 && (
             <form
               onSubmit={schoolForm.handleSubmit(onRegisterSchool)}
               className="space-y-5"
             >
-              <div className="flex items-start gap-4 rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-blue-800">
-                    School Information
-                  </h3>
-                  <p className="mt-1 text-xs text-blue-700/70 leading-relaxed">
-                    Enter your school&apos;s official details. Fields pre-filled
-                    from your access code are read-only.
-                  </p>
-                </div>
-              </div>
+              <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                Enter the school&apos;s official details. Fields locked by the
+                access code cannot be changed here.
+              </p>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field
-                  label="School Name"
-                  icon={School}
+                  label="School name"
                   error={schoolForm.formState.errors.schoolName?.message}
                   hint="Official registered name"
                 >
@@ -1181,32 +1005,29 @@ function RegisterContent() {
                     className={inputClass(
                       schoolForm.formState.errors.schoolName?.message,
                     )}
-                    placeholder="ABC Secondary School"
+                    placeholder="Mongu Basic School"
                     id="schoolName"
                   />
                 </Field>
 
                 <Field
-                  label="School Code"
-                  icon={Hash}
+                  label="School code"
                   error={schoolForm.formState.errors.schoolCode?.message}
-                  hint="Short unique identifier (4-12 chars, e.g. ABC123)"
+                  hint="4–12 letters/numbers, unique (e.g. MONGU1)"
                 >
                   <input
                     {...schoolForm.register("schoolCode")}
                     className={inputClass(
                       schoolForm.formState.errors.schoolCode?.message,
                     )}
-                    placeholder="ABC123"
+                    placeholder="MONGU1"
                     id="schoolCode"
                   />
                 </Field>
 
                 <Field
                   label="Address"
-                  icon={MapPin}
                   error={schoolForm.formState.errors.address?.message}
-                  hint="Physical location"
                   fullWidth
                 >
                   <input
@@ -1214,15 +1035,15 @@ function RegisterContent() {
                     className={inputClass(
                       schoolForm.formState.errors.address?.message,
                     )}
-                    placeholder="123 Main Street, Town"
+                    placeholder="Physical location"
                     id="address"
                   />
                 </Field>
 
                 <Field
-                  label="EMIS Code"
+                  label="EMIS code"
                   error={schoolForm.formState.errors.emisCode?.message}
-                  hint="Ministry-assigned identifier"
+                  hint="Ministry identifier"
                 >
                   <input
                     {...schoolForm.register("emisCode")}
@@ -1255,7 +1076,7 @@ function RegisterContent() {
                       )}
                       id="province"
                     >
-                      <option value="">Select province...</option>
+                      <option value="">Select province…</option>
                       {ZAMBIAN_PROVINCES.map((p) => (
                         <option key={p} value={p}>
                           {p}
@@ -1281,13 +1102,13 @@ function RegisterContent() {
                         inputClass(
                           schoolForm.formState.errors.district?.message,
                         ),
-                        "disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
                       )}
                       id="district"
                     >
                       <option value="">
                         {selectedProvince
-                          ? "Select district..."
+                          ? "Select district…"
                           : "Select province first"}
                       </option>
                       {selectedProvince &&
@@ -1301,7 +1122,7 @@ function RegisterContent() {
                 </Field>
 
                 <Field
-                  label="School Type"
+                  label="School type"
                   error={schoolForm.formState.errors.schoolType?.message}
                 >
                   {codeScope?.schoolType ? (
@@ -1316,7 +1137,7 @@ function RegisterContent() {
                       )}
                       id="schoolType"
                     >
-                      <option value="">Select type...</option>
+                      <option value="">Select type…</option>
                       <option value="Primary">Primary</option>
                       <option value="Secondary">Secondary</option>
                       <option value="High School">High School</option>
@@ -1341,7 +1162,7 @@ function RegisterContent() {
                       )}
                       id="ownershipType"
                     >
-                      <option value="">Select...</option>
+                      <option value="">Select…</option>
                       <option value="Government">Government</option>
                       <option value="Private">Private</option>
                       <option value="Grant Aided">Grant Aided</option>
@@ -1351,31 +1172,28 @@ function RegisterContent() {
                 </Field>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setStep(2);
                     setError(null);
                   }}
-                  className="flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300"
+                  className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Back
+                  Back
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Registering
-                      school...
+                      <Loader2 className="h-4 w-4 animate-spin" /> Registering…
                     </>
                   ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" /> Complete Registration
-                    </>
+                    "Complete registration"
                   )}
                 </button>
               </div>
@@ -1383,13 +1201,12 @@ function RegisterContent() {
           )}
         </div>
 
-        {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-500">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="font-semibold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors"
+              className="font-semibold text-slate-900 underline-offset-2 hover:underline"
             >
               Sign in
             </Link>
@@ -1405,21 +1222,15 @@ function RegisterContent() {
 function PasswordRule({ met, label }: { met: boolean; label: string }) {
   return (
     <div className="flex items-center gap-2 text-xs">
-      <div
+      <span
         className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-200",
-          met
-            ? "bg-emerald-100 text-emerald-600"
-            : "bg-slate-100 text-slate-300",
+          "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+          met ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400",
         )}
       >
-        {met ? (
-          <CheckCircle2 className="w-3 h-3" />
-        ) : (
-          <div className="w-1.5 h-1.5 rounded-full bg-current" />
-        )}
-      </div>
-      <span className={cn(met ? "text-emerald-700" : "text-slate-400")}>
+        {met ? "✓" : ""}
+      </span>
+      <span className={cn(met ? "text-slate-700" : "text-slate-400")}>
         {label}
       </span>
     </div>
@@ -1428,14 +1239,12 @@ function PasswordRule({ met, label }: { met: boolean; label: string }) {
 
 function Field({
   label,
-  icon: Icon,
   error,
   hint,
   children,
   fullWidth,
 }: {
   label: string;
-  icon?: React.ComponentType<{ className?: string }>;
   error?: string;
   hint?: string;
   children: React.ReactNode;
@@ -1443,17 +1252,14 @@ function Field({
 }) {
   return (
     <div className={cn(fullWidth && "sm:col-span-2")}>
-      <label className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-        {Icon && <Icon className="w-4 h-4 text-slate-400" />}
+      <label className="mb-1.5 block text-sm font-medium text-slate-700">
         {label}
       </label>
       {children}
-      {hint && !error && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
-      {error && (
-        <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
-          <AlertCircle className="w-3 h-3" /> {error}
-        </p>
-      )}
+      {hint && !error ? (
+        <p className="mt-1 text-xs text-slate-400">{hint}</p>
+      ) : null}
+      {error ? <p className="mt-1.5 text-xs text-red-600">{error}</p> : null}
     </div>
   );
 }

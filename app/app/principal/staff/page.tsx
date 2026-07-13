@@ -9,7 +9,7 @@ export default function PrincipalStaffPage() {
       roleOptions={PRINCIPAL_STAFF_INVITE_ROLE_OPTIONS}
       title="Invite staff"
       description="Invite school administrators and support staff. Teachers, students, and parents are managed through their respective sections."
-      accent="violet"
+      accent="slate"
     />
   );
 }

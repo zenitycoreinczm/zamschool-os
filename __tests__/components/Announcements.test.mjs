@@ -21,10 +21,10 @@ test("announcements widget resolves APIs and links from mounted workspace routes
     source,
     /role === "parent" \|\| pathname\.startsWith\("\/app\/parent"\)/,
   );
-  assert.match(
-    source,
-    /role === "admin" \|\| role === "principal" \|\| role === "super_admin"/,
-  );
+  assert.match(source, /const adminShellRoles = new Set\(\[/);
+  assert.match(source, /"admin"/);
+  assert.match(source, /"principal"/);
+  assert.match(source, /"super_admin"/);
   assert.match(source, /\/api\/teacher\/announcements\?limit=3/);
   assert.match(source, /\/api\/admin\/announcements\?limit=3/);
   assert.match(source, /\/api\/account\/announcements\?limit=3/);

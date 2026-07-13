@@ -34,6 +34,16 @@ Two checks are wired into `package.json` and CI:
 
 You should not log full request bodies. You should not echo back Supabase tokens in error messages. You should not cache sensitive payloads at the edge with a long TTL — keep `Cache-Control: private, no-store` for anything tied to a user's profile, children, or finances. You should not store files outside the `authorized` R2 bucket; the upload route validates the entity type against `ALLOWED_ENTITY_TYPES`.
 
+## Data-center / national scale
+
+When hosting many schools (provincial or Zambia-wide), treat the origin as a **data-center workload**:
+
+- Upstash Redis is **required** for distributed rate limits, login lockout, and temporary IP bans.
+- Cloudflare (DNS + WAF + R2) sits in front of the origin; optional gateway worker for edge JWT rate limits.
+- Host allow-list, body-size limits, and abuse IP bans are enforced in `proxy.ts`.
+- Full runbook: [DATACENTER_SECURITY.md](./DATACENTER_SECURITY.md).
+- Preflight: `npm run security:server`.
+
 ## Reporting
 
 If you find a vulnerability, do not file a public issue. Report it through the team channel used for production sign-off and pause deployment until reviewed.

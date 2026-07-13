@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
-export default function AcademicAdminLoading() {
-  return <WorkspaceLoader label="Loading academic workspace" compact />;
+export default function RoleLoading() {
+  return <PageSkeleton variant="dashboard" label="Loading academic workspace" />;
 }

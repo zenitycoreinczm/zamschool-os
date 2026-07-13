@@ -5,6 +5,7 @@ import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { parseBillingGenerateInput } from "@/lib/payment-input";
 import { supabaseAdmin } from "@/lib/supabase";
 import { auditDomainWrite } from "@/lib/audit-domain";
+import { invalidateByTag } from "@/lib/enhanced-cache";
 import { getClientIp } from "@/lib/server-guards";
 
 export async function POST(request: NextRequest) {
@@ -134,6 +135,8 @@ export async function POST(request: NextRequest) {
       },
       ipAddress: getClientIp(request),
     });
+    await invalidateByTag("fees");
+    await invalidateByTag("dashboard");
 
     return NextResponse.json({ generated, skipped, month });
   } catch (error) {

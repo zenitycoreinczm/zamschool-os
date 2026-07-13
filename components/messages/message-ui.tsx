@@ -5,7 +5,6 @@ import {
   CheckCheck,
   Inbox,
   Loader2,
-  MessageSquare,
   PenLine,
   Search,
   Send,
@@ -148,19 +147,14 @@ export function MessagesPageHeader({
           aria-hidden
         />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-              <MessageSquare className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">
-                {eyebrow}
-              </p>
-              <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-              <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/88">
-                {description}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/65">
+              {eyebrow}
+            </p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/88">
+              {description}
+            </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {extraActions}
@@ -426,19 +420,16 @@ export function MessagesLoadingState({ label = "Loading messages…" }: { label?
 export function MessagesEmptyState({
   title = "No messages yet",
   description = "When you send or receive school messages, they will appear here.",
-  icon: Icon = Inbox,
   action,
 }: {
   title?: string;
   description?: string;
+  /** @deprecated Decorative icons removed */
   icon?: typeof Inbox;
   action?: ReactNode;
 }) {
   return (
     <section className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200/90 bg-gradient-to-b from-white to-slate-50/60 px-6 py-12 text-center sm:py-14">
-      <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200/90">
-        <Icon className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-      </span>
       <p className="text-base font-semibold tracking-tight text-slate-800">{title}</p>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-500">{description}</p>
       {action ? <div className="mt-5">{action}</div> : null}

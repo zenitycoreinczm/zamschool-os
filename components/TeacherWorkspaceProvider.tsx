@@ -46,6 +46,26 @@ const EMPTY_WORKLOAD: TeacherWorkloadSummary = {
   upcomingEvents: 0,
 };
 
+function coerceCount(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (Array.isArray(value)) return value.length;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeWorkload(
+  workload: Partial<TeacherWorkloadSummary> | Record<string, unknown> | null | undefined,
+): TeacherWorkloadSummary {
+  const w = (workload || {}) as Record<string, unknown>;
+  return {
+    unreadMessages: coerceCount(w.unreadMessages),
+    unreadNotifications: coerceCount(w.unreadNotifications),
+    pendingGrades: coerceCount(w.pendingGrades),
+    draftResults: coerceCount(w.draftResults),
+    upcomingEvents: coerceCount(w.upcomingEvents),
+  };
+}
+
 export function TeacherWorkspaceProvider({ children }: { children: React.ReactNode }) {
   const cachedBootstrap = readCachedTeacherBootstrap();
   const cachedShell = readCachedShell();
@@ -62,14 +82,16 @@ export function TeacherWorkspaceProvider({ children }: { children: React.ReactNo
       : null
   );
   const [stats, setStats] = useState<TeacherWorkspaceStats>(() => initialData?.stats || EMPTY_STATS);
-  const [workload, setWorkload] = useState<TeacherWorkloadSummary>(
-    () => initialData?.workload || {
-      ...EMPTY_WORKLOAD,
-      ...(shellData?.shell ? {
-        pendingGrades: (shellData.shell as any).pendingGrades ?? 0,
-        draftResults: (shellData.shell as any).draftResults ?? 0,
-      } : {}),
-    }
+  const [workload, setWorkload] = useState<TeacherWorkloadSummary>(() =>
+    normalizeWorkload({
+      ...(initialData?.workload || EMPTY_WORKLOAD),
+      ...(shellData?.shell
+        ? {
+            pendingGrades: (shellData.shell as any).pendingGrades ?? 0,
+            draftResults: (shellData.shell as any).draftResults ?? 0,
+          }
+        : {}),
+    }),
   );
   const [loading, setLoading] = useState(!initialData && !shellData);
   const [error, setError] = useState("");
@@ -126,7 +148,11 @@ export function TeacherWorkspaceProvider({ children }: { children: React.ReactNo
           : null
       );
       setStats(nextData?.stats || EMPTY_STATS);
-      setWorkload(nextData?.workload || EMPTY_WORKLOAD);
+      setWorkload(
+        nextData?.workload
+          ? normalizeWorkload(nextData.workload)
+          : EMPTY_WORKLOAD,
+      );
       setDisplayName(nextData?.displayName || "Your Account");
       setSchoolName(nextData?.schoolName || "Your School");
       setYearTerm(nextData?.yearTerm || "Academic Context");

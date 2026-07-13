@@ -12,7 +12,7 @@ import {
   parseJsonWithSchema,
   safeErrorMessage,
 } from "@/lib/server-guards";
-import { tenantActorRateLimitKey } from "@/lib/tenant-context";
+import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
 import { requireActorContext, requireAdminContext } from "@/lib/server-auth";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { encodeTargetAudience } from "@/lib/target-audience";
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
   try {
     const access = await requireActorContext(
       {
-        allowedRoles: ["PRINCIPAL", "ADMIN"],
+        allowedRoles: ["PRINCIPAL"],
         requireSchool: true,
       },
       req,

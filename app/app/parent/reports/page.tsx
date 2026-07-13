@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { GraduationCap } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
 type ReportResult = {
@@ -100,8 +100,7 @@ export default function ParentReportsPage() {
         </Surface>
       ) : filteredReports.length === 0 ? (
         <Surface variant="elevated" className="p-8 text-center">
-          <GraduationCap className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             No report data available yet.
           </p>
         </Surface>

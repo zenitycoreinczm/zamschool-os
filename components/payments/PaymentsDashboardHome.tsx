@@ -2,25 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  AlertCircle,
-  BarChart3,
-  Bell,
-  CreditCard,
-  Loader2,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { adminApiJson } from "@/lib/admin-browser-api";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { FocusPills } from "@/components/workspace/FocusPills";
 import { metricsToStatCards } from "@/components/workspace/metricIcons";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
+import { formatKwacha } from "@/lib/zambia-localization";
 
 export default function PaymentsDashboardHome() {
-  const { data: workspace } = useWorkspaceContext();
+  const ctx = useWorkspaceContext() || {};
+  const workspace = (ctx as any).data ?? null;
   const { metrics, highlights, loading: summaryLoading } = useWorkspaceSummary();
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -66,12 +60,20 @@ export default function PaymentsDashboardHome() {
   const heroStats =
     summaryLoading || metrics.length === 0
       ? [
-          { label: "Collected", value: `K${stats.totalRevenue.toLocaleString()}`, icon: TrendingUp, tone: "emerald" as const },
-          { label: "Outstanding", value: `K${stats.pendingPayments.toLocaleString()}`, icon: CreditCard, tone: "amber" as const },
-          { label: "Overdue", value: String(stats.overduePayments), icon: AlertCircle, tone: "sky" as const },
-          { label: "Students", value: String(stats.totalStudents), icon: Users, tone: "violet" as const },
+          {
+            label: "Collected",
+            value: formatKwacha(stats.totalRevenue, { symbol: "K" }),
+            tone: "emerald" as const,
+          },
+          {
+            label: "Outstanding",
+            value: formatKwacha(stats.pendingPayments, { symbol: "K" }),
+            tone: "amber" as const,
+          },
+          { label: "Overdue", value: String(stats.overduePayments), tone: "sky" as const },
+          { label: "Students", value: String(stats.totalStudents), tone: "violet" as const },
         ]
-      : metricsToStatCards(metrics, [TrendingUp, CreditCard, Users, Bell]);
+      : metricsToStatCards(metrics);
 
   return (
     <div className="space-y-4">
@@ -79,7 +81,7 @@ export default function PaymentsDashboardHome() {
         eyebrow="Payments workspace"
         title={schoolName}
         description="Fee collection, student balances, and payment activity for your school."
-        accent="amber"
+        accent="slate"
         stats={heroStats}
         actions={
           <>
@@ -87,28 +89,24 @@ export default function PaymentsDashboardHome() {
               href="/app/payments/fees"
               className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
             >
-              <CreditCard className="h-4 w-4 text-sky-600" />
+
               Manage fees
             </Link>
             <Link
               href="/app/payments/students"
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
             >
-              <Users className="h-4 w-4" />
               Student accounts
             </Link>
           </>
         }
       />
 
-      <FocusPills items={highlights} accent="sky" />
+      <FocusPills items={highlights} accent="slate" />
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-sky-600" />
-            <h2 className="text-base font-semibold text-slate-900">Recent payments</h2>
-          </div>
+          <h2 className="text-base font-semibold text-slate-900">Recent payments</h2>
           <Link href="/app/admin/finance" className="text-sm font-semibold text-sky-600 hover:text-sky-700">
             Full finance →
           </Link>
@@ -133,7 +131,9 @@ export default function PaymentsDashboardHome() {
                   className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm"
                 >
                   <span className="font-medium text-slate-800">{name}</span>
-                  <span className="tabular-nums text-slate-700">K{amount.toLocaleString()}</span>
+                  <span className="tabular-nums text-slate-700">
+                    {formatKwacha(amount, { symbol: "K" })}
+                  </span>
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       status === "confirmed"

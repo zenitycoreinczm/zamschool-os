@@ -1,6 +1,13 @@
 import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance/summary";
+import { CACHE_CONFIGS, withCache } from "@/lib/enhanced-cache";
 import { roleDatabaseValues, type KnownRole } from "@/lib/roles";
+import {
+  getCachedSchoolMetrics,
+  setCachedSchoolMetrics,
+  type SchoolMetricsSnapshot,
+} from "@/lib/school-metrics-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { formatKwacha } from "@/lib/zambia-localization";
 
 export type WorkspaceMetric = {
   label: string;
@@ -12,6 +19,8 @@ export type WorkspaceSummary = {
   role: KnownRole;
   metrics: WorkspaceMetric[];
   highlights: string[];
+  /** Where school-wide counts came from — helps ops verify Redis shielding. */
+  metricsSource?: "redis" | "supabase" | "memory";
 };
 
 export async function buildWorkspaceSummary(input: {
@@ -21,13 +30,27 @@ export async function buildWorkspaceSummary(input: {
 }): Promise<WorkspaceSummary> {
   const { schoolId, role, userId } = input;
 
-  const profileCounts = await loadProfileCounts(schoolId);
-  if (role === "PARENT") {
-    profileCounts.linkedChildren = await loadLinkedChildrenCount(schoolId, userId);
-  }
+  // Short process-local cache collapses burst traffic; Redis school metrics
+  // (below) stop reloads from hammering Supabase for student/class counts.
+  return withCache(
+    `workspace-summary:${schoolId}:${role}:${userId}`,
+    () => buildWorkspaceSummaryUncached({ schoolId, role, userId }),
+    {
+      ...CACHE_CONFIGS.admin.classes,
+      tags: ["dashboard"],
+    },
+  );
+}
 
+/**
+ * Load school-wide counts from Redis first; only hit Supabase on miss.
+ * Exported for biweekly backup snapshots and other rollups.
+ */
+export async function loadSchoolMetricsFromSupabase(
+  schoolId: string,
+): Promise<SchoolMetricsSnapshot> {
   const [
-    unread,
+    profileCounts,
     attendanceSnapshot,
     classCount,
     subjectCount,
@@ -36,7 +59,7 @@ export async function buildWorkspaceSummary(input: {
     financeSnapshot,
     auditCount,
   ] = await Promise.all([
-    loadUnreadCounts(userId),
+    loadProfileCounts(schoolId),
     loadAttendanceSnapshot(schoolId),
     countRows("classes", schoolId),
     countRows("subjects", schoolId),
@@ -46,16 +69,70 @@ export async function buildWorkspaceSummary(input: {
     countRecentAudit(schoolId),
   ]);
 
-  const metrics = metricsForRole(role, {
-    profileCounts,
-    unread,
-    attendanceSnapshot,
+  return {
+    schoolId,
+    cachedAt: new Date().toISOString(),
+    profileCounts: {
+      total: profileCounts.total,
+      student: profileCounts.student,
+      teacher: profileCounts.teacher,
+      parent: profileCounts.parent,
+      staff: profileCounts.staff,
+    },
     classCount,
     subjectCount,
     assignmentCount,
     pendingInvites,
+    attendanceSnapshot,
     financeSnapshot,
     auditCount,
+    source: "supabase",
+  };
+}
+
+async function loadSchoolMetricsCached(
+  schoolId: string,
+): Promise<SchoolMetricsSnapshot> {
+  const cached = await getCachedSchoolMetrics(schoolId);
+  if (cached) return cached;
+
+  const fresh = await loadSchoolMetricsFromSupabase(schoolId);
+  await setCachedSchoolMetrics(fresh);
+  return { ...fresh, source: "supabase" };
+}
+
+async function buildWorkspaceSummaryUncached(input: {
+  schoolId: string;
+  role: KnownRole;
+  userId: string;
+}): Promise<WorkspaceSummary> {
+  const { schoolId, role, userId } = input;
+
+  // School-wide rollups: Redis → Supabase (auto-TTL delete in Upstash).
+  // Per-user unread: always lighter / fresher query (not shared cache).
+  const [schoolMetrics, unread] = await Promise.all([
+    loadSchoolMetricsCached(schoolId),
+    loadUnreadCounts(userId),
+  ]);
+
+  const profileCounts: ProfileCounts = {
+    ...schoolMetrics.profileCounts,
+  };
+
+  if (role === "PARENT") {
+    profileCounts.linkedChildren = await loadLinkedChildrenCount(schoolId, userId);
+  }
+
+  const metrics = metricsForRole(role, {
+    profileCounts,
+    unread,
+    attendanceSnapshot: schoolMetrics.attendanceSnapshot,
+    classCount: schoolMetrics.classCount,
+    subjectCount: schoolMetrics.subjectCount,
+    assignmentCount: schoolMetrics.assignmentCount,
+    pendingInvites: schoolMetrics.pendingInvites,
+    financeSnapshot: schoolMetrics.financeSnapshot,
+    auditCount: schoolMetrics.auditCount,
   });
 
   return {
@@ -63,10 +140,11 @@ export async function buildWorkspaceSummary(input: {
     metrics,
     highlights: highlightsForRole(role, {
       profileCounts,
-      attendanceSnapshot,
-      pendingInvites,
-      financeSnapshot,
+      attendanceSnapshot: schoolMetrics.attendanceSnapshot,
+      pendingInvites: schoolMetrics.pendingInvites,
+      financeSnapshot: schoolMetrics.financeSnapshot,
     }),
+    metricsSource: schoolMetrics.source,
   };
 }
 
@@ -88,17 +166,11 @@ function metricsForRole(
 
   switch (role) {
     case "PRINCIPAL":
+      // Header omits Students/Teachers — those live in School pulse / UserCards.
       return [
         metric("Classes", String(data.classCount), "Active classes"),
         metric("Pending Invites", String(data.pendingInvites), "Awaiting acceptance"),
         metric("Attendance", `${attendanceSnapshot.presentRate}%`, "Present rate (7 days)"),
-        metric("Outstanding", formatMoney(financeSnapshot.pending), "Unpaid fee balances"),
-      ];
-    case "ADMIN":
-      return [
-        metric("Students", String(profileCounts.student)),
-        metric("Teachers", String(profileCounts.teacher)),
-        metric("Attendance", `${attendanceSnapshot.presentRate}%`, "Last 7 days"),
         metric("Outstanding", formatMoney(financeSnapshot.pending), "Unpaid fee balances"),
       ];
     case "DEPUTY_HEAD":
@@ -194,7 +266,7 @@ function highlightsForRole(
 ): string[] {
   const items: string[] = [];
 
-  if (["PRINCIPAL", "ADMIN", "DEPUTY_HEAD", "REGISTRAR"].includes(role)) {
+  if (["PRINCIPAL", "DEPUTY_HEAD", "REGISTRAR"].includes(role)) {
     items.push(`${data.profileCounts.student} learners on roll`);
     if (data.profileCounts.teacher > 0) {
       items.push(`${data.profileCounts.teacher} teachers on staff`);
@@ -205,7 +277,7 @@ function highlightsForRole(
     if (data.attendanceSnapshot.absent > 0) {
       items.push(`${data.attendanceSnapshot.absent} absent lesson marks in the last 7 days`);
     }
-    if (["PRINCIPAL", "ADMIN"].includes(role) && data.financeSnapshot.pending > 0) {
+    if (["PRINCIPAL"].includes(role) && data.financeSnapshot.pending > 0) {
       items.push(`${formatMoney(data.financeSnapshot.pending)} outstanding in fee balances`);
     }
     if (role === "PRINCIPAL" && data.pendingInvites > 0) {
@@ -213,8 +285,21 @@ function highlightsForRole(
     }
   }
 
-  if (role === "HR_ADMIN" && data.pendingInvites > 0) {
-    items.push(`${data.pendingInvites} staff invitation(s) awaiting acceptance`);
+  if (role === "HR_ADMIN") {
+    items.push(
+      `${data.profileCounts.staff} staff accounts on the directory (incl. teachers)`,
+    );
+    if (data.profileCounts.teacher > 0) {
+      items.push(`${data.profileCounts.teacher} teachers currently on staff`);
+    }
+    if (data.pendingInvites > 0) {
+      items.push(
+        `${data.pendingInvites} staff invitation(s) still awaiting acceptance`,
+      );
+    } else {
+      items.push("No open staff invitations — directory is the source of truth");
+    }
+    items.push("Keep departments and employment records current for payroll-ready profiles");
   }
 
   if (["BURSAR", "PAYMENTS"].includes(role) && data.financeSnapshot.pending > 0) {
@@ -258,12 +343,40 @@ type FinanceSnapshot = {
 };
 
 async function loadProfileCounts(schoolId: string): Promise<ProfileCounts> {
-  const [studentRows, teacherRows, parentRows] = await Promise.all([
-    countRows("students", schoolId),
-    countRows("teachers", schoolId),
-    countRows("parents", schoolId),
-  ]);
-  const roles = ["student", "teacher", "parent", "admin", "principal", "deputy_head", "bursar", "guidance_office", "academic_admin", "hr_admin", "ict_admin", "discipline_admin", "registrar"];
+  const roles = [
+    "student",
+    "teacher",
+    "parent",
+    "PRINCIPAL",
+    "deputy_head",
+    "bursar",
+    "guidance_office",
+    "academic_admin",
+    "hr_admin",
+    "ict_admin",
+    "discipline_admin",
+    "registrar",
+  ] as const;
+
+  // Parallel role-table counts + profile role counts (was sequential N queries).
+  const [studentRows, teacherRows, parentRows, ...roleCounts] =
+    await Promise.all([
+      countRows("students", schoolId),
+      countRows("teachers", schoolId),
+      countRows("parents", schoolId),
+      ...roles.map(async (role) => {
+        const variants = roleDatabaseValues(role);
+        if (variants.length === 0) return { role, value: 0 };
+        const { count, error } = await supabaseAdmin
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("school_id", schoolId)
+          .in("role", variants);
+        if (error) return { role, value: 0 };
+        return { role, value: count || 0 };
+      }),
+    ]);
+
   const counts: ProfileCounts = {
     total: 0,
     student: 0,
@@ -272,24 +385,12 @@ async function loadProfileCounts(schoolId: string): Promise<ProfileCounts> {
     staff: 0,
   };
 
-  for (const role of roles) {
-    const variants = roleDatabaseValues(role);
-    if (variants.length === 0) continue;
-
-    const { count, error } = await supabaseAdmin
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .in("role", variants);
-
-    if (error) continue;
-    const value = count || 0;
-    counts.total += value;
-
-    if (role === "student") counts.student = value;
-    if (role === "teacher") counts.teacher = value;
-    if (role === "parent") counts.parent = value;
-    if (role !== "student" && role !== "parent") counts.staff += value;
+  for (const entry of roleCounts) {
+    counts.total += entry.value;
+    if (entry.role === "student") counts.student = entry.value;
+    else if (entry.role === "teacher") counts.teacher = entry.value;
+    else if (entry.role === "parent") counts.parent = entry.value;
+    else counts.staff += entry.value;
   }
 
   counts.student = Math.max(counts.student, studentRows);
@@ -411,12 +512,8 @@ async function loadLinkedChildrenCount(schoolId: string, parentProfileId: string
     .maybeSingle();
 
   if (!parentRow?.id) {
-    const { count } = await supabaseAdmin
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .eq("parent_id", parentProfileId);
-    return count || 0;
+    // profiles.parent_id does not exist in baseline schema — no legacy count.
+    return 0;
   }
 
   const { count } = await supabaseAdmin
@@ -446,5 +543,5 @@ function metric(label: string, value: string, hint?: string): WorkspaceMetric {
 }
 
 function formatMoney(value: number) {
-  return `ZMW ${Math.round(value).toLocaleString()}`;
+  return formatKwacha(Math.round(value), { decimals: 0 });
 }

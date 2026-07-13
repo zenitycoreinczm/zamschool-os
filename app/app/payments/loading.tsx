@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
 export default function PaymentsLoading() {
-  return <WorkspaceLoader label="Loading payments workspace" compact />;
+  return <PageSkeleton variant="dashboard" label="Loading payments" />;
 }

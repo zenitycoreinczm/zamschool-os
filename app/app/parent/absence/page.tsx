@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { AlertCircle, CalendarCheck, Send } from "lucide-react";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 
 type AbsenceRow = {
   id: string;
@@ -145,11 +146,11 @@ export default function ParentAbsencePage() {
                 </option>
               ))}
             </select>
-            <input
-              type="date"
+            <DateOnlyPicker
               value={formDate}
-              onChange={(e) => setFormDate(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+              onChange={setFormDate}
+              label="Absence date"
+              accent="slate"
             />
             <input
               type="text"

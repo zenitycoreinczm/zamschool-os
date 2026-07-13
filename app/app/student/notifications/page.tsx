@@ -6,7 +6,7 @@ export default function StudentNotificationsPage() {
       title="Notifications"
       intro="Alerts, reminders, and school updates for your student account."
       eyebrow="Student inbox"
-      accent="sky"
+      accent="slate"
     />
   );
 }

@@ -6,15 +6,15 @@
 
 export const SUPABASE_PROTECTION = {
   /** Middleware / API role cache (Edge uses in-memory only). */
-  middlewareRoleTtlMs: 5 * 60 * 1000,
+  middlewareRoleTtlMs: 10 * 60 * 1000,
   /** Redis actor snapshot (role + schoolId). */
   redisRoleTtlSec: 15 * 60,
   /** Debounced unread badge counts (in-memory, per process). */
-  unreadCountsTtlSec: 20,
+  unreadCountsTtlSec: 45,
   /** Workspace shell stable fields (profile, school name, term). */
-  workspaceStableTtlSec: 45,
+  workspaceStableTtlSec: 120,
   /** Auth admin metadata (email_confirmed) — expensive admin API. */
-  authMetaTtlSec: 120,
+  authMetaTtlSec: 300,
 } as const;
 
 /** Operations that must always reach Supabase (writes + auth). */

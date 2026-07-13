@@ -22,6 +22,6 @@ test("auth routing and teacher shell use mounted workspace paths for teacher stu
   assert.match(profileUtils, /if \(stored === "student"\) return "\/app\/student";/);
   assert.match(profileUtils, /if \(stored === "parent"\) return "\/app\/parent";/);
 
-  assert.match(teacherShell, /<Link href="\/app\/teacher"/);
-  assert.doesNotMatch(teacherShell, /<Link href="\/teacher"/);
+  assert.match(teacherShell, /<Link[\s\S]*?href="\/app\/teacher"/);
+  assert.doesNotMatch(teacherShell, /<Link[\s\S]*?href="\/teacher"/);
 });

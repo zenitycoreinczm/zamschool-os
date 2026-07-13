@@ -1,11 +1,4 @@
-import {
-  AlertCircle,
-  ChevronRight,
-  ClipboardList,
-  Loader2,
-  RefreshCw,
-  Users,
-} from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -33,40 +26,53 @@ export function ParentDashboardHero({
   error: string;
   onRefresh: () => void;
 }) {
+  const childCount = linkedChildren.length;
+
   return (
     <section
       aria-labelledby="parent-dashboard-hero-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="overflow-hidden rounded-3xl border border-slate-800/40 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white shadow-sm"
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
-            Parent Dashboard
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Family
           </p>
           <h1
             id="parent-dashboard-hero-heading"
-            className="mt-2 text-3xl font-semibold text-slate-900"
+            className="mt-1.5 text-2xl font-semibold tracking-tight sm:text-[1.65rem]"
           >
-            Lesson attendance for your linked children
+            Your children
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Review final attendance statuses by lesson, switch between linked
-            children, and track the exact attendance window your school sees.
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-300">
+            <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-100 ring-1 ring-white/10">
+              {childCount === 0
+                ? "No linked children"
+                : `${childCount} linked child${childCount === 1 ? "" : "ren"}`}
+            </span>
+            <span className="text-slate-400">
+              Attendance, results, and school updates
+            </span>
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-600">
-            <Users className="h-4 w-4 text-slate-400" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="flex items-center rounded-2xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm text-slate-100">
             <select
               value={selectedChildId}
               onChange={(event) => onChangeChild(event.target.value)}
-              className="bg-transparent pr-6 text-sm text-slate-700 outline-none"
+              className="max-w-[12rem] bg-transparent pr-2 text-sm text-white outline-none sm:max-w-[14rem]"
               aria-label="Select linked child"
             >
-              <option value="all">All linked children</option>
+              <option value="all" className="text-slate-900">
+                All children
+              </option>
               {linkedChildren.map((child) => (
-                <option key={child.id} value={child.id}>
+                <option
+                  key={child.id}
+                  value={child.id}
+                  className="text-slate-900"
+                >
                   {child.displayName}
                 </option>
               ))}
@@ -76,7 +82,7 @@ export function ParentDashboardHero({
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
           >
             {refreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -89,7 +95,7 @@ export function ParentDashboardHero({
       </div>
 
       <div
-        className="mt-6 flex flex-wrap gap-3"
+        className="flex flex-wrap gap-2 border-t border-white/10 bg-black/20 px-5 py-3 sm:px-6"
         role="group"
         aria-label="Date range"
       >
@@ -102,10 +108,10 @@ export function ParentDashboardHero({
               onClick={() => onChangeRange(option.value)}
               aria-pressed={active}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition",
+                "rounded-full px-3.5 py-1.5 text-xs font-semibold transition sm:text-sm",
                 active
-                  ? "bg-sky-600 text-white"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+                  ? "bg-white text-slate-900"
+                  : "border border-white/15 bg-transparent text-slate-300 hover:bg-white/10",
               )}
             >
               {option.label}
@@ -117,10 +123,9 @@ export function ParentDashboardHero({
       {error ? (
         <div
           role="alert"
-          className="mt-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          className="border-t border-white/10 bg-rose-500/15 px-5 py-3 text-sm text-rose-100 sm:px-6"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
+          {error}
         </div>
       ) : null}
     </section>

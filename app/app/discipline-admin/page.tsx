@@ -2,20 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  AlertTriangle,
-  CheckCircle2,
   ChevronDown,
   Filter,
   Loader2,
   Plus,
   Search,
-  Shield,
-  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 
 type DisciplineRecord = {
   id: string;
@@ -196,11 +193,11 @@ export default function DisciplineAdminPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="mx-auto max-w-6xl p-4 py-8 md:p-6">
         <div className="flex items-center justify-center gap-3 py-20">
-          <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
           <span className="text-sm text-slate-500">
-            Loading discipline data...
+            Loading conduct data…
           </span>
         </div>
       </div>
@@ -208,59 +205,47 @@ export default function DisciplineAdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Discipline Management
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Track incidents, manage consequences, and monitor student conduct
-          </p>
+    <div className="mx-auto max-w-6xl space-y-5 p-4 pb-8 md:p-6">
+      <section className="overflow-hidden rounded-3xl border border-slate-800/40 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white shadow-sm">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Conduct desk
+            </p>
+            <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">
+              Discipline management
+            </h1>
+            <p className="mt-2 text-sm text-slate-300">
+              Track incidents, consequences, and student conduct.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100"
+          >
+            <Plus className="h-4 w-4" /> New record
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className={primaryButton("")}
-        >
-          <Plus className="h-4 w-4" /> New Record
-        </button>
-      </div>
+      </section>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Total Records"
-            value={stats.totalRecords}
-            icon={<Shield className="h-5 w-5" />}
-            tone="sky"
-          />
-          <StatCard
-            label="Open Cases"
-            value={stats.openCases}
-            icon={<AlertTriangle className="h-5 w-5" />}
-            tone="amber"
-          />
-          <StatCard
-            label="This Week"
-            value={stats.recentIncidents}
-            icon={<Plus className="h-5 w-5" />}
-            tone="violet"
-          />
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total records" value={stats.totalRecords} />
+          <StatCard label="Open cases" value={stats.openCases} />
+          <StatCard label="This week" value={stats.recentIncidents} />
           <StatCard
             label="Resolved"
             value={stats.statusBreakdown["resolved"] || 0}
-            icon={<CheckCircle2 className="h-5 w-5" />}
-            tone="emerald"
           />
         </div>
       )}
 
       {/* Create Form */}
       {showCreateForm && (
-        <div className="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-6">
-          <h3 className="mb-4 font-semibold text-sky-900">
-            New Discipline Record
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 font-semibold text-slate-900">
+            New discipline record
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -278,14 +263,14 @@ export default function DisciplineAdminPage() {
                     {s.profile
                       ? `${s.profile.first_name || ""} ${s.profile.last_name || ""}`
                       : "Student"}
-                    {s.student_number ? ` (#${s.student_number})` : ""}
+                    {s.student_number ? ` (${s.student_number})` : ""}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
-                Title *
+                Title
               </label>
               <input
                 type="text"
@@ -328,17 +313,12 @@ export default function DisciplineAdminPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Incident Date
-              </label>
-              <input
-                type="date"
-                value={newIncidentDate}
-                onChange={(e) => setNewIncidentDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
-              />
-            </div>
+            <DateOnlyPicker
+              value={newIncidentDate}
+              onChange={setNewIncidentDate}
+              label="Incident date"
+              accent="slate"
+            />
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 Location
@@ -463,7 +443,7 @@ export default function DisciplineAdminPage() {
                       </div>
                       {record.student?.student_number && (
                         <div className="text-xs text-slate-500">
-                          #{record.student.student_number}
+                          {record.student.student_number}
                         </div>
                       )}
                     </td>
@@ -528,12 +508,12 @@ export default function DisciplineAdminPage() {
             {stats.topStudents.map((s) => (
               <div
                 key={s.studentId}
-                className="flex items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-3 py-2"
+                className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
               >
                 <span className="text-sm font-medium text-slate-800">
                   {s.name}
                 </span>
-                <span className="text-sm font-bold text-amber-700">
+                <span className="text-sm font-semibold tabular-nums text-slate-700">
                   {s.count} incident(s)
                 </span>
               </div>
@@ -548,28 +528,17 @@ export default function DisciplineAdminPage() {
 function StatCard({
   label,
   value,
-  icon,
-  tone,
 }: {
   label: string;
   value: number;
-  icon: React.ReactNode;
-  tone: "sky" | "amber" | "violet" | "emerald";
+  icon?: React.ReactNode;
+  tone?: "sky" | "amber" | "violet" | "emerald";
 }) {
-  const tones = {
-    sky: "bg-sky-50 text-sky-600",
-    amber: "bg-amber-50 text-amber-600",
-    violet: "bg-violet-50 text-violet-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-  };
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-          {label}
-        </span>
-        <div className={cn("rounded-lg p-2", tones[tone])}>{icon}</div>
-      </div>
+      <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+        {label}
+      </span>
       <div className="mt-2 text-2xl font-bold text-slate-900">{value}</div>
     </div>
   );

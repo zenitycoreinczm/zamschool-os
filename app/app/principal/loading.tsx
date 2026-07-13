@@ -1,5 +1,7 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
 export default function PrincipalLoading() {
-  return <WorkspaceLoader label="Loading principal workspace" compact />;
+  return (
+    <PageSkeleton variant="dashboard" label="Loading principal workspace" />
+  );
 }

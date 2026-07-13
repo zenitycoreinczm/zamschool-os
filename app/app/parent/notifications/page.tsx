@@ -6,7 +6,7 @@ export default function ParentNotificationsPage() {
       title="Notifications"
       intro="Alerts and updates about your children, attendance, and school communication."
       eyebrow="Parent inbox"
-      accent="teal"
+      accent="slate"
     />
   );
 }

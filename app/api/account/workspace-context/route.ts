@@ -7,24 +7,10 @@ import {
 import { safeErrorMessage } from "@/lib/server-guards";
 import { requireActorContext } from "@/lib/server-auth";
 import { buildWorkspaceContextPayload } from "@/lib/workspace/context-server";
+import { KNOWN_ROLES } from "@/lib/roles";
 
-const WORKSPACE_ROLES = [
-  "ADMIN",
-  "PRINCIPAL",
-  "TEACHER",
-  "STUDENT",
-  "PARENT",
-  "PAYMENTS",
-  "DEPUTY_HEAD",
-  "BURSAR",
-  "ACADEMIC_ADMIN",
-  "HR_ADMIN",
-  "ICT_ADMIN",
-  "DISCIPLINE_ADMIN",
-  "REGISTRAR",
-  "GUIDANCE_OFFICE",
-  "SUPER_ADMIN",
-] as const;
+const WORKSPACE_ROLES = KNOWN_ROLES;
+
 
 export async function GET(req: Request) {
   try {

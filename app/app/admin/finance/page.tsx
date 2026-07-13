@@ -13,6 +13,7 @@ import { getClientUser } from "@/lib/supabase-auth-client";
 import { normalizeRole } from "@/lib/roles";
 import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 
 type FinanceEntry = {
   id: string;
@@ -173,7 +174,7 @@ export default function AdminFinancePage() {
         className="flex items-center justify-center gap-3 p-10 text-sm text-slate-500"
         as="div"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
         <span>Loading finance module...</span>
       </Surface>
     );
@@ -194,39 +195,43 @@ export default function AdminFinancePage() {
 
       {canWriteFinance ? (
         <Surface variant="default" className="space-y-3 p-4" as="div">
-          <div className="grid md:grid-cols-5 gap-3">
-            <select
-              value={form.type}
-              onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            >
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </select>
-            <input
-              value={form.category}
-              onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-              placeholder="Category"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              value={form.amount}
-              onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-              type="number"
-              placeholder="Amount"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Description"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <select
+                value={form.type}
+                onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              >
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <input
+                value={form.category}
+                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+                placeholder="Category"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <input
+                value={form.amount}
+                onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+                type="number"
+                placeholder="Amount"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+              <input
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Description"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <DateOnlyPicker
               value={form.transaction_date}
-              onChange={(e) => setForm((p) => ({ ...p, transaction_date: e.target.value }))}
-              type="date"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              onChange={(date) => setForm((p) => ({ ...p, transaction_date: date }))}
+              label="Transaction date"
+              accent="slate"
             />
           </div>
           <button
@@ -261,7 +266,7 @@ export default function AdminFinancePage() {
               aria-pressed={typeFilter === t}
               className={cn(
                 "rounded-lg px-3 py-2 text-xs font-medium capitalize transition",
-                typeFilter === t ? "bg-sky-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                typeFilter === t ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               )}
             >
               {t}

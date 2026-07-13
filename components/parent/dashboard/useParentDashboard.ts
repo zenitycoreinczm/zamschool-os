@@ -34,7 +34,7 @@ export function useParentDashboard() {
     const loadChildren = async () => {
       try {
         const response = await fetchGatewayRead("/api/parent/children", {
-          cache: "no-store",
+          cache: "default",
           fallbackToLocal: true,
         });
         const payload = (await response.json()) as {
@@ -97,7 +97,10 @@ export function useParentDashboard() {
 
         const response = await fetchGatewayRead(
           `/api/parent/attendance?${query.toString()}`,
-          { cache: "no-store", fallbackToLocal: true },
+          {
+            cache: forceRefresh ? "no-store" : "default",
+            fallbackToLocal: true,
+          },
         );
         const payload = (await response.json()) as {
           success?: boolean;
@@ -142,7 +145,10 @@ export function useParentDashboard() {
 
         const response = await fetchGatewayRead(
           `/api/parent/results?${query.toString()}`,
-          { cache: "no-store", fallbackToLocal: true },
+          {
+            cache: forceRefresh ? "no-store" : "default",
+            fallbackToLocal: true,
+          },
         );
         const payload = (await response.json()) as {
           success?: boolean;

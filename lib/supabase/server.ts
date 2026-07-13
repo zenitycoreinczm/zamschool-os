@@ -46,13 +46,27 @@ export async function createClient() {
         }
       },
     },
+    auth: {
+      autoRefreshToken: false,
+    },
     global: {
-      fetch: (url, options) => {
-        // Add timeout to all fetch calls (10 seconds)
+      // Align with admin client: leave headroom for request-budget wait.
+      fetch: (url, options = {}) => {
+        const TIMEOUT_MS = 20_000;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        return fetch(url, { ...options, signal: controller.signal }).finally(() =>
-          clearTimeout(timeoutId)
+        const external = options.signal;
+        if (external) {
+          if (external.aborted) {
+            controller.abort();
+          } else {
+            external.addEventListener("abort", () => controller.abort(), {
+              once: true,
+            });
+          }
+        }
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        return fetch(url, { ...options, signal: controller.signal }).finally(
+          () => clearTimeout(timeoutId),
         );
       },
     },

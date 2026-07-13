@@ -2,14 +2,16 @@
 
 import { ShellNavItem } from "@/components/workspace/ShellNavItem";
 import type { WorkspaceNavSection } from "@/lib/workspace/nav";
-import { ws } from "@/lib/workspace/design";
+import { ws, type ShellNavAccent } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNavMenuProps = {
   sections: WorkspaceNavSection[];
   activePaths: Set<string>;
   onNavigate?: () => void;
-  accent?: "neutral" | "teal" | "indigo";
+  accent?: ShellNavAccent;
+  /** Map of nav href → unread/new count for badge display. */
+  badgeByHref?: Record<string, number>;
 };
 
 export function WorkspaceNavMenu({
@@ -17,6 +19,7 @@ export function WorkspaceNavMenu({
   activePaths,
   onNavigate,
   accent = "neutral",
+  badgeByHref,
 }: WorkspaceNavMenuProps) {
   return (
     <div className="space-y-4">
@@ -39,6 +42,7 @@ export function WorkspaceNavMenu({
                 active={activePaths.has(item.href)}
                 onNavigate={onNavigate}
                 accent={accent}
+                badge={badgeByHref?.[item.href] ?? 0}
               />
             ))}
           </div>

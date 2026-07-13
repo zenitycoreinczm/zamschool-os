@@ -7,7 +7,7 @@ ZamSchool OS is a multi-tenant school management platform.
 - Authenticated API routes resolve actor context through `requireActorContext`.
 - Feature access is enforced through `requireFeatureAccess` and route/domain guards.
 - Server-side privileged access must remain explicit and must always apply tenant filters.
-- New shared backend tenant helpers live in `lib/tenant-context.ts`.
+- New shared backend tenant helpers live in `lib/tenant/tenant-context.ts`.
 
 ## Current backend shape
 - Next.js App Router for application/API logic

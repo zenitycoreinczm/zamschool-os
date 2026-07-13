@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { PageHeader } from "@/components/workspace/PageHeader";
 
@@ -18,7 +18,7 @@ export default function SectionPlaceholder({
 }) {
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow={eyebrow} title={title} description={summary} icon={Sparkles} accent="sky" />
+      <PageHeader eyebrow={eyebrow} title={title} description={summary} accent="slate" />
 
       <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-white to-slate-50/80 p-6">
         <p className="text-sm leading-relaxed text-slate-600">

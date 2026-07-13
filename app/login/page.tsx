@@ -23,6 +23,7 @@ import {
 import * as z from "zod";
 import { getAuthRateLimitState } from "@/lib/auth-rate-limit";
 import { resolveOnboardingPath } from "@/lib/auth-routing";
+import { applyCsrfHeader, captureCsrfFromResponse } from "@/lib/csrf-client";
 import { buildLoginCooldown, getLoginCooldownState, clearLoginCooldown } from "@/lib/login-cooldown";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { supabase } from "@/lib/supabase";
@@ -90,7 +91,7 @@ function buildDestination(user: User, profile: ProfileSnapshot, redirectTo?: str
   if (
     !profile &&
     Boolean(user.email_confirmed_at) &&
-    (metadataRole === "PRINCIPAL" || metadataRole === "ADMIN")
+    (metadataRole === "PRINCIPAL" || metadataRole === "ADMIN") // ADMIN = legacy, normalizes to Head Teacher
   ) {
     return `/register?resume=school&email=${encodeURIComponent(user.email ?? "")}&userId=${encodeURIComponent(user.id ?? "")}`;
   }
@@ -111,7 +112,7 @@ export default function LoginPage() {
         <section className="w-full max-w-[440px]">
           <div className="rounded-workspace-xl border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
             </div>
           </div>
         </section>
@@ -132,6 +133,8 @@ function LoginContent() {
   const [existingSession, setExistingSession] = useState<ExistingSessionState | null>(null);
   const [cooldown, setCooldown] = useState<{ email: string; until: number } | null>(null);
   const [cooldownNow, setCooldownNow] = useState(() => Date.now());
+  /** Bot honeypot — humans never see or fill this. */
+  const [honeypot, setHoneypot] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
@@ -232,8 +235,7 @@ function LoginContent() {
     setError(null);
 
     try {
-      router.replace(existingSession.destination);
-      router.refresh();
+      window.location.assign(existingSession.destination);
     } finally {
       setContinuingSession(false);
     }
@@ -253,6 +255,46 @@ function LoginContent() {
     }
   };
 
+  const callLoginGuard = async (
+    email: string,
+    outcome: "check" | "failure" | "success",
+  ): Promise<{ locked: boolean; retryAfterSec: number; redis?: boolean } | null> => {
+    try {
+      const headers = new Headers({
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      });
+      // Prefer CSRF when the cookie is present (login page usually has one).
+      applyCsrfHeader(headers, "POST");
+
+      const res = await fetch("/api/auth/login-guard", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({
+          email,
+          outcome,
+          // Always empty for real users; bots often auto-fill hidden fields.
+          website: honeypot,
+        }),
+      });
+      captureCsrfFromResponse(res);
+      if (!res.ok) return null;
+      const body = (await res.json()) as {
+        locked?: boolean;
+        retryAfterSec?: number;
+        redis?: boolean;
+      };
+      return {
+        locked: Boolean(body.locked),
+        retryAfterSec: Number(body.retryAfterSec || 0),
+        redis: body.redis,
+      };
+    } catch {
+      return null;
+    }
+  };
+
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     setError(null);
@@ -263,6 +305,35 @@ function LoginContent() {
         return;
       }
 
+      // Honeypot: only block empty-password bot posts. Password managers sometimes
+      // autofill hidden fields — never block a user who typed real credentials.
+      if (honeypot.trim().length > 0 && !data.password.trim()) {
+        await new Promise((r) => setTimeout(r, 800 + Math.random() * 400));
+        setError("Invalid login credentials");
+        return;
+      }
+
+      const email = data.email.trim().toLowerCase();
+      // Trim ends only — copy/paste of temp passwords often adds a trailing space.
+      const password = data.password.trim();
+      if (!email || !password) {
+        setError("Enter your email and password.");
+        return;
+      }
+
+      // Server-side Redis lockout
+
+      // Server-side Redis lockout (cannot be cleared by wiping localStorage).
+      const guard = await callLoginGuard(email, "check");
+      if (guard?.locked) {
+        const cooldown = buildLoginCooldown(guard.retryAfterSec || 900);
+        setCooldown({ email, until: cooldown.until });
+        setError(
+          `Too many login attempts. Try again in ${Math.max(1, guard.retryAfterSec || 900)} seconds.`,
+        );
+        return;
+      }
+
       if (existingSession) {
         await supabase.auth.signOut();
         setExistingSession(null);
@@ -270,18 +341,32 @@ function LoginContent() {
 
       if (process.env.NODE_ENV === "development") {
         console.info("[LoginPage.onSubmit()] Attempting sign-in", {
-          email: data.email.trim().toLowerCase(),
+          email,
         });
       }
 
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+        email,
+        password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        const afterFail = await callLoginGuard(email, "failure");
+        if (afterFail?.locked) {
+          const next = buildLoginCooldown(afterFail.retryAfterSec || 900);
+          setCooldown({ email, until: next.until });
+          setError(
+            `Too many login attempts. Try again in ${Math.max(1, afterFail.retryAfterSec || 900)} seconds.`,
+          );
+          return;
+        }
+        // No soft 30s lock after a single bad password — staff often retry
+        // immediately with the correct temporary password.
+        throw authError;throw authError;
+      }
 
-      // Clear any rate limit cooldown on successful login
+      // Clear server + client cooldowns on successful login
+      void callLoginGuard(email, "success");
       clearLoginCooldown();
 
       const emailVerified = Boolean(authData.user.email_confirmed_at);
@@ -335,14 +420,15 @@ function LoginContent() {
         if (hasVerifiedMfa) {
           const mfaUrl = new URL(MFA_CHALLENGE_PATH, window.location.origin);
           mfaUrl.searchParams.set("returnTo", destination);
-          router.replace(mfaUrl.pathname + mfaUrl.search);
-          router.refresh();
+          window.location.assign(mfaUrl.pathname + mfaUrl.search);
           return;
         }
       }
 
-      router.replace(destination);
-      router.refresh();
+      // Full page load after sign-in so session cookies + middleware settle.
+      // Soft replace+refresh races and can abort the RSC flight for destinations
+      // like /app/student ("Failed to fetch RSC payload").
+      window.location.assign(destination);
     } catch (err: any) {
       const rateLimit = getAuthRateLimitState(err);
       if (rateLimit.isRateLimited) {
@@ -356,10 +442,23 @@ function LoginContent() {
         return;
       }
 
-      console.warn("[LoginPage.onSubmit()] Sign-in failed", {
-        message: err?.message || "Invalid login credentials",
-      });
-      setError(err?.message || "Invalid login credentials");
+      // Never surface raw Supabase/infra messages (schema, rate-limit internals).
+      const raw = String(err?.message || "");
+      const generic = "Invalid login credentials";
+      const safe =
+        /invalid login|invalid credentials|email not confirmed|too many requests|rate limit/i.test(
+          raw,
+        )
+          ? raw.includes("rate") || raw.includes("Too many")
+            ? "Too many login attempts. Please try again later."
+            : raw.toLowerCase().includes("email not confirmed")
+              ? "Please verify your email before signing in."
+              : generic
+          : generic;
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[LoginPage.onSubmit()] Sign-in failed");
+      }
+      setError(safe);
     } finally {
       setLoading(false);
     }
@@ -378,23 +477,27 @@ function LoginContent() {
   return (
     <AuthPageShell>
         <section className="w-full max-w-[440px]">
-          <div className="mb-8 flex flex-col items-center justify-center text-center">
-            <div className="mb-4 h-14 w-14 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-              <Image src="/icon.png" alt="ZamSchool OS" width={56} height={56} className="h-full w-full object-cover" priority />
-            </div>
-            <div>
-              <p className="text-2xl font-bold leading-tight text-slate-950">ZamSchool OS</p>
-              <p className="text-sm font-medium text-slate-500">School operating workspace</p>
-            </div>
-          </div>
-
           <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
 
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold tracking-normal text-slate-950">Sign in to school</h1>
-              <p className="mt-2 text-sm text-slate-500">
-                Access your admin, teacher, parent, or student workspace.
-              </p>
+            <div className="mb-6 flex items-start gap-3.5">
+              <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+                <Image
+                  src="/icon.png"
+                  alt="ZamSchool OS"
+                  width={48}
+                  height={48}
+                  className="h-full w-full object-cover"
+                  priority
+                />
+              </div>
+              <div className="min-w-0 text-left">
+                <h1 className="text-2xl font-bold tracking-normal text-slate-950">
+                  Sign in
+                </h1>
+                <p className="mt-1.5 text-sm text-slate-500">
+                  Use your school email and password.
+                </p>
+              </div>
             </div>
 
             {authSuccess ? (
@@ -413,7 +516,7 @@ function LoginContent() {
 
             {sessionLoading ? (
               <div className="mb-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500">
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-600" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
                 <span>Checking for an active session...</span>
               </div>
             ) : existingSession ? (
@@ -451,14 +554,35 @@ function LoginContent() {
               </div>
             ) : null}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" autoComplete="on">
+              {/* Honeypot: obscure name so password managers do not autofill it */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+              >
+                <label htmlFor="zs-login-hp">Leave blank</label>
+                <input
+                  id="zs-login-hp"
+                  name="zs_login_hp"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">Email address</label>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
                 <input
                   {...register("email")}
                   type="email"
+                  autoComplete="username"
                   className={cn(
-                    "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 placeholder:text-slate-400 transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-300",
+                    "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 placeholder:text-slate-400 transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-400",
                     errors.email && "border-red-400 focus:ring-red-400"
                   )}
                   placeholder="name@school.com"
@@ -469,7 +593,14 @@ function LoginContent() {
               <div>
                 <div className="mb-2 flex items-center justify-between gap-4">
                   <label className="block text-sm font-semibold text-slate-700">Password</label>
-                  <Link href="/forgot-password" className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline">
+                  <Link
+                    href={
+                      enteredEmail
+                        ? `/forgot-password?email=${encodeURIComponent(enteredEmail)}`
+                        : "/forgot-password"
+                    }
+                    className="text-xs font-medium text-slate-500 transition hover:text-slate-800 hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -477,11 +608,12 @@ function LoginContent() {
                   <input
                     {...register("password")}
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     className={cn(
-                      "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-slate-950 placeholder:text-slate-400 transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-300",
+                      "w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-slate-950 placeholder:text-slate-400 transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-400",
                       errors.password && "border-red-400 focus:ring-red-400"
                     )}
-                    placeholder="Enter your password"
+                    placeholder="Your password"
                   />
                   <button
                     type="button"
@@ -498,12 +630,12 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading || switchingAccount || cooldownState.active}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-3 text-base font-bold text-white shadow-lg shadow-slate-900/20 transition-all hover:-translate-y-0.5 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 disabled:translate-y-0 disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Signing in...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Signing in…
                   </>
                 ) : (
                   "Sign in"
@@ -514,7 +646,10 @@ function LoginContent() {
             <div className="mt-5 border-t border-slate-100 pt-4">
               <p className="text-center text-sm text-slate-500">
                 New school setup?{" "}
-                <Link href="/register" className="font-bold text-sky-600 hover:text-sky-700 hover:underline">
+                <Link
+                  href="/register"
+                  className="font-semibold text-slate-900 underline-offset-2 hover:underline"
+                >
                   Register your school
                 </Link>
               </p>

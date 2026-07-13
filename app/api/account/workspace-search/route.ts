@@ -10,7 +10,6 @@ import { runWorkspaceSearch } from "@/lib/workspace/search-server";
 import { sanitizeWorkspaceSearchQuery } from "@/lib/workspace/search";
 
 const WORKSPACE_ROLES = [
-  "ADMIN",
   "PRINCIPAL",
   "TEACHER",
   "STUDENT",

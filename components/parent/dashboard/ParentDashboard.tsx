@@ -35,20 +35,20 @@ export default function ParentDashboard() {
   if (loading) {
     return (
       <div
-        className="flex-1 p-4 md:p-6 space-y-6"
+        className="flex-1 space-y-6 p-4 md:p-6"
         role="status"
         aria-live="polite"
       >
         <section className="grid place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-sm text-slate-500 shadow-sm">
-          <Loader2 className="mb-3 h-5 w-5 animate-spin" />
-          Loading parent attendance...
+          <Loader2 className="mb-3 h-5 w-5 animate-spin text-slate-500" />
+          Loading family dashboard…
         </section>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-6">
+    <div className="flex-1 space-y-5 p-4 md:space-y-6 md:p-6">
       <ParentDashboardHero
         linkedChildren={children}
         range={range}
@@ -68,8 +68,8 @@ export default function ParentDashboard() {
         endDate={attendance?.endDate || formatLocalDateInputValue()}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr),360px]">
-        <div className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
+        <div className="space-y-5 md:space-y-6">
           <ParentLinkedChildren
             linkedChildren={children}
             childSummaries={childSummaries}
@@ -86,7 +86,7 @@ export default function ParentDashboard() {
           />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5 md:space-y-6">
           <Announcements />
         </div>
       </div>

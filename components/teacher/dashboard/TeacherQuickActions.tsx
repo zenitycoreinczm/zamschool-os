@@ -1,92 +1,81 @@
 import Link from "next/link";
-import {
-  ClipboardList,
-  GraduationCap,
-  Shield,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { ArrowRight } from "lucide-react";
 
 type QuickAction = {
   label: string;
   href: string;
-  icon: LucideIcon;
-  tone: "amber" | "violet" | "sky" | "rose";
   desc: string;
 };
 
 const quickActions: QuickAction[] = [
   {
-    label: "Take Attendance",
+    label: "Take attendance",
     href: "/app/teacher/attendance",
-    icon: ClipboardList,
-    tone: "amber",
-    desc: "Mark student attendance for today's lessons",
+    desc: "Mark today's lessons",
   },
   {
-    label: "Record Results",
+    label: "Assignments",
+    href: "/app/teacher/assignments",
+    desc: "Set homework and classwork",
+  },
+  {
+    label: "Record results",
     href: "/app/teacher/results",
-    icon: GraduationCap,
-    tone: "violet",
-    desc: "Enter scores and grade assignments",
+    desc: "Enter scores and grades",
   },
   {
-    label: "View Students",
+    label: "View schedule",
+    href: "/app/teacher/teaching",
+    desc: "Today's lessons and classes",
+  },
+  {
+    label: "Students",
     href: "/app/teacher/students",
-    icon: Users,
-    tone: "sky",
-    desc: "Browse your class roster and student profiles",
+    desc: "Class roster and profiles",
   },
   {
-    label: "Discipline",
+    label: "Conduct",
     href: "/app/teacher/discipline",
-    icon: Shield,
-    tone: "rose",
-    desc: "Log or review student conduct records",
+    desc: "Log behaviour notes",
   },
 ];
-
-const toneClass: Record<QuickAction["tone"], string> = {
-  amber: "bg-amber-50 text-amber-600 ring-amber-200 group-hover:bg-amber-100",
-  violet: "bg-violet-50 text-violet-600 ring-violet-200 group-hover:bg-violet-100",
-  sky: "bg-sky-50 text-sky-600 ring-sky-200 group-hover:bg-sky-100",
-  rose: "bg-rose-50 text-rose-600 ring-rose-200 group-hover:bg-rose-100",
-};
 
 export function TeacherQuickActions() {
   return (
     <section
       aria-labelledby="teacher-quick-actions-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-        Quick actions
-      </p>
-      <h2
-        id="teacher-quick-actions-heading"
-        className="mt-1 text-xl font-semibold text-slate-900"
-      >
-        What would you like to do?
-      </h2>
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Shortcuts
+          </p>
+          <h2
+            id="teacher-quick-actions-heading"
+            className="mt-1 text-xl font-semibold text-slate-900"
+          >
+            Common tasks
+          </h2>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {quickActions.map((action) => (
           <Link
-            key={action.label}
+            key={action.href}
             href={action.href}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="group flex items-start justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/40 px-3.5 py-3.5 transition hover:border-slate-300 hover:bg-white"
           >
-            <div
-              className={cn(
-                "mb-3 inline-flex rounded-xl p-2.5 ring-1 ring-inset",
-                toneClass[action.tone],
-              )}
-            >
-              <action.icon className="h-5 w-5" />
-            </div>
-            <p className="text-sm font-semibold text-slate-900">{action.label}</p>
-            <p className="mt-0.5 text-xs text-slate-500">{action.desc}</p>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-900 group-hover:text-slate-950">
+                {action.label}
+              </span>
+              <span className="mt-0.5 block text-xs text-slate-500">
+                {action.desc}
+              </span>
+            </span>
+            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" />
           </Link>
         ))}
       </div>

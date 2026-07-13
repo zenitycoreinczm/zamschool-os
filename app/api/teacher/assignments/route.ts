@@ -13,11 +13,25 @@ const assignmentSchema = z.object({
   description: z.string().optional(),
   class_id: z.string().uuid("Valid class ID is required"),
   subject_id: z.string().uuid("Valid subject ID is required"),
-  due_date: z.string().datetime("Valid due date is required"),
-  total_marks: z.number().min(1, "Total marks must be at least 1"),
+  // Accept date-only (YYYY-MM-DD) or full ISO datetime from the UI.
+  due_date: z
+    .string()
+    .min(1, "Due date is required")
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Valid due date is required"),
+  total_marks: z.coerce.number().min(1, "Total marks must be at least 1"),
   attachment_url: z.string().optional(),
   attachment_name: z.string().optional(),
 });
+
+function normalizeDueDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  // Date-only inputs parse as UTC midnight; keep end-of-local-day for due deadlines.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    parsed.setHours(23, 59, 59, 999);
+  }
+  return parsed.toISOString();
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -149,6 +163,13 @@ export async function POST(request: NextRequest) {
       actorProfileId: userId,
     });
 
+    if (assignmentScope.allowedClassIds.length === 0) {
+      return NextResponse.json(
+        { error: "No classes are assigned to you yet" },
+        { status: 403 },
+      );
+    }
+
     const assignmentTargetValidation = await validateAssignmentTarget({
       schoolId,
       allowedClassIds: assignmentScope.allowedClassIds,
@@ -159,12 +180,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: assignmentTargetValidation.error }, { status: assignmentTargetValidation.status });
     }
 
+    // Prefer teachers.id when present; profile id remains in actorTeacherIds for legacy rows.
+    const teacherKey =
+      assignmentScope.actorTeacherIds.find((id) => id !== userId) ||
+      assignmentScope.actorTeacherIds[0] ||
+      userId;
+
     // Create new assignment
     const { data: newAssignment, error: createError } = await supabaseAdmin
       .from("assignments")
       .insert({
         ...validatedData,
-        teacher_id: userId,
+        due_date: normalizeDueDate(validatedData.due_date),
+        teacher_id: teacherKey,
         school_id: schoolId,
       })
       .select()
@@ -246,10 +274,17 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const updatePayload = {
+      ...validatedData,
+      ...(validatedData.due_date
+        ? { due_date: normalizeDueDate(validatedData.due_date) }
+        : {}),
+    };
+
     // Update assignment
     const { data: updatedAssignment, error: updateError } = await supabaseAdmin
       .from("assignments")
-      .update(validatedData)
+      .update(updatePayload)
       .eq("id", id)
       .select()
       .single();

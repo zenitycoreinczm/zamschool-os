@@ -1,17 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Building2,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Rocket,
-  ShieldCheck,
-  Users,
-  X,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
 
 const DISMISS_KEY = "zamschool.principal.setup.dismissed";
 
@@ -101,9 +91,7 @@ export default function SchoolSetupBanner({
           >
             {initializing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Rocket className="h-3.5 w-3.5" />
-            )}
+            ) : null}
             {status?.initialized ? "Re-run setup" : "Run setup"}
           </button>
           <button
@@ -120,19 +108,16 @@ export default function SchoolSetupBanner({
       {expanded ? (
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <SetupMetric
-            icon={Building2}
             label="Departments"
             value={loading ? "…" : String(status?.departments ?? 0)}
             ready={(status?.departments ?? 0) > 0}
           />
           <SetupMetric
-            icon={ShieldCheck}
             label="Permission groups"
             value={loading ? "…" : String(status?.permissionGroups ?? 0)}
             ready={(status?.permissionGroups ?? 0) > 0}
           />
           <SetupMetric
-            icon={Users}
             label="School settings"
             value={loading ? "…" : String(status?.settings ?? 0)}
             ready={(status?.settings ?? 0) > 0}
@@ -159,12 +144,10 @@ export default function SchoolSetupBanner({
 }
 
 function SetupMetric({
-  icon: Icon,
   label,
   value,
   ready,
 }: {
-  icon: typeof Building2;
   label: string;
   value: string;
   ready: boolean;
@@ -172,11 +155,12 @@ function SetupMetric({
   return (
     <div className="rounded-lg border border-slate-200/80 bg-white px-3 py-2">
       <div className="flex items-center justify-between gap-2">
-        <Icon className="h-3.5 w-3.5 text-slate-500" />
-        {ready ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : null}
+        <p className="text-[11px] text-slate-500">{label}</p>
+        {ready ? (
+          <span className="text-[10px] font-semibold text-emerald-600">Ready</span>
+        ) : null}
       </div>
       <p className="mt-1 text-lg font-bold text-slate-900">{value}</p>
-      <p className="text-[11px] text-slate-500">{label}</p>
     </div>
   );
 }

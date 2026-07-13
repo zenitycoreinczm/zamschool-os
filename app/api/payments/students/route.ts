@@ -6,6 +6,7 @@ import { parseStudentPaymentInput } from "@/lib/payment-input";
 import { requirePaymentsContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { auditDomainWrite } from "@/lib/audit-domain";
+import { invalidateByTag } from "@/lib/enhanced-cache";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,7 +26,9 @@ export async function GET(request: NextRequest) {
     // Get students with their payment summaries
     let query = supabaseAdmin
       .from("payment_summaries")
-      .select("*")
+      .select(
+        "school_id, student_id, first_name, last_name, email, total_payments, pending_payments, paid_payments, pending_amount, paid_amount, total_amount",
+      )
       .eq("school_id", schoolId);
 
     // Apply status filter
@@ -236,6 +239,8 @@ export async function POST(request: NextRequest) {
       },
       ipAddress: ip,
     });
+    await invalidateByTag("fees");
+    await invalidateByTag("dashboard");
 
     return NextResponse.json({ data: newPayment }, { status: 201 });
   } catch (error) {

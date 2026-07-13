@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CalendarDays, Clock, Users } from "lucide-react";
 
 import type { LessonRow } from "@/components/teacher/dashboard/types";
 
@@ -37,10 +36,10 @@ export function TeacherTodaySchedule({
           ) : null}
         </div>
         <Link
-          href="/app/teacher/classes"
+          href="/app/teacher/teaching"
           className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
         >
-          <CalendarDays className="h-3.5 w-3.5" /> View all
+          Full schedule
         </Link>
       </div>
 
@@ -54,8 +53,7 @@ export function TeacherTodaySchedule({
         </div>
       ) : lessons.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-          <CalendarDays className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             No lessons scheduled for today
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -72,15 +70,11 @@ export function TeacherTodaySchedule({
             >
               <p className="font-semibold text-slate-900">{lesson.subjectName}</p>
               <p className="mt-0.5 text-sm text-slate-500">{lesson.className}</p>
-              <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                <span>
                   {lesson.startTime?.slice(0, 5)} – {lesson.endTime?.slice(0, 5)}
                 </span>
-                <span className="inline-flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {lesson.rosterCount} students
-                </span>
+                <span>{lesson.rosterCount} students</span>
               </div>
             </Link>
           ))}

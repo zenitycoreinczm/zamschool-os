@@ -71,13 +71,14 @@ export function buildActorContext(
     };
   }
 
-  const schoolId = options.profile?.school_id || null;
+  const schoolId = String(options.profile?.school_id || "").trim() || null;
 
   if (options.requireSchool && !schoolId) {
     return {
       ok: false,
       status: 403,
-      error: "School access is required",
+      // Keep in sync with lib/school-access-error.ts (NO_SCHOOL_LINKED_ERROR)
+      error: "No school linked to this account",
     };
   }
 

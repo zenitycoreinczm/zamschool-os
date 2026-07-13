@@ -16,10 +16,17 @@
  *     /api/* instead of 5xx-ing the user
  *   - return the underlying Response so callers can stream / cache as usual
  */
+import {
+  captureCsrfFromResponse,
+  ensureCsrfTokenAvailable,
+  readCsrfToken,
+  rememberCsrfToken,
+} from "@/lib/csrf-client";
 import { supabase } from "@/lib/supabase";
 import { fetchWithOfflineSupport } from "@/lib/offline-fetch";
 
 const GATEWAY_URL = String(process.env.NEXT_PUBLIC_GATEWAY_URL || "").trim();
+const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export type GatewayOptions = RequestInit & {
   /**
@@ -40,27 +47,11 @@ function isBrowser() {
   return typeof window !== "undefined";
 }
 
-function getCsrfTokenFromCookie(): string | null {
-  if (!isBrowser()) return null;
-  const raw = document.cookie;
-  if (!raw) return null;
-  for (const pair of raw.split(";")) {
-    const idx = pair.indexOf("=");
-    if (idx === -1) continue;
-    const name = pair.substring(0, idx).trim();
-    if (name === "csrf-token") {
-      const value = pair.substring(idx + 1).trim();
-      return value || null;
-    }
-  }
-  return null;
-}
-
-function buildHeaders(
+async function buildHeaders(
   init: RequestInit,
   method: string,
   bypassCsrf: boolean,
-): Headers {
+): Promise<Headers> {
   const headers = new Headers(init.headers || {});
   // The Worker doesn't need Content-Type: application/json baked in — it just
   // forwards body bytes. We still set it for the same-origin fallback so
@@ -73,12 +64,11 @@ function buildHeaders(
   ) {
     headers.set("Content-Type", "application/json");
   }
-  if (!bypassCsrf) {
-    const mutatingMethods = ["POST", "PUT", "PATCH", "DELETE"];
-    if (mutatingMethods.includes(method.toUpperCase())) {
-      const csrf = getCsrfTokenFromCookie();
-      if (csrf) headers.set("X-CSRF-Token", csrf);
-    }
+  if (!bypassCsrf && MUTATING.has(method.toUpperCase()) && isBrowser()) {
+    // Always inject a real token — never soft-skip (that caused registrar 403s).
+    const csrf = await ensureCsrfTokenAvailable();
+    headers.set("X-CSRF-Token", csrf);
+    rememberCsrfToken(csrf);
   }
   return headers;
 }
@@ -101,7 +91,7 @@ async function getAccessToken(): Promise<string | null> {
   if (!isBrowser()) return null;
   // supabase.auth.getSession() reads from localStorage and is cheap.
   const sessionResult = await supabase.auth.getSession();
-  return sessionResult.data.session?.access_token ?? null;
+  return sessionResult?.data?.session?.access_token ?? null;
 }
 
 async function gatewayFetchImpl(
@@ -113,20 +103,27 @@ async function gatewayFetchImpl(
   const bypassCsrf = init.bypassCsrf === true;
   const method = String(init.method || "GET").toUpperCase();
   const localUrl = String(path || "").trim();
-  const headers = buildHeaders(init, method, bypassCsrf);
+  const headers = await buildHeaders(init, method, bypassCsrf);
 
   // Same-origin only — same gateway helper used everywhere.
   // We strip any Authorization header before forwarding to same-origin routes
   // to ensure cookie-backed authentication is strictly utilized.
-  const localFetch = () => {
+  const localFetch = async () => {
     const cleanHeaders = new Headers(headers);
     cleanHeaders.delete("authorization");
     cleanHeaders.delete("Authorization");
-    return fetchWithOfflineSupport(localUrl, {
+    // Re-assert CSRF for local fallback (cookie path requires header).
+    if (!bypassCsrf && MUTATING.has(method) && isBrowser()) {
+      const csrf = readCsrfToken() || (await ensureCsrfTokenAvailable());
+      cleanHeaders.set("X-CSRF-Token", csrf);
+    }
+    const response = await fetchWithOfflineSupport(localUrl, {
       ...init,
       headers: cleanHeaders,
-      credentials: "same-origin",
+      credentials: "include",
     });
+    captureCsrfFromResponse(response);
+    return response;
   };
 
   const gatewayUrl = await buildGatewayUrl(localUrl);
@@ -155,6 +152,7 @@ async function gatewayFetchImpl(
       headers,
       credentials: "omit",
     });
+    captureCsrfFromResponse(response);
     if (!fallbackToLocal) return response;
     if (response.ok || !shouldFallback(response.status)) {
       return response;

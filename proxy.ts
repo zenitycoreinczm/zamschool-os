@@ -3,6 +3,7 @@ import {
   resolveRoleAwareProtectedPath,
   resolvePostLoginPath,
 } from "./lib/auth-routing";
+import { canAccessPath } from "./lib/middleware-path-access";
 import { resolveVerifiedMiddlewareSession } from "./lib/middleware-supabase-session";
 import {
   buildContentSecurityPolicy,
@@ -16,6 +17,20 @@ import {
   validateCsrfToken,
   CSRF_TOKEN_COOKIE,
 } from "./lib/csrf";
+import {
+  HARDENED_SECURITY_HEADERS,
+  checkMiddlewareFloodLimit,
+  classifyClientBot,
+  clientIpFromHeaders,
+  isBlockedAttackPath,
+  isSensitiveAuthSurface,
+} from "./lib/request-security";
+import {
+  isAllowedEdgeHost,
+  isDisallowedEdgeMethod,
+  isEdgeContentLengthAllowed,
+  isOnStaticIpBlocklist,
+} from "./lib/server-security-edge";
 
 const API_CORS_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
 const DEFAULT_ALLOWED_HEADERS = "Authorization, Content-Type";
@@ -28,90 +43,133 @@ const ALLOWED_CORS_HEADERS = [
   "X-CSRF-Token",
   "X-Client-Info",
 ].join(", ");
-const SECURITY_HEADERS = {
-  "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-  "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
-} as const;
-
-function canAccessPath(role: string | null | undefined, pathname: string) {
-  if (!role) return false;
-
-  // Shared protected paths accessible to all authenticated roles
-  const sharedProtectedPrefixes = [
-    "/app/profile",
-    "/app/settings",
-    "/app/messages",
-    "/app/announcements",
-    "/app/events",
-    "/app/notifications",
-  ];
-
-  if (
-    sharedProtectedPrefixes.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    )
-  ) {
-    return true;
-  }
-
-  // Role-specific path restrictions
-  if (pathname === "/dashboard" || pathname === "/app/dashboard")
-    return role === "ADMIN";
-  if (pathname.startsWith("/app/super-admin")) return role === "SUPER_ADMIN";
-  if (pathname.startsWith("/app/admin") || pathname.startsWith("/admin")) {
-    return [
-      "ADMIN",
-      "PRINCIPAL",
-      "DEPUTY_HEAD",
-      "BURSAR",
-      "ACADEMIC_ADMIN",
-      "HR_ADMIN",
-      "ICT_ADMIN",
-      "DISCIPLINE_ADMIN",
-      "GUIDANCE_OFFICE",
-      "REGISTRAR",
-    ].includes(role);
-  }
-  if (pathname.startsWith("/app/payments") || pathname.startsWith("/payments"))
-    return ["PAYMENTS", "BURSAR"].includes(role);
-  if (pathname.startsWith("/app/bursar")) return role === "BURSAR";
-  if (pathname.startsWith("/app/principal")) return role === "PRINCIPAL";
-  if (pathname.startsWith("/app/deputy-head")) return role === "DEPUTY_HEAD";
-  if (pathname.startsWith("/app/guidance")) return role === "GUIDANCE_OFFICE";
-  if (pathname.startsWith("/app/academic-admin"))
-    return role === "ACADEMIC_ADMIN";
-  if (pathname.startsWith("/app/hr-admin")) return role === "HR_ADMIN";
-  if (pathname.startsWith("/app/ict-admin")) return role === "ICT_ADMIN";
-  if (pathname.startsWith("/app/registrar")) return role === "REGISTRAR";
-  if (pathname.startsWith("/app/discipline-admin"))
-    return role === "DISCIPLINE_ADMIN";
-  if (pathname.startsWith("/teacher")) return role === "TEACHER";
-  if (pathname.startsWith("/student")) return role === "STUDENT";
-  if (pathname.startsWith("/parent")) return role === "PARENT";
-
-  // Default /app paths require admin-level role
-  if (pathname.startsWith("/app"))
-    return [
-      "ADMIN",
-      "PRINCIPAL",
-      "DEPUTY_HEAD",
-      "BURSAR",
-      "ACADEMIC_ADMIN",
-      "HR_ADMIN",
-      "ICT_ADMIN",
-      "DISCIPLINE_ADMIN",
-      "GUIDANCE_OFFICE",
-      "REGISTRAR",
-    ].includes(role);
-
-  // Allow access to all other paths
-  return true;
-}
 
 export async function proxy(request: NextRequest) {
   const pathname = normalizeLegacyDashboardPath(request.nextUrl.pathname);
+  const ip = clientIpFromHeaders(request.headers);
+
+  // ── Data-center edge gate (host / method / size / IP) ────────────────────
+  if (isDisallowedEdgeMethod(request.method)) {
+    const denied = new NextResponse(null, { status: 405 });
+    applySecurityHeaders(denied, request);
+    return denied;
+  }
+
+  const hostHeader =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  if (!isAllowedEdgeHost(hostHeader)) {
+    const denied = NextResponse.json({ error: "Invalid host" }, { status: 421 });
+    applySecurityHeaders(denied, request);
+    return denied;
+  }
+
+  if (!isEdgeContentLengthAllowed(request.headers.get("content-length"), pathname)) {
+    const denied = NextResponse.json(
+      { error: "Payload too large" },
+      { status: 413 },
+    );
+    applySecurityHeaders(denied, request);
+    return denied;
+  }
+
+  if (isOnStaticIpBlocklist(ip)) {
+    const denied = NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    applySecurityHeaders(denied, request);
+    return denied;
+  }
+
+  // Distributed temporary bans (Redis) — fail open if Redis is unreachable.
+  try {
+    const { getIpBanRemainingSec } = await import("./lib/ip-reputation");
+    const bannedFor = await getIpBanRemainingSec(ip);
+    if (bannedFor > 0) {
+      const denied = NextResponse.json(
+        { error: "Temporarily blocked due to abusive traffic." },
+        {
+          status: 403,
+          headers: { "Retry-After": String(bannedFor) },
+        },
+      );
+      applySecurityHeaders(denied, request);
+      return denied;
+    }
+  } catch {
+    // Never take the site down if reputation store fails.
+  }
+
+  // Drop common scanner / exploit probes before any session or DB work.
+  if (isBlockedAttackPath(pathname)) {
+    void import("./lib/ip-reputation")
+      .then(({ recordIpAbuse }) => recordIpAbuse(ip, "attack_path"))
+      .catch(() => {});
+    const blocked = new NextResponse(null, { status: 404 });
+    applySecurityHeaders(blocked, request);
+    return blocked;
+  }
+
+  // Bot / automation gate on auth surfaces (login, register, auth APIs).
+  const bot = classifyClientBot({
+    userAgent: request.headers.get("user-agent"),
+    pathname,
+    method: request.method,
+  });
+  if (bot.block) {
+    void import("./lib/ip-reputation")
+      .then(({ recordIpAbuse }) => recordIpAbuse(ip, "bot_block"))
+      .catch(() => {});
+    const denied = NextResponse.json(
+      { error: "Request blocked" },
+      { status: 403 },
+    );
+    applySecurityHeaders(denied, request);
+    return denied;
+  }
+
+  // Edge flood guards (per-isolate; Redis still enforces distributed limits on routes).
+  {
+    if (isSensitiveAuthSurface(pathname)) {
+      const flood = checkMiddlewareFloodLimit({
+        key: `auth-edge:${ip}`,
+        limit: bot.suspicious ? 20 : 60,
+        windowMs: 60_000,
+      });
+      if (!flood.allowed) {
+        void import("./lib/ip-reputation")
+          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "auth_flood"))
+          .catch(() => {});
+        const limited = NextResponse.json(
+          { error: "Too many requests. Please try again shortly." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(flood.retryAfterSec) },
+          },
+        );
+        applySecurityHeaders(limited, request);
+        return limited;
+      }
+    } else if (pathname.startsWith("/api/")) {
+      // General API flood ceiling — stops scrapers before route handlers run.
+      const apiFlood = checkMiddlewareFloodLimit({
+        key: `api-edge:${ip}`,
+        limit: bot.suspicious ? 60 : 180,
+        windowMs: 60_000,
+      });
+      if (!apiFlood.allowed) {
+        void import("./lib/ip-reputation")
+          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "api_flood"))
+          .catch(() => {});
+        const limited = NextResponse.json(
+          { error: "Too many requests. Please try again shortly." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(apiFlood.retryAfterSec) },
+          },
+        );
+        applySecurityHeaders(limited, request);
+        return limited;
+      }
+    }
+  }
 
   // RSC prefetch requests (_rsc=…) are speculative: the browser fires them when
   // the user hovers a <Link>, then aborts the request on the next navigation.
@@ -145,6 +203,8 @@ export async function proxy(request: NextRequest) {
       "/api/auth/forgot-password",
       "/api/auth/reset-password",
       "/api/auth/complete-first-login",
+      // Pre-auth login lockout (Redis) — called before session exists; still rate-limited.
+      "/api/auth/login-guard",
       "/api/staff/invitations/accept",
       "/api/auth/mfa",
     ];
@@ -265,12 +325,17 @@ export async function proxy(request: NextRequest) {
   }
 
   if (hasSession && isDashboardPage && role && !canAccessPath(role, pathname)) {
-    response = NextResponse.redirect(
-      new URL(resolvePostLoginPath(role, pathname), request.url),
-    );
-    ensureCsrfCookie(response, request);
-    applySecurityHeaders(response, request);
-    return response;
+    const homePath = resolvePostLoginPath(role, pathname);
+    // Avoid redirect loops when home itself was misclassified (e.g. student
+    // hitting /app/student while canAccessPath only allowed legacy /student).
+    if (homePath !== pathname) {
+      response = NextResponse.redirect(
+        new URL(`${homePath}${request.nextUrl.search}`, request.url),
+      );
+      ensureCsrfCookie(response, request);
+      applySecurityHeaders(response, request);
+      return response;
+    }
   }
 
   if (hasSession && isAuthPage) {
@@ -346,7 +411,7 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
     request.nextUrl.protocol === "https:" ||
     request.nextUrl.hostname.endsWith(".vercel.app");
 
-  Object.entries(SECURITY_HEADERS).forEach(([key, value]) => {
+  Object.entries(HARDENED_SECURITY_HEADERS).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
   response.headers.set(
@@ -364,22 +429,52 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
       "max-age=31536000; includeSubDomains; preload",
     );
   }
+
+  // Never advertise server tech stacks on responses we control.
+  response.headers.delete("X-Powered-By");
+  response.headers.delete("Server");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  // Cache-control for auth HTML already set elsewhere; reinforce no-store for cookies.
+  if (!response.headers.has("X-Content-Type-Options")) {
+    response.headers.set("X-Content-Type-Options", "nosniff");
+  }
 }
 
 function resolveAllowedApiOriginFromRequest(request: NextRequest) {
   return resolveAllowedApiOrigin(request.headers.get("origin"));
 }
 
+/**
+ * Always re-assert the CSRF cookie as JS-readable (httpOnly: false).
+ * Older sessions may still hold an HttpOnly csrf-token cookie; middleware can
+ * see it while document.cookie cannot, so mutations omit the header and get 403.
+ * Re-setting the same name overwrites attributes in the browser.
+ */
 function ensureCsrfCookie(response: NextResponse, request: NextRequest) {
-  const existing = request.cookies.get(CSRF_TOKEN_COOKIE)?.value;
-  if (!existing) {
-    response.cookies.set(CSRF_TOKEN_COOKIE, generateCsrfToken(), {
-      httpOnly: false,
-      secure: request.nextUrl.protocol === "https:",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
+  const existing = request.cookies.get(CSRF_TOKEN_COOKIE)?.value?.trim();
+  const token = existing || generateCsrfToken();
+  const isHttps =
+    request.headers.get("x-forwarded-proto") === "https" ||
+    request.nextUrl.protocol === "https:" ||
+    request.nextUrl.hostname.endsWith(".vercel.app");
+
+  response.cookies.set(CSRF_TOKEN_COOKIE, token, {
+    httpOnly: false,
+    secure: isHttps,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+  });
+  // Clients capture this when document.cookie is empty/stale.
+  response.headers.set("X-CSRF-Token", token);
+  const exposed = response.headers.get("Access-Control-Expose-Headers");
+  if (!exposed) {
+    response.headers.set("Access-Control-Expose-Headers", "X-CSRF-Token");
+  } else if (!/x-csrf-token/i.test(exposed)) {
+    response.headers.set(
+      "Access-Control-Expose-Headers",
+      `${exposed}, X-CSRF-Token`,
+    );
   }
 }
 

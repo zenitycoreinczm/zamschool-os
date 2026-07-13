@@ -2,6 +2,7 @@
 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { isSupabaseNetworkError } from "@/lib/supabase-connectivity";
 
 let sessionLookup: Promise<{ session: Session | null; error: Error | null }> | null = null;
 
@@ -9,10 +10,19 @@ export async function getClientSession() {
   if (!sessionLookup) {
     sessionLookup = supabase.auth
       .getSession()
-      .then(({ data, error }) => ({
-        session: data.session ?? null,
-        error: error ?? null,
+      .then((result) => ({
+        session: result?.data?.session ?? null,
+        error: result?.error ?? null,
       }))
+      .catch((error: unknown) => {
+        if (isSupabaseNetworkError(error)) {
+          return { session: null, error: null };
+        }
+        return {
+          session: null,
+          error: error instanceof Error ? error : new Error(String(error)),
+        };
+      })
       .finally(() => {
         sessionLookup = null;
       });

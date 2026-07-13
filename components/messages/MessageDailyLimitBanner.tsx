@@ -1,7 +1,5 @@
 "use client";
 
-import { AlertCircle, GraduationCap } from "lucide-react";
-
 import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
 function formatQuotaResetTime(resetsAt: string) {
@@ -41,38 +39,23 @@ export function MessageDailyLimitBanner({ quota }: { quota: MessageSendQuota | n
       aria-live="polite"
     >
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
-        <div className="flex min-w-0 flex-1 gap-3.5">
-          <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${
-              atLimit
-                ? "bg-slate-100 text-slate-800 ring-slate-200/90"
-                : "bg-slate-50 text-slate-700 ring-slate-200/80"
-            }`}
-          >
-            {atLimit ? (
-              <AlertCircle className="h-5 w-5" strokeWidth={2} aria-hidden />
-            ) : (
-              <GraduationCap className="h-5 w-5" strokeWidth={2} aria-hidden />
-            )}
+        <div className="min-w-0 flex-1 space-y-2">
+          <div>
+            <p className="text-sm font-semibold tracking-tight text-slate-900">
+              School messages — {quota.limit} per day
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              For school-related contact only: ask a teacher for help, share a number, or arrange
+              to meet on campus.
+            </p>
           </div>
-          <div className="min-w-0 space-y-2">
-            <div>
-              <p className="text-sm font-semibold tracking-tight text-slate-900">
-                School messages — {quota.limit} per day
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                For school-related contact only: ask a teacher for help, share a number, or arrange
-                to meet on campus.
-              </p>
-            </div>
-            {atLimit ? (
-              <p className="text-sm font-medium text-slate-800">
-                Limit reached — you can send again {resetLabel}.
-              </p>
-            ) : (
-              <p className="text-xs text-slate-500">Allowance resets {resetLabel}.</p>
-            )}
-          </div>
+          {atLimit ? (
+            <p className="text-sm font-medium text-slate-800">
+              Limit reached — you can send again {resetLabel}.
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500">Allowance resets {resetLabel}.</p>
+          )}
         </div>
 
         <div

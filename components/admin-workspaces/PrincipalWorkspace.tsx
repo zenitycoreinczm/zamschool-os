@@ -1,19 +1,7 @@
 "use client";
 
-import type { ComponentType } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  ClipboardCheck,
-  CreditCard,
-  Megaphone,
-  MessageSquare,
-  School,
-  Shield,
-  UserPlus,
-  Users,
-} from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import SchoolSetupBanner, {
@@ -26,7 +14,7 @@ import { FocusPills } from "@/components/workspace/FocusPills";
 import { SectionIntro } from "@/components/workspace/SectionIntro";
 import { metricsToStatCards } from "@/components/workspace/metricIcons";
 import { adminApiJson } from "@/lib/admin-browser-api";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import type { WorkspaceMetric } from "@/lib/workspace/summary";
 
 type InitResults = Record<
@@ -34,13 +22,11 @@ type InitResults = Record<
   { status: string; count?: number; error?: string }
 >;
 
-const HERO_METRIC_ICONS = [School, UserPlus, ClipboardCheck, CreditCard];
-
-const FALLBACK_METRICS: WorkspaceMetric[] = [
-  { label: "Classes", value: "—", hint: "Active classes" },
-  { label: "Pending Invites", value: "—", hint: "Awaiting acceptance" },
-  { label: "Attendance", value: "—", hint: "Present rate (7 days)" },
-  { label: "Outstanding", value: "—", hint: "Unpaid fee balances" },
+const FALLBACK_METRIC_LABELS = [
+  { label: "Classes", hint: "Active classes" },
+  { label: "Pending Invites", hint: "Awaiting acceptance" },
+  { label: "Attendance", hint: "Present rate (7 days)" },
+  { label: "Outstanding", hint: "Unpaid fee balances" },
 ];
 
 const HEAD_TEACHER_FOCUS = [
@@ -51,7 +37,10 @@ const HEAD_TEACHER_FOCUS = [
 ];
 
 export default function PrincipalWorkspace() {
-  const { data: workspace } = useWorkspaceContext();
+  // Defensive read — context may not be ready immediately after login.
+  const ctxRaw = useWorkspaceContext();
+  const ctx = ctxRaw || {};
+  const workspace = (ctx as any)?.data ?? null;
   const [setupLoading, setSetupLoading] = useState(true);
   const [initializing, setInitializing] = useState(false);
   const [setupStatus, setSetupStatus] = useState<SchoolSetupStatus | null>(
@@ -77,7 +66,9 @@ export default function PrincipalWorkspace() {
           permissionGroups?: { id: string }[];
           settings?: { setting_key: string }[];
         };
-      }>("/api/school/initialize");
+      }>("/api/school/initialize").catch(() => null);
+      // Silently skip if the endpoint is unavailable (e.g. 403 for some accounts).
+      if (!body) { setSetupLoading(false); return; }
       const data =
         (body && typeof body === "object" ? body.data : undefined) ?? {};
 
@@ -104,8 +95,9 @@ export default function PrincipalWorkspace() {
       const body = await adminApiJson<{
         data?: { metrics?: WorkspaceMetric[]; highlights?: string[] };
       }>("/api/workspace/summary");
-      setLiveMetrics(body.data?.metrics || []);
-      setHighlights(body.data?.highlights || []);
+      const data = body?.data;
+      setLiveMetrics(data?.metrics || []);
+      setHighlights(data?.highlights || []);
     } catch {
       setLiveMetrics([]);
       setHighlights([]);
@@ -154,17 +146,23 @@ export default function PrincipalWorkspace() {
     );
   }, [setupDismissed, setupLoading, setupStatus]);
 
-  const metrics = liveMetrics.length > 0 ? liveMetrics : FALLBACK_METRICS;
+  // Students/Teachers belong in School pulse cards, not the overview header.
+  const headerMetrics = liveMetrics.filter(
+    (m) => {
+      const label = String(m.label || "").toLowerCase();
+      return label !== "students" && label !== "teachers";
+    },
+  );
 
-  const heroStats = metricsLoading
-    ? FALLBACK_METRICS.map((item, index) => ({
-        label: item.label,
-        value: "…",
-        hint: item.hint,
-        icon: HERO_METRIC_ICONS[index % HERO_METRIC_ICONS.length],
-        tone: (["sky", "violet", "amber", "emerald"] as const)[index % 4],
-      }))
-    : metricsToStatCards(metrics, HERO_METRIC_ICONS);
+  const heroStats =
+    headerMetrics.length > 0
+      ? metricsToStatCards(headerMetrics)
+      : FALLBACK_METRIC_LABELS.map((item, index) => ({
+          label: item.label,
+          value: metricsLoading ? "…" : "0",
+          hint: item.hint,
+          tone: (["sky", "violet", "amber", "emerald"] as const)[index % 4],
+        }));
 
   const schoolName = workspace?.schoolName || "Your school";
   const yearTerm = workspace?.yearTerm || "Academic context";
@@ -180,19 +178,14 @@ export default function PrincipalWorkspace() {
         eyebrow="Head Teacher overview"
         title={schoolName}
         description={`Welcome back, ${displayName}. Leadership snapshot for ${yearTerm}.`}
-        accent="sky"
+        accent="slate"
         stats={heroStats}
         actions={
           <>
-            <HeroAction
-              href="/app/admin/audit"
-              label="Audit trail"
-              icon={Shield}
-            />
+            <HeroAction href="/app/admin/audit" label="Audit trail" />
             <HeroAction
               href="/app/announcements"
               label="Post announcement"
-              icon={Megaphone}
               variant="secondary"
             />
           </>
@@ -206,20 +199,18 @@ export default function PrincipalWorkspace() {
             <InboxChip
               href="/app/messages"
               label={`${formatCount(unreadMessages)} messages`}
-              icon={MessageSquare}
             />
           ) : null}
           {unreadNotifications > 0 ? (
             <InboxChip
               href="/app/notifications"
               label={`${formatCount(unreadNotifications)} notifications`}
-              icon={Bell}
             />
           ) : null}
         </div>
       ) : null}
 
-      <FocusPills items={focusItems} accent="indigo" />
+      <FocusPills items={focusItems} accent="slate" />
 
       {showSetupBanner ? (
         <SchoolSetupBanner
@@ -249,12 +240,10 @@ export default function PrincipalWorkspace() {
 function HeroAction({
   href,
   label,
-  icon: Icon,
   variant = "primary",
 }: {
   href: string;
   label: string;
-  icon: ComponentType<{ className?: string }>;
   variant?: "primary" | "secondary";
 }) {
   return (
@@ -266,33 +255,23 @@ function HeroAction({
           : "inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
       }
     >
-      <Icon className={cnIcon(variant)} />
       {label}
     </Link>
   );
 }
 
-function cnIcon(variant: "primary" | "secondary") {
-  return variant === "primary"
-    ? "h-4 w-4 text-sky-600"
-    : "h-4 w-4 text-white/90";
-}
-
 function InboxChip({
   href,
   label,
-  icon: Icon,
 }: {
   href: string;
   label: string;
-  icon: ComponentType<{ className?: string }>;
 }) {
   return (
     <Link
       href={href}
       className="inline-flex items-center gap-1.5 rounded-full border border-sky-200/80 bg-white px-3 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-50"
     >
-      <Icon className="h-3.5 w-3.5" />
       {label}
     </Link>
   );

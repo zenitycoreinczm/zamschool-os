@@ -48,26 +48,6 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     ],
   },
   {
-    name: "School Administrator",
-    description:
-      "Day-to-day school operations. School Administrator (admin) manages routine tasks but cannot override published records.",
-    roles: ["ADMIN"],
-    features: [
-      full("users"),
-      full("classes"),
-      full("subjects"),
-      full("attendance", false),
-      full("grades"),
-      full("settings", false),
-      full("announcements"),
-      full("messages"),
-      full("notifications"),
-      full("finance"),
-      full("payments"),
-      readOnly("audit"),
-    ],
-  },
-  {
     name: "Deputy Head Authority",
     description: "Academic quality control — review and validate, not create.",
     roles: ["DEPUTY_HEAD"],
@@ -117,13 +97,14 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
   {
     name: "ICT Administration",
     description:
-      "Technical support, session visibility, and system recovery. No academic data access.",
+      "Technical support, user recovery (including authenticator reset), and audit. No academic data access. Session console is not shipped yet.",
     roles: ["ICT_ADMIN"],
     features: [
       writable("users"),
       writable("settings"),
-      full("sessions"),
       readOnly("audit"),
+      writable("messages"),
+      writable("notifications"),
     ],
   },
   {
@@ -133,7 +114,7 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     roles: ["REGISTRAR"],
     features: [
       writable("users"),
-      readUpdate("classes"),
+      writable("classes"),
       readOnly("attendance"),
       readOnly("grades"),
       readOnly("announcements"),
@@ -148,7 +129,7 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     roles: ["ACADEMIC_ADMIN"],
     features: [
       readOnly("users"),
-      writable("classes"),
+      readOnly("classes"),
       writable("subjects"),
       readOnly("attendance"),
       writable("grades"),
@@ -161,9 +142,19 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
   },
   {
     name: "Human Resources",
-    description: "Staff records and department-level attendance oversight",
+    description:
+      "Maintain existing staff employment records and departments. Does not create accounts or send invitations (Head Teacher).",
     roles: ["HR_ADMIN"],
-    features: [writable("users"), readOnly("attendance", "department")],
+    features: [
+      // Read + update staff profiles only — no create/delete accounts.
+      readUpdate("users"),
+      // Class/subject labels needed when viewing teacher employment assignments.
+      readOnly("classes"),
+      readOnly("subjects"),
+      readOnly("attendance"),
+      // Full department structure (custom depts can be deleted; defaults blocked in API).
+      full("department"),
+    ],
   },
   {
     name: "Teaching",

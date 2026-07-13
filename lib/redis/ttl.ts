@@ -11,8 +11,8 @@ export const REDIS_TTL = {
   /** Role / permission cache (API routes). */
   roleSec: 15 * 60,
 
-  /** Active session metadata (not Supabase JWT). */
-  sessionSec: 7 * 24 * 60 * 60,
+  /** Active session metadata (not Supabase JWT). 24h sliding refresh on touch. */
+  sessionSec: 24 * 60 * 60,
 
   /** OTP send throttle per email. */
   otpThrottleSec: 60 * 60,
@@ -24,10 +24,22 @@ export const REDIS_TTL = {
   dailyUsageMaxSec: 48 * 60 * 60,
 
   /** Consolidated shell response (workspace + unread + role shell). */
-  shellSec: 30,
+  shellSec: 120,
 
   /** Workspace context stable slice (school name, term, profile). */
-  workspaceSec: 45,
+  workspaceSec: 180,
+
+  /**
+   * School-wide dashboard metrics (student/teacher/class counts, attendance roll-up).
+   * Shared across users in the school so reloads hit Redis, not Supabase.
+   */
+  schoolMetricsSec: 15 * 60,
+
+  /**
+   * Biweekly school backup snapshot (aggregate only). Auto-deletes after 7 days
+   * so Upstash stays small; PDF is generated on download from this JSON.
+   */
+  schoolBackupSnapshotSec: 7 * 24 * 60 * 60,
 
   /** Hard cap for any application-chosen TTL. */
   maxKeySec: 30 * 24 * 60 * 60,

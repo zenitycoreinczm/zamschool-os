@@ -9,24 +9,10 @@ import {
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { KNOWN_ROLES } from "@/lib/roles";
 
-const INBOX_PREVIEW_ROLES = [
-  "ADMIN",
-  "PRINCIPAL",
-  "TEACHER",
-  "STUDENT",
-  "PARENT",
-  "PAYMENTS",
-  "DEPUTY_HEAD",
-  "BURSAR",
-  "ACADEMIC_ADMIN",
-  "HR_ADMIN",
-  "ICT_ADMIN",
-  "DISCIPLINE_ADMIN",
-  "REGISTRAR",
-  "GUIDANCE_OFFICE",
-  "SUPER_ADMIN",
-] as const;
+const INBOX_PREVIEW_ROLES = [...KNOWN_ROLES] as const;
+
 
 export async function GET(req: Request) {
   try {

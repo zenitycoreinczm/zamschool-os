@@ -27,6 +27,7 @@ test("admin dashboard widgets read live data instead of baked-in demo placeholde
 
   assert.doesNotMatch(financeChart, /income:\s*4000/);
   assert.match(financeChart, /from\("payments"\)|from\("finance_entries"\)|resolveTable|\/api\/admin\/payments/);
+  assert.match(financeChart, /view=chart/);
 
   assert.doesNotMatch(eventCalendar, /Lake Trip/);
   assert.match(eventCalendar, /\/api\/admin\/events/);

@@ -29,6 +29,8 @@ export const RATE_LIMITS = {
     default: { windowMs: 60 * 1000, maxRequests: 20 },
     login: { windowMs: 5 * 60 * 1000, maxRequests: 5 },
     signup: { windowMs: 15 * 60 * 1000, maxRequests: 3 },
+    /** Stricter defaults for unauthenticated probing. */
+    authBurst: { windowMs: 60 * 1000, maxRequests: 12 },
   },
 } as const;
 

@@ -49,7 +49,9 @@ export async function GET(req: Request) {
 
         const { data: profile, error: profileError } = await supabaseAdmin
           .from("profiles")
-          .select("id, email, first_name, last_name, school_id, admission_number, class_id, grade_id")
+          .select(
+            "id, email, first_name, last_name, school_id, admission_number, student_number, class_number, class_id, grade_id",
+          )
           .eq("id", userId)
           .eq("school_id", schoolId)
           .maybeSingle();
@@ -60,7 +62,16 @@ export async function GET(req: Request) {
 
         const classId = profile?.class_id || legacyStudent?.classId || null;
         const admissionNumber =
-          profile?.admission_number || legacyStudent?.studentNumber || null;
+          profile?.admission_number ||
+          profile?.student_number ||
+          legacyStudent?.studentNumber ||
+          null;
+        const classNumber =
+          typeof profile?.class_number === "number"
+            ? profile.class_number
+            : parseDashboardClassNumber(profile?.student_number) ??
+              parseDashboardClassNumber(profile?.admission_number) ??
+              parseDashboardClassNumber(legacyStudent?.studentNumber);
         const { classRow, gradeLabel } = await loadClassContext(classId, profile?.grade_id ?? null);
 
         const baseProfile = {
@@ -68,6 +79,7 @@ export async function GET(req: Request) {
           fullName: buildDisplayName(profile),
           email: profile?.email || null,
           admissionNumber,
+          classNumber,
           classId,
           className: classRow?.name || null,
           gradeLabel,
@@ -336,7 +348,7 @@ function jsonWithPrivateCache(payload: unknown) {
 async function loadLegacyStudentRecord(userId: string, schoolId: string) {
   const { data, error } = await supabaseAdmin
     .from("students")
-    .select("id, profile_id, school_id, class_id, student_number")
+    .select("id, profile_id, school_id, class_id, student_number, class_number")
     .eq("profile_id", userId)
     .eq("school_id", schoolId)
     .maybeSingle();
@@ -353,9 +365,22 @@ async function loadLegacyStudentRecord(userId: string, schoolId: string) {
     ? {
         studentId: data.id,
         classId: data.class_id || null,
-        studentNumber: data.student_number || null,
+        studentNumber:
+          data.class_number != null
+            ? String(data.class_number)
+            : data.student_number || null,
       }
     : null;
+}
+
+function parseDashboardClassNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  const raw = String(value ?? "").trim();
+  if (!/^\d{1,5}$/.test(raw)) return null;
+  const n = Number.parseInt(raw, 10);
+  return n > 0 ? n : null;
 }
 
 async function loadClassContext(classId: string | null, gradeId: string | null) {

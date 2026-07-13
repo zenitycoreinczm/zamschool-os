@@ -15,6 +15,7 @@ import { hydratePaymentRows } from "@/lib/admin-route-hydration.mjs";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { createAuditLog } from "@/lib/audit-log";
+import { invalidateByTag } from "@/lib/enhanced-cache";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
 
 const createPaymentSchema = z.object({
@@ -56,10 +57,41 @@ export async function GET(req: Request) {
     const studentId = searchParams.get("studentId");
     const status = searchParams.get("status");
     const paymentType = searchParams.get("paymentType");
+    // Dashboard FinanceChart only needs amount/status/created_at — skip the
+    // full list + student hydration path that was timing out under load.
+    const view = String(searchParams.get("view") || "").trim().toLowerCase();
+    const chartView = view === "chart" || view === "summary";
+
+    if (chartView) {
+      const year = Number(searchParams.get("year")) || new Date().getFullYear();
+      const yearStart = `${year}-01-01T00:00:00.000Z`;
+      const yearEnd = `${year + 1}-01-01T00:00:00.000Z`;
+
+      const { data, error } = await supabaseAdmin
+        .from("payments")
+        .select("amount, status, created_at")
+        .eq("school_id", schoolId)
+        .gte("created_at", yearStart)
+        .lt("created_at", yearEnd)
+        .order("created_at", { ascending: true })
+        .limit(5000);
+
+      if (error) throw error;
+
+      return applyEdgeCacheHeaders(
+        NextResponse.json({
+          success: true,
+          data: data || [],
+        }),
+        "privateRead",
+      );
+    }
 
     let query = supabaseAdmin
       .from("payments")
-      .select("*")
+      .select(
+        "id, school_id, student_id, amount, currency, payment_type, payment_method, reference_number, status, paid_at, created_by, created_at, updated_at, receipt_url",
+      )
       .eq("school_id", schoolId);
 
     if (studentId) {
@@ -74,9 +106,11 @@ export async function GET(req: Request) {
       query = query.eq("payment_type", paymentType);
     }
 
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
-    });
+    const { data, error } = await query
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(500);
 
     if (error) throw error;
 
@@ -157,6 +191,8 @@ export async function POST(req: Request) {
       newData: payload,
       ipAddress: ip,
     });
+    await invalidateByTag("fees");
+    await invalidateByTag("dashboard");
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
@@ -263,6 +299,8 @@ export async function PUT(req: Request) {
       newData: payload,
       ipAddress: ip,
     });
+    await invalidateByTag("fees");
+    await invalidateByTag("dashboard");
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
@@ -316,6 +354,8 @@ export async function DELETE(req: Request) {
       entityId: id,
       ipAddress: getClientIp(req),
     });
+    await invalidateByTag("fees");
+    await invalidateByTag("dashboard");
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

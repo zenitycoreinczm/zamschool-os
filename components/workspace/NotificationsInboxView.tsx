@@ -3,17 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  Bell,
-  BellOff,
   CheckCheck,
-  CheckCircle2,
-  Info,
-  Inbox,
   Loader2,
-  Megaphone,
   RefreshCw,
   Search,
-  TriangleAlert,
 } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
@@ -72,16 +65,6 @@ function formatFullTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
-}
-
-function typeIcon(type: string) {
-  const normalized = type.toLowerCase();
-  if (normalized === "warning") return <TriangleAlert className="h-5 w-5 text-amber-500" />;
-  if (normalized === "announcement") return <Megaphone className="h-5 w-5 text-violet-500" />;
-  if (normalized === "alert" || normalized === "attendance") {
-    return <Bell className="h-5 w-5 text-rose-500" />;
-  }
-  return <Info className="h-5 w-5 text-sky-500" />;
 }
 
 function typeBadgeClass(type: string) {
@@ -154,21 +137,18 @@ export function NotificationsInboxView({
             label: "All items",
             value: counts.all,
             hint: "Full inbox",
-            icon: Inbox,
             tone: "slate",
           },
           {
             label: "Unread",
             value: counts.unread,
             hint: counts.unread > 0 ? "Needs attention" : "Inbox clear",
-            icon: Bell,
             tone: "sky",
           },
           {
             label: "Read",
             value: counts.read,
             hint: "Already reviewed",
-            icon: CheckCircle2,
             tone: "emerald",
           },
         ]}
@@ -257,11 +237,10 @@ export function NotificationsInboxView({
 
         {loading ? (
           <div className="flex justify-center p-12">
-            <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
           </div>
         ) : visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-            <BellOff className="mb-3 h-10 w-10 text-slate-300" />
             <p className="text-sm font-medium text-slate-600">
               {mode === "unread" ? "No unread notifications" : "No notifications match this view"}
             </p>
@@ -291,37 +270,32 @@ export function NotificationsInboxView({
                 )}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <div className={cn("mt-0.5", item.status === "read" && "opacity-60")}>
-                      {typeIcon(item.type)}
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
+                          item.status === "unread"
+                            ? "bg-sky-500 text-white"
+                            : "bg-slate-100 text-slate-600"
+                        )}
+                      >
+                        {item.status}
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded-full px-2.5 py-0.5 text-[10px] font-semibold capitalize",
+                          typeBadgeClass(item.type)
+                        )}
+                      >
+                        {item.type}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]",
-                            item.status === "unread"
-                              ? "bg-sky-500 text-white"
-                              : "bg-slate-100 text-slate-600"
-                          )}
-                        >
-                          {item.status}
-                        </span>
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-0.5 text-[10px] font-semibold capitalize",
-                            typeBadgeClass(item.type)
-                          )}
-                        >
-                          {item.type}
-                        </span>
-                      </div>
-                      <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
-                      <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
-                        {item.body}
-                      </p>
-                      <p className="text-xs text-slate-400">{formatRelativeTime(item.timestamp)}</p>
-                    </div>
+                    <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
+                    <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
+                      {item.body}
+                    </p>
+                    <p className="text-xs text-slate-400">{formatRelativeTime(item.timestamp)}</p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 lg:shrink-0">

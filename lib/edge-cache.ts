@@ -7,9 +7,9 @@ import { NextResponse } from "next/server";
 
 export const EDGE_CACHE = {
   /** Dashboard/summary reads — brief per-user cache. */
-  privateRead: "private, max-age=30, stale-while-revalidate=120",
+  privateRead: "private, max-age=60, stale-while-revalidate=180",
   /** Workspace shell context. */
-  privateWorkspace: "private, max-age=45, stale-while-revalidate=180",
+  privateWorkspace: "private, max-age=90, stale-while-revalidate=300",
   /** Student/parent profile reads (2–5 min). */
   profileRead: "private, max-age=180, stale-while-revalidate=300",
   /** School settings / admin school profile (10–30 min). */
@@ -19,7 +19,7 @@ export const EDGE_CACHE = {
   /** Events and attendance summaries (2–5 min SWR). */
   eventsRead: "private, max-age=60, stale-while-revalidate=300",
   /** Dashboard summaries — slightly longer SWR for read-heavy teacher/parent/student dashboards. */
-  dashboardRead: "private, max-age=45, stale-while-revalidate=180",
+  dashboardRead: "private, max-age=90, stale-while-revalidate=300",
   /** Inbox badges, auth, attendance, results, mutations — never cache. */
   noStore: "private, no-store, max-age=0, must-revalidate",
   /** Public CDN assets. */

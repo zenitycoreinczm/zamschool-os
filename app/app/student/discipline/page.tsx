@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, Shield } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -30,12 +30,12 @@ import { SEVERITY_LEVELS } from "@/lib/discipline-tokens";
 
 const SEVERITY_LABELS = SEVERITY_LEVELS;
 
-const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  open: { label: "Open", color: "bg-amber-100 text-amber-700", icon: <AlertTriangle className="h-3 w-3" /> },
-  investigating: { label: "Investigating", color: "bg-blue-100 text-blue-700", icon: <Shield className="h-3 w-3" /> },
-  resolved: { label: "Resolved", color: "bg-emerald-100 text-emerald-700", icon: <CheckCircle2 className="h-3 w-3" /> },
-  escalated: { label: "Escalated", color: "bg-red-100 text-red-700", icon: <AlertTriangle className="h-3 w-3" /> },
-  closed: { label: "Closed", color: "bg-slate-100 text-slate-600", icon: <CheckCircle2 className="h-3 w-3" /> },
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  open: { label: "Open", color: "bg-amber-100 text-amber-700" },
+  investigating: { label: "Investigating", color: "bg-blue-100 text-blue-700" },
+  resolved: { label: "Resolved", color: "bg-emerald-100 text-emerald-700" },
+  escalated: { label: "Escalated", color: "bg-red-100 text-red-700" },
+  closed: { label: "Closed", color: "bg-slate-100 text-slate-600" },
 };
 
 export default function StudentDisciplinePage() {
@@ -61,7 +61,7 @@ export default function StudentDisciplinePage() {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="flex items-center justify-center gap-3 py-20">
-          <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
           <span className="text-sm text-slate-500">Loading...</span>
         </div>
       </div>
@@ -79,8 +79,7 @@ export default function StudentDisciplinePage() {
 
       {records.length === 0 ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center">
-          <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
-          <h3 className="mt-3 font-semibold text-emerald-800">No Records</h3>
+          <h3 className="font-semibold text-emerald-800">No Records</h3>
           <p className="mt-1 text-sm text-emerald-600">
             You have no discipline records. Keep up the good conduct!
           </p>
@@ -107,8 +106,7 @@ export default function StudentDisciplinePage() {
                     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium", severity.color)}>
                       {severity.label}
                     </span>
-                    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium", status.color)}>
-                      {status.icon}
+                    <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", status.color)}>
                       {status.label}
                     </span>
                   </div>

@@ -4,8 +4,12 @@ import { z } from "zod";
 import { applyRateLimit, getClientIp, parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { requireAdminContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
+import { assertDomainAccess } from "@/lib/domain-ownership";
 import { validateSupervisorAssignment } from "@/lib/teacher-assignment-contract";
 import { buildCreateClassPayload } from "@/lib/class-route-payload.mjs";
+import { auditDomainWrite } from "@/lib/audit-domain";
+import { invalidateSchoolDashboardCaches } from "@/lib/invalidate-actor-caches";
+import { fetchTeacherAssignmentReferences } from "@/lib/teacher-assignment-references";
 
 const createClassSchema = z.object({
   gradeId: z.string().min(1).optional().nullable(),
@@ -50,6 +54,24 @@ export async function POST(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
+
+    // Class creation is a registry-domain operation owned by REGISTRAR.
+    // PRINCIPAL and ADMIN retain full access as school-wide authorities.
+    const domainCheck = assertDomainAccess({
+      domain: "registry",
+      role: access.context.role,
+      action: "create",
+    });
+    if (!domainCheck.ok) {
+      return NextResponse.json(
+        { error: "Only the Registrar can create classes. The Academic Admin manages curriculum and scheduling within existing classes." },
+        { status: 403 },
+      );
+    }
+
+    const perm = await requireFeatureAccess(access.context, "classes", "create");
+    if (!perm.ok) return perm.response;
+
     const ip = getClientIp(req);
     const rate = await applyRateLimit({
       key: `admin-classes:${ip}`,
@@ -89,6 +111,8 @@ export async function POST(req: Request) {
       .single();
 
     if (!error) {
+      await auditDomainWrite({ schoolId, userId: access.context.userId, action: "classes.create", entityType: "class", entityId: data.id, newData: data, ipAddress: getClientIp(req) });
+      await invalidateSchoolDashboardCaches(schoolId);
       return NextResponse.json({ success: true, data });
     }
 
@@ -105,6 +129,8 @@ export async function POST(req: Request) {
     });
 
     const legacyResult = await safeInsertWithMissingColumnRetry("classes", legacyPayload);
+    await auditDomainWrite({ schoolId, userId: access.context.userId, action: "classes.create", entityType: "class", entityId: legacyResult?.id ?? "unknown", newData: legacyResult, ipAddress: getClientIp(req) });
+    await invalidateSchoolDashboardCaches(schoolId);
     return NextResponse.json({ success: true, data: legacyResult });
   } catch (error: unknown) {
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to create class") }, { status: 500 });
@@ -119,6 +145,24 @@ export async function PUT(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
+
+    // Class updates (name, capacity, supervisor) are registry-domain
+    // operations owned by REGISTRAR, the same role that creates classes.
+    const domainCheck = assertDomainAccess({
+      domain: "registry",
+      role: access.context.role,
+      action: "update",
+    });
+    if (!domainCheck.ok) {
+      return NextResponse.json(
+        { error: "Only the Registrar can edit class details." },
+        { status: 403 },
+      );
+    }
+
+    const perm = await requireFeatureAccess(access.context, "classes", "update");
+    if (!perm.ok) return perm.response;
+
     const ip = getClientIp(req);
     const rate = await applyRateLimit({
       key: `admin-classes:${ip}`,
@@ -146,6 +190,8 @@ export async function PUT(req: Request) {
     }
 
     const result = await safeUpdateClass(body.id, schoolId, payload);
+    await auditDomainWrite({ schoolId, userId: access.context.userId, action: "classes.update", entityType: "class", entityId: body.id, newData: payload, ipAddress: getClientIp(req) });
+    await invalidateSchoolDashboardCaches(schoolId);
     return NextResponse.json({ success: true, data: result });
   } catch (error: unknown) {
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to update class") }, { status: 500 });
@@ -160,6 +206,23 @@ export async function DELETE(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
+
+    // Class deletion is a registry-domain operation owned by REGISTRAR.
+    const domainCheck = assertDomainAccess({
+      domain: "registry",
+      role: access.context.role,
+      action: "delete",
+    });
+    if (!domainCheck.ok) {
+      return NextResponse.json(
+        { error: "Only the Registrar can delete classes." },
+        { status: 403 },
+      );
+    }
+
+    const perm = await requireFeatureAccess(access.context, "classes", "delete");
+    if (!perm.ok) return perm.response;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -175,6 +238,8 @@ export async function DELETE(req: Request) {
 
     if (error) throw error;
 
+    await auditDomainWrite({ schoolId, userId: access.context.userId, action: "classes.delete", entityType: "class", entityId: id, ipAddress: getClientIp(req) });
+    await invalidateSchoolDashboardCaches(schoolId);
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to delete class") }, { status: 500 });
@@ -362,61 +427,4 @@ async function validateSupervisorPayload(schoolId: string, supervisorId: string 
   });
 }
 
-async function fetchTeacherAssignmentReferences(schoolId: string, teacherId: string | null | undefined) {
-  const normalizedTeacherId = String(teacherId || "").trim();
-  if (!normalizedTeacherId) {
-    return { teacherProfiles: [], teacherRows: [] };
-  }
 
-  const teacherProfiles: Array<{ id: string; school_id: string | null; role: string | null }> = [];
-  const teacherRows: Array<{ id: string; profile_id: string | null; school_id: string | null }> = [];
-
-  const { data: directProfile, error: directProfileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, school_id, role")
-    .eq("id", normalizedTeacherId)
-    .maybeSingle();
-
-  if (directProfileError) throw directProfileError;
-  if (directProfile) {
-    teacherProfiles.push(directProfile);
-  }
-
-  const teacherRowResult = await supabaseAdmin
-    .from("teachers")
-    .select("id, profile_id, school_id")
-    .eq("school_id", schoolId)
-    .or(`id.eq.${normalizedTeacherId},profile_id.eq.${normalizedTeacherId}`);
-
-  if (teacherRowResult.error && !isMissingRelationError(teacherRowResult.error)) {
-    throw teacherRowResult.error;
-  }
-
-  for (const teacherRow of teacherRowResult.data || []) {
-    teacherRows.push(teacherRow);
-
-    if (
-      teacherRow.profile_id &&
-      !teacherProfiles.some((profile) => profile.id === teacherRow.profile_id)
-    ) {
-      const { data: rowProfile, error: rowProfileError } = await supabaseAdmin
-        .from("profiles")
-        .select("id, school_id, role")
-        .eq("id", teacherRow.profile_id)
-        .maybeSingle();
-
-      if (rowProfileError) throw rowProfileError;
-      if (rowProfile) {
-        teacherProfiles.push(rowProfile);
-      }
-    }
-  }
-
-  return { teacherProfiles, teacherRows };
-}
-
-function isMissingRelationError(error: { code?: string | null; message?: string | null } | null | undefined) {
-  const code = String(error?.code || "");
-  const message = String(error?.message || "").toLowerCase();
-  return code === "42P01" || code === "PGRST205" || message.includes("does not exist");
-}

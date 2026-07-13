@@ -1,5 +1,5 @@
-import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 
 export default function StudentLoading() {
-  return <WorkspaceLoader label="Loading student workspace" compact />;
+  return <PageSkeleton variant="dashboard" label="Loading student workspace" />;
 }

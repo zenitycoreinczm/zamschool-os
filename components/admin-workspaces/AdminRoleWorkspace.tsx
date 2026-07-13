@@ -30,14 +30,13 @@ import {
 } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceData } from "@/components/workspace/workspace-context";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
-import { metricsToStatCards } from "@/components/workspace/metricIcons";
-
 import { FocusPills } from "@/components/workspace/FocusPills";
 import type { HeroAccent } from "@/components/workspace/heroAccents";
 import { ModuleCard } from "@/components/workspace/ModuleCard";
 import { SectionIntro } from "@/components/workspace/SectionIntro";
+import { formatSchoolStatValue } from "@/lib/workspace/metric-display";
 
 type WorkspaceKey =
   | "deputy_head"
@@ -92,10 +91,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Students", value: "—", icon: Users },
-      { label: "Teachers", value: "—", icon: Users },
-      { label: "Classes", value: "—", icon: GraduationCap },
-      { label: "Absent (7d)", value: "—", icon: ClipboardCheck },
+      { label: "Students", value: "0", icon: Users },
+      { label: "Teachers", value: "0", icon: Users },
+      { label: "Classes", value: "0", icon: GraduationCap },
+      { label: "Absent (7d)", value: "0", icon: ClipboardCheck },
     ],
     quickLink: {
       href: "/app/admin/timetable",
@@ -103,64 +102,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       icon: CalendarClock,
     },
     metricIcons: [Users, Users, GraduationCap, ClipboardCheck],
-    modules: [
-      module(
-        "Timetable review",
-        "Validate class timetables and detect scheduling conflicts.",
-        "/app/admin/timetable",
-        CalendarClock,
-        "indigo",
-      ),
-      module(
-        "Attendance trends",
-        "School-wide absence and punctuality patterns with 7-day view.",
-        "/app/admin/attendance",
-        ClipboardCheck,
-        "sky",
-      ),
-      module(
-        "Academic results",
-        "Review exam results and subject performance across classes.",
-        "/app/admin/assignments",
-        TrendingUp,
-        "violet",
-      ),
-      module(
-        "Classes & subjects",
-        "Class groupings, subject catalog, and teacher assignments.",
-        "/app/admin/classes",
-        GraduationCap,
-        "amber",
-      ),
-      module(
-        "Staff directory",
-        "View teacher and staff profiles (read-only).",
-        "/app/admin/users",
-        Users,
-        "emerald",
-      ),
-      module(
-        "Announcements",
-        "Broadcast academic notices and policy updates.",
-        "/app/announcements",
-        Megaphone,
-        "rose",
-      ),
-      module(
-        "Academic reports",
-        "Generate and review term and annual academic reports.",
-        "/app/admin/academic",
-        FileBarChart2,
-        "slate",
-      ),
-      module(
-        "Messages",
-        "Communicate with department heads and leadership.",
-        "/app/messages",
-        MessageSquare,
-        "sky",
-      ),
-    ],
+    modules: [],
   },
   bursar: {
     eyebrow: "Bursar workspace",
@@ -175,10 +117,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Collected", value: "—", icon: CreditCard },
-      { label: "Pending", value: "—", icon: CreditCard },
-      { label: "Students", value: "—", icon: Users },
-      { label: "Alerts", value: "—", icon: Bell },
+      { label: "Collected", value: "0", icon: CreditCard },
+      { label: "Pending", value: "0", icon: CreditCard },
+      { label: "Students", value: "0", icon: Users },
+      { label: "Alerts", value: "0", icon: Bell },
     ],
     quickLink: {
       href: "/app/payments/fees",
@@ -244,10 +186,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Students", value: "—", icon: Users },
-      { label: "Absent (7d)", value: "—", icon: ClipboardCheck },
-      { label: "Late (7d)", value: "—", icon: AlertTriangle },
-      { label: "Inbox", value: "—", icon: MessageSquare },
+      { label: "Students", value: "0", icon: Users },
+      { label: "Absent (7d)", value: "0", icon: ClipboardCheck },
+      { label: "Late (7d)", value: "0", icon: AlertTriangle },
+      { label: "Inbox", value: "0", icon: MessageSquare },
     ],
     quickLink: {
       href: "/app/admin/users",
@@ -307,10 +249,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Classes", value: "—", icon: GraduationCap },
-      { label: "Subjects", value: "—", icon: BookOpen },
-      { label: "Assignments", value: "—", icon: ClipboardCheck },
-      { label: "Teachers", value: "—", icon: Users },
+      { label: "Classes", value: "0", icon: GraduationCap },
+      { label: "Subjects", value: "0", icon: BookOpen },
+      { label: "Assignments", value: "0", icon: ClipboardCheck },
+      { label: "Teachers", value: "0", icon: Users },
     ],
     quickLink: {
       href: "/app/admin/timetable",
@@ -335,7 +277,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       ),
       module(
         "Classes & streams",
-        "Class groups, streams, and class teacher supervisors.",
+        "View class groups, streams, and class teacher supervisors set up by the Registrar.",
         "/app/admin/classes",
         GraduationCap,
         "sky",
@@ -384,10 +326,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Staff", value: "—", icon: UserCog },
-      { label: "Teachers", value: "—", icon: Users },
-      { label: "Departments", value: "—", icon: Building2 },
-      { label: "Inbox", value: "—", icon: MessageSquare },
+      { label: "Staff", value: "0", icon: UserCog },
+      { label: "Teachers", value: "0", icon: Users },
+      { label: "Departments", value: "0", icon: Building2 },
+      { label: "Inbox", value: "0", icon: MessageSquare },
     ],
     quickLink: {
       href: "/app/admin/users",
@@ -454,10 +396,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Accounts", value: "—", icon: Users },
-      { label: "Audit (7d)", value: "—", icon: ShieldCheck },
-      { label: "Teachers", value: "—", icon: Users },
-      { label: "Alerts", value: "—", icon: Bell },
+      { label: "Accounts", value: "0", icon: Users },
+      { label: "Audit (7d)", value: "0", icon: ShieldCheck },
+      { label: "Teachers", value: "0", icon: Users },
+      { label: "Alerts", value: "0", icon: Bell },
     ],
     quickLink: {
       href: "/app/admin/audit",
@@ -465,64 +407,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       icon: ShieldCheck,
     },
     metricIcons: [Users, ShieldCheck, Users, Bell],
-    modules: [
-      module(
-        "User accounts",
-        "Account recovery, password resets, and access troubleshooting.",
-        "/app/admin/users",
-        Users,
-        "emerald",
-      ),
-      module(
-        "Security audit trail",
-        "Review security-sensitive actions and system-level changes.",
-        "/app/admin/audit",
-        ShieldCheck,
-        "slate",
-      ),
-      module(
-        "School profile & settings",
-        "Platform identity, branding, and technical configuration.",
-        "/app/admin/school",
-        Building2,
-        "sky",
-      ),
-      module(
-        "System settings",
-        "Configure platform features, integrations, and preferences.",
-        "/app/settings",
-        Settings,
-        "indigo",
-      ),
-      module(
-        "Device & access monitoring",
-        "Review active sessions and unusual login activity.",
-        "/app/admin/audit",
-        Monitor,
-        "violet",
-      ),
-      module(
-        "MFA & security keys",
-        "Manage multi-factor authentication and security settings.",
-        "/app/settings",
-        KeyRound,
-        "amber",
-      ),
-      module(
-        "Notifications",
-        "System alerts, security events, and platform notices.",
-        "/app/notifications",
-        Bell,
-        "rose",
-      ),
-      module(
-        "Messages",
-        "Technical support and coordination with leadership.",
-        "/app/messages",
-        MessageSquare,
-        "sky",
-      ),
-    ],
+    modules: [],
   },
   discipline_admin: {
     eyebrow: "Discipline workspace",
@@ -537,10 +422,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Students", value: "—", icon: Users },
-      { label: "Absent (7d)", value: "—", icon: ClipboardCheck },
-      { label: "Late (7d)", value: "—", icon: AlertTriangle },
-      { label: "Inbox", value: "—", icon: MessageSquare },
+      { label: "Students", value: "0", icon: Users },
+      { label: "Absent (7d)", value: "0", icon: ClipboardCheck },
+      { label: "Late (7d)", value: "0", icon: AlertTriangle },
+      { label: "Inbox", value: "0", icon: MessageSquare },
     ],
     quickLink: {
       href: "/app/admin/attendance",
@@ -600,10 +485,10 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     ],
     accent: "sky",
     fallbackMetrics: [
-      { label: "Students", value: "—", icon: Users },
-      { label: "Classes", value: "—", icon: GraduationCap },
-      { label: "Parents", value: "—", icon: Users },
-      { label: "Absent (7d)", value: "—", icon: ClipboardCheck },
+      { label: "Students", value: "0", icon: Users },
+      { label: "Classes", value: "0", icon: GraduationCap },
+      { label: "Parents", value: "0", icon: Users },
+      { label: "Absent (7d)", value: "0", icon: ClipboardCheck },
     ],
     quickLink: {
       href: "/app/registrar/people",
@@ -628,7 +513,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       ),
       module(
         "Class placements",
-        "Assign learners to classes, streams, and academic groups.",
+        "Create classes, enrol students, and assign class teachers.",
         "/app/registrar/classes",
         GraduationCap,
         "indigo",
@@ -673,52 +558,51 @@ export default function AdminRoleWorkspace({
   variant?: "full" | "tools";
 }) {
   const config = CONFIG[role] || CONFIG.ict_admin;
-  const workspaceCtx = useWorkspaceContext();
-  // Defensive access: during HMR or provider unmount, useContext can return
-  // undefined, which would crash on `.data`. Guard both levels.
-  const workspace = (workspaceCtx && workspaceCtx.data) || null;
-  const summary = useWorkspaceSummary() ?? undefined;
-  const metrics = summary?.metrics ?? [];
-  const highlights = summary?.highlights ?? [];
-  const metricsLoading = summary?.loading ?? true;
+
+  // Safe helper — never throws when provider is mid-HMR / not yet hydrated.
+  const workspace = useWorkspaceData();
+  const { metrics, loading: summaryLoading } = useWorkspaceSummary();
 
   const schoolName = workspace?.schoolName || config.title;
   const yearTerm = workspace?.yearTerm || "Role workspace";
   const displayName = workspace?.displayName || "Your account";
 
-  // Build stat cards — live metrics once loaded, fallback skeleton while loading
+  // Prefer live summary metrics when labels match fallback cards.
+  // Never leave bare "—" on school desks after load — use "…" / "0".
+  const liveByLabel = new Map(
+    metrics.map((m) => [m.label.toLowerCase(), m.value]),
+  );
   const displayStats =
-    metricsLoading || metrics.length === 0
-      ? config.fallbackMetrics.map((item, index) => ({
-          label: item.label,
-          value: metricsLoading ? "…" : item.value,
-          hint: undefined,
-          icon: item.icon,
-          tone: (["sky", "violet", "amber", "emerald"] as const)[index % 4],
+    metrics.length > 0
+      ? metrics.slice(0, 4).map((m) => ({
+          label: m.label,
+          value: formatSchoolStatValue(m.value),
+          hint: m.hint,
+          tone: "slate" as const,
         }))
-      : metricsToStatCards(metrics, config.metricIcons);
+      : config.fallbackMetrics.map((item) => {
+          const live = liveByLabel.get(item.label.toLowerCase());
+          return {
+            label: item.label,
+            value: formatSchoolStatValue(live ?? item.value, {
+              loading: summaryLoading,
+            }),
+            hint: undefined,
+            tone: "slate" as const,
+          };
+        });
 
-  // FocusPills: prefer live role-specific highlights, fall back to static role focus
-  const pillItems = highlights.length > 0 ? highlights : config.focus;
-
-  const pillAccent =
-    config.accent === "teal" || config.accent === "emerald"
-      ? "teal"
-      : config.accent === "indigo" ||
-          config.accent === "violet" ||
-          config.accent === "rose"
-        ? "indigo"
-        : "sky";
+  const pillItems = config.focus;
 
   return (
-    <div className={variant === "tools" ? "space-y-4" : "space-y-4"}>
+    <div className="space-y-5 p-4 pb-8 md:p-6">
       {variant === "full" ? (
         <>
           <AdminPageHero
             eyebrow={config.eyebrow}
             title={schoolName}
             description={`Welcome back, ${displayName}. ${config.summary} ${yearTerm}.`}
-            accent={config.accent}
+            accent="slate"
             stats={displayStats}
             actions={
               config.quickLink ? (
@@ -726,40 +610,41 @@ export default function AdminRoleWorkspace({
                   href={config.quickLink.href}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
                 >
-                  <config.quickLink.icon className="h-4 w-4 text-sky-600" />
                   {config.quickLink.label}
                 </Link>
               ) : null
             }
           />
 
-          <FocusPills items={pillItems} accent={pillAccent} />
+          <FocusPills items={pillItems} accent="slate" />
         </>
       ) : null}
 
-      <section>
-        <SectionIntro
-          title={variant === "tools" ? "Workspace modules" : "Your modules"}
-          description={
-            variant === "tools"
-              ? "Shortcuts to the areas you manage most often."
-              : "Open a module to work in your role-scoped area."
-          }
-        />
+      {config.modules.length > 0 ? (
+        <section>
+          <SectionIntro
+            title={variant === "tools" ? "Workspace modules" : "Your modules"}
+            description={
+              variant === "tools"
+                ? "Shortcuts to the areas you manage most often."
+                : "Open a module to work in your role-scoped area."
+            }
+          />
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {config.modules.map((item) => (
-            <ModuleCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-              href={item.href}
-              icon={item.icon}
-              tone={item.tone}
-            />
-          ))}
-        </div>
-      </section>
+          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+            {config.modules.map((item) => (
+              <ModuleCard
+                key={item.title}
+                title={item.title}
+                description={item.description}
+                href={item.href}
+                icon={item.icon}
+                tone="slate"
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

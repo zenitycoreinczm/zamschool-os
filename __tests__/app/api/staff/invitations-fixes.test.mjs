@@ -166,7 +166,13 @@ test("domain staff defaults grant their required backend features", () => {
   );
   assert.match(
     permissionDefaultsSource,
-    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?writable\("classes"\)/,
+    /roles:\s*\["REGISTRAR"\][\s\S]*?writable\("classes"\)/,
+    "Registrar creates and manages classes",
+  );
+  assert.match(
+    permissionDefaultsSource,
+    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?readOnly\("classes"\)/,
+    "Academic Admin no longer creates classes — the Registrar owns class creation",
   );
   assert.match(
     permissionDefaultsSource,
@@ -174,7 +180,13 @@ test("domain staff defaults grant their required backend features", () => {
   );
   assert.match(
     permissionDefaultsSource,
-    /roles:\s*\["ICT_ADMIN"\][\s\S]*?full\("sessions"\)/,
+    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?writable\("timetable"\)/,
+    "Academic Admin must be able to create class and teacher timetables",
+  );
+  assert.match(
+    permissionDefaultsSource,
+    /roles:\s*\["ICT_ADMIN"\][\s\S]*?writable\("settings"\)/,
+    "ICT Admin can manage account and security settings",
   );
   assert.match(
     permissionDefaultsSource,
@@ -267,15 +279,22 @@ test("DELETE handler filters on revoked_at IS NULL (not accepted_at)", () => {
   );
 });
 
-test("DELETE handler updates status to 'revoked'", () => {
+test("DELETE handler updates status to 'cancelled' (schema CHECK value)", () => {
   const deleteMatch = invitationsSource.match(
     /export async function DELETE[\s\S]*?\n}/,
   );
   assert.ok(deleteMatch);
+  // staff_invitations_status_check allows: pending | accepted | expired | cancelled
+  // "revoked" is NOT valid and causes a 500 on revoke.
   assert.match(
     deleteMatch[0],
+    /status:\s*["']cancelled["']/,
+    "DELETE should set status to 'cancelled' (not 'revoked')",
+  );
+  assert.doesNotMatch(
+    deleteMatch[0],
     /status:\s*["']revoked["']/,
-    "DELETE should set status to 'revoked'",
+    "DELETE must not set status to 'revoked' — that violates the CHECK constraint",
   );
 });
 
@@ -311,7 +330,7 @@ test("admin GET handler 'pending' filter uses revoked_at (not accepted_at)", () 
 
 // ── Standalone page fix tests ──
 
-test("standalone page uses STAFF_INVITE_ROLE_OPTIONS (includes admin)", () => {
+test("standalone page uses STAFF_INVITE_ROLE_OPTIONS (no school administrator)", () => {
   assert.match(
     standalonePageSource,
     /StaffInvitationsView/,
@@ -320,12 +339,17 @@ test("standalone page uses STAFF_INVITE_ROLE_OPTIONS (includes admin)", () => {
   assert.match(
     staffInvitationsViewSource,
     /STAFF_INVITE_ROLE_OPTIONS/,
-    "StaffInvitationsView must use the shared role options list (includes admin role)",
+    "StaffInvitationsView must use the shared role options list",
   );
   assert.doesNotMatch(
     staffInvitationsViewSource,
     /const INVITE_ROLES = \[/,
     "StaffInvitationsView must not hardcode its own role list",
+  );
+  assert.doesNotMatch(
+    staffInvitationsViewSource,
+    /Invite School Administrator/,
+    "School Administrator invite was removed; Head Teacher is registration-only",
   );
 });
 

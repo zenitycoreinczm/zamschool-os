@@ -8,6 +8,8 @@ import { SUPABASE_PROTECTION } from "./supabase-protection";
 type Entry<T> = { value: T; expiresAt: number };
 
 const store = new Map<string, Entry<unknown>>();
+// In-flight promise map to prevent cache stampedes under burst traffic.
+const inFlight = new Map<string, Promise<unknown>>();
 
 export function hotReadKey(parts: string[]) {
   return parts.filter(Boolean).join(":");
@@ -24,9 +26,21 @@ export async function withHotReadCache<T>(
     return hit.value as T;
   }
 
-  const value = await fetchFn();
-  store.set(key, { value, expiresAt: now + ttlSeconds * 1000 });
-  return value;
+  // Deduplicate concurrent fetches for the same key (stampede protection).
+  const existing = inFlight.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const promise = fetchFn().then((value) => {
+    store.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
+    inFlight.delete(key);
+    return value;
+  }).catch((err) => {
+    inFlight.delete(key);
+    throw err;
+  });
+
+  inFlight.set(key, promise);
+  return promise;
 }
 
 export function invalidateHotReadKeys(matching: (key: string) => boolean): void {
@@ -58,7 +72,18 @@ export const HOT_READ_TTL = {
   unreadCounts: SUPABASE_PROTECTION.unreadCountsTtlSec,
   workspaceStable: SUPABASE_PROTECTION.workspaceStableTtlSec,
   authMeta: SUPABASE_PROTECTION.authMetaTtlSec,
+  /** Payments shell / billing summary-style hot reads */
+  feesSummary: 30,
 } as const;
+
+/** Invalidate fee/payment summary caches for a school (process-local). */
+export function invalidateFeesHotReads(schoolId: string): void {
+  const sid = String(schoolId || "").trim();
+  if (!sid) return;
+  invalidateHotReadKeys(
+    (key) => key.includes(`school:${sid}`) && key.includes("fees"),
+  );
+}
 
 if (typeof window === "undefined") {
   setInterval(() => {

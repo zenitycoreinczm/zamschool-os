@@ -1,4 +1,4 @@
-import { ClipboardList, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import type { ParentResultRow } from "@/components/parent/dashboard/types";
@@ -17,19 +17,16 @@ export function ParentPublishedResults({
       aria-labelledby="parent-published-results-heading"
       className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <div className="flex items-center gap-3">
-        <ClipboardList className="h-5 w-5 text-sky-600" />
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
-            Published Results
-          </p>
-          <h2
-            id="parent-published-results-heading"
-            className="mt-1 text-2xl font-semibold text-slate-900"
-          >
-            Academic updates for linked children
-          </h2>
-        </div>
+      <div>
+        <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
+          Published Results
+        </p>
+        <h2
+          id="parent-published-results-heading"
+          className="mt-1 text-2xl font-semibold text-slate-900"
+        >
+          Academic updates for linked children
+        </h2>
       </div>
 
       {loading ? (

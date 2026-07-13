@@ -26,7 +26,7 @@ test("audit-refresh script declares and walks the cited invariants", async () =>
   assert.match(script, /const invariants = \[/);
   assert.match(script, /app\/globals\.css/);
   assert.match(script, /components\/workspace\/MobileDock\.tsx/);
-  assert.match(script, /lib\/tenant-context\.ts/);
+  assert.match(script, /lib\/tenant\/tenant-context\.ts/);
   assert.match(script, /role-page-orchestrators/);
 });
 

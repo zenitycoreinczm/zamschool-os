@@ -260,8 +260,10 @@ export async function GET(req: Request) {
     const pending = Math.max(lessonSessionKeys.size - completed, 0);
     const displayName = buildDisplayName(profile, "Your Account");
 
-    return jsonWithPrivateCache({
-      success: true,
+    // Return a plain payload only — never cache NextResponse/streams
+    // (re-using a locked ReadableStream causes "failed to pipe response").
+    return {
+      success: true as const,
       data: {
         displayName,
         schoolName: schoolRecord?.name || "Your School",
@@ -318,11 +320,11 @@ export async function GET(req: Request) {
           upcomingEvents,
         },
       },
-    });
+    };
   },
     CACHE_CONFIGS.teacher.bootstrap,
   );
-  return bootstrapData;
+  return jsonWithPrivateCache(bootstrapData);
 } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to load teacher bootstrap") },
@@ -725,7 +727,8 @@ async function loadDraftResults(
   return results.filter((row: any) => !row.published_at).length;
 }
 
-async function loadUpcomingEvents(schoolId: string, role: string) {
+/** Returns the number of upcoming events visible to the given role. */
+async function loadUpcomingEvents(schoolId: string, role: string): Promise<number> {
   const today = new Date().toISOString().slice(0, 10);
 
   const queryAttempts = [
@@ -748,11 +751,11 @@ async function loadUpcomingEvents(schoolId: string, role: string) {
     if (!result.error) {
       return (result.data || []).filter((row: any) =>
         isVisibleToRole(row.target_role, role),
-      );
+      ).length;
     }
   }
 
-  return [];
+  return 0;
 }
 
 function dedupeNamedRows(rows: { id: string; name: string }[]) {

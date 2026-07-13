@@ -8,7 +8,7 @@ import { deleteFile } from "@/lib/r2-client";
 export async function POST(req: NextRequest) {
   try {
     const access = await requireActorContext(
-      { allowedRoles: ["ADMIN", "TEACHER", "PAYMENTS"], requireSchool: true },
+      { allowedRoles: ["TEACHER", "PAYMENTS"], requireSchool: true },
       req,
     );
     if (!access.ok) return access.response;

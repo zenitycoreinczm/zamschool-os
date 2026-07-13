@@ -24,7 +24,6 @@ const RESULTS_MODERATION_ROLES = [
   "PRINCIPAL",
   "DEPUTY_HEAD",
   "ACADEMIC_ADMIN",
-  "ADMIN",
   "SUPER_ADMIN",
 ] as const;
 

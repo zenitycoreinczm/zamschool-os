@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { Users, GraduationCap, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 type Child = {
   id: string;
@@ -51,8 +51,7 @@ export default function ParentChildrenPage() {
 
       {children.length === 0 ? (
         <Surface variant="elevated" className="p-8 text-center">
-          <Users className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             No children linked to your account yet.
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -79,14 +78,13 @@ export default function ParentChildrenPage() {
                       {child.displayName}
                     </p>
                     {child.className && (
-                      <p className="flex items-center gap-1 text-xs text-slate-500">
-                        <GraduationCap className="h-3 w-3" />
+                      <p className="text-xs text-slate-500">
                         {child.className}
                       </p>
                     )}
                     {child.admissionNumber && (
                       <p className="text-xs text-slate-400">
-                        #{child.admissionNumber}
+                        {child.admissionNumber}
                       </p>
                     )}
                     {child.relationship && (

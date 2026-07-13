@@ -8,8 +8,8 @@ export function resolveStoredRole(role: string | null | undefined): string | nul
 
 /**
  * Whether content targeted at `targetRole` should be visible to the viewer.
- * Head Teacher (principal) and School Administrator (admin) are distinct unless
- * the target explicitly uses a combined leadership audience.
+ * Leadership audience = Head Teacher + Deputy Head.
+ * Legacy "admin" targets resolve to Head Teacher (principal).
  */
 export function matchesRoleTarget(
   targetRole: string | null | undefined,
@@ -33,9 +33,19 @@ export function matchesRoleTarget(
     return false;
   }
 
+  // Legacy admin → principal for both target and viewer.
   const targetStored = roleToStoredValue(target) || target;
+  const viewerStored =
+    viewer === "admin" ? "principal" : viewer;
 
-  if (targetStored === viewer) {
+  if (targetStored === viewerStored) {
+    return true;
+  }
+  // Old announcements targeted at "admin" should reach Head Teacher.
+  if (
+    (targetStored === "admin" || target === "admin") &&
+    viewerStored === "principal"
+  ) {
     return true;
   }
 
@@ -46,7 +56,10 @@ export function matchesRoleTarget(
     "head_teacher_authority",
   ]);
 
-  if (leadershipTargets.has(targetStored) && (viewer === "principal" || viewer === "admin")) {
+  if (
+    leadershipTargets.has(String(targetStored)) &&
+    (viewerStored === "principal" || viewerStored === "deputy_head")
+  ) {
     return true;
   }
 

@@ -109,17 +109,23 @@ function currentWindowCount(): number {
   return budget.timestamps.length;
 }
 
+let lastBudgetWarningAt = 0;
+const BUDGET_WARNING_THROTTLE_MS = 10_000;
+
 /**
- * Log a warning if approaching the limit.
+ * Log a warning if approaching the limit (throttled — page loads can hit this
+ * many times per second and spam the console).
  */
 function checkWarning(): void {
   const count = currentWindowCount();
-  if (count >= WARNING_THRESHOLD) {
-    console.warn(
-      `[SupabaseBudget] Approaching rate limit: ${count}/${SUPABASE_MAX_RPS} req/s ` +
-        `(${Math.round((count / SUPABASE_MAX_RPS) * 100)}%)`
-    );
-  }
+  if (count < WARNING_THRESHOLD) return;
+  const now = Date.now();
+  if (now - lastBudgetWarningAt < BUDGET_WARNING_THROTTLE_MS) return;
+  lastBudgetWarningAt = now;
+  console.warn(
+    `[SupabaseBudget] Approaching rate limit: ${count}/${SUPABASE_MAX_RPS} req/s ` +
+      `(${Math.round((count / SUPABASE_MAX_RPS) * 100)}%)`,
+  );
 }
 
 /**

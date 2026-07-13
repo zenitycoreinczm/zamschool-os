@@ -31,24 +31,21 @@ export function surface(variant: SurfaceVariant = "default", className?: string)
   return cn(surfaceVariants[variant], className);
 }
 
-export function shellNavClass(active: boolean, accent: "neutral" | "teal" | "indigo" = "neutral") {
-  const activeAccent =
-    accent === "teal"
-      ? "bg-teal-50 text-teal-900 shadow-workspace-xs ring-1 ring-teal-200/80"
-      : accent === "indigo"
-        ? "bg-indigo-50 text-indigo-900 shadow-workspace-xs ring-1 ring-indigo-200/80"
-        : "bg-white text-slate-800 shadow-workspace-xs ring-1 ring-workspace-border";
+export type ShellNavAccent = "neutral" | "teal" | "sky" | "indigo" | "slate";
 
-  const idleAccent =
-    accent === "teal"
-      ? "text-slate-500 hover:bg-teal-50/60 hover:text-teal-900"
-      : accent === "indigo"
-        ? "text-slate-500 hover:bg-indigo-50/60 hover:text-indigo-900"
-        : "text-slate-500 hover:bg-white/80 hover:text-slate-800";
-
+export function shellNavClass(
+  active: boolean,
+  _accent: ShellNavAccent = "neutral",
+) {
+  void _accent;
+  // Monochrome staff nav — one active style everywhere (no sky/teal/indigo variants).
   return cn(
     "flex items-center gap-3 rounded-workspace-lg px-2.5 py-2 text-sm font-medium transition-all duration-[var(--duration-workspace-normal)] ease-[var(--ease-workspace-out)]",
-    active ? activeAccent : idleAccent
+    // Allow badge pills to sit flush on the right without shrinking the label.
+    "pr-2",
+    active
+      ? "bg-white text-slate-800 shadow-workspace-xs ring-1 ring-workspace-border"
+      : "text-slate-500 hover:bg-white/80 hover:text-slate-800",
   );
 }
 
@@ -66,9 +63,12 @@ export function secondaryButton(className?: string) {
   );
 }
 
+/** Canonical in-page spinner color — use instead of sky/amber/emerald spinners. */
+export const spinnerClass = "h-5 w-5 animate-spin text-slate-500";
+
 export const roleStatSurface: Record<"admin" | "teacher" | "student" | "parent", string> = {
-  admin: "from-indigo-100/90 via-indigo-50 to-white border-indigo-200/70",
-  teacher: "from-amber-100/90 via-amber-50 to-white border-amber-200/70",
-  student: "from-violet-100/90 via-violet-50 to-white border-violet-200/70",
-  parent: "from-orange-100/90 via-orange-50 to-white border-orange-200/70",
+  admin: "from-slate-100 via-slate-50 to-white border-slate-200/80",
+  teacher: "from-slate-100 via-white to-white border-slate-200/80",
+  student: "from-slate-100 via-white to-white border-slate-200/80",
+  parent: "from-slate-100 via-white to-white border-slate-200/80",
 };

@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { isRedisConfigured, redisSlidingWindowHit } from "./redis/client";
 import { rateLimitKey } from "@/lib/redis/keys";
+import {
+  classifyClientBot,
+  isBlockedAttackPath,
+} from "@/lib/request-security";
 
 export { safeErrorMessage } from "./safe-error";
 
@@ -170,10 +174,39 @@ export async function parseJsonWithSchema<T>(
   }
 }
 
+/**
+ * Reject empty / scanner user-agents and path probes on auth routes.
+ * Does not replace CSRF or rate limits — first-line bot hygiene only.
+ */
 export function validateRequestSecurity(req: Request) {
-  const userAgent = req.headers.get("user-agent") || "";
-  if (!userAgent || userAgent.length < 5) {
-    return { valid: false, error: "Invalid User-Agent" };
+  let pathname = "/";
+  try {
+    pathname = new URL(req.url).pathname;
+  } catch {
+    pathname = "/";
   }
-  return { valid: true };
+
+  if (isBlockedAttackPath(pathname)) {
+    return { valid: false as const, error: "Not found" };
+  }
+
+  const bot = classifyClientBot({
+    userAgent: req.headers.get("user-agent"),
+    pathname,
+    method: req.method,
+  });
+
+  if (bot.block) {
+    return {
+      valid: false as const,
+      error: "Request blocked",
+    };
+  }
+
+  const userAgent = req.headers.get("user-agent") || "";
+  if (!userAgent || userAgent.length < 8) {
+    return { valid: false as const, error: "Invalid User-Agent" };
+  }
+
+  return { valid: true as const };
 }

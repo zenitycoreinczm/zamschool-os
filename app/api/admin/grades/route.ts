@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("grades")
-      .select("*")
+      .select("id, school_id, level, name, created_at")
       .eq("school_id", access.context.schoolId)
       .order("level", { ascending: true })
       .order("name", { ascending: true });
@@ -158,7 +158,7 @@ export async function PUT(req: Request) {
     const body = await parseJsonWithSchema(req, updateGradeSchema);
     const { data: existingGrade, error: existingError } = await supabaseAdmin
       .from("grades")
-      .select("*")
+      .select("id, school_id, level, name, created_at")
       .eq("id", body.id)
       .eq("school_id", access.context.schoolId)
       .maybeSingle();
@@ -239,7 +239,7 @@ export async function DELETE(req: Request) {
 
     const { data: existingGrade, error: existingError } = await supabaseAdmin
       .from("grades")
-      .select("*")
+      .select("id, school_id, level, name, created_at")
       .eq("id", id)
       .eq("school_id", access.context.schoolId)
       .maybeSingle();

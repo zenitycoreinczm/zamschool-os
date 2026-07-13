@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Megaphone, Newspaper, Radio } from "lucide-react";
+
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { PageLoading } from "@/components/workspace/PageLoading";
 import { Surface } from "@/components/workspace/Surface";
+import type { HeroAccent } from "@/components/workspace/heroAccents";
 import { accountApiJson } from "@/lib/account-portal-api";
 import { formatDate } from "@/lib/utils";
 
@@ -21,11 +22,11 @@ type Announcement = {
 export function AccountAnnouncementsPage({
   title = "Announcements",
   intro = "School-wide updates published for your role.",
-  accent = "sky" as const,
+  accent = "sky" as HeroAccent,
 }: {
   title?: string;
   intro?: string;
-  accent?: "sky" | "teal" | "indigo";
+  accent?: HeroAccent;
 }) {
   const [rows, setRows] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,14 @@ export function AccountAnnouncementsPage({
   }, [load]);
 
   if (loading) {
-    return <PageLoading label="Loading announcements" accent={accent} />;
+    return (
+      <PageLoading
+        label="Loading announcements"
+        accent={accent}
+        mode="skeleton"
+        skeletonVariant="list"
+      />
+    );
   }
 
   return (
@@ -66,21 +74,18 @@ export function AccountAnnouncementsPage({
             label: "Published",
             value: rows.length,
             hint: "In your feed",
-            icon: Newspaper,
             tone: "sky",
           },
           {
             label: "Channel",
             value: "School",
             hint: "Announcements",
-            icon: Megaphone,
             tone: "violet",
           },
           {
             label: "Status",
             value: loading ? "…" : "Live",
             hint: "Read-only",
-            icon: Radio,
             tone: "emerald",
           },
         ]}

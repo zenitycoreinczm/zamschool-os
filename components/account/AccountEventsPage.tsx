@@ -1,17 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Calendar,
-  CalendarDays,
-  Clock3,
-  MapPin,
-  Search,
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { PageLoading } from "@/components/workspace/PageLoading";
 import { Surface } from "@/components/workspace/Surface";
+import type { HeroAccent } from "@/components/workspace/heroAccents";
 import {
   fetchAccountEventsList,
   type AccountEvent,
@@ -21,11 +16,11 @@ import { formatDate } from "@/lib/utils";
 export function AccountEventsPage({
   title = "Events",
   intro = "Upcoming school events relevant to your account.",
-  accent = "sky" as const,
+  accent = "sky" as HeroAccent,
 }: {
   title?: string;
   intro?: string;
-  accent?: "sky" | "teal" | "indigo";
+  accent?: HeroAccent;
 }) {
   const [rows, setRows] = useState<AccountEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +57,14 @@ export function AccountEventsPage({
   }, [rows, query]);
 
   if (loading) {
-    return <PageLoading label="Loading events" accent={accent} />;
+    return (
+      <PageLoading
+        label="Loading events"
+        accent={accent}
+        mode="skeleton"
+        skeletonVariant="split"
+      />
+    );
   }
 
   return (
@@ -77,7 +79,6 @@ export function AccountEventsPage({
             label: "Upcoming",
             value: rows.length,
             hint: "Events scheduled",
-            icon: Calendar,
             tone: "violet",
           },
         ]}
@@ -123,22 +124,15 @@ export function AccountEventsPage({
                 ) : null}
               </div>
               <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays className="h-3 w-3" />
+                <span>
                   {event.event_date ? formatDate(event.event_date) : "Date pending"}
                 </span>
                 {event.start_time || event.end_time ? (
-                  <span className="inline-flex items-center gap-1">
-                    <Clock3 className="h-3 w-3" />
+                  <span>
                     {[event.start_time, event.end_time].filter(Boolean).join(" - ")}
                   </span>
                 ) : null}
-                {event.location ? (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {event.location}
-                  </span>
-                ) : null}
+                {event.location ? <span>{event.location}</span> : null}
               </div>
               {event.description ? (
                 <p className="mt-2 text-xs text-slate-500 line-clamp-2">{event.description}</p>
@@ -171,25 +165,20 @@ export function AccountEventsPage({
               </div>
               <div className="mt-4 space-y-3">
                 <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
-                  <span className="inline-flex items-center gap-1.5">
-                    <CalendarDays className="h-4 w-4 text-violet-500" />
+                  <span>
                     {selectedEvent.event_date
                       ? formatDate(selectedEvent.event_date)
                       : "Date pending"}
                   </span>
                   {selectedEvent.start_time || selectedEvent.end_time ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock3 className="h-4 w-4 text-violet-500" />
+                    <span>
                       {[selectedEvent.start_time, selectedEvent.end_time]
                         .filter(Boolean)
                         .join(" - ")}
                     </span>
                   ) : null}
                   {selectedEvent.location ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4 text-violet-500" />
-                      {selectedEvent.location}
-                    </span>
+                    <span>{selectedEvent.location}</span>
                   ) : null}
                 </div>
                 {selectedEvent.description ? (

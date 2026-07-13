@@ -1,19 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  BookOpen,
-  Calendar,
-  CalendarRange,
-  CheckCircle2,
-  Loader2,
-  Plus,
-  Sparkles,
-  Trash2,
-} from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 import { adminApiJson } from "@/lib/admin-browser-api";
 
 type YearRow = Record<string, any>;
@@ -216,7 +208,7 @@ export function AdminAcademicHub() {
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-10">
-        <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
         <span className="text-sm text-slate-500">Loading academic calendar...</span>
       </div>
     );
@@ -233,28 +225,24 @@ export function AdminAcademicHub() {
             label: "Academic years",
             value: years.length,
             hint: activeYear ? `Active: ${String(activeYear[yearNameKey] || "—")}` : "None active",
-            icon: CalendarRange,
             tone: "sky",
           },
           {
             label: "Terms",
             value: terms.length,
             hint: activeTerm ? `Active: ${String(activeTerm[termNameKey] || "—")}` : "None active",
-            icon: BookOpen,
             tone: "violet",
           },
           {
             label: "Terms this year",
             value: activeYear ? (termsByYear.get(String(activeYear.id))?.length ?? 0) : 0,
             hint: "Under active year",
-            icon: Sparkles,
             tone: "amber",
           },
           {
             label: "Calendar status",
             value: activeYear && activeTerm ? "Ready" : "Setup",
             hint: activeYear && activeTerm ? "Year + term set" : "Activate year & term",
-            icon: CheckCircle2,
             tone: activeYear && activeTerm ? "emerald" : "slate",
           },
         ]}
@@ -263,14 +251,9 @@ export function AdminAcademicHub() {
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-sky-50 text-sky-700">
-                <Calendar className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Academic years</h2>
-                <p className="text-xs text-slate-500">Multi-year planning and session boundaries</p>
-              </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">Academic years</h2>
+              <p className="text-xs text-slate-500">Multi-year planning and session boundaries</p>
             </div>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
               {years.length} total
@@ -280,8 +263,21 @@ export function AdminAcademicHub() {
           <div className="space-y-4 p-5">
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Year name" value={newYear.name} onChange={(v) => setNewYear((p) => ({ ...p, name: v }))} />
-              <Field label="Starts" type="date" value={newYear.start_date} onChange={(v) => setNewYear((p) => ({ ...p, start_date: v }))} />
-              <Field label="Ends" type="date" value={newYear.end_date} onChange={(v) => setNewYear((p) => ({ ...p, end_date: v }))} />
+              <DateOnlyPicker
+                label="Starts"
+                value={newYear.start_date}
+                onChange={(v) => setNewYear((p) => ({ ...p, start_date: v }))}
+                accent="slate"
+                placeholder="Start date"
+              />
+              <DateOnlyPicker
+                label="Ends"
+                value={newYear.end_date}
+                onChange={(v) => setNewYear((p) => ({ ...p, end_date: v }))}
+                accent="slate"
+                placeholder="End date"
+                minDate={newYear.start_date || undefined}
+              />
             </div>
             <button
               type="button"
@@ -344,14 +340,9 @@ export function AdminAcademicHub() {
 
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700">
-                <BookOpen className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Terms</h2>
-                <p className="text-xs text-slate-500">Terms belong to an academic year</p>
-              </div>
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">Terms</h2>
+              <p className="text-xs text-slate-500">Terms belong to an academic year</p>
             </div>
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
               {terms.length} total
@@ -361,8 +352,21 @@ export function AdminAcademicHub() {
           <div className="space-y-4 p-5">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Field label="Term name" value={newTerm.name} onChange={(v) => setNewTerm((p) => ({ ...p, name: v }))} />
-              <Field label="Starts" type="date" value={newTerm.start_date} onChange={(v) => setNewTerm((p) => ({ ...p, start_date: v }))} />
-              <Field label="Ends" type="date" value={newTerm.end_date} onChange={(v) => setNewTerm((p) => ({ ...p, end_date: v }))} />
+              <DateOnlyPicker
+                label="Starts"
+                value={newTerm.start_date}
+                onChange={(v) => setNewTerm((p) => ({ ...p, start_date: v }))}
+                accent="slate"
+                placeholder="Start date"
+              />
+              <DateOnlyPicker
+                label="Ends"
+                value={newTerm.end_date}
+                onChange={(v) => setNewTerm((p) => ({ ...p, end_date: v }))}
+                accent="slate"
+                placeholder="End date"
+                minDate={newTerm.start_date || undefined}
+              />
               <label>
                 <span className="mb-1 block text-xs font-medium text-slate-600">Academic year</span>
                 <select

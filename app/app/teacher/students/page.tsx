@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, Mail, Search, Users } from "lucide-react";
+import { Loader2, Mail, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
@@ -97,7 +97,7 @@ export default function TeacherStudentsPage() {
     return (
       <div className="grid min-h-[50vh] place-items-center p-4 md:p-6">
         <TeacherCard className="grid w-full max-w-lg place-items-center py-14 text-center">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-600" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-workspace-muted">
             Loading students…
           </p>
@@ -112,24 +112,20 @@ export default function TeacherStudentsPage() {
         eyebrow="Roster"
         title="My Students"
         description="Students connected to your assigned classes, attendance, and results."
-        icon={Users}
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <TeacherStatCard
-          icon={Users}
           label="Total students"
           value={summary?.totalStudents ?? students.length}
           hint="In your teaching scope"
         />
         <TeacherStatCard
-          icon={Users}
           label="Classes"
           value={summary?.classes ?? classNames.length}
           hint="Assigned or supervised"
         />
         <TeacherStatCard
-          icon={AlertTriangle}
           label="High risk"
           value={
             summary?.highRiskStudents ??
@@ -138,7 +134,6 @@ export default function TeacherStudentsPage() {
           hint="Needs attention"
         />
         <TeacherStatCard
-          icon={Search}
           label="Showing"
           value={filtered.length}
           hint="After filters"
@@ -176,7 +171,6 @@ export default function TeacherStudentsPage() {
 
       {filtered.length === 0 ? (
         <TeacherEmptyState
-          icon={Users}
           title="No students found"
           description={
             searchTerm || selectedClass !== "all"

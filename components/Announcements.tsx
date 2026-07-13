@@ -3,21 +3,38 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Megaphone } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { isAbortLikeError } from "@/lib/async-guards";
 import { fetchAnnouncementsList } from "@/lib/announcements-client";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 
 function resolveAnnouncementsEndpoint(params: {
   pathname: string;
   role: string | null | undefined;
 }) {
   const { pathname, role } = params;
-  if (role === "teacher" || pathname.startsWith("/app/teacher")) {
+  const roleLower = String(role || "").toLowerCase();
+  if (roleLower === "teacher" || pathname.startsWith("/app/teacher")) {
     return "/api/teacher/announcements?limit=3";
   }
-  if (role === "admin" || role === "principal" || role === "super_admin") {
+  // Admin-shell roles (including registrar, deputy etc) that are permitted via
+  // requireAdminContext + feature perms should use the admin endpoint.
+  // Roles are lowercase from workspace context (normalizeAppWorkspaceRole).
+  const adminShellRoles = new Set([
+    "principal",
+    "super_admin",
+    "deputy_head",
+    "bursar",
+    "guidance_office",
+    "academic_admin",
+    "hr_admin",
+    "ict_admin",
+    "discipline_admin",
+    "registrar",
+    "admin",
+  ]);
+  if (adminShellRoles.has(roleLower)) {
     return "/api/admin/announcements?limit=3";
   }
   return "/api/account/announcements?limit=3";
@@ -42,7 +59,11 @@ function resolveAnnouncementsHref(params: {
 
 export default function Announcements() {
   const pathname = usePathname();
-  const { role } = useWorkspaceContext();
+  const { role, data: workspace, loading: workspaceLoading } =
+    useWorkspaceContext();
+  const schoolId = String(workspace?.schoolId || "").trim();
+  // Admin/school list APIs require a tenant; skip doomed 403 round-trips.
+  const canFetchSchoolFeed = Boolean(schoolId) || role === "teacher";
   const endpoint = useMemo(
     () => resolveAnnouncementsEndpoint({ pathname, role }),
     [pathname, role],
@@ -54,6 +75,17 @@ export default function Announcements() {
     let cancelled = false;
 
     const loadAnnouncements = async () => {
+      if (workspaceLoading) {
+        setLoading(true);
+        return;
+      }
+
+      if (!canFetchSchoolFeed) {
+        setAnnouncements([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -61,7 +93,10 @@ export default function Announcements() {
         if (cancelled) return;
         setAnnouncements(rows.slice(0, 3));
       } catch (err) {
-        if (cancelled || isAbortLikeError(err)) return;
+        if (cancelled || isAbortLikeError(err)) {
+          if (!cancelled) setAnnouncements([]);
+          return;
+        }
         console.error("Error fetching announcements:", err);
         setAnnouncements([]);
       } finally {
@@ -74,7 +109,7 @@ export default function Announcements() {
     return () => {
       cancelled = true;
     };
-  }, [endpoint]);
+  }, [canFetchSchoolFeed, endpoint, workspaceLoading]);
 
   const viewAllHref = useMemo(
     () => resolveAnnouncementsHref({ pathname, role }),
@@ -84,12 +119,7 @@ export default function Announcements() {
   return (
     <div className="bg-white p-6 rounded-workspace-xl shadow-sm border border-slate-100">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Megaphone className="w-5 h-5 text-lamaPurple" />
-          <h2 className="text-lg font-semibold text-slate-900">
-            Announcements
-          </h2>
-        </div>
+        <h2 className="text-lg font-semibold text-slate-900">Announcements</h2>
         <Link
           href={viewAllHref}
           className="text-xs font-bold text-slate-400 transition hover:text-slate-600 hover:underline"
@@ -122,7 +152,12 @@ export default function Announcements() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-semibold text-slate-800">{ann.title}</h2>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {formatDate(ann.published_at || ann.created_at)}
+                  {formatDate(
+                    ann.published_at ||
+                      ann.created_at ||
+                      ann.createdAt ||
+                      ann.publishedAt,
+                  )}
                 </span>
               </div>
               <p className="mt-2 text-sm text-slate-600 line-clamp-2">

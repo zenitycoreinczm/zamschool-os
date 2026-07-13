@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpenCheck, GraduationCap, Loader2, Users } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { useTeacherWorkspace } from "@/components/TeacherWorkspaceProvider";
 import {
@@ -18,7 +18,7 @@ export default function TeacherClassesPage() {
     return (
       <div className="grid min-h-[50vh] place-items-center p-4 md:p-6">
         <TeacherCard className="grid w-full max-w-lg place-items-center py-14 text-center">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-600" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-workspace-muted">
             Loading your classes…
           </p>
@@ -47,26 +47,23 @@ export default function TeacherClassesPage() {
         eyebrow="Teaching"
         title="My Classes"
         description="A clean overview of your assigned classes, subjects, and supervised classes."
-        icon={GraduationCap}
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AssignmentCard
           title="Assigned classes"
           description="Classes connected to your timetable and student roster."
-          icon={Users}
           items={assignedClasses}
           empty="No classes assigned yet."
-          href={(id) => `/teacher/students?class=${id}`}
+          href={(id) => `/app/teacher/students?class=${id}`}
         />
 
         <AssignmentCard
           title="Assigned subjects"
           description="Subjects you can record results and manage assessments for."
-          icon={BookOpenCheck}
           items={assignedSubjects}
           empty="No subjects assigned yet."
-          href={(id) => `/teacher/results?subject=${id}`}
+          href={(id) => `/app/teacher/results?subject=${id}`}
         />
       </div>
 
@@ -74,13 +71,11 @@ export default function TeacherClassesPage() {
         <AssignmentCard
           title="Supervised classes"
           description="Classes where you are the class teacher or supervisor."
-          icon={GraduationCap}
           items={supervisedClasses}
           empty="No supervised classes."
         />
       ) : (
         <TeacherEmptyState
-          icon={GraduationCap}
           title="No supervised classes"
           description="Supervised classes will appear here once assigned by the school administrator."
         />
@@ -92,32 +87,25 @@ export default function TeacherClassesPage() {
 function AssignmentCard({
   title,
   description,
-  icon: Icon,
   items,
   empty,
   href,
 }: {
   title: string;
   description: string;
-  icon: typeof GraduationCap;
   items: Array<{ id: string; name: string }>;
   empty: string;
   href?: (id: string) => string;
 }) {
   return (
     <TeacherCard>
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-workspace-lg bg-amber-50 text-amber-700 ring-1 ring-amber-100">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-base font-bold tracking-tight text-slate-950">
-            {title}
-          </h2>
-          <p className="mt-1 text-sm leading-relaxed text-workspace-muted">
-            {description}
-          </p>
-        </div>
+      <div className="min-w-0">
+        <h2 className="text-base font-bold tracking-tight text-slate-950">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-workspace-muted">
+          {description}
+        </p>
       </div>
 
       {items.length === 0 ? (

@@ -6,6 +6,7 @@ import "react-calendar/dist/Calendar.css";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, MoreHorizontal } from "lucide-react";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { isAbortLikeError } from "@/lib/async-guards";
 import { formatDate } from "@/lib/utils";
 
 type ValuePiece = Date | null;
@@ -32,7 +33,9 @@ export default function EventCalendar() {
 
     const loadEvents = async () => {
       try {
-        const body = await adminApiJson<{ data?: any[] }>("/api/admin/events?upcomingOnly=true");
+        const body = await adminApiJson<{ data?: any[] }>(
+          "/api/admin/events?upcomingOnly=true&limit=60",
+        );
         if (cancelled) return;
 
         setEvents(
@@ -47,7 +50,7 @@ export default function EventCalendar() {
           }))
         );
       } catch (error) {
-        if (cancelled) return;
+        if (cancelled || isAbortLikeError(error)) return;
         console.error("Error loading event calendar:", error);
         setEvents([]);
       } finally {

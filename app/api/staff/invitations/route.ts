@@ -7,7 +7,7 @@ import {
   parseJsonWithSchema,
   safeErrorMessage,
 } from "@/lib/server-guards";
-import { tenantActorRateLimitKey } from "@/lib/tenant-context";
+import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
 import { requireActorContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { nanoid } from "nanoid";
@@ -26,7 +26,6 @@ import { createOrUpdateAuthUserWithTemporaryPassword } from "@/lib/auth-admin-us
 const createInvitationSchema = z.object({
   email: z.string().email(),
   role: z.enum([
-    "admin",
     "teacher",
     "payments",
     "bursar",
@@ -159,8 +158,15 @@ export async function POST(req: Request) {
   let step = "parsing";
   try {
     const body = await parseJsonWithSchema(req, createInvitationSchema);
-    const { email, role, department, position, first_name, last_name, phone } =
-      body;
+    const email = String(body.email || "")
+      .trim()
+      .toLowerCase();
+    const role = body.role;
+    const department = body.department;
+    const position = body.position;
+    const first_name = String(body.first_name || "").trim();
+    const last_name = String(body.last_name || "").trim();
+    const phone = body.phone ? String(body.phone).trim() : undefined;
     const sendEmail = body.send_email === true;
     if (!email || !role || !first_name || !last_name) {
       return NextResponse.json(
@@ -202,7 +208,7 @@ export async function POST(req: Request) {
       .from("profiles")
       .select("id")
       .eq("school_id", access.context.schoolId)
-      .eq("email", email.toLowerCase().trim())
+      .eq("email", email)
       .maybeSingle();
     if (existingProfile) {
       return NextResponse.json(
@@ -224,6 +230,7 @@ export async function POST(req: Request) {
       Date.now() + 7 * 24 * 60 * 60 * 1000,
     ).toISOString();
     step = "auth_user_creation";
+    // Prove sign-in with this password before we return it to the inviter.
     const authResult = await createOrUpdateAuthUserWithTemporaryPassword({
       email,
       temporaryPassword,
@@ -242,7 +249,7 @@ export async function POST(req: Request) {
       role: normalizedRole,
       firstName: first_name,
       lastName: last_name,
-      email: email.toLowerCase().trim(),
+      email,
       phone: phone || null,
       profileExtras: {
         department: department || null,
@@ -291,7 +298,7 @@ export async function POST(req: Request) {
         school_id: access.context.schoolId,
         created_by: access.context.userId,
         invited_by: access.context.userId,
-        email: email.toLowerCase().trim(),
+        email,
         role: normalizedRole,
         department: department || null,
         position: position || null,
@@ -322,7 +329,7 @@ export async function POST(req: Request) {
       entityType: "staff_invitation",
       entityId: data.id,
       newData: {
-        email: email.toLowerCase().trim(),
+        email,
         role: normalizedRole,
         department: department || null,
         position: position || null,
@@ -334,7 +341,7 @@ export async function POST(req: Request) {
     let credentialsEmailSent = false;
     if (sendEmail) {
       const emailPromise = sendAccountCredentialsEmail({
-        to: email.toLowerCase().trim(),
+        to: email,
         firstName: first_name,
         role: normalizedRole,
         temporaryPassword,
@@ -427,9 +434,14 @@ export async function DELETE(req: Request) {
       );
     }
 
+    // status CHECK allows only: pending | accepted | expired | cancelled
     const { error } = await supabaseAdmin
       .from("staff_invitations")
-      .update({ revoked_at: new Date().toISOString(), status: "revoked" })
+      .update({
+        revoked_at: new Date().toISOString(),
+        status: "cancelled",
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", invitationId)
       .eq("school_id", access.context.schoolId)
       .is("revoked_at", null);

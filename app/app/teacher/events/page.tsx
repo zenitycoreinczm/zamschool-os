@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { CalendarDays, Loader2, MapPin, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { Surface } from "@/components/workspace/Surface";
@@ -12,10 +12,40 @@ type EventRow = {
   title: string;
   description: string | null;
   location: string | null;
-  startDate: string;
-  endDate: string | null;
+  event_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
   category: string | null;
 };
+
+function normalizeEventRow(row: Record<string, unknown>): EventRow {
+  return {
+    id: String(row.id ?? ""),
+    title: String(row.title || "Untitled event"),
+    description:
+      typeof row.description === "string" ? row.description : null,
+    location: typeof row.location === "string" ? row.location : null,
+    event_date:
+      typeof row.event_date === "string"
+        ? row.event_date
+        : typeof row.startDate === "string"
+          ? row.startDate
+          : null,
+    start_time:
+      typeof row.start_time === "string"
+        ? row.start_time
+        : typeof row.startTime === "string"
+          ? row.startTime
+          : null,
+    end_time:
+      typeof row.end_time === "string"
+        ? row.end_time
+        : typeof row.endTime === "string"
+          ? row.endTime
+          : null,
+    category: typeof row.category === "string" ? row.category : null,
+  };
+}
 
 export default function TeacherEventsPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -23,10 +53,16 @@ export default function TeacherEventsPage() {
 
   const loadEvents = useCallback(async () => {
     try {
-      const body = await adminApiJson<{ success: boolean; data: EventRow[] }>(
+      const body = await adminApiJson<{ success: boolean; data: unknown[] }>(
         "/api/teacher/events",
       );
-      setEvents(Array.isArray(body.data) ? body.data : []);
+      setEvents(
+        Array.isArray(body.data)
+          ? body.data.map((row) =>
+              normalizeEventRow((row || {}) as Record<string, unknown>),
+            )
+          : [],
+      );
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to load events";
@@ -50,7 +86,7 @@ export default function TeacherEventsPage() {
           aria-busy="true"
           className="grid w-full max-w-lg place-items-center p-16"
         >
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-500" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-slate-500">Loading events…</p>
         </Surface>
       </div>
@@ -91,8 +127,7 @@ export default function TeacherEventsPage() {
 
       {events.length === 0 ? (
         <Surface variant="dashed" className="py-16 text-center">
-          <CalendarDays className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             No events scheduled
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -122,14 +157,16 @@ export default function TeacherEventsPage() {
                 </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-400">
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {formatDate(event.startDate)}
-                  {event.endDate && ` — ${formatDate(event.endDate)}`}
+                <span>
+                  {event.event_date
+                    ? formatDate(event.event_date)
+                    : "Date pending"}
+                  {event.start_time || event.end_time
+                    ? ` · ${[event.start_time, event.end_time].filter(Boolean).join(" – ")}`
+                    : ""}
                 </span>
                 {event.location && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
+                  <span>
                     {event.location}
                   </span>
                 )}

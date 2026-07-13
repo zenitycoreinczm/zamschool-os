@@ -150,7 +150,14 @@ export default function NotificationsPage() {
   };
 
   if (loading) {
-    return <PageLoading label="Loading notifications" accent="sky" />;
+    return (
+      <PageLoading
+        label="Loading notifications"
+        accent="slate"
+        mode="skeleton"
+        skeletonVariant="list"
+      />
+    );
   }
 
   return (
@@ -158,7 +165,7 @@ export default function NotificationsPage() {
       eyebrow="Workspace inbox"
       title="Notifications"
       intro="Review unread alerts, open the related workspace section, and clear your inbox. Unread counts also appear in the header bell."
-      accent="sky"
+      accent="slate"
       loading={false}
       items={inboxItems}
       onMarkRead={markRead}

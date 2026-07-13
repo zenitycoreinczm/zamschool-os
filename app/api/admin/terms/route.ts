@@ -38,7 +38,9 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("terms")
-      .select("*")
+      .select(
+        "id, school_id, academic_year_id, name, start_date, end_date, is_active, created_at, updated_at",
+      )
       .eq("school_id", schoolId)
       .order("created_at", { ascending: false });
 
@@ -56,7 +58,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "terms",
       featureAction: "create",
       domain: "academic",
@@ -130,7 +132,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "terms",
       featureAction: "update",
       domain: "academic",
@@ -217,7 +219,7 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
       feature: "terms",
       featureAction: "delete",
       domain: "academic",

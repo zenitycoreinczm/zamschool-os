@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { GraduationCap, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { secondaryButton } from "@/lib/workspace/design";
 import {
@@ -101,8 +101,7 @@ export default function StudentResultsPage() {
         </Surface>
       ) : exams.length === 0 ? (
         <Surface variant="elevated" className="p-8 text-center">
-          <GraduationCap className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             No published results yet.
           </p>
         </Surface>
@@ -119,17 +118,12 @@ export default function StudentResultsPage() {
                   onClick={() => toggleExpand(idx)}
                   className="flex w-full items-center justify-between p-4 text-left"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100">
-                      <GraduationCap className="h-5 w-5 text-sky-600" />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-slate-900">
+                      {exam.examTitle}
                     </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">
-                        {exam.examTitle}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {exam.className} · {exam.subjects.length} subjects
-                      </div>
+                    <div className="text-sm text-slate-500">
+                      {exam.className} · {exam.subjects.length} subjects
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

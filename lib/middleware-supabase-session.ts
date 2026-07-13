@@ -7,12 +7,39 @@ import {
 } from "@/lib/middleware-auth-session";
 import { resolveMiddlewareProfileRole } from "@/lib/middleware-profile-cache";
 import { normalizeRole } from "@/lib/roles";
-import { resolveVerifiedAuthUser } from "@/lib/supabase-auth-verify";
+import {
+  isAuthSessionMissingError,
+  resolveVerifiedAuthUser,
+} from "@/lib/supabase-auth-verify";
 
 const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+
+/** Clear Supabase auth cookies when the refresh token is gone/invalid. */
+function clearSupabaseAuthCookies(
+  request: NextRequest,
+  response: NextResponse,
+) {
+  for (const cookie of request.cookies.getAll()) {
+    const name = cookie.name;
+    if (
+      name.startsWith("sb-") &&
+      (name.includes("-auth-token") ||
+        name.endsWith("-auth-token") ||
+        name.includes("code-verifier"))
+    ) {
+      request.cookies.set(name, "");
+      response.cookies.set(name, "", {
+        path: "/",
+        maxAge: 0,
+        httpOnly: true,
+        sameSite: "lax",
+      });
+    }
+  }
+}
 
 export type VerifiedMiddlewareSession = {
   userId: string;
@@ -41,6 +68,12 @@ export function createMiddlewareSupabaseClient(
         });
       },
     },
+    // Middleware runs on every navigation. Disabling auto-refresh avoids
+    // hammering /auth/v1/token when DNS/network is down; refresh happens
+    // on the client and dedicated auth routes instead.
+    auth: {
+      autoRefreshToken: false,
+    },
   });
 }
 
@@ -57,9 +90,41 @@ export async function resolveVerifiedMiddlewareSession(
   }
 
   const supabase = createMiddlewareSupabaseClient(request, response);
-  const { user, session, error } = await resolveVerifiedAuthUser(supabase);
+
+  let user: Awaited<ReturnType<typeof resolveVerifiedAuthUser>>["user"] = null;
+  let session: Awaited<ReturnType<typeof resolveVerifiedAuthUser>>["session"] =
+    null;
+  let error: Error | null = null;
+
+  try {
+    const resolved = await resolveVerifiedAuthUser(supabase);
+    user = resolved.user;
+    session = resolved.session;
+    error = resolved.error;
+  } catch (thrown: unknown) {
+    // Supabase may throw AuthApiError for dead refresh tokens.
+    if (isAuthSessionMissingError(thrown)) {
+      clearSupabaseAuthCookies(request, response);
+      return null;
+    }
+    if (
+      thrown &&
+      typeof thrown === "object" &&
+      "message" in thrown &&
+      String((thrown as { message?: string }).message || "")
+        .toLowerCase()
+        .includes("refresh token")
+    ) {
+      clearSupabaseAuthCookies(request, response);
+      return null;
+    }
+    return null;
+  }
 
   if (error || !user?.id) {
+    if (error && isAuthSessionMissingError(error)) {
+      clearSupabaseAuthCookies(request, response);
+    }
     return null;
   }
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { CalendarCheck, AlertCircle, Users } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildAttendanceColor } from "@/lib/attendance/analytics";
 
@@ -227,8 +227,7 @@ export default function ParentAttendancePage() {
         </Surface>
       ) : rows.length === 0 ? (
         <Surface variant="elevated" className="p-8 text-center">
-          <CalendarCheck className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             No attendance records found.
           </p>
         </Surface>
@@ -238,7 +237,6 @@ export default function ParentAttendancePage() {
             <Surface key={child.id} variant="elevated" className="p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-slate-400" />
                   <span className="font-semibold text-slate-800">
                     {child.displayName}
                   </span>

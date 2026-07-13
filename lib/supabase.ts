@@ -37,7 +37,13 @@ export const supabaseAdmin = isBrowser
     ? getSupabaseAdmin()
     : (null as unknown as ReturnType<typeof createClient>);
 
-export type UserRole = "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+export type UserRole =
+  | "PRINCIPAL"
+  | "TEACHER"
+  | "STUDENT"
+  | "PARENT"
+  | "DEPUTY_HEAD"
+  | "SUPER_ADMIN";
 
 export interface Profile {
   id: string;

@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -14,35 +12,20 @@ import {
 import {
   fetchWorkspaceContext,
   invalidateWorkspaceContext,
+  isWorkspaceContextReady,
   readCachedWorkspaceContext,
+  warmCsrfToken,
   type WorkspaceContextData,
 } from "@/lib/workspace/context-client";
+import { schoolLinkUserMessage } from "@/lib/school-access-error";
+import { normalizeAppWorkspaceRole } from "@/lib/workspace/role";
 import {
-  normalizeAppWorkspaceRole,
-  type AppWorkspaceRole,
-} from "@/lib/workspace/role";
+  getWorkspaceContext,
+  type WorkspaceContextValue,
+} from "@/components/workspace/workspace-context";
 
-type WorkspaceContextValue = {
-  data: WorkspaceContextData | null;
-  role: AppWorkspaceRole;
-  loading: boolean;
-  error: string;
-  refresh: (options?: { force?: boolean }) => Promise<void>;
-  invalidate: () => void;
-};
-
-const fallbackWorkspaceContext: WorkspaceContextValue = {
-  data: null,
-  role: null,
-  loading: true,
-  error: "",
-  refresh: async () => {},
-  invalidate: () => {},
-};
-
-const WorkspaceContext = createContext<WorkspaceContextValue>(
-  fallbackWorkspaceContext,
-);
+export { useWorkspaceContext } from "@/components/workspace/workspace-context";
+export type { WorkspaceContextValue } from "@/components/workspace/workspace-context";
 
 export function WorkspaceContextProvider({
   children,
@@ -50,8 +33,10 @@ export function WorkspaceContextProvider({
   children: ReactNode;
 }) {
   const initial = readCachedWorkspaceContext();
-  const [data, setData] = useState<WorkspaceContextData | null>(initial);
-  const [loading, setLoading] = useState(!initial);
+  const [data, setData] = useState<WorkspaceContextData | null>(
+    initial && isWorkspaceContextReady(initial) ? initial : null,
+  );
+  const [loading, setLoading] = useState(!initial || !isWorkspaceContextReady(initial));
   const [error, setError] = useState("");
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -64,7 +49,15 @@ export function WorkspaceContextProvider({
 
     try {
       const next = await fetchWorkspaceContext({ force: options.force });
-      setData(next);
+      if (isWorkspaceContextReady(next)) {
+        setData(next);
+      } else {
+        // Do not paint school-scoped UI with a null schoolId false positive.
+        if (!dataRef.current) {
+          setData(null);
+          setError(schoolLinkUserMessage());
+        }
+      }
     } catch (loadError: unknown) {
       setError(
         loadError instanceof Error
@@ -80,8 +73,14 @@ export function WorkspaceContextProvider({
   }, []);
 
   useEffect(() => {
-    if (!initial) {
-      void load();
+    // Re-assert JS-readable CSRF cookie ASAP so registrar/admin mutations work.
+    void warmCsrfToken();
+    // Always refresh when cache is empty OR missing schoolId (poisoned cache).
+    const needsLoad = !initial || !isWorkspaceContextReady(initial);
+    if (needsLoad) {
+      void load({ force: true }).catch(() => {
+        // load() already sets error state; guard against unhandled rejections.
+      });
     }
   }, [initial, load]);
 
@@ -104,28 +103,16 @@ export function WorkspaceContextProvider({
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
-      data,
+      data: data ?? null,
       role,
-      loading,
-      error,
+      loading: !!loading,
+      error: error || "",
       refresh,
       invalidate,
     }),
     [data, role, loading, error, refresh, invalidate],
   );
 
-  return (
-    <WorkspaceContext.Provider value={value}>
-      {children}
-    </WorkspaceContext.Provider>
-  );
-}
-
-export function useWorkspaceContext(): WorkspaceContextValue {
-  // useContext returns the provider value (or the default fallback when no
-  // provider is mounted). The || guard is belt-and-suspenders: if a Fast
-  // Refresh / HMR boundary ever hands us a stale or undefined context value,
-  // we still return a safe shape so callers that destructure `.data` don't
-  // crash with "Cannot read properties of undefined (reading 'data')".
-  return useContext(WorkspaceContext) ?? fallbackWorkspaceContext;
+  const Context = getWorkspaceContext();
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }

@@ -31,6 +31,10 @@ const LIMITS: Record<string, RateLimitConfig> = {
  */
 const R2_S3_HOST_PATTERN = /\.(r2|kv)\.cloudflarestorage\.com$/i;
 let warnedKvEndpointFormat = false;
+let warnedKvAuthFailure = false;
+/** Soft-disable after auth failures so we do not hammer a bad token. */
+let kvAuthDisabledUntil = 0;
+const KV_AUTH_COOLDOWN_MS = 10 * 60 * 1000;
 
 function looksLikeValidKvRestUrl(rawUrl: string): boolean {
   if (!rawUrl) return false;
@@ -45,8 +49,23 @@ function looksLikeValidKvRestUrl(rawUrl: string): boolean {
   }
 }
 
+function markKvAuthFailure(status: number) {
+  if (status !== 401 && status !== 403) return;
+  kvAuthDisabledUntil = Date.now() + KV_AUTH_COOLDOWN_MS;
+  if (!warnedKvAuthFailure && process.env.NODE_ENV !== "test") {
+    warnedKvAuthFailure = true;
+    console.warn(
+      "[KV] Cloudflare KV REST returned " +
+        status +
+        " — token lacks Workers KV edit permission or IP is blocked. " +
+        "Disabling KV for 10m; Upstash Redis remains the primary rate-limit backend.",
+    );
+  }
+}
+
 export function isKvConfigured(): boolean {
   if (!KV_REST_API_URL || !KV_REST_API_TOKEN) return false;
+  if (Date.now() < kvAuthDisabledUntil) return false;
   if (!looksLikeValidKvRestUrl(KV_REST_API_URL)) {
     if (!warnedKvEndpointFormat && process.env.NODE_ENV !== "test") {
       warnedKvEndpointFormat = true;
@@ -70,6 +89,10 @@ async function kvGet(key: string): Promise<string | null> {
         headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` },
       },
     );
+    if (res.status === 401 || res.status === 403) {
+      markKvAuthFailure(res.status);
+      return null;
+    }
     if (!res.ok) return null;
     return res.text();
   } catch {
@@ -97,6 +120,10 @@ async function kvPut(
         body: value,
       },
     );
+    if (res.status === 401 || res.status === 403) {
+      markKvAuthFailure(res.status);
+      return false;
+    }
     return res.ok;
   } catch {
     return false;

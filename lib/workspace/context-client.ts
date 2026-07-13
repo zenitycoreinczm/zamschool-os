@@ -1,4 +1,5 @@
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { captureCsrfFromResponse, rememberCsrfToken } from "@/lib/csrf-client";
 
 export type WorkspaceContextData = {
   userId: string;
@@ -19,33 +20,140 @@ export type WorkspaceContextData = {
   };
 };
 
+export type WorkspaceBootstrapSummary = {
+  role?: string;
+  metrics?: Array<{ label: string; value: string; hint?: string }>;
+  highlights?: string[];
+} | null;
+
 type WorkspaceContextResponse = {
   success?: boolean;
   data?: WorkspaceContextData;
   error?: string;
 };
 
-const WORKSPACE_CONTEXT_TTL_MS = 60_000;
+type BootstrapResponse = {
+  success?: boolean;
+  data?: {
+    workspace?: WorkspaceContextData;
+    summary?: WorkspaceBootstrapSummary;
+  };
+  error?: string;
+};
 
-let cachedContext: { expiresAt: number; data: WorkspaceContextData } | null = null;
+let cachedSummary: WorkspaceBootstrapSummary = null;
+
+export function readCachedWorkspaceSummary() {
+  return cachedSummary;
+}
+
+export function invalidateWorkspaceSummary() {
+  cachedSummary = null;
+}
+
+/** Memory TTL — long enough to cover multi-page navigations without re-auth fanout. */
+const WORKSPACE_CONTEXT_TTL_MS = 3 * 60_000;
+const SESSION_STORAGE_KEY = "zamschool_workspace_context_v1";
+const SESSION_STORAGE_TTL_MS = 5 * 60_000;
+
+let cachedContext: { expiresAt: number; data: WorkspaceContextData } | null =
+  null;
 let contextPromise: Promise<WorkspaceContextData> | null = null;
 
+function readSessionStorageContext(): WorkspaceContextData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as {
+      expiresAt?: number;
+      data?: WorkspaceContextData;
+    };
+    if (!parsed?.data || !parsed.expiresAt || Date.now() >= parsed.expiresAt) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
+    }
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionStorageContext(data: WorkspaceContextData) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        expiresAt: Date.now() + SESSION_STORAGE_TTL_MS,
+        data,
+      }),
+    );
+  } catch {
+    // quota / private mode — ignore
+  }
+}
+
+function clearSessionStorageContext() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+function isUsableWorkspaceContext(
+  data: WorkspaceContextData | null | undefined,
+): data is WorkspaceContextData {
+  if (!data?.userId) return false;
+  // Super admins may legitimately have no school; everyone else needs one.
+  const role = String(data.role || data.workspaceRole || "").toLowerCase();
+  if (role === "super_admin") return true;
+  return Boolean(String(data.schoolId || "").trim());
+}
+
 export function readCachedWorkspaceContext() {
-  if (!cachedContext) {
-    return null;
-  }
-
-  if (Date.now() >= cachedContext.expiresAt) {
+  if (cachedContext) {
+    if (
+      Date.now() < cachedContext.expiresAt &&
+      isUsableWorkspaceContext(cachedContext.data)
+    ) {
+      return cachedContext.data;
+    }
     cachedContext = null;
-    return null;
   }
 
-  return cachedContext.data;
+  const fromSession = readSessionStorageContext();
+  if (fromSession && isUsableWorkspaceContext(fromSession)) {
+    cachedContext = {
+      expiresAt: Date.now() + WORKSPACE_CONTEXT_TTL_MS,
+      data: fromSession,
+    };
+    return fromSession;
+  }
+
+  // Drop poisoned session entries that lack schoolId.
+  if (fromSession && !isUsableWorkspaceContext(fromSession)) {
+    clearSessionStorageContext();
+  }
+
+  return null;
 }
 
 export function invalidateWorkspaceContext() {
   cachedContext = null;
   contextPromise = null;
+  clearSessionStorageContext();
+}
+
+async function requestWorkspaceContextWithRetry() {
+  const first = await requestWorkspaceContext();
+  if (isUsableWorkspaceContext(first)) return first;
+
+  // Transient miss after login / cache purge — one short retry often recovers.
+  await new Promise((r) => setTimeout(r, 450));
+  return requestWorkspaceContext();
 }
 
 export async function fetchWorkspaceContext(options: { force?: boolean } = {}) {
@@ -60,25 +168,86 @@ export async function fetchWorkspaceContext(options: { force?: boolean } = {}) {
     return contextPromise;
   }
 
-  contextPromise = requestWorkspaceContext()
+  const rawPromise = requestWorkspaceContextWithRetry()
     .then((data) => {
-      cachedContext = {
-        expiresAt: Date.now() + WORKSPACE_CONTEXT_TTL_MS,
-        data,
-      };
+      // Never persist incomplete workspace payloads (missing school).
+      if (isUsableWorkspaceContext(data)) {
+        cachedContext = {
+          expiresAt: Date.now() + WORKSPACE_CONTEXT_TTL_MS,
+          data,
+        };
+        writeSessionStorageContext(data);
+      } else {
+        cachedContext = null;
+        clearSessionStorageContext();
+      }
       return data;
     })
     .finally(() => {
       contextPromise = null;
     });
 
+  // Eagerly suppress unhandled-rejection on the shared promise.
+  // Each caller still observes the rejection via their own `await`.
+  rawPromise.catch(() => {});
+
+  contextPromise = rawPromise;
+
   return contextPromise;
 }
 
+/** True when context is safe to use for school-scoped UI (not a cache false-positive). */
+export function isWorkspaceContextReady(
+  data: WorkspaceContextData | null | undefined,
+): data is WorkspaceContextData {
+  return isUsableWorkspaceContext(data);
+}
+
 async function requestWorkspaceContext() {
-  const payload = await adminApiJson<WorkspaceContextResponse>("/api/account/workspace-context");
-  if (!payload.data) {
-    throw new Error(payload.error || "Failed to load workspace context");
+  // Prefer consolidated bootstrap (workspace + optional summary) to cut
+  // cold-load fan-out. Fall back to legacy workspace-context on failure.
+  try {
+    const payload = await adminApiJson<BootstrapResponse>(
+      "/api/account/bootstrap",
+    );
+    const workspace = payload?.data?.workspace;
+    if (workspace) {
+      if (payload.data?.summary) {
+        cachedSummary = payload.data.summary;
+      }
+      return workspace;
+    }
+  } catch {
+    // fall through
   }
-  return payload.data;
+
+  const payload = await adminApiJson<WorkspaceContextResponse>(
+    "/api/account/workspace-context",
+  );
+  const data = payload?.data;
+  if (!data) {
+    throw new Error(payload?.error || "Failed to load workspace context");
+  }
+  return data;
+}
+
+/** Eager CSRF cookie re-assert after login / hard refresh. */
+export async function warmCsrfToken(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    const response = await fetch("/api/account/csrf", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+    });
+    captureCsrfFromResponse(response);
+    if (response.ok) {
+      const body = (await response.json().catch(() => null)) as {
+        data?: { csrfToken?: string };
+      } | null;
+      if (body?.data?.csrfToken) rememberCsrfToken(body.data.csrfToken);
+    }
+  } catch {
+    // non-blocking
+  }
 }

@@ -36,11 +36,12 @@ export function useStudentDashboard() {
     try {
       const [dashboardResponse, resultsResponse] = await Promise.all([
         fetchGatewayRead("/api/student/dashboard", {
-          cache: "no-store",
+          // Allow short private cache (server sets dashboardRead headers).
+          cache: mode === "refresh" ? "no-store" : "default",
           fallbackToLocal: true,
         }),
         fetchGatewayRead("/api/student/results", {
-          cache: "no-store",
+          cache: mode === "refresh" ? "no-store" : "default",
           fallbackToLocal: true,
         }),
       ]);

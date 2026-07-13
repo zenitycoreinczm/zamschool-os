@@ -1,57 +1,16 @@
-import type { ComponentType } from "react";
-import {
-  AlertTriangle,
-  BarChart3,
-  Bell,
-  BookOpen,
-  ClipboardCheck,
-  CreditCard,
-  GraduationCap,
-  MessageSquare,
-  School,
-  ShieldCheck,
-  UserCog,
-  UserPlus,
-  Users,
-} from "lucide-react";
-
 import type { WorkspaceMetric } from "@/lib/workspace/summary";
+import { formatSchoolStatValue } from "@/lib/workspace/metric-display";
 
-const LABEL_ICONS: Record<string, ComponentType<{ className?: string }>> = {
-  Attendance: ClipboardCheck,
-  Outstanding: CreditCard,
-  Students: Users,
-  Teachers: Users,
-  Classes: GraduationCap,
-  Subjects: BookOpen,
-  Assignments: BookOpen,
-  Collected: CreditCard,
-  Pending: CreditCard,
-  Alerts: Bell,
-  Staff: UserCog,
-  Invites: UserCog,
-  "Pending Invites": UserPlus,
-  "Pending Invites ": UserPlus,
-  Inbox: MessageSquare,
-  Accounts: Users,
-  "Audit (7d)": ShieldCheck,
-  "Absent (7d)": AlertTriangle,
-  "Late (7d)": AlertTriangle,
-  Unread: MessageSquare,
-  Children: Users,
-  Messages: MessageSquare,
-  Timetable: School,
-};
-
-export function metricsToStatCards(
-  metrics: WorkspaceMetric[],
-  fallbackIcons: ComponentType<{ className?: string }>[] = [BarChart3, Users, School, ClipboardCheck]
-) {
+/**
+ * Map workspace metrics into AdminPageHero stat cards.
+ * Decorative icons are no longer rendered in hero/stat UIs.
+ * Values never surface bare "—" placeholders for school metrics.
+ */
+export function metricsToStatCards(metrics: WorkspaceMetric[]) {
   return metrics.map((metric, index) => ({
     label: metric.label,
-    value: metric.value,
+    value: formatSchoolStatValue(metric.value),
     hint: metric.hint,
-    icon: LABEL_ICONS[metric.label] || fallbackIcons[index % fallbackIcons.length],
     tone: (["sky", "violet", "amber", "emerald"] as const)[index % 4],
   }));
 }

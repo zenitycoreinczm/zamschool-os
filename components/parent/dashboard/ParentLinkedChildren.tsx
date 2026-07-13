@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -25,21 +25,18 @@ export function ParentLinkedChildren({
       aria-labelledby="parent-linked-children-heading"
       className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <div className="flex items-center gap-3">
-        <CalendarDays className="h-5 w-5 text-sky-600" />
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
-            Linked Children
-          </p>
-          <h2
-            id="parent-linked-children-heading"
-            className="mt-1 text-2xl font-semibold text-slate-900"
-          >
-            {linkedChildren.length === 0
-              ? "No linked children yet"
-              : `${linkedChildren.length} linked child${linkedChildren.length === 1 ? "" : "ren"}`}
-          </h2>
-        </div>
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Linked children
+        </p>
+        <h2
+          id="parent-linked-children-heading"
+          className="mt-0.5 text-xl font-semibold text-slate-900 sm:text-2xl"
+        >
+          {linkedChildren.length === 0
+            ? "No linked children yet"
+            : `${linkedChildren.length} child${linkedChildren.length === 1 ? "" : "ren"}`}
+        </h2>
       </div>
 
       {linkedChildren.length === 0 ? (
@@ -68,7 +65,7 @@ export function ParentLinkedChildren({
                 className={cn(
                   "rounded-2xl border px-4 py-4 text-left transition",
                   isActive
-                    ? "border-sky-300 bg-sky-50"
+                    ? "border-slate-400 bg-slate-50 ring-1 ring-slate-300"
                     : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
                 )}
               >

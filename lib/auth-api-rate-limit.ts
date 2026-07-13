@@ -3,19 +3,21 @@ import { applyRateLimit, getClientIp } from "./server-guards";
 
 /** Fail-closed limits for unauthenticated or credential-sensitive auth API routes. */
 export const AUTH_API_RATE_LIMITS = {
-  verifyAccessCode: { limit: 10, windowMs: 60_000 },
-  sendOtp: { limit: 8, windowMs: 60_000 },
-  verifyOtp: { limit: 15, windowMs: 60_000 },
-  registerSchool: { limit: 10, windowMs: 60_000 },
-  acceptInvitation: { limit: 10, windowMs: 60_000 },
-  completeFirstLogin: { limit: 20, windowMs: 60_000 },
-  forgotPassword: { limit: 5, windowMs: 60_000 },
+  verifyAccessCode: { limit: 8, windowMs: 60_000 },
+  sendOtp: { limit: 5, windowMs: 60_000 },
+  verifyOtp: { limit: 10, windowMs: 60_000 },
+  registerSchool: { limit: 5, windowMs: 60_000 },
+  acceptInvitation: { limit: 8, windowMs: 60_000 },
+  completeFirstLogin: { limit: 15, windowMs: 60_000 },
+  forgotPassword: { limit: 3, windowMs: 60_000 },
   resetPassword: { limit: 5, windowMs: 60_000 },
-  mfaEnroll: { limit: 10, windowMs: 60_000 },
-  mfaChallenge: { limit: 30, windowMs: 60_000 },
-  mfaVerify: { limit: 8, windowMs: 60_000 },
-  mfaFactorsRead: { limit: 40, windowMs: 60_000 },
-  mfaFactorsDelete: { limit: 10, windowMs: 60_000 },
+  mfaEnroll: { limit: 8, windowMs: 60_000 },
+  mfaChallenge: { limit: 20, windowMs: 60_000 },
+  mfaVerify: { limit: 6, windowMs: 60_000 },
+  mfaFactorsRead: { limit: 30, windowMs: 60_000 },
+  mfaFactorsDelete: { limit: 8, windowMs: 60_000 },
+  /** Login lockout check / record (server-side Redis). */
+  loginGuard: { limit: 20, windowMs: 60_000 },
 } as const;
 
 export type AuthApiRateLimitScope = keyof typeof AUTH_API_RATE_LIMITS;

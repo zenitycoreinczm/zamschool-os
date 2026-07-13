@@ -20,6 +20,10 @@ import EventCalendar from "@/components/EventCalendar";
 import { PageHeader } from "@/components/workspace/PageHeader";
 import { Surface } from "@/components/workspace/Surface";
 import { formatDate } from "@/lib/utils";
+import {
+  DateTimePicker,
+  TimeOnlyPicker,
+} from "@/components/forms/DateTimePicker";
 
 type EventRow = {
   id: string;
@@ -134,7 +138,7 @@ export default function AppEventsPage() {
         title="Events"
         description="Plan assemblies, exams, meetings, and school activities in one shared calendar."
         icon={Calendar}
-        accent="violet"
+        accent="slate"
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -257,27 +261,29 @@ export default function AppEventsPage() {
               </div>
               <div className="mt-5 space-y-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-500">Title *</span>
+                  <span className="mb-1 block text-xs font-semibold text-slate-500">Title</span>
                   <input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
                 </label>
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-slate-500">Description</span>
                   <textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
                 </label>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-500">Date *</span>
-                    <input type="date" value={form.eventDate} onChange={(e) => setForm((p) => ({ ...p, eventDate: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-500">Start time</span>
-                    <input type="time" value={form.startTime} onChange={(e) => setForm((p) => ({ ...p, startTime: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-slate-500">End time</span>
-                    <input type="time" value={form.endTime} onChange={(e) => setForm((p) => ({ ...p, endTime: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
-                </div>
+                <DateTimePicker
+                  dateValue={form.eventDate}
+                  timeValue={form.startTime}
+                  onDateChange={(date) => setForm((p) => ({ ...p, eventDate: date }))}
+                  onTimeChange={(time) => setForm((p) => ({ ...p, startTime: time }))}
+                  dateLabel="Event date"
+                  timeLabel="Start time"
+                  accent="slate"
+                />
+                <TimeOnlyPicker
+                  label="End time (optional)"
+                  value={form.endTime}
+                  onChange={(time) => setForm((p) => ({ ...p, endTime: time }))}
+                  accent="slate"
+                  placeholder="Pick end time"
+                />
                 <label className="block">
                   <span className="mb-1 block text-xs font-semibold text-slate-500">Location</span>
                   <input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />

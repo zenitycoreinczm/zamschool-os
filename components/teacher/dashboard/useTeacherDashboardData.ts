@@ -4,7 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { isAbortLikeError } from "@/lib/async-guards";
-import type { AnnouncementRow, LessonRow } from "@/components/teacher/dashboard/types";
+import {
+  normalizeAnnouncementRow,
+  type AnnouncementRow,
+  type LessonRow,
+} from "@/components/teacher/dashboard/types";
 
 type LoadResult = {
   todayLessons: LessonRow[];
@@ -30,7 +34,7 @@ export function useTeacherDashboardData(enabled: boolean) {
           adminApiJson<{ success: boolean; data: LessonRow[] }>(
             `/api/teacher/classes?date=${today}&limit=6`,
           ),
-          adminApiJson<{ success: boolean; data: AnnouncementRow[] }>(
+          adminApiJson<{ success: boolean; data: unknown[] }>(
             "/api/teacher/announcements?limit=2",
           ),
         ]);
@@ -45,7 +49,13 @@ export function useTeacherDashboardData(enabled: boolean) {
 
         if (annRes.status === "fulfilled" && annRes.value?.data) {
           setAnnouncements(
-            Array.isArray(annRes.value.data) ? annRes.value.data : [],
+            Array.isArray(annRes.value.data)
+              ? annRes.value.data.map((row) =>
+                  normalizeAnnouncementRow(
+                    (row || {}) as Record<string, unknown>,
+                  ),
+                )
+              : [],
           );
         } else {
           setAnnouncements([]);

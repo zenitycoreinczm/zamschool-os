@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from("fees")
-      .select("*")
+      .select(
+        "id, school_id, name, description, amount, currency, frequency, is_active, created_at, updated_at",
+      )
       .eq("school_id", schoolId);
 
     if (active === "true") {

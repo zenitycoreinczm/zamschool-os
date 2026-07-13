@@ -19,17 +19,72 @@ async function setup() {
   if (typeof window !== "undefined") return;
 
   try {
+    // National / data-center production gates — warn loudly if misconfigured.
+    const { evaluateProductionSecurityGates, isProductionServerMode } =
+      await import("./lib/server-security-policy");
+    if (isProductionServerMode()) {
+      const failures = evaluateProductionSecurityGates();
+      if (failures.length > 0) {
+        console.error(
+          "[Instrumentation] PRODUCTION SECURITY GATES FAILED:\n" +
+            failures.map((f) => `  - ${f}`).join("\n"),
+        );
+        // Fail closed only when explicitly requested (data-center mode).
+        if (process.env.ZAMSCHOOL_DC_STRICT === "true") {
+          throw new Error(
+            `Server security gates failed (${failures.length}). Refusing to start.`,
+          );
+        }
+      } else {
+        console.log(
+          "[Instrumentation] Production security gates passed (Redis, Supabase, CORS, hosts).",
+        );
+      }
+    }
+
     const { installSupabaseFetchGuard } = await import(
       "./lib/supabase-fetch-guard"
     );
     installSupabaseFetchGuard();
 
+    const { checkSupabaseConnectivity } = await import(
+      "./lib/supabase-connectivity"
+    );
+    const connectivity = await checkSupabaseConnectivity();
+    if (!connectivity.ok) {
+      console.error(
+        `[Instrumentation] Supabase connectivity check failed for ${connectivity.hostname ?? "unknown host"}: ${connectivity.error}`,
+      );
+    } else {
+      console.log(
+        `[Instrumentation] Supabase reachable (${connectivity.hostname}, status ${connectivity.status}).`,
+      );
+    }
+
+    // Redis is the origin shield for a multi-school data center.
+    const { isRedisConfigured, redisPing } = await import("./lib/redis/client");
+    if (isRedisConfigured()) {
+      const pong = await redisPing();
+      console.log(
+        pong
+          ? "[Instrumentation] Upstash Redis reachable — rate limits & lockouts active."
+          : "[Instrumentation] Upstash Redis configured but PING failed.",
+      );
+    } else if (isProductionServerMode()) {
+      console.error(
+        "[Instrumentation] Upstash Redis NOT configured — login lockout & distributed rate limits degraded.",
+      );
+    }
+
     console.log("[Instrumentation] Supabase fetch guard installed — 25 req/s limit enforced.");
   } catch (error) {
     console.error(
-      "[Instrumentation] Failed to install Supabase fetch guard:",
+      "[Instrumentation] Failed to install server security / Supabase guard:",
       error instanceof Error ? error.message : error
     );
+    if (process.env.ZAMSCHOOL_DC_STRICT === "true") {
+      throw error;
+    }
   }
 }
 

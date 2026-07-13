@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Megaphone } from "lucide-react";
 
 import { cn, formatDate } from "@/lib/utils";
 import type { AnnouncementRow } from "@/components/teacher/dashboard/types";
@@ -39,7 +38,7 @@ export function TeacherAnnouncementsCard({
           href="/app/teacher/announcements"
           className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
         >
-          <Megaphone className="h-3.5 w-3.5" /> View all
+          View all
         </Link>
       </div>
 
@@ -53,8 +52,7 @@ export function TeacherAnnouncementsCard({
         </div>
       ) : announcements.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-          <Megaphone className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             No recent announcements
           </p>
           <p className="mt-1 text-xs text-slate-400">

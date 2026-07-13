@@ -70,3 +70,45 @@ test("CSRF_TOKEN_COOKIE is a non-empty string", () => {
   assert.ok(CSRF_TOKEN_COOKIE.length > 0);
   assert.equal(CSRF_TOKEN_COOKIE, "csrf-token");
 });
+
+// ─── failure detection (mirrors csrf-client isCsrfFailureStatus) ───────────
+
+function isCsrfFailureStatus(status, body) {
+  if (status !== 403) return false;
+  const error =
+    body && typeof body === "object" ? String(body.error || "") : "";
+  return /csrf/i.test(error) || error === "Invalid CSRF token";
+}
+
+test("isCsrfFailureStatus detects invalid CSRF 403", () => {
+  assert.equal(
+    isCsrfFailureStatus(403, { error: "Invalid CSRF token" }),
+    true,
+  );
+  assert.equal(isCsrfFailureStatus(403, { error: "Forbidden" }), false);
+  assert.equal(isCsrfFailureStatus(401, { error: "Invalid CSRF token" }), false);
+});
+
+test("proxy ensureCsrfCookie re-asserts httpOnly false and exposes header", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { resolve } = await import("node:path");
+  const source = await readFile(resolve(process.cwd(), "proxy.ts"), "utf8");
+  assert.match(source, /httpOnly:\s*false/);
+  assert.match(source, /X-CSRF-Token/);
+  assert.match(
+    source,
+    /Always re-assert the CSRF cookie as JS-readable/,
+  );
+});
+
+test("admin-route-client ensures CSRF before registrar mutations", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { resolve } = await import("node:path");
+  const source = await readFile(
+    resolve(process.cwd(), "lib", "admin-route-client.ts"),
+    "utf8",
+  );
+  assert.match(source, /ensureCsrfTokenAvailable/);
+  assert.match(source, /isCsrfFailureStatus/);
+  assert.match(source, /X-CSRF-Token/);
+});

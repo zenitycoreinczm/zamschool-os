@@ -30,48 +30,56 @@ export async function invalidateSchoolAnnouncementsCache() {
   await invalidateByTag("announcements");
 }
 
+/**
+ * Schema-aligned primary select. Baseline has `content` (not `body`).
+ * Only fall back when PostgREST reports a missing column — never on
+ * timeouts/network errors (those used to cascade into 4×10s waits).
+ */
 async function fetchSchoolAnnouncementsFromDb(schoolId: string, limit: number) {
-  const queryAttempts = [
-    () =>
-      supabaseAdmin
-        .from("announcements")
-        .select("id, title, body, content, target_role, created_at, published_at, is_pinned")
-        .eq("school_id", schoolId)
-        .order("published_at", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(limit),
-    () =>
-      supabaseAdmin
-        .from("announcements")
-        .select("id, title, body, target_role, created_at, published_at")
-        .eq("school_id", schoolId)
-        .order("published_at", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(limit),
-    () =>
-      supabaseAdmin
-        .from("announcements")
-        .select("id, title, content, target_role, created_at, published_at")
-        .eq("school_id", schoolId)
-        .order("published_at", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(limit),
-    () =>
-      supabaseAdmin
-        .from("announcements")
-        .select("id, title, body, content, created_at, published_at")
-        .eq("school_id", schoolId)
-        .order("published_at", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(limit),
+  const selects = [
+    // Matches public.announcements baseline (+ is_pinned).
+    "id, title, content, target_role, created_at, published_at, is_pinned",
+    // Older/partial installs without is_pinned.
+    "id, title, content, target_role, created_at, published_at",
+    // Legacy installs that used body instead of content.
+    "id, title, body, target_role, created_at, published_at",
   ];
 
-  for (const runQuery of queryAttempts) {
-    const result = await runQuery();
+  for (let i = 0; i < selects.length; i++) {
+    const result = await supabaseAdmin
+      .from("announcements")
+      .select(selects[i])
+      .eq("school_id", schoolId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
     if (!result.error) {
-      return (result.data || []) as AnnouncementRow[];
+      return (result.data || []) as unknown as AnnouncementRow[];
+    }
+
+    // Only try the next select shape on schema mismatch.
+    if (!isMissingColumnError(result.error) || i === selects.length - 1) {
+      console.error(
+        "[announcements-server] fetch failed:",
+        result.error.message || result.error,
+      );
+      return [];
     }
   }
 
   return [];
+}
+
+function isMissingColumnError(
+  error: { code?: string | null; message?: string | null } | null | undefined,
+) {
+  const code = String(error?.code || "");
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    message.includes("does not exist") ||
+    message.includes("could not find")
+  );
 }

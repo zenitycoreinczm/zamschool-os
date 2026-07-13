@@ -10,7 +10,19 @@
  *
  * Per-user budget means 100 concurrent users can each make 25 req/s
  * without affecting each other's budgets.
+ *
+ * Non-Supabase traffic (including Next.js RSC /_rsc flight requests) is
+ * returned from the original fetch Promise with no extra async hop — wrapping
+ * every call in `async` races AbortSignals and surfaces as
+ * "Failed to fetch RSC payload".
  */
+import {
+  isSupabaseCircuitOpen,
+  isSupabaseNetworkError,
+  openSupabaseCircuit,
+  recordSupabaseNetworkSuccess,
+  resetSupabaseConnectivityState,
+} from "./supabase-connectivity";
 import { recordRequest } from "./supabase-request-budget";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -117,17 +129,42 @@ async function waitForBudget(deviceId: string): Promise<void> {
   }
 }
 
+function resolveRequestUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
 // ─── Fetch guard ────────────────────────────────────────────────────────────
 
 function createGuardedFetch(original: typeof globalThis.fetch): typeof globalThis.fetch {
-  return async function guardedFetch(
+  // NOTE: This outer function must NOT be `async`. For non-Supabase traffic we
+  // return the exact Promise from `original` so Next.js RSC AbortSignals and
+  // flight caching keep working. An async wrapper adds a microtask hop that
+  // can lose the race and throw TypeError: Failed to fetch.
+  function guardedFetch(
     input: RequestInfo | URL,
-    init?: RequestInit
+    init?: RequestInit,
   ): Promise<Response> {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    let url: string;
+    try {
+      url = resolveRequestUrl(input);
+    } catch {
+      return original.call(globalThis, input, init);
+    }
 
     // Only intercept Supabase API calls
-    if (SUPABASE_HOST_PATTERN.test(url)) {
+    if (!SUPABASE_HOST_PATTERN.test(url)) {
+      return original.call(globalThis, input, init);
+    }
+
+    return (async () => {
+      if (isSupabaseCircuitOpen()) {
+        throw new TypeError(
+          "fetch failed: Supabase temporarily unreachable (connectivity circuit open)",
+        );
+      }
+
       const deviceId = getDeviceId();
 
       // 1. Enforce per-device rate-limit budget
@@ -136,57 +173,71 @@ function createGuardedFetch(original: typeof globalThis.fetch): typeof globalThi
       const startTime = performance.now();
 
       // 2. Forward the request
-      return original(input, init)
-        .then((response) => {
-          const duration = performance.now() - startTime;
+      try {
+        const response = await original.call(globalThis, input, init);
+        const duration = performance.now() - startTime;
+        recordSupabaseNetworkSuccess();
 
-          // 3. Record the request in this device's budget
-          recordLocalBudget(deviceId);
-          try {
-            recordRequest();
-          } catch {
-            // Global budget recording is best-effort
-          }
+        // 3. Record the request in this device's budget
+        recordLocalBudget(deviceId);
+        try {
+          recordRequest();
+        } catch {
+          // Global budget recording is best-effort
+        }
 
-          // 4. Log slow Supabase calls
-          if (duration > SLOW_QUERY_THRESHOLD_MS) {
-            const ms = Math.round(duration);
-            const shortUrl = url.slice(0, 200);
-            const isAuthToken =
-              /\/auth\/v1\/token/i.test(url) || /\/auth\/v1\/(signup|verify|recover)/i.test(url);
+        // 4. Log slow Supabase calls
+        if (duration > SLOW_QUERY_THRESHOLD_MS) {
+          const ms = Math.round(duration);
+          const shortUrl = url.slice(0, 200);
+          const isAuthToken =
+            /\/auth\/v1\/token/i.test(url) ||
+            /\/auth\/v1\/(signup|verify|recover)/i.test(url);
 
-            if (isAuthToken) {
-              if (duration > 3_000) {
-                console.warn(
-                  `[SupabaseFetchGuard] Slow auth request (${ms}ms): ${shortUrl}`
-                );
-              }
-            } else {
-              console.warn(`[SupabaseFetchGuard] Slow query (${ms}ms): ${shortUrl}`);
+          if (isAuthToken) {
+            if (duration > 3_000) {
+              console.warn(
+                `[SupabaseFetchGuard] Slow auth request (${ms}ms): ${shortUrl}`,
+              );
             }
+          } else {
+            console.warn(
+              `[SupabaseFetchGuard] Slow query (${ms}ms): ${shortUrl}`,
+            );
           }
+        }
 
-          return response;
-        })
-        .catch((error) => {
-          // Still record the request even on failure
-          recordLocalBudget(deviceId);
-          try {
-            recordRequest();
-          } catch {
-            // best-effort
-          }
+        return response;
+      } catch (error) {
+        // Still record the request even on failure
+        recordLocalBudget(deviceId);
+        try {
+          recordRequest();
+        } catch {
+          // best-effort
+        }
 
+        // Aborted/cancelled requests are normal (hover prefetches, rapid nav).
+        // Do not treat them as connectivity failures.
+        const aborted =
+          (error instanceof DOMException && error.name === "AbortError") ||
+          (error instanceof Error && error.name === "AbortError");
+
+        if (!aborted && isSupabaseNetworkError(error)) {
+          openSupabaseCircuit(error);
+        } else if (!aborted) {
           console.error(
-            `[SupabaseFetchGuard] Request failed: ${url.slice(0, 200)} - ${error?.message ?? error}`
+            `[SupabaseFetchGuard] Request failed: ${url.slice(0, 200)} - ${
+              error instanceof Error ? error.message : String(error)
+            }`,
           );
-          throw error;
-        });
-    }
+        }
+        throw error;
+      }
+    })();
+  }
 
-    // Non-Supabase requests pass through unmodified
-    return original(input, init);
-  } as typeof globalThis.fetch;
+  return guardedFetch as typeof globalThis.fetch;
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -201,15 +252,22 @@ export function installSupabaseFetchGuard(): void {
   if (guardInstalled) return;
 
   if (typeof globalThis === "undefined") {
-    console.warn("[SupabaseFetchGuard] globalThis not available — skipping guard install.");
+    console.warn(
+      "[SupabaseFetchGuard] globalThis not available — skipping guard install.",
+    );
     return;
   }
 
-  originalFetch = globalThis.fetch;
+  // Avoid double-wrapping if HMR re-runs install without clearing the flag.
+  const current = globalThis.fetch as typeof globalThis.fetch & {
+    __originalFetch?: typeof globalThis.fetch;
+  };
+  originalFetch = current.__originalFetch || current;
   const guardedFetch = createGuardedFetch(originalFetch);
 
   // Store original fetch for uninstall
-  (guardedFetch as any).__originalFetch = originalFetch;
+  (guardedFetch as typeof guardedFetch & { __originalFetch?: typeof globalThis.fetch }).__originalFetch =
+    originalFetch;
 
   globalThis.fetch = guardedFetch;
   guardInstalled = true;
@@ -224,7 +282,9 @@ export function installSupabaseFetchGuard(): void {
  */
 export function uninstallSupabaseFetchGuard(): void {
   if (!guardInstalled || !originalFetch) {
-    console.warn("[SupabaseFetchGuard] Guard not installed — nothing to uninstall.");
+    console.warn(
+      "[SupabaseFetchGuard] Guard not installed — nothing to uninstall.",
+    );
     return;
   }
 
@@ -263,6 +323,7 @@ export function getFetchGuardTelemetry(): {
 export function resetFetchGuard(): void {
   perDeviceTimestamps.clear();
   fallbackDeviceId = null;
+  resetSupabaseConnectivityState();
 }
 
 // ─── Helper for createCallingComponent that also installs guard ─────────────

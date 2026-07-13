@@ -1,10 +1,14 @@
-const ROLE_ALIASES: Record<string, "all" | "admin" | "principal" | "leadership" | "teacher" | "student" | "parent"> = {
+const ROLE_ALIASES: Record<
+  string,
+  "all" | "principal" | "leadership" | "teacher" | "student" | "parent"
+> = {
   all: "all",
   general: "all",
-  admin: "admin",
-  admins: "admin",
-  administrator: "admin",
-  school_administrator: "admin",
+  // Legacy School Administrator collapsed into Head Teacher
+  admin: "principal",
+  admins: "principal",
+  administrator: "principal",
+  school_administrator: "principal",
   principal: "principal",
   head_teacher: "principal",
   headteacher: "principal",

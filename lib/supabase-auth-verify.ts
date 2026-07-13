@@ -1,11 +1,32 @@
 import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 
+import { isSupabaseNetworkError } from "@/lib/supabase-connectivity";
+
 type AuthClient = Pick<SupabaseClient["auth"], "getSession" | "getUser"> & {
   getClaims?: SupabaseClient["auth"]["getClaims"];
 };
 
 function resolveAuthClient(client: AuthClient | SupabaseClient): AuthClient {
   return "auth" in client ? client.auth : client;
+}
+
+/**
+ * Stale/revoked refresh tokens are common after cookie expiry, logout on another
+ * device, or env project switches. Treat as signed-out rather than a hard error.
+ */
+export function isAuthSessionMissingError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const err = error as { code?: string | null; message?: string | null; status?: number | null };
+  const code = String(err.code || "").toLowerCase();
+  const message = String(err.message || "").toLowerCase();
+  return (
+    code === "refresh_token_not_found" ||
+    code === "session_not_found" ||
+    code === "bad_jwt" ||
+    message.includes("refresh token not found") ||
+    message.includes("invalid refresh token") ||
+    message.includes("session from session_id claim in jwt does not exist")
+  );
 }
 
 /**
@@ -17,12 +38,28 @@ export async function resolveVerifiedAuthUser(
   client: AuthClient | SupabaseClient
 ): Promise<{ user: User | null; session: Session | null; error: Error | null }> {
   const auth = resolveAuthClient(client);
-  const {
-    data: { session },
-    error: sessionError,
-  } = await auth.getSession();
+  let session: Session | null = null;
+  let sessionError: Error | null = null;
+
+  try {
+    const result = await auth.getSession();
+    session = result.data?.session ?? null;
+    sessionError = result.error ?? null;
+  } catch (error: unknown) {
+    if (isSupabaseNetworkError(error) || isAuthSessionMissingError(error)) {
+      return { user: null, session: null, error: null };
+    }
+    return {
+      user: null,
+      session: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
 
   if (sessionError) {
+    if (isSupabaseNetworkError(sessionError) || isAuthSessionMissingError(sessionError)) {
+      return { user: null, session: null, error: null };
+    }
     return { user: null, session: null, error: sessionError };
   }
 
@@ -46,16 +83,31 @@ export async function resolveVerifiedAuthUser(
     };
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await auth.getUser();
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await auth.getUser();
 
-  return {
-    user: user ?? null,
-    session: user ? session : null,
-    error: userError ?? null,
-  };
+    if (userError && isAuthSessionMissingError(userError)) {
+      return { user: null, session: null, error: null };
+    }
+
+    return {
+      user: user ?? null,
+      session: user ? session : null,
+      error: userError ?? null,
+    };
+  } catch (error: unknown) {
+    if (isSupabaseNetworkError(error) || isAuthSessionMissingError(error)) {
+      return { user: null, session: null, error: null };
+    }
+    return {
+      user: null,
+      session: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
+  }
 }
 
 /**

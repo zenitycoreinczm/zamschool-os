@@ -1,9 +1,9 @@
 import { getRoleDisplayLabel } from "./roles.ts";
 
-export const SCHOOL_ADMINISTRATOR_INVITE_ROLE = "admin" as const;
+/** Default staff invite role (first specialty after school leadership). */
+export const DEFAULT_STAFF_INVITE_ROLE = "deputy_head" as const;
 
 export type StaffInviteRoleValue =
-  | typeof SCHOOL_ADMINISTRATOR_INVITE_ROLE
   | "deputy_head"
   | "bursar"
   | "payments"
@@ -21,16 +21,17 @@ export type StaffInviteRoleOption = {
   hint: string;
 };
 
+/**
+ * Staff roles the Head Teacher can invite.
+ * Head Teacher is created only at school registration.
+ * Platform Super Admin is never invited from a school.
+ * School Administrator (legacy `admin`) is not offered.
+ */
 export const STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] = [
-  {
-    value: SCHOOL_ADMINISTRATOR_INVITE_ROLE,
-    label: getRoleDisplayLabel("admin"),
-    hint: "Office operations, user management, and the school administrator dashboard.",
-  },
   {
     value: "deputy_head",
     label: getRoleDisplayLabel("deputy_head"),
-    hint: "Deputy head operations hub, classes, attendance, and timetables.",
+    hint: "Deputy Head operations hub, classes, attendance, and timetables.",
   },
   {
     value: "bursar",
@@ -40,7 +41,7 @@ export const STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] = [
   {
     value: "hr_admin",
     label: getRoleDisplayLabel("hr_admin"),
-    hint: "Staff records, invitations, and HR workflows.",
+    hint: "Staff records, employment data, and HR workflows.",
   },
   {
     value: "academic_admin",
@@ -50,7 +51,7 @@ export const STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] = [
   {
     value: "ict_admin",
     label: getRoleDisplayLabel("ict_admin"),
-    hint: "ICT systems, accounts, and technical administration.",
+    hint: "ICT systems, accounts recovery, and technical administration.",
   },
   {
     value: "discipline_admin",
@@ -80,12 +81,14 @@ export const STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] = [
 ];
 
 /**
- * Role options for the Head Teacher (principal) staff invitation page.
- * Excludes teacher, student, and parent — those are managed via
- * the Users section or the registrar/teacher workflows.
+ * Role options for the Head Teacher staff invitation UI.
+ * Excludes teacher — those are managed via Users → Teachers.
  */
 export const PRINCIPAL_STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] =
   STAFF_INVITE_ROLE_OPTIONS.filter((option) => option.value !== "teacher");
+
+/** @deprecated Use DEFAULT_STAFF_INVITE_ROLE. School Administrator invite removed. */
+export const SCHOOL_ADMINISTRATOR_INVITE_ROLE = DEFAULT_STAFF_INVITE_ROLE;
 
 export function getStaffInviteRoleLabel(
   role: string | null | undefined,
@@ -93,6 +96,10 @@ export function getStaffInviteRoleLabel(
   const normalized = String(role || "")
     .trim()
     .toLowerCase();
+  // Legacy invites stored as admin still display as Head Teacher
+  if (normalized === "admin" || normalized === "administrator") {
+    return getRoleDisplayLabel("principal");
+  }
   const match = STAFF_INVITE_ROLE_OPTIONS.find(
     (option) => option.value === normalized,
   );

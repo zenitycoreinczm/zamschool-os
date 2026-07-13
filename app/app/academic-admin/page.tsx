@@ -1,5 +1,5 @@
-import AdminRoleWorkspace from "@/components/admin-workspaces/AdminRoleWorkspace";
+import AcademicAdminDashboard from "@/components/role-workspaces/AcademicAdminDashboard";
 
 export default function AcademicAdminWorkspacePage() {
-  return <AdminRoleWorkspace role="academic_admin" />;
+  return <AcademicAdminDashboard />;
 }

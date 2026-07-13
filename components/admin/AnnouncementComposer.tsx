@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Megaphone } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
+
 const AUDIENCE_OPTIONS = [
   { value: "", label: "Everyone (all roles)" },
-  { value: "leadership", label: "School leadership (Head Teacher + Administrator)" },
+  { value: "leadership", label: "School leadership (Head Teacher + Deputy Head)" },
   { value: "principal", label: "Head Teacher only" },
-  { value: "admin", label: "School Administrator only" },
   { value: "teacher", label: "Teachers" },
   { value: "student", label: "Students" },
   { value: "parent", label: "Parents / guardians" },
@@ -68,13 +68,12 @@ export function AnnouncementComposer({ classOptions = [], onPublished }: Props) 
       onSubmit={onSubmit}
       className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
     >
-      <div className="mb-4 flex items-center gap-2">
-        <Megaphone className="h-5 w-5 text-sky-600" />
+      <div className="mb-4">
         <h2 className="text-lg font-semibold text-slate-900">Publish announcement</h2>
       </div>
       <p className="mb-4 text-sm text-slate-500">
-        Head Teacher and School Administrator voices share this form. Choose audience so readers only
-        see what applies to them.
+        Publish as Head Teacher or office staff. Choose audience so readers only see what applies to
+        them.
       </p>
 
       <div className="grid gap-3">
@@ -145,9 +144,9 @@ export function AnnouncementComposer({ classOptions = [], onPublished }: Props) 
         <button
           type="submit"
           disabled={submitting}
-          className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover disabled:opacity-60"
         >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Publish
         </button>
       </div>

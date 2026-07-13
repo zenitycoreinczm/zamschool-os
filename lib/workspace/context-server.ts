@@ -61,7 +61,14 @@ async function loadStableWorkspaceSlice(
   const redisKey = workspaceCacheKey(actor.userId, actor.schoolId);
   if (isRedisConfigured()) {
     const cached = await redisGetJson<StableSlice>(redisKey);
-    if (cached) return cached;
+    if (cached) {
+      const roleLower = String(cached.role || "").toLowerCase();
+      const hasSchool = Boolean(String(cached.schoolId || "").trim());
+      // Ignore poisoned incomplete workspace entries.
+      if (hasSchool || roleLower === "super_admin") {
+        return cached;
+      }
+    }
   }
 
   // Fall through to in-memory hot-read cache → Supabase
@@ -147,8 +154,13 @@ async function loadStableWorkspaceSlice(
     }
   );
 
-  // Cache in Redis for cross-process persistence (fire-and-forget)
-  if (isRedisConfigured()) {
+  // Cache in Redis only when school is resolved (or super-admin platform shell).
+  // Caching schoolId:null under ":none" poisoned cold loads site-wide.
+  const roleLower = String(result.role || "").toLowerCase();
+  const canCacheWorkspace =
+    Boolean(String(result.schoolId || "").trim()) ||
+    roleLower === "super_admin";
+  if (isRedisConfigured() && canCacheWorkspace) {
     void redisSetJson(redisKey, result, REDIS_TTL.workspaceSec);
   }
 
@@ -158,18 +170,41 @@ async function loadStableWorkspaceSlice(
 export async function buildWorkspaceContextPayload(
   actor: ActorContext
 ): Promise<WorkspaceContextPayload> {
-  const authMeta = await loadAuthMeta(actor.userId);
-  const stable = await loadStableWorkspaceSlice(actor, authMeta);
+  // Parallelize expensive auth.admin + stable profile/school + unread counts.
+  // Unread can use actor.schoolId immediately (same tenant as profile for 99% of cases).
+  const schoolIdHint = actor.schoolId;
+  const [authMeta, stable, unreadEarly] = await Promise.all([
+    loadAuthMeta(actor.userId),
+    loadStableWorkspaceSlice(actor, { email: "", emailConfirmed: false }),
+    schoolIdHint
+      ? getUnreadCountsForUser({
+          userId: actor.userId,
+          schoolId: schoolIdHint,
+        })
+      : Promise.resolve({ messages: 0, notifications: 0 }),
+  ]);
 
-  const unread = stable.schoolId
-    ? await getUnreadCountsForUser({
-        userId: actor.userId,
-        schoolId: stable.schoolId,
-      })
-    : { messages: 0, notifications: 0 };
+  // If profile resolved a different school than actor cache, re-fetch unread once.
+  let unread = unreadEarly;
+  if (
+    stable.schoolId &&
+    stable.schoolId !== schoolIdHint
+  ) {
+    unread = await getUnreadCountsForUser({
+      userId: actor.userId,
+      schoolId: stable.schoolId,
+    });
+  } else if (!schoolIdHint && stable.schoolId) {
+    unread = await getUnreadCountsForUser({
+      userId: actor.userId,
+      schoolId: stable.schoolId,
+    });
+  }
 
   return {
     ...stable,
+    email: authMeta.email || stable.email,
+    emailConfirmed: authMeta.emailConfirmed,
     unread,
   };
 }

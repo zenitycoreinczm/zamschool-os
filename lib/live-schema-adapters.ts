@@ -49,9 +49,86 @@ function getDisplayName(profile: ProfileRow | undefined): string {
   );
 }
 
-export function buildAcademicContextLabel(yearName?: MaybeString, termName?: MaybeString) {
-  const parts = [yearName, termName].filter((value) => Boolean(String(value || "").trim()));
-  return parts.length ? parts.join(" - ") : "Academic Context";
+/**
+ * Normalize term names stored as bare numbers ("2") into "Term 2".
+ * Leaves "Term 2" / "Semester 1" etc. alone (title-cased prefix).
+ */
+export function normalizeTermLabel(termName?: MaybeString): string {
+  const raw = String(termName || "").trim();
+  if (!raw) return "";
+
+  if (/^\d{1,2}$/.test(raw)) {
+    return `Term ${raw}`;
+  }
+
+  const prefixed = raw.match(/^(term|semester|sem\.?|session)\s*(.+)$/i);
+  if (prefixed) {
+    const kind = prefixed[1].toLowerCase();
+    const rest = String(prefixed[2] || "").trim();
+    const label =
+      kind.startsWith("sem") && kind !== "semester"
+        ? "Sem"
+        : kind.startsWith("session")
+          ? "Session"
+          : kind.startsWith("semester")
+            ? "Semester"
+            : "Term";
+    return rest ? `${label} ${rest}` : label;
+  }
+
+  return raw;
+}
+
+/**
+ * Split a stored/composed academic label into year + small term parts.
+ * Accepts modern "2026 Term 2" and legacy "2026 - 2" / "2026 - Term 2".
+ */
+export function splitAcademicContextLabel(label?: MaybeString): {
+  year: string;
+  term: string | null;
+} {
+  const raw = String(label || "").trim();
+  if (!raw || /^academic context$/i.test(raw)) {
+    return { year: raw || "Academic Context", term: null };
+  }
+
+  const modern = raw.match(
+    /^(.+?)\s+((?:Term|Semester|Sem\.?|Session)\s+.+)$/i,
+  );
+  if (modern) {
+    return {
+      year: modern[1].trim(),
+      term: normalizeTermLabel(modern[2]),
+    };
+  }
+
+  const legacy = raw.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+  if (legacy) {
+    return {
+      year: legacy[1].trim(),
+      term: normalizeTermLabel(legacy[2]),
+    };
+  }
+
+  // Bare term number alone is rare; treat as year-less term.
+  if (/^\d{1,2}$/.test(raw) || /^(term|semester)\b/i.test(raw)) {
+    return { year: "", term: normalizeTermLabel(raw) };
+  }
+
+  return { year: raw, term: null };
+}
+
+/** Plain-text academic context for strings (API, toasts, descriptions). */
+export function buildAcademicContextLabel(
+  yearName?: MaybeString,
+  termName?: MaybeString,
+) {
+  const year = String(yearName || "").trim();
+  const term = normalizeTermLabel(termName);
+  if (year && term) return `${year} ${term}`;
+  if (year) return year;
+  if (term) return term;
+  return "Academic Context";
 }
 
 export function buildTeacherDirectory(teachers: TeacherRow[], profiles: ProfileRow[]) {
@@ -108,6 +185,11 @@ export function buildParentLinkedStudentProfiles(input: {
   const studentsByRowId = new Map(
     input.students.map((student) => [student.id, student])
   );
+  const studentsByProfileId = new Map(
+    input.students
+      .filter((student) => student.profile_id)
+      .map((student) => [String(student.profile_id), student]),
+  );
   const relationshipByProfileId = new Map<string, string | null>();
   const studentRowIdByProfileId = new Map<string, string>();
   const profileIdByStudentRowId = new Map<string, string>();
@@ -117,7 +199,10 @@ export function buildParentLinkedStudentProfiles(input: {
       continue;
     }
 
-    const student = studentsByRowId.get(link.student_id);
+    // Links may store students.id or profiles.id in student_id.
+    const student =
+      studentsByRowId.get(link.student_id) ||
+      studentsByProfileId.get(link.student_id);
     const profileId = student?.profile_id || student?.id || null;
     if (!profileId || student?.school_id !== input.actorSchoolId) {
       continue;

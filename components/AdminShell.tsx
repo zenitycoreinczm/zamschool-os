@@ -4,20 +4,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { LogOut, Menu, MessageSquare, X } from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
 import { resolveAppWorkspaceHome } from "@/lib/auth-routing";
 import { normalizeRole } from "@/lib/roles";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { getDisplayInitials } from "@/lib/display-initials";
-import { WorkspaceShellHeader } from "@/components/workspace/WorkspaceShellHeader";
+import { ProfileAvatarImage } from "@/components/ProfileAvatarImage";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
-import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
 import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
 import { MobileDock } from "@/components/workspace/MobileDock";
+import { useNavBadges } from "@/components/workspace/useNavBadges";
 import {
   navItemsToWorkspacePages,
   type WorkspaceSearchResult,
@@ -27,10 +29,10 @@ import {
   getRoleNavItems,
   roleNavSections,
   type WorkspaceNavItem,
-  type WorkspaceNavSection,
   type WorkspaceRoleKey,
 } from "@/lib/workspace/nav";
-import { LogOut, X } from "lucide-react";
+import { formatNavBadgeCount } from "@/lib/workspace/nav-badges";
+import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabel";
 
 type WorkspaceRole = WorkspaceRoleKey;
 
@@ -47,11 +49,6 @@ export default function AdminShell({
   const workspaceError = workspaceCtx?.error ?? "";
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [overflowOpen, setOverflowOpen] = useState(false);
-  const [polledUnread, setPolledUnread] = useState<{
-    messages: number;
-    notifications: number;
-  } | null>(null);
 
   const ready = !workspaceLoading && Boolean(workspace);
   const role = normalizeWorkspaceRole(workspace?.workspaceRole);
@@ -65,15 +62,6 @@ export default function AdminShell({
     displayName,
     email: workspace?.email,
   });
-  const workspaceUnread = useMemo(
-    () => ({
-      messages: workspace?.unread?.messages ?? 0,
-      notifications: workspace?.unread?.notifications ?? 0,
-    }),
-    [workspace?.unread?.messages, workspace?.unread?.notifications],
-  );
-  const unreadSummary = polledUnread ?? workspaceUnread;
-
   useEffect(() => {
     if (!workspace) return;
 
@@ -89,12 +77,6 @@ export default function AdminShell({
     }
   }, [workspace, pathname, router]);
 
-  const handleUnreadChange = (
-    counts: { messages: number; notifications: number },
-  ) => {
-    setPolledUnread(counts);
-  };
-
   const activeSet = useMemo(() => new Set([pathname]), [pathname]);
   const navSections = useMemo(
     () => (role ? (roleNavSections[role] ?? []) : []),
@@ -105,11 +87,27 @@ export default function AdminShell({
     () => (role ? buildRoleMobileDock(role) : []),
     [role],
   );
-  const workspaceLabel = role ? getWorkspaceLabel(role) : "School Workspace";
-  const workspacePageItems = useMemo(
-    () => buildWorkspacePageItems(navItems, unreadSummary),
-    [navItems, unreadSummary],
+  const navHrefs = useMemo(
+    () => [
+      ...navItems.map((item) => item.href),
+      ...mobileDock.map((item) => item.href),
+    ],
+    [navItems, mobileDock],
   );
+  const { counts: navBadgeCounts, badgeByHref } = useNavBadges({
+    apiMode: "account",
+    hrefs: navHrefs,
+    trackFeedSections: true,
+  });
+  const unreadMessages = navBadgeCounts.messages;
+  const workspaceLabel = role ? getWorkspaceLabel(role) : "School workspace";
+  const deskTitle = role ? getDeskTitle(role) : "Staff desk";
+  const workspacePageItems = useMemo(
+    () => buildWorkspacePageItems(navItems, unreadMessages),
+    [navItems, unreadMessages],
+  );
+  const profileHref = roleProfileHref(role);
+  const homeHref = role ? resolveAppWorkspaceHome(role) : "/app/dashboard";
 
   const logout = async () => {
     if (signingOut) return;
@@ -131,14 +129,14 @@ export default function AdminShell({
           className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 shadow-lg"
         >
           <h2 className="text-lg font-bold text-rose-700">
-            Workspace Access Error
+            Workspace access error
           </h2>
           <p className="mt-2 text-sm text-slate-600">{workspaceError}</p>
           <button
             onClick={() => router.push("/login")}
             className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
-            Return to Login
+            Return to login
           </button>
         </div>
       </div>
@@ -146,11 +144,16 @@ export default function AdminShell({
   }
 
   if (!ready || !role) {
-    return <WorkspaceLoader label="Workspace loading" />;
+    return (
+      <WorkspaceLoader
+        label="Loading your workspace"
+        hint="Syncing school access and preferences"
+      />
+    );
   }
 
   return (
-    <div className={cn("zamschool-workspace-shell", ws.canvas)}>
+    <div className={cn("flex h-screen overflow-hidden", ws.canvas)}>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-workspace-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-900 focus:shadow-workspace-md"
@@ -162,63 +165,170 @@ export default function AdminShell({
           className={cn("fixed inset-0 z-30 lg:hidden", ws.overlay)}
           onClick={() => setOpen(false)}
           aria-label="Close sidebar"
-          aria-expanded={open}
-          aria-controls="admin-sidebar"
         />
       ) : null}
 
-      <AdminSidebar
-        open={open}
-        onClose={() => setOpen(false)}
-        role={role}
-        workspaceLabel={workspaceLabel}
-        navSections={navSections}
-        activePaths={activeSet}
-        onNavigate={() => setOpen(false)}
-        onSignOut={logout}
-      />
-
-      <div className="zamschool-workspace-shell__main">
-        <WorkspaceShellHeader
-          sidebarId="admin-sidebar"
-          sidebarOpen={open}
-          onOpenSidebar={() => setOpen(true)}
-          schoolName={schoolName}
-          yearTerm={yearTerm}
-          pageItems={workspacePageItems}
-          displayName={displayName}
-          workspaceLabel={workspaceLabel}
-          avatarUrl={avatarUrl}
-          avatarInitials={avatarInitials}
-          profileHref="/app/profile"
-          settingsHref="/app/settings"
-          apiMode="admin"
-          messagesHref="/app/messages"
-          notificationsHref="/app/notifications"
-          initialUnread={unreadSummary}
-          onUnreadChangeAction={handleUnreadChange}
-          onSignOut={logout}
-        />
-
-        {/* WorkspaceGlobalSearch and WorkspaceInboxCenter are composed inside
-            WorkspaceShellHeader above. These references keep the shell as the
-            explicit owner of search, inbox, and overflow wiring.
-            onUnreadChange={handleUnreadChange} */}
-        {false && (
-          <>
-            <WorkspaceGlobalSearch pageItems={workspacePageItems} />
-            <WorkspaceInboxCenter
-              apiMode="admin"
-              messagesHref="/app/messages"
-              notificationsHref="/app/notifications"
-              initialUnread={unreadSummary}
-              onUnreadChangeAction={handleUnreadChange}
-            />
-            <button onClick={() => setOverflowOpen((v) => !v)} aria-expanded={overflowOpen} />
-          </>
+      <aside
+        id="admin-sidebar"
+        role="navigation"
+        aria-label="Primary"
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 w-[17.5rem] border-r border-workspace-border bg-workspace-sidebar transition-transform duration-[var(--duration-workspace-normal)] lg:relative",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-4">
+            <Link href={homeHref} className="flex min-w-0 items-center gap-3">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
+                <Image
+                  src="/icon.png"
+                  alt="ZamSchool OS"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  priority
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold leading-tight text-slate-900">
+                  {schoolName}
+                </p>
+                <p className="truncate text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
+                  {workspaceLabel}
+                </p>
+              </div>
+            </Link>
+            <button
+              className="p-2 text-slate-500 lg:hidden"
+              onClick={() => setOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-        <main id="main" className={ws.mainScroll}>
+          <div className="border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-sky-50/30 px-4 py-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {deskTitle}
+            </p>
+            <p className="mt-1.5 text-[13px] font-semibold leading-snug text-slate-900">
+              <span>{displayName}</span>
+              <span className="mx-1.5 font-normal text-slate-300">|</span>
+              <span className="font-medium text-slate-600">{workspaceLabel}</span>
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              <AcademicContextLabel
+                value={yearTerm}
+                yearClassName="font-medium text-slate-600"
+                termClassName="text-slate-400"
+              />
+            </p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+            <WorkspaceNavMenu
+              sections={navSections}
+              activePaths={activeSet}
+              onNavigate={() => setOpen(false)}
+              accent="slate"
+              badgeByHref={badgeByHref}
+            />
+          </div>
+
+          <div className="border-t border-slate-200/80 p-3">
+            <button
+              onClick={() => void logout()}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 transition-colors hover:bg-white hover:text-red-600"
+            >
+              <LogOut className="h-4.5 w-4.5" />
+              <span className="font-medium">Sign out</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="zamschool-workspace-shell__main flex min-w-0 flex-1 flex-col">
+        <header
+          className={cn(
+            ws.header,
+            "flex items-center justify-between gap-3 border-b border-workspace-border/60 px-4 py-3 md:px-6",
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              className="-ml-2 p-2 text-slate-600 lg:hidden"
+              onClick={() => setOpen(true)}
+              aria-expanded={open}
+              aria-controls="admin-sidebar"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 lg:hidden">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {displayName}
+              </p>
+              <p className="truncate text-[11px] text-slate-500">
+                {workspaceLabel}
+              </p>
+            </div>
+            <div className="hidden min-w-0 lg:block">
+              <p className="truncate text-sm font-semibold text-slate-900">
+                <AcademicContextLabel value={yearTerm} />
+              </p>
+              <p className="truncate text-xs text-slate-500">
+                {displayName} · {workspaceLabel}
+              </p>
+            </div>
+          </div>
+
+          <WorkspaceGlobalSearch
+            pageItems={workspacePageItems}
+            placeholder="Search pages…"
+            className="hidden min-w-0 flex-1 sm:block sm:max-w-[320px]"
+          />
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/app/messages"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
+              aria-label={
+                unreadMessages > 0
+                  ? `Messages, ${unreadMessages} unread`
+                  : "Messages"
+              }
+            >
+              <MessageSquare className="h-4.5 w-4.5" />
+              {unreadMessages > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] font-bold text-white">
+                  {formatNavBadgeCount(unreadMessages) ||
+                    (unreadMessages > 9 ? "9+" : unreadMessages)}
+                </span>
+              ) : null}
+            </Link>
+            <Link
+              href={profileHref}
+              className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-300 bg-slate-800 text-sm font-semibold text-white shadow-sm"
+              aria-label="Open profile"
+            >
+              {avatarUrl ? (
+                <ProfileAvatarImage
+                  src={avatarUrl}
+                  alt={displayName}
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  fallback={avatarInitials}
+                />
+              ) : (
+                avatarInitials
+              )}
+            </Link>
+          </div>
+        </header>
+
+        <main id="main" className={cn(ws.mainScroll, "flex-1")}>
           <div className="relative z-0 zamschool-workspace-main-inner animate-enter-up space-y-5 pb-24 lg:pb-6">
             {children}
           </div>
@@ -228,123 +338,27 @@ export default function AdminShell({
           pathname={pathname}
           items={mobileDock}
           onClose={() => setOpen(false)}
-          activeAccent="sky"
+          activeAccent="slate"
           columns={5}
+          badgeByHref={badgeByHref}
         />
       </div>
     </div>
   );
 }
 
-type ShellAction = () => void | Promise<void>;
-
-type AdminSidebarProps = {
-  open: boolean;
-  onClose: () => void;
-  role: WorkspaceRole;
-  workspaceLabel: string;
-  navSections: WorkspaceNavSection[];
-  activePaths: Set<string>;
-  onNavigate: () => void;
-  onSignOut: ShellAction;
-};
-
-function AdminSidebar({
-  open,
-  onClose,
-  role,
-  workspaceLabel,
-  navSections,
-  activePaths,
-  onNavigate,
-  onSignOut,
-}: AdminSidebarProps) {
-  return (
-    <aside
-      id="admin-sidebar"
-      role="navigation"
-      aria-label="Primary"
-      className={`zamschool-workspace-shell__sidebar transition-transform duration-250 ${
-        open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      }`}
-    >
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="px-3 py-2.5 border-b border-slate-200/80 flex items-center justify-between">
-          <Link
-            href={resolveAppWorkspaceHome(role)}
-            className="flex items-center gap-3"
-          >
-            <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm bg-white">
-              <Image
-                src="/icon.png"
-                alt="ZamSchool OS"
-                width={32}
-                height={32}
-                className="w-full h-full object-cover"
-                priority
-              />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-900 text-sm">
-                ZamSchool OS
-              </p>
-              <p className="text-[10px] text-slate-500">{workspaceLabel}</p>
-            </div>
-          </Link>
-          <button className="lg:hidden p-2 text-slate-500" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 py-3">
-          <WorkspaceNavMenu
-            sections={navSections}
-            activePaths={activePaths}
-            onNavigate={onNavigate}
-          />
-        </div>
-
-        <div className="p-2 border-t border-slate-200/80">
-          <button
-            onClick={onSignOut}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 hover:bg-white hover:text-red-600 transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="font-medium">Sign Out</span>
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function formatUnreadBadgeCount(count: number) {
-  if (!count || count < 1) {
-    return "0";
-  }
-
-  return count > 99 ? "99+" : String(count);
-}
-
 function buildWorkspacePageItems(
   navItems: WorkspaceNavItem[],
-  unreadSummary: { messages: number; notifications: number },
+  unreadMessages: number,
 ): WorkspaceSearchResult[] {
   return [
     ...navItemsToWorkspacePages(navItems),
     {
       id: "page:/app/messages-unread",
       kind: "page" as const,
-      label: "Unread Messages",
-      hint: `${formatUnreadBadgeCount(unreadSummary.messages)} unread`,
+      label: "Messages",
+      hint: `${formatNavBadgeCount(unreadMessages) || "0"} unread`,
       href: "/app/messages",
-    },
-    {
-      id: "page:/app/notifications-unread",
-      kind: "page" as const,
-      label: "Unread Notifications",
-      hint: `${formatUnreadBadgeCount(unreadSummary.notifications)} unread`,
-      href: "/app/notifications",
     },
     {
       id: "page:/app/profile",
@@ -388,9 +402,12 @@ function resolveWorkspaceRedirect({
   }
 
   if (nextRole === "admin" && pathname.startsWith("/app/principal")) {
-    return "/app/dashboard";
+    return "/app/principal";
   }
-  if (nextRole === "principal" && pathname === "/app/dashboard") {
+  if (
+    (nextRole === "principal" || nextRole === "admin") &&
+    pathname === "/app/dashboard"
+  ) {
     return "/app/principal";
   }
   if (nextRole === "deputy_head" && pathname === "/app/dashboard") {
@@ -414,7 +431,7 @@ function resolveWorkspaceRedirect({
 
   if (
     !schoolId &&
-    ["admin", "principal"].includes(nextRole) &&
+    (nextRole === "admin" || nextRole === "principal") &&
     pathname !== "/app/admin/school"
   ) {
     return "/app/admin/school";
@@ -426,36 +443,57 @@ function resolveWorkspaceRedirect({
 function getWorkspaceLabel(role: WorkspaceRole) {
   switch (role) {
     case "principal":
-      return "Head Teacher workspace";
+      return "Head Teacher";
     case "deputy_head":
-      return "Deputy Head Workspace";
+      return "Deputy Head";
     case "bursar":
-      return "Bursar Workspace";
+      return "Bursar";
     case "guidance_office":
-      return "Guidance Office Workspace";
+      return "Guidance";
     case "academic_admin":
-      return "Academic Admin Workspace";
+      return "Academic admin";
     case "hr_admin":
-      return "HR Admin Workspace";
+      return "HR admin";
     case "ict_admin":
-      return "ICT Admin Workspace";
+      return "ICT admin";
     case "discipline_admin":
-      return "Discipline Workspace";
+      return "Discipline";
     case "registrar":
-      return "Registrar Workspace";
+      return "Registrar";
     case "admin":
-      return "School Administrator Workspace";
+      return "Head Teacher";
     case "super_admin":
-      return "Super Admin Workspace";
-    case "teacher":
-      return "Teacher Workspace";
-    case "payments":
-      return "Payments Workspace";
-    case "student":
-      return "Student Workspace";
-    case "parent":
-      return "Parent Workspace";
+      return "Super admin";
     default:
-      return "School Workspace";
+      return "Staff";
   }
+}
+
+function getDeskTitle(role: WorkspaceRole) {
+  switch (role) {
+    case "registrar":
+      return "Admissions desk";
+    case "academic_admin":
+      return "Academic desk";
+    case "hr_admin":
+      return "People desk";
+    case "ict_admin":
+      return "Technical desk";
+    case "discipline_admin":
+      return "Conduct desk";
+    case "guidance_office":
+      return "Welfare desk";
+    case "principal":
+      return "Leadership desk";
+    case "deputy_head":
+      return "Oversight desk";
+    case "bursar":
+      return "Finance desk";
+    default:
+      return "Staff desk";
+  }
+}
+
+function roleProfileHref(_role: WorkspaceRole | null) {
+  return "/app/profile";
 }

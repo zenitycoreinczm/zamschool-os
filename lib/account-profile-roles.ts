@@ -2,7 +2,6 @@ import type { KnownRole } from "@/lib/roles";
 
 /** Roles that may read/update their own profile and upload an avatar (school-scoped). */
 export const ACCOUNT_PROFILE_ROLES = [
-  "ADMIN",
   "PRINCIPAL",
   "DEPUTY_HEAD",
   "BURSAR",

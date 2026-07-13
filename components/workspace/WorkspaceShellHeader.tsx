@@ -12,6 +12,7 @@ import { ws } from "@/lib/workspace/design";
 import type { WorkspaceSearchResult } from "@/lib/workspace/search";
 import type { InboxApiMode } from "@/lib/inbox/center-client";
 import { cn } from "@/lib/utils";
+import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabel";
 
 type WorkspaceShellHeaderProps = {
   sidebarId: string;
@@ -37,6 +38,7 @@ type WorkspaceShellHeaderProps = {
   }) => void;
   onSignOut: () => void | Promise<void>;
   className?: string;
+  enabled?: boolean;
 };
 
 export function WorkspaceShellHeader({
@@ -59,6 +61,7 @@ export function WorkspaceShellHeader({
   initialUnread,
   onUnreadChangeAction,
   onSignOut,
+  enabled = true,
   className,
 }: WorkspaceShellHeaderProps) {
   const router = useRouter();
@@ -119,7 +122,13 @@ export function WorkspaceShellHeader({
         </button>
         <div className="hidden min-w-0 lg:block">
           <p className="truncate font-semibold text-slate-900">{schoolName}</p>
-          <p className="truncate text-xs text-slate-500">{yearTerm}</p>
+          <p className="truncate text-xs text-slate-500">
+            <AcademicContextLabel
+              value={yearTerm}
+              yearClassName="font-medium text-slate-600"
+              termClassName="text-slate-400"
+            />
+          </p>
         </div>
       </div>
 
@@ -136,6 +145,7 @@ export function WorkspaceShellHeader({
           notificationsHref={notificationsHref}
           initialUnread={initialUnread}
           onUnreadChangeAction={onUnreadChangeAction}
+          enabled={enabled}
         />
 
         <div className="hidden items-center gap-3 pl-2 sm:flex">

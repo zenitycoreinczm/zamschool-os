@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Loader2, Mail, MessageSquare, RefreshCw, Search } from "lucide-react";
+import { Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { Surface } from "@/components/workspace/Surface";
@@ -58,7 +58,7 @@ export default function TeacherInboxPage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center p-4 md:p-6">
         <section className="grid w-full max-w-lg place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-500" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-slate-500">
             Loading messages…
           </p>
@@ -111,8 +111,7 @@ export default function TeacherInboxPage() {
 
       {filtered.length === 0 ? (
         <Surface variant="dashed" className="py-16 text-center">
-          <Mail className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             {searchTerm ? "No messages match your search" : "No messages yet"}
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -143,10 +142,7 @@ export default function TeacherInboxPage() {
                     {msg.preview || "No preview"}
                   </p>
                   <div className="mt-2 flex items-center gap-3 text-xs text-slate-400">
-                    <span className="inline-flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" />
-                      {msg.senderName}
-                    </span>
+                    <span>{msg.senderName}</span>
                     {msg.senderRole && (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500">
                         {msg.senderRole}

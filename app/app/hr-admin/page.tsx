@@ -1,5 +1,5 @@
-import AdminRoleWorkspace from "@/components/admin-workspaces/AdminRoleWorkspace";
+import HrAdminDashboard from "@/components/role-workspaces/HrAdminDashboard";
 
 export default function HrAdminWorkspacePage() {
-  return <AdminRoleWorkspace role="hr_admin" />;
+  return <HrAdminDashboard />;
 }

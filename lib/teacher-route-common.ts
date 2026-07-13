@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { applyEdgeCacheHeaders, type EdgeCachePreset } from "@/lib/edge-cache";
+import { buildAcademicContextLabel as buildYearTermLabel } from "@/lib/live-schema-adapters";
 
 export { EDGE_CACHE, READ_MOSTLY_PRIVATE_CACHE } from "@/lib/edge-cache";
 
@@ -100,7 +101,15 @@ export function isVisibleToRole(targetRole: string | null | undefined, role: str
   return normalizedTargetRole === String(role || "").trim().toUpperCase();
 }
 
+/** Compose year + term for shell copy. Prefer year/term pair formatting. */
 export function buildAcademicContextLabel(parts: Array<string | null | undefined>) {
-  const normalized = parts.map((part) => String(part || "").trim()).filter(Boolean);
-  return normalized.length > 0 ? normalized.join(" - ") : "Academic Context";
+  const normalized = parts
+    .map((part) => String(part || "").trim())
+    .filter(Boolean);
+  if (normalized.length === 0) return "Academic Context";
+  if (normalized.length === 1) return normalized[0];
+  if (normalized.length === 2) {
+    return buildYearTermLabel(normalized[0], normalized[1]);
+  }
+  return normalized.join(" · ");
 }

@@ -3,7 +3,6 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BookOpen,
   Loader2,
   Pencil,
   Plus,
@@ -197,8 +196,7 @@ export default function AdminSubjectsPage() {
         eyebrow="Curriculum"
         title="Subjects"
         description="Create and manage the subject catalog. Teachers and assignments reference these subjects."
-        accent="emerald"
-        icon={BookOpen}
+        accent="slate"
         actions={
           <button
             type="button"
@@ -328,9 +326,6 @@ export default function AdminSubjectsPage() {
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-            <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 ring-1 ring-slate-200/90">
-              <BookOpen className="h-7 w-7" strokeWidth={1.5} aria-hidden />
-            </span>
             <p className="text-base font-semibold text-slate-800">
               {debouncedSearch ? "No subjects match" : "No subjects yet"}
             </p>
@@ -358,20 +353,15 @@ export default function AdminSubjectsPage() {
                   key={row.id}
                   className="flex flex-col gap-3 px-4 py-4 transition hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between sm:px-5"
                 >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/90">
-                      <BookOpen className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
-                        {row.name}
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                        <span>
-                          <span className="font-medium text-slate-600">Code:</span>{" "}
-                          {row.code || "—"}
-                        </span>
-                      </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
+                      {row.name}
+                    </p>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <span>
+                        <span className="font-medium text-slate-600">Code:</span>{" "}
+                        {row.code || "—"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2 sm:pl-4">

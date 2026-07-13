@@ -24,7 +24,7 @@ import {
   type AccountProfilePayload,
 } from "@/lib/account-profile-client";
 import { invalidateWorkspaceContext as clearModuleCache } from "@/lib/workspace/context-client";
-import { useWorkspaceContext } from "@/components/WorkspaceContextProvider";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { adminApiFetch } from "@/lib/admin-browser-api";
 import { getRemoteImageConfigMessage } from "@/lib/remote-image-hosts";
 import { getRoleDisplayLabel } from "@/lib/roles";
@@ -241,7 +241,14 @@ export function AccountProfilePage({
     accent === "teal" || accent === "indigo" ? accent : "sky";
 
   if (loading) {
-    return <PageLoading label="Loading profile" accent={loadingAccent} />;
+    return (
+      <PageLoading
+        label="Loading profile"
+        accent={loadingAccent}
+        mode="skeleton"
+        skeletonVariant="detail"
+      />
+    );
   }
 
   const teacher = profile?.teacher;
@@ -254,7 +261,6 @@ export function AccountProfilePage({
         eyebrow={eyebrow}
         title={pageTitle}
         description={intro}
-        icon={User}
         accent={accent}
         actions={
           <button

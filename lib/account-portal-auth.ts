@@ -5,6 +5,7 @@ import {
   getCachedActorSnapshot,
   setCachedActorSnapshot,
 } from "@/lib/redis/role-cache";
+import { NO_SCHOOL_LINKED_ERROR } from "@/lib/school-access-error";
 import {
   resolveVerifiedAuthUser,
   resolveVerifiedBearerUser,
@@ -51,7 +52,9 @@ export async function authenticateAccountPortalRequest(
   const cached = await getCachedActorSnapshot(user.id);
   let profileId = String(cached?.profileId || "").trim() || null;
   let schoolId = String(cached?.schoolId || "").trim();
+  let profileRole = normalizeRole(cached?.role);
 
+  // Always re-resolve when school is missing — never keep a null schoolId cache.
   if (!schoolId || !profileId) {
     const { data: profile, error: profileError } =
       await fetchProfileByIdentity<{
@@ -66,16 +69,20 @@ export async function authenticateAccountPortalRequest(
 
     profileId = String(profile?.id || "").trim() || profileId;
     schoolId = String(profile?.school_id || schoolId || "").trim();
-    void setCachedActorSnapshot(user.id, {
-      role: normalizeRole(profile?.role ?? cached?.role),
-      schoolId: schoolId || null,
-      profileId,
-    });
+    profileRole = normalizeRole(profile?.role ?? cached?.role);
+
+    if (profileId && (schoolId || profileRole === "SUPER_ADMIN")) {
+      void setCachedActorSnapshot(user.id, {
+        role: profileRole,
+        schoolId: schoolId || null,
+        profileId,
+      });
+    }
   }
   if (!schoolId) {
     return {
       response: NextResponse.json(
-        { error: "No school linked to this account" },
+        { error: NO_SCHOOL_LINKED_ERROR },
         { status: 403 },
       ),
     };

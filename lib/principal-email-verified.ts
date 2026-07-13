@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { redisGet, redisSet, redisDel } from "@/lib/redis/client";
 import { isRedisConfigured } from "@/lib/redis/client";
+import { tempEmailVerifiedKey } from "@/lib/redis/keys";
 
 /**
  * Single source of truth for "the user's email is verified" is
@@ -10,7 +11,6 @@ import { isRedisConfigured } from "@/lib/redis/client";
 
 /** How long we trust the post-OTP "verified" attestation in Redis. */
 const OTP_VERIFIED_ATTEST_TTL_SEC = 60 * 60; // 1h
-const OTP_VERIFIED_KEY_PREFIX = "tmp:email-verified:";
 
 /** Returns true when `auth.users.email_confirmed_at` is set for `userId`. */
 export async function isPrincipalEmailVerified(
@@ -58,7 +58,7 @@ export async function markOtpVerificationAttested(
 ): Promise<void> {
   if (!isRedisConfigured()) return;
   await redisSet(
-    `${OTP_VERIFIED_KEY_PREFIX}${userId}`,
+    tempEmailVerifiedKey(userId),
     new Date().toISOString(),
     ttlSeconds,
   );
@@ -69,7 +69,7 @@ export async function hasOtpVerificationAttestation(
   userId: string,
 ): Promise<boolean> {
   if (!isRedisConfigured()) return false;
-  const value = await redisGet(`${OTP_VERIFIED_KEY_PREFIX}${userId}`);
+  const value = await redisGet(tempEmailVerifiedKey(userId));
   return Boolean(value);
 }
 
@@ -78,5 +78,5 @@ export async function consumeOtpVerificationAttestation(
   userId: string,
 ): Promise<void> {
   if (!isRedisConfigured()) return;
-  await redisDel(`${OTP_VERIFIED_KEY_PREFIX}${userId}`);
+  await redisDel(tempEmailVerifiedKey(userId));
 }

@@ -3,13 +3,13 @@ import { AccountSettingsPage } from "@/components/account/AccountSettingsPage";
 export default function PrincipalSettingsPage() {
   return (
     <AccountSettingsPage
-      pageTitle="Settings"
-      intro="Session details, notification preferences, password controls, and multi-factor authentication for your head-teacher workspace account."
-      accent="indigo"
+      pageTitle="Account settings"
+      intro="Manage your account, notifications, password, and two-factor authentication for your Leadership desk."
+      accent="slate"
       preferencesStorageKey="principal-workspace-settings"
-      sessionTitle="Head Teacher session"
-      sessionBody="Signed-in head teacher account on this device."
-      eyebrow="Head Teacher workspace"
+      sessionTitle="Head Teacher account"
+      sessionBody="Email, role, and school for your Leadership desk account."
+      eyebrow="Leadership desk"
     />
   );
 }

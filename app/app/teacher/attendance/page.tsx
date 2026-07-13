@@ -13,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { formatAttendanceStatusLabel } from "@/lib/attendance/status";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 
 type LessonRoster = {
   id: string;
@@ -214,20 +215,19 @@ export default function TeacherAttendancePage() {
             {exceptionCount > 0 && ` · ${exceptionCount} exceptions`}
           </p>
         </div>
-        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm shadow-sm">
-          <CalendarDays className="h-4 w-4 text-slate-400" />
-          <input
-            type="date"
+        <div className="w-[180px]">
+          <DateOnlyPicker
             value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="border-0 bg-transparent p-0 text-sm font-medium text-slate-700 outline-none"
+            onChange={setDate}
+            label="Attendance date"
+            accent="slate"
           />
-        </label>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 py-16 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
           Loading lessons and rosters…
         </div>
       ) : lessons.length === 0 ? (

@@ -29,6 +29,10 @@ import {
   validateSchoolAccessCode,
   consumeSchoolAccessCode,
 } from "@/lib/school-access-code";
+import {
+  normalizeOptionalZambianPhone,
+  zambianPhoneValidationError,
+} from "@/lib/zambia-localization";
 
 function readBearerToken(req: Request) {
   const header =
@@ -122,6 +126,12 @@ export async function POST(req: Request) {
     const headTeacherName = String(
       body.headTeacherName || body.adminName || "",
     ).trim();
+
+    const phoneError = zambianPhoneValidationError(phone);
+    if (phoneError) {
+      return NextResponse.json({ error: phoneError }, { status: 400 });
+    }
+    const normalizedPhone = normalizeOptionalZambianPhone(phone);
 
     if (!email || !schoolName || !schoolCode || !headTeacherName) {
       return NextResponse.json(
@@ -262,7 +272,7 @@ export async function POST(req: Request) {
       .insert({
         name: schoolName,
         code: finalCode,
-        phone: phone || null,
+        phone: normalizedPhone,
         email,
         address: address || null,
         logo_url: logoUrl || null,
@@ -295,7 +305,7 @@ export async function POST(req: Request) {
         headTeacherName.split(" ").slice(0, -1).join(" ") || headTeacherName,
       last_name: headTeacherName.split(" ").slice(-1).join(" ") || "",
       email,
-      phone,
+      phone: normalizedPhone,
       auth_user_id: userId,
     };
 
@@ -317,14 +327,12 @@ export async function POST(req: Request) {
         ).error;
 
     if (profileError) {
-      console.error(
-        "Profile creation error details:",
-        JSON.stringify(profileError, null, 2),
-      );
+      const { logServerError } = await import("@/lib/safe-error");
+      logServerError("register-school.profile", profileError, {
+        schoolId: school.id,
+      });
       await supabaseAdmin.from("schools").delete().eq("id", school.id);
-      throw new Error(
-        profileError.message || "Failed to create Head Teacher profile",
-      );
+      throw new Error("Failed to create Head Teacher profile");
     }
 
     await invalidateActorCaches(userId);
@@ -355,23 +363,14 @@ export async function POST(req: Request) {
       initialization,
     });
   } catch (error: unknown) {
-    // Log the full error object — Supabase/PostgREST errors carry useful
-    // fields (code, details, hint) that safeErrorMessage cannot surface.
-    console.error("Registration API error:", {
-      message: safeErrorMessage(error, "Unknown registration error"),
-      code: (error as { code?: string } | null)?.code,
-      details: (error as { details?: string } | null)?.details,
-      hint: (error as { hint?: string } | null)?.hint,
-      stack: error instanceof Error ? error.stack : undefined,
-      raw: error,
-    });
+    // Server log only — never echo SQL / schema / stack to the client.
+    const { logServerError, publicErrorBody } = await import("@/lib/safe-error");
+    logServerError("register-school", error);
     return NextResponse.json(
-      {
-        error: safeErrorMessage(
-          error,
-          "An unexpected error occurred during registration",
-        ),
-      },
+      publicErrorBody(
+        error,
+        "An unexpected error occurred during registration",
+      ),
       { status: 500 },
     );
   }

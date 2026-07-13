@@ -9,7 +9,6 @@ import {
   KeyRound,
   Loader2,
   Mail,
-  ShieldCheck,
   UserCheck,
   UserPlus,
   X,
@@ -19,7 +18,7 @@ import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { panelAccentStyles } from "@/components/workspace/heroAccents";
 import {
-  SCHOOL_ADMINISTRATOR_INVITE_ROLE,
+  DEFAULT_STAFF_INVITE_ROLE,
   STAFF_INVITE_ROLE_OPTIONS,
   getStaffInviteRoleLabel,
   type StaffInviteRoleOption,
@@ -54,7 +53,7 @@ const EMPTY_FORM: InviteForm = {
   last_name: "",
   email: "",
   phone: "",
-  role: SCHOOL_ADMINISTRATOR_INVITE_ROLE,
+  role: DEFAULT_STAFF_INVITE_ROLE,
   department: "",
   position: "",
 };
@@ -95,12 +94,12 @@ export function StaffInvitePanel({
   roleOptions = STAFF_INVITE_ROLE_OPTIONS,
   eyebrow = "Staff access",
   title = "Staff & leadership accounts",
-  description = "Create Deputy Head, Bursar, School Administrator, ICT, HR, and other office logins instantly. Each person gets a temporary password — share it in person or by phone. They will sign in and change it on first login. For students, parents, and classroom teachers, use the tabs below instead.",
-  primaryInviteLabel = "Invite School Administrator",
+  description = "Create Deputy Head, Bursar, Registrar, ICT, HR, and other office staff logins instantly. Head Teacher is only created when the school is registered. Each person gets a temporary password — share it in person or by phone. They will sign in and change it on first login. For students, parents, and classroom teachers, use the Users tabs below instead.",
+  primaryInviteLabel = "Invite Deputy Head",
   secondaryInviteLabel = "Invite other staff",
   accent = "emerald",
 }: StaffInvitePanelProps = {}) {
-  const defaultRole = roleOptions[0]?.value || SCHOOL_ADMINISTRATOR_INVITE_ROLE;
+  const defaultRole = roleOptions[0]?.value || DEFAULT_STAFF_INVITE_ROLE;
   const palette = panelAccentStyles[accent];
   const [expandedInternal, setExpandedInternal] = useState(true);
   const expanded = expandedProp ?? expandedInternal;
@@ -254,7 +253,7 @@ export function StaffInvitePanel({
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-5 border-b border-workspace-border px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="ws-eyebrow text-emerald-600">{eyebrow}</p>
+          <p className="ws-eyebrow text-slate-600">{eyebrow}</p>
           <h2 className="mt-1.5 text-lg font-bold tracking-tight text-slate-900">
             {title}
           </h2>
@@ -267,9 +266,8 @@ export function StaffInvitePanel({
           <button
             type="button"
             onClick={openSchoolAdministratorInvite}
-            className="inline-flex items-center gap-2 rounded-workspace-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 rounded-workspace-md bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-hover active:scale-[0.98]"
           >
-            <ShieldCheck className="h-4 w-4" />
             {primaryInviteLabel}
           </button>
 
@@ -278,7 +276,6 @@ export function StaffInvitePanel({
             onClick={() => openStaffInvite()}
             className="inline-flex items-center gap-2 rounded-workspace-md border border-workspace-border bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-workspace-xs transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
           >
-            <UserPlus className="h-4 w-4" />
             {secondaryInviteLabel}
           </button>
 
@@ -308,17 +305,17 @@ export function StaffInvitePanel({
         <div className="space-y-6 px-6 py-5">
           {/* ─── Success banner ──────────────────────────────────────── */}
           {issued && (
-            <div className="rounded-workspace-lg border border-emerald-200 bg-emerald-50/70 px-5 py-4 shadow-sm">
+            <div className="rounded-workspace-lg border border-slate-200 bg-slate-50/70 px-5 py-4 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                     <UserCheck className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-emerald-900">
+                    <p className="text-sm font-semibold text-slate-900">
                       Staff account created
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-emerald-800">
+                    <p className="mt-1 text-sm leading-relaxed text-slate-800">
                       <span className="font-semibold">
                         {getStaffInviteRoleLabel(issued.role)}
                       </span>{" "}
@@ -488,8 +485,8 @@ export function StaffInvitePanel({
                         }))
                       }
                       placeholder={
-                        form.role === SCHOOL_ADMINISTRATOR_INVITE_ROLE
-                          ? "admin.office@school.com"
+                        form.role === "deputy_head"
+                          ? "deputy.head@school.com"
                           : "staff@school.com"
                       }
                       className="w-full rounded-workspace-md border border-workspace-border bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 shadow-workspace-xs outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100"
@@ -582,7 +579,7 @@ export function StaffInvitePanel({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-workspace-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 rounded-workspace-md bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -615,7 +612,7 @@ export function StaffInvitePanel({
               <button
                 type="button"
                 onClick={() => void loadInvitations()}
-                className="rounded-workspace-md px-3 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-700 active:scale-[0.98]"
+                className="rounded-workspace-md px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-700 active:scale-[0.98]"
               >
                 Refresh
               </button>
@@ -623,7 +620,7 @@ export function StaffInvitePanel({
 
             {loadingList ? (
               <div className="flex items-center gap-3 rounded-workspace-lg border border-dashed border-workspace-border px-5 py-8 text-sm text-workspace-muted">
-                <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+                <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
                 Loading invitations…
               </div>
             ) : invitations.length === 0 ? (
@@ -634,7 +631,7 @@ export function StaffInvitePanel({
                 <p className="max-w-sm text-sm text-workspace-muted">
                   No staff accounts yet. Use{" "}
                   <span className="font-semibold text-slate-600">
-                    Invite School Administrator
+                    Invite Deputy Head
                   </span>{" "}
                   or{" "}
                   <span className="font-semibold text-slate-600">

@@ -9,16 +9,9 @@ export type AdminStatCard = {
   label: string;
   value: string | number;
   hint?: string;
-  icon: ComponentType<{ className?: string }>;
+  /** @deprecated Decorative icons removed from hero stats */
+  icon?: ComponentType<{ className?: string }>;
   tone?: "sky" | "violet" | "amber" | "emerald" | "slate";
-};
-
-const toneStyles = {
-  sky: "bg-sky-50 text-sky-700 ring-sky-100",
-  violet: "bg-violet-50 text-violet-700 ring-violet-100",
-  amber: "bg-amber-50 text-amber-700 ring-amber-100",
-  emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  slate: "bg-slate-100 text-slate-700 ring-slate-200",
 };
 
 type AdminPageHeroProps = {
@@ -36,9 +29,12 @@ export function AdminPageHero({
   description,
   stats,
   actions,
-  accent = "sky",
+  /** @deprecated Staff chrome is monochrome slate; accent no longer changes the hero. */
+  accent: _accent = "slate",
 }: AdminPageHeroProps) {
-  const palette = heroAccentStyles[accent];
+  void _accent;
+  // One workspace chrome for every desk / module (no rainbow heroes).
+  const palette = heroAccentStyles.slate;
 
   return (
     <div
@@ -80,36 +76,26 @@ export function AdminPageHero({
 
       {stats && stats.length > 0 ? (
         <div className="relative grid grid-cols-2 gap-2 border-t border-white/10 bg-black/15 p-3 backdrop-blur-md md:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-            const tone = toneStyles[stat.tone || "sky"];
-            return (
-              <div
-                key={stat.label}
-                className={cn(
-                  "rounded-workspace-lg border px-3 py-2.5 backdrop-blur-sm transition-colors duration-[var(--duration-workspace-fast)] hover:bg-white/[0.08]",
-                  palette.statBorder,
-                  "bg-white/[0.04]"
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-workspace-md ring-1",
-                      tone
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="min-w-0">
-                    <p className="ws-tabular text-lg font-bold leading-none">{stat.value}</p>
-                    <p className="truncate text-xs font-medium text-slate-200">{stat.label}</p>
-                  </span>
-                </div>
-                {stat.hint ? <p className="mt-0.5 text-[11px] text-slate-400">{stat.hint}</p> : null}
-              </div>
-            );
-          })}
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className={cn(
+                "rounded-workspace-lg border px-3 py-2.5 backdrop-blur-sm transition-colors duration-[var(--duration-workspace-fast)] hover:bg-white/[0.08]",
+                palette.statBorder,
+                "bg-white/[0.04]",
+              )}
+            >
+              <p className="ws-tabular text-lg font-bold leading-none">
+                {stat.value}
+              </p>
+              <p className="mt-1 truncate text-xs font-medium text-slate-200">
+                {stat.label}
+              </p>
+              {stat.hint ? (
+                <p className="mt-0.5 text-[11px] text-slate-400">{stat.hint}</p>
+              ) : null}
+            </div>
+          ))}
         </div>
       ) : null}
     </div>

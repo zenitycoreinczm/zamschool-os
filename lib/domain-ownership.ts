@@ -61,10 +61,6 @@ export function canRoleAccessDomain(
 
   if (normalized === "SUPER_ADMIN") return true;
 
-  // Legacy school administrator remains an operational fallback while newer
-  // domain-specific roles are rolled out across existing schools.
-  if (normalized === "ADMIN") return true;
-
   if (action === "read") {
     return (
       normalized === "PRINCIPAL" ||
@@ -86,8 +82,12 @@ export function canRoleAccessDomain(
     );
   }
 
-  // Create/update/delete are domain-owner operations. Head Teacher should
-  // approve/publish through workflows, not perform daily operational entry.
+  // Create/update/delete are domain-owner operations. Head Teacher may also
+  // write people structure (e.g. departments) when HR is not yet on staff.
+  if (normalized === "PRINCIPAL" && domain === "people") {
+    return true;
+  }
+
   return domainOwnsRole(domain, normalized);
 }
 

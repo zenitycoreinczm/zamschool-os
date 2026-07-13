@@ -13,6 +13,7 @@ import { useListQuery } from "@/lib/use-list-query";
 import { adminDelete, adminGet, adminPost, adminRequest } from "@/lib/admin-route-client";
 import { getDisplayName } from "@/lib/profile-utils";
 import { formatDate } from "@/lib/utils";
+import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 
 const columns = [
   { header: "Title", accessor: "title" },
@@ -253,7 +254,7 @@ export default function AdminAssignmentsPage() {
         className="flex items-center justify-center gap-3 p-10 text-sm text-slate-500"
         as="div"
       >
-        <Loader2 className="h-5 w-5 animate-spin text-sky-600" />
+        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
         <span>Loading assignments...</span>
       </Surface>
     );
@@ -339,11 +340,11 @@ export default function AdminAssignmentsPage() {
                 </option>
               ))}
             </select>
-            <input
-              type="date"
-              className="px-3 py-2 rounded-lg border border-slate-200 text-sm"
+            <DateOnlyPicker
               value={form.due_date}
-              onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
+              onChange={(date) => setForm((f) => ({ ...f, due_date: date }))}
+              label="Due date"
+              accent="slate"
             />
             <input
               className="px-3 py-2 rounded-lg border border-slate-200 text-sm"

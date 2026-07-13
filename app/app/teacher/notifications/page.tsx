@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, BellOff, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { formatDate, cn } from "@/lib/utils";
@@ -11,9 +11,33 @@ type NotificationRow = {
   title: string;
   body: string | null;
   category: string | null;
-  createdAt: string;
+  createdAt: string | null;
   isRead: boolean;
 };
+
+function normalizeNotificationRow(row: Record<string, unknown>): NotificationRow {
+  const createdAt =
+    (typeof row.createdAt === "string" && row.createdAt) ||
+    (typeof row.created_at === "string" && row.created_at) ||
+    null;
+  const body =
+    (typeof row.body === "string" && row.body) ||
+    (typeof row.message === "string" && row.message) ||
+    null;
+  return {
+    id: String(row.id ?? ""),
+    title: String(row.title || "Notification"),
+    body,
+    category:
+      typeof row.category === "string"
+        ? row.category
+        : typeof row.type === "string"
+          ? row.type
+          : null,
+    createdAt,
+    isRead: Boolean(row.isRead ?? row.is_read),
+  };
+}
 
 export default function TeacherNotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
@@ -23,9 +47,15 @@ export default function TeacherNotificationsPage() {
     try {
       const body = await adminApiJson<{
         success: boolean;
-        data: NotificationRow[];
+        data: unknown[];
       }>("/api/teacher/notifications");
-      setNotifications(Array.isArray(body.data) ? body.data : []);
+      setNotifications(
+        Array.isArray(body.data)
+          ? body.data.map((row) =>
+              normalizeNotificationRow((row || {}) as Record<string, unknown>),
+            )
+          : [],
+      );
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to load notifications";
@@ -45,7 +75,7 @@ export default function TeacherNotificationsPage() {
     return (
       <div className="flex min-h-[40vh] items-center justify-center p-4 md:p-6">
         <section className="grid w-full max-w-lg place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-amber-500" />
+          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm font-medium text-slate-500">
             Loading notifications…
           </p>
@@ -84,8 +114,7 @@ export default function TeacherNotificationsPage() {
 
       {notifications.length === 0 ? (
         <section className="rounded-3xl border border-dashed border-slate-200 bg-white py-16 text-center shadow-sm">
-          <BellOff className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+          <p className="text-sm font-medium text-slate-600">
             No notifications yet
           </p>
           <p className="mt-1 text-xs text-slate-400">
@@ -105,44 +134,24 @@ export default function TeacherNotificationsPage() {
                   : "border-slate-200",
               )}
             >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "mt-0.5 grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg",
-                    notif.isRead
-                      ? "bg-slate-100 text-slate-400"
-                      : "bg-amber-100 text-amber-600",
-                  )}
-                >
-                  {notif.isRead ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <Bell className="h-4 w-4" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      "font-semibold",
-                      notif.isRead ? "text-slate-700" : "text-slate-900",
-                    )}
-                  >
-                    {notif.title}
-                  </p>
-                  {notif.body && (
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      {notif.body}
-                    </p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
-                    <span>{formatDate(notif.createdAt)}</span>
-                    {notif.category && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500">
-                        {notif.category}
-                      </span>
-                    )}
-                  </div>
-                </div>
+              <p
+                className={cn(
+                  "font-semibold",
+                  notif.isRead ? "text-slate-700" : "text-slate-900",
+                )}
+              >
+                {notif.title}
+              </p>
+              {notif.body ? (
+                <p className="mt-0.5 text-sm text-slate-500">{notif.body}</p>
+              ) : null}
+              <div className="mt-2 flex items-center gap-2 text-xs text-slate-400">
+                <span>{formatDate(notif.createdAt)}</span>
+                {notif.category ? (
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-500">
+                    {notif.category}
+                  </span>
+                ) : null}
               </div>
             </div>
           ))}

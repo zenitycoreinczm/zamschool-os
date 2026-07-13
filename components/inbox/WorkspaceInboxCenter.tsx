@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   fetchInboxPreview,
   fetchUnreadSummary,
+  formatRelativeTime,
   formatUnreadBadgeCount,
   markMessageRead,
   markNotificationRead,
@@ -18,9 +19,10 @@ import {
 } from "@/lib/inbox/center-client";
 import { INBOX_REFRESH_EVENT, dispatchInboxRefresh } from "@/lib/inbox/events";
 import { ws } from "@/lib/workspace/design";
+import { cn } from "@/lib/utils";
 
 type PanelKey = "messages" | "notifications" | null;
-type DrawerKind = "message" | "notification" | null;
+type DetailKind = "message" | "notification" | null;
 
 type WorkspaceInboxCenterProps = {
   apiMode?: InboxApiMode;
@@ -53,7 +55,7 @@ export function WorkspaceInboxCenter({
     InboxNotificationPreview[]
   >([]);
   const [panel, setPanel] = useState<PanelKey>(null);
-  const [drawerKind, setDrawerKind] = useState<DrawerKind>(null);
+  const [detailKind, setDetailKind] = useState<DetailKind>(null);
   const [activeMessage, setActiveMessage] =
     useState<InboxMessagePreview | null>(null);
   const [activeNotification, setActiveNotification] =
@@ -63,9 +65,6 @@ export function WorkspaceInboxCenter({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const drawerRef = useRef<HTMLDivElement | null>(null);
-  const lastCountRefreshRef = useRef<number>(0);
-  const COUNT_REFRESH_COOLDOWN_MS = 10_000;
 
   const publishUnread = useCallback(
     (next: { messages: number; notifications: number }) => {
@@ -78,15 +77,8 @@ export function WorkspaceInboxCenter({
   const refreshCounts = useCallback(
     async (force = false) => {
       if (!enabled) return;
-      const now = Date.now();
-      if (
-        !force &&
-        now - lastCountRefreshRef.current < COUNT_REFRESH_COOLDOWN_MS
-      )
-        return;
-      lastCountRefreshRef.current = now;
       try {
-        const summary = await fetchUnreadSummary(apiMode);
+        const summary = await fetchUnreadSummary(apiMode, { force });
         publishUnread(summary);
       } catch {
         // Keep last known counts on transient failures.
@@ -95,159 +87,108 @@ export function WorkspaceInboxCenter({
     [apiMode, enabled, publishUnread],
   );
 
-  const refreshPreview = useCallback(async () => {
-    if (!enabled) return;
-    setLoadingPreview(true);
-    try {
-      const preview = await fetchInboxPreview(apiMode, 8);
-      setPreviewMessages(preview.messages);
-      setPreviewNotifications(preview.notifications);
-    } catch {
-      setPreviewMessages([]);
-      setPreviewNotifications([]);
-    } finally {
-      setLoadingPreview(false);
-    }
-  }, [apiMode, enabled]);
+  const refreshPreview = useCallback(
+    async (force = false) => {
+      if (!enabled) return;
+      setLoadingPreview(true);
+      try {
+        const preview = await fetchInboxPreview(apiMode, 8, { force });
+        setPreviewMessages(preview.messages);
+        setPreviewNotifications(preview.notifications);
+      } catch {
+        setPreviewMessages([]);
+        setPreviewNotifications([]);
+      } finally {
+        setLoadingPreview(false);
+      }
+    },
+    [apiMode, enabled],
+  );
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([refreshCounts(), refreshPreview()]);
-  }, [refreshCounts, refreshPreview]);
+  const refreshAll = useCallback(
+    async (force = true) => {
+      await Promise.all([refreshCounts(force), refreshPreview(force)]);
+    },
+    [refreshCounts, refreshPreview],
+  );
 
   useEffect(() => {
     if (!enabled) return;
-    void refreshAll();
 
-    const handleFocus = () => void refreshCounts();
+    // Seed from shell summary when available; otherwise fetch once.
+    if (!initialUnread) {
+      void refreshCounts(true);
+    }
+
+    const handleFocus = () => void refreshCounts(true);
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        void refreshCounts();
+        void refreshCounts(true);
       }
     };
-    const handleInboxRefresh = () => void refreshAll();
+    const handleInboxRefresh = () => void refreshAll(true);
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener(INBOX_REFRESH_EVENT, handleInboxRefresh);
+
+    // Light polling so new messages/events appear without a full reload.
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshCounts(true);
+      }
+    }, 45_000);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener(INBOX_REFRESH_EVENT, handleInboxRefresh);
+      window.clearInterval(pollId);
     };
-  }, [enabled, refreshAll, refreshCounts]);
+  }, [enabled, initialUnread, refreshAll, refreshCounts]);
 
   useEffect(() => {
     if (initialUnread) {
       publishUnread(initialUnread);
     }
-    // Track individual counts to avoid re-firing on object reference changes
   }, [initialUnread?.messages, initialUnread?.notifications, publishUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Click outside closes the dropdown panel (not the detail modal — that has its own backdrop).
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+      if (!panel) return;
+      const target = event.target as Node;
+      if (rootRef.current && !rootRef.current.contains(target)) {
         setPanel(null);
       }
     };
-
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, []);
+  }, [panel]);
 
   useEffect(() => {
     if (!panel) return;
-    void refreshPreview();
-  }, [panel, refreshPreview]);
+    void refreshPreview(true);
+    void refreshCounts(true);
+  }, [panel, refreshPreview, refreshCounts]);
 
-  // Escape + focus trap for the popup panel
   useEffect(() => {
-    if (!panel || !panelRef.current) return;
-
-    const panelEl = panelRef.current;
-
+    if (!panel && !detailKind) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setPanel(null);
+      if (event.key !== "Escape") return;
+      if (detailKind) {
+        closeDetail();
         return;
       }
-      if (event.key !== "Tab") return;
-
-      const focusable = panelEl.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey) {
-        if (document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
+      setPanel(null);
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [panel]);
+  }, [panel, detailKind]);
 
-  // Escape + focus trap for the drawer
-  useEffect(() => {
-    if (!drawerKind || !drawerRef.current) return;
-
-    const drawerEl = drawerRef.current;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setDrawerKind(null);
-        setActiveMessage(null);
-        setActiveNotification(null);
-        setReplyBody("");
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = drawerEl.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey) {
-        if (document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() => {
-      const firstFocusable = drawerEl.querySelector<HTMLElement>(
-        'a[href], button:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      firstFocusable?.focus();
-    });
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [drawerKind]);
-
-  const openMessageDrawer = async (message: InboxMessagePreview) => {
+  const openMessageDetail = (message: InboxMessagePreview) => {
+    // Open immediately — don't wait on mark-read network.
     setPanel(null);
-    setDrawerKind("message");
+    setDetailKind("message");
     setActiveMessage(message);
     setActiveNotification(null);
     setReplyBody("");
@@ -255,27 +196,25 @@ export function WorkspaceInboxCenter({
     setPreviewMessages((prev) => prev.filter((row) => row.id !== message.id));
     setUnread((prev) => {
       const next = {
-        messages: Math.max(0, prev.messages - 1),
+        messages: Math.max(0, prev.messages - (message.is_read ? 0 : 1)),
         notifications: prev.notifications,
       };
       onUnreadChangeAction?.(next);
       return next;
     });
 
-    try {
-      await markMessageRead(apiMode, message.id);
-      dispatchInboxRefresh();
-      await refreshCounts(true);
-    } catch {
-      // Drawer still opens; counts reconcile on next refresh.
-    }
+    void markMessageRead(apiMode, message.id)
+      .then(() => {
+        dispatchInboxRefresh();
+      })
+      .catch(() => {
+        // Detail still open; counts reconcile on next poll.
+      });
   };
 
-  const openNotificationDrawer = async (
-    notification: InboxNotificationPreview,
-  ) => {
+  const openNotificationDetail = (notification: InboxNotificationPreview) => {
     setPanel(null);
-    setDrawerKind("notification");
+    setDetailKind("notification");
     setActiveNotification(notification);
     setActiveMessage(null);
 
@@ -291,17 +230,17 @@ export function WorkspaceInboxCenter({
       return next;
     });
 
-    try {
-      await markNotificationRead(apiMode, notification.id);
-      dispatchInboxRefresh();
-      await refreshCounts(true);
-    } catch {
-      // Non-blocking
-    }
+    void markNotificationRead(apiMode, notification.id)
+      .then(() => {
+        dispatchInboxRefresh();
+      })
+      .catch(() => {
+        // Non-blocking
+      });
   };
 
-  const closeDrawer = () => {
-    setDrawerKind(null);
+  const closeDetail = () => {
+    setDetailKind(null);
     setActiveMessage(null);
     setActiveNotification(null);
     setReplyBody("");
@@ -346,15 +285,24 @@ export function WorkspaceInboxCenter({
     <>
       <div
         ref={rootRef}
-        className={`flex items-center gap-2 ${ws.headerActions}`}
+        className={cn("flex items-center gap-2", ws.headerActions)}
       >
         <button
           type="button"
-          aria-label="Messages"
+          aria-label={
+            unread.messages > 0
+              ? `Messages, ${formatUnreadBadgeCount(unread.messages)} unread`
+              : "Messages"
+          }
           aria-expanded={panel === "messages"}
           aria-controls={panel === "messages" ? panelId : undefined}
           onClick={() => togglePanel("messages")}
-          className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 md:h-10 md:w-10"
+          className={cn(
+            "relative flex h-9 w-9 items-center justify-center rounded-full border bg-white/90 text-slate-500 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 md:h-10 md:w-10",
+            panel === "messages"
+              ? "border-sky-300 text-sky-700 ring-2 ring-sky-100"
+              : "border-slate-200",
+          )}
         >
           <MessageSquare className="h-4 w-4" />
           {unread.messages > 0 ? (
@@ -366,11 +314,20 @@ export function WorkspaceInboxCenter({
 
         <button
           type="button"
-          aria-label="Notifications"
+          aria-label={
+            unread.notifications > 0
+              ? `Notifications, ${formatUnreadBadgeCount(unread.notifications)} unread`
+              : "Notifications"
+          }
           aria-expanded={panel === "notifications"}
           aria-controls={panel === "notifications" ? panelId : undefined}
           onClick={() => togglePanel("notifications")}
-          className="relative flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-500 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 md:h-10 md:w-10"
+          className={cn(
+            "relative flex h-9 w-9 items-center justify-center rounded-full border bg-white/90 text-slate-500 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 md:h-10 md:w-10",
+            panel === "notifications"
+              ? "border-sky-300 text-sky-700 ring-2 ring-sky-100"
+              : "border-slate-200",
+          )}
         >
           <Bell className="h-4 w-4" />
           {unread.notifications > 0 ? (
@@ -385,73 +342,94 @@ export function WorkspaceInboxCenter({
             ref={panelRef}
             id={panelId}
             role="dialog"
-            aria-modal="true"
-            aria-label={panel === "messages" ? "Messages inbox" : "Notifications"}
-            className={`absolute right-0 top-12 w-[min(92vw,22rem)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-workspace-lg ${ws.popover}`}
+            aria-label={
+              panel === "messages" ? "Messages inbox" : "Notifications"
+            }
+            className={cn(
+              "absolute right-0 top-12 z-50 w-[min(92vw,22rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70",
+              ws.popover,
+            )}
           >
-            <div className="border-b border-slate-100 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                {panel === "messages" ? "Inbox" : "Alerts"}
-              </p>
-              <h3 className="mt-1 text-base font-semibold text-slate-900">
-                {panel === "messages"
-                  ? "Unread messages"
-                  : "Unread notifications"}
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {panel === "messages"
-                  ? `${formatUnreadBadgeCount(unread.messages)} waiting`
-                  : `${formatUnreadBadgeCount(unread.notifications)} waiting`}
-              </p>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-semibold text-slate-900">
+                  {panel === "messages" ? "Messages" : "Notifications"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {panel === "messages"
+                    ? `${formatUnreadBadgeCount(unread.messages)} unread`
+                    : `${formatUnreadBadgeCount(unread.notifications)} unread`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPanel(null)}
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className="max-h-72 overflow-y-auto p-2">
+            <div className="max-h-80 overflow-y-auto p-1.5">
               {loadingPreview ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-400">
+                <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-400">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading...
+                  Loading…
                 </div>
               ) : panel === "messages" ? (
                 previewMessages.length === 0 ? (
-                  <p className="rounded-2xl px-3 py-6 text-center text-sm text-slate-500">
-                    No unread messages.
-                  </p>
+                  <EmptyState
+                    title="No unread messages"
+                    hint="New messages will show up here."
+                  />
                 ) : (
                   previewMessages.map((message) => (
                     <button
                       key={message.id}
                       type="button"
-                      onClick={() => void openMessageDrawer(message)}
-                      className="mb-1 flex w-full flex-col rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                      onClick={() => openMessageDetail(message)}
+                      className="mb-0.5 flex w-full flex-col rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
                     >
-                      <p className="text-sm font-semibold text-slate-800">
-                        {message.senderLabel}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="truncate text-sm font-semibold text-slate-800">
+                          {message.senderLabel}
+                        </p>
+                        <span className="shrink-0 text-[11px] text-slate-400">
+                          {formatRelativeTime(message.created_at)}
+                        </span>
+                      </div>
                       <p className="mt-0.5 truncate text-xs font-medium text-slate-600">
                         {message.subject || "Message"}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                         {message.body}
                       </p>
                     </button>
                   ))
                 )
               ) : previewNotifications.length === 0 ? (
-                <p className="rounded-2xl px-3 py-6 text-center text-sm text-slate-500">
-                  No unread notifications.
-                </p>
+                <EmptyState
+                  title="No unread notifications"
+                  hint="Events and alerts will show up here."
+                />
               ) : (
                 previewNotifications.map((notification) => (
                   <button
                     key={notification.id}
                     type="button"
-                    onClick={() => void openNotificationDrawer(notification)}
-                    className="mb-1 flex w-full flex-col rounded-2xl px-3 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                    onClick={() => openNotificationDetail(notification)}
+                    className="mb-0.5 flex w-full flex-col rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
                   >
-                    <p className="text-sm font-semibold text-slate-800">
-                      {notification.title}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {notification.title}
+                      </p>
+                      <span className="shrink-0 text-[11px] text-slate-400">
+                        {formatRelativeTime(notification.created_at)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                       {notification.message}
                     </p>
                   </button>
@@ -459,11 +437,11 @@ export function WorkspaceInboxCenter({
               )}
             </div>
 
-            <div className="border-t border-slate-100 p-3">
+            <div className="border-t border-slate-100 p-2">
               <Link
                 href={panel === "messages" ? messagesHref : notificationsHref}
                 onClick={() => setPanel(null)}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                className="inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
               >
                 {panel === "messages"
                   ? "Open full inbox"
@@ -474,114 +452,134 @@ export function WorkspaceInboxCenter({
         ) : null}
       </div>
 
-      {drawerKind ? (
-        <div className="fixed inset-0 z-[100] flex justify-end">
+      {/* Compact centered detail — click outside (backdrop) to dismiss */}
+      {detailKind ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+          role="presentation"
+        >
           <button
             type="button"
-            aria-label="Close message panel"
-            className="absolute inset-0 bg-slate-900/30"
-            onClick={closeDrawer}
+            aria-label="Close"
+            className="absolute inset-0 bg-slate-900/35 backdrop-blur-[1px] transition-opacity"
+            onClick={closeDetail}
           />
-          <aside
-            ref={drawerRef}
+          <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="inbox-drawer-title"
-            className="relative flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-workspace-lg"
+            aria-labelledby="inbox-detail-title"
+            className="relative z-10 flex max-h-[min(85vh,34rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15"
+            onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {drawerKind === "message"
-                    ? "Quick read & reply"
-                    : "Notification"}
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  {detailKind === "message" ? "Message" : "Notification"}
                 </p>
-                <h2 id="inbox-drawer-title" className="mt-1 truncate text-lg font-semibold text-slate-900">
-                  {drawerKind === "message"
+                <h2
+                  id="inbox-detail-title"
+                  className="mt-0.5 line-clamp-2 text-base font-semibold text-slate-900"
+                >
+                  {detailKind === "message"
                     ? activeMessage?.subject || "Message"
                     : activeNotification?.title || "Notification"}
                 </h2>
-                {drawerKind === "message" && activeMessage ? (
-                  <p className="mt-1 text-sm text-slate-500">
+                {detailKind === "message" && activeMessage ? (
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
                     From {activeMessage.senderLabel}
                     {activeMessage.senderRole
                       ? ` · ${activeMessage.senderRole}`
                       : ""}
+                    {activeMessage.created_at
+                      ? ` · ${formatRelativeTime(activeMessage.created_at)}`
+                      : ""}
+                  </p>
+                ) : activeNotification?.created_at ? (
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {formatRelativeTime(activeNotification.created_at)}
                   </p>
                 ) : null}
               </div>
               <button
                 type="button"
-                onClick={closeDrawer}
-                className="rounded-full border border-slate-200 p-2 text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                onClick={closeDetail}
+                className="shrink-0 rounded-full border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {drawerKind === "message" && activeMessage ? (
-                <>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {activeMessage.body}
-                  </p>
-                  <p className="mt-4 text-xs text-slate-400">
-                    {activeMessage.created_at
-                      ? new Date(activeMessage.created_at).toLocaleString()
-                      : ""}
-                  </p>
-                </>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+              {detailKind === "message" && activeMessage ? (
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {activeMessage.body}
+                </p>
               ) : activeNotification ? (
-                <>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {activeNotification.message}
-                  </p>
-                  {activeNotification.created_at ? (
-                    <p className="mt-4 text-xs text-slate-400">
-                      {new Date(activeNotification.created_at).toLocaleString()}
-                    </p>
-                  ) : null}
-                </>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {activeNotification.message}
+                </p>
               ) : null}
             </div>
 
-            {drawerKind === "message" && activeMessage ? (
-              <div className="flex-shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
-                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                  Quick reply
-                </label>
+            {detailKind === "message" && activeMessage ? (
+              <div className="border-t border-slate-100 bg-slate-50/80 px-4 py-3">
                 <textarea
                   value={replyBody}
                   onChange={(event) => setReplyBody(event.target.value)}
-                  placeholder="Write your reply..."
-                  rows={3}
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-relaxed text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                  placeholder="Write a quick reply…"
+                  rows={2}
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                 />
-                <button
-                  type="button"
-                  disabled={sending || !replyBody.trim()}
-                  onClick={() => void handleSendReply()}
-                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 disabled:opacity-60"
-                >
-                  <Send className="h-4 w-4" />
-                  {sending ? "Sending..." : "Send reply"}
-                </button>
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={closeDetail}
+                    className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Done
+                  </button>
+                  <button
+                    type="button"
+                    disabled={sending || !replyBody.trim()}
+                    onClick={() => void handleSendReply()}
+                    className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 disabled:opacity-50"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {sending ? "Sending…" : "Send"}
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="flex-shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-4px_16px_rgba(15,23,42,0.06)]">
+              <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={closeDetail}
+                  className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  Close
+                </button>
                 <Link
                   href={notificationsHref}
-                  onClick={closeDrawer}
-                  className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                  onClick={closeDetail}
+                  className="rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50"
                 >
-                  View in notifications
+                  Full page
                 </Link>
               </div>
             )}
-          </aside>
+          </div>
         </div>
       ) : null}
     </>
+  );
+}
+
+function EmptyState({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="px-3 py-10 text-center">
+      <p className="text-sm font-medium text-slate-600">{title}</p>
+      <p className="mt-1 text-xs text-slate-400">{hint}</p>
+    </div>
   );
 }

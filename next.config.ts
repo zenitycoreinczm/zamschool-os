@@ -40,6 +40,9 @@ function remotePatternForHost(hostname: string, pathname = "/**") {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Silence Next 16 default-Turbopack warning when a custom webpack config is present.
+  // Scripts use `next build --webpack` / `next dev --webpack` explicitly.
+  turbopack: {},
   experimental: {
     // Parallel webpack worker causes intermittent manifest ENOENT on Windows.
     // On Linux/macOS (CI, production) we enable it; on Windows we omit the
@@ -122,6 +125,10 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
+  // Do not leak "Next.js" via X-Powered-By.
+  poweredByHeader: false,
+  // Never ship browser source maps in production (path + source leaks).
+  productionBrowserSourceMaps: false,
   transpilePackages: ["motion"],
   webpack: (config, { isServer }) => {
     if (!isServer) {

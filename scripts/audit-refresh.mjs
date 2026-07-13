@@ -63,7 +63,7 @@ const invariants = [
     id: "workspace-context-shell",
     title: "WorkspaceContextProvider exists and exports useWorkspaceContext",
     file: "components/WorkspaceContextProvider.tsx",
-    re: /export\s+function\s+useWorkspaceContext\b/,
+    re: /export\s+\{\s*useWorkspaceContext\s*\}/,
   },
   {
     id: "teacher-workspace-provider",
@@ -73,8 +73,8 @@ const invariants = [
   },
   {
     id: "tenant-context-helpers",
-    title: "lib/tenant-context.ts exposes tenant helpers",
-    file: "lib/tenant-context.ts",
+    title: "lib/tenant/tenant-context.ts exposes tenant helpers",
+    file: "lib/tenant/tenant-context.ts",
     re: /export\s+function\s+(requireTenantId|tenantRateLimitScope|tenantActorRateLimitKey|withTenantFilter)\b/,
   },
   {
