@@ -26,6 +26,11 @@ export {
   isSensitiveRole,
   isFinancialRole,
 } from "@/lib/server-auth-core";
+export type {
+  ActorContext,
+  ActorContextResult,
+  KnownRole,
+} from "@/lib/server-auth-core";
 
 function readBearerToken(req?: Request) {
   const header =
