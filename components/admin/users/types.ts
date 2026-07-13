@@ -1,4 +1,3 @@
-import type { KnownRole } from "@/lib/roles";
 import { GraduationCap, Users, UsersRound } from "lucide-react";
 
 export type TabKey = "students" | "teachers" | "parents";
@@ -150,7 +149,8 @@ export function adminSubtypeHomePath(role: string): string | null {
   return ADMIN_SUBTYPE_ROLE_DASHBOARDS[role] ?? null;
 }
 
-export const USERS_CONSOLE_ALLOWED_ROLES = new Set<KnownRole>([
+/** Canonical role strings (same values as KnownRole in lib/roles). */
+export const USERS_CONSOLE_ALLOWED_ROLES = new Set<string>([
   "PRINCIPAL",
   "SUPER_ADMIN",
   "REGISTRAR",
@@ -159,10 +159,10 @@ export const USERS_CONSOLE_ALLOWED_ROLES = new Set<KnownRole>([
   "HR_ADMIN",
 ]);
 
-export const USERS_RECOVERY_ROLES = new Set<KnownRole>(["ICT_ADMIN"]);
+export const USERS_RECOVERY_ROLES = new Set<string>(["ICT_ADMIN"]);
 
 /** Roles that land on the Teachers tab by default (staff-focused directories). */
-export const USERS_CONSOLE_DEFAULT_TEACHERS_TAB = new Set<KnownRole>([
+export const USERS_CONSOLE_DEFAULT_TEACHERS_TAB = new Set<string>([
   "HR_ADMIN",
   "ICT_ADMIN",
 ]);
