@@ -51,7 +51,7 @@ type AccentStyle = {
   soft: string;
 };
 
-/** Default monochrome chrome — matches workspace PageHeader / AdminPageHero. */
+/** Default monochrome chrome - matches workspace PageHeader / AdminPageHero. */
 const SLATE_STYLES: AccentStyle = {
   selected: "bg-slate-900 text-white shadow-sm",
   today: "ring-2 ring-slate-300",
@@ -727,7 +727,7 @@ export function DateTimePicker({
     if (!calendarOpen && !timeOpen) return;
 
     function handlePointer(event: MouseEvent | TouchEvent) {
-      // Panels are portaled to document.body — do not treat them as outside.
+      // Panels are portaled to document.body - do not treat them as outside.
       if (isInsideDatePickerSurface(event.target)) return;
       setCalendarOpen(false);
       setTimeOpen(false);
@@ -840,7 +840,7 @@ export interface DateOnlyPickerProps {
   placeholder?: string;
 }
 
-/** Single date field — no time column (use this for hire / enrollment / due dates). */
+/** Single date field - no time column (use this for hire / enrollment / due dates). */
 export function DateOnlyPicker({
   value,
   onChange,

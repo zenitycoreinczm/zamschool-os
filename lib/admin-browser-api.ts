@@ -58,9 +58,10 @@ export async function adminApiFetch(input: string, init: RequestInit = {}) {
 
   if (isGatewayConfigured()) {
     if (method === "GET" || method === "HEAD") {
+      // Prefer no-store for admin/API reads so mutations paint without a full reload.
       const response = await fetchGatewayRead(input, {
         ...init,
-        cache: init.cache ?? "default",
+        cache: init.cache ?? "no-store",
       });
       captureCsrfFromResponse(response);
       return response;

@@ -350,7 +350,7 @@ export async function POST(req: Request) {
       emailPromise
         .then((result) => {
           console.log(
-            `[invite] Credentials email sent to ${email} — messageId=${result.messageId || "N/A"}`,
+            `[invite] Credentials email sent to ${email} - messageId=${result.messageId || "N/A"}`,
           );
         })
         .catch((err) => {

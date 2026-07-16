@@ -10,31 +10,43 @@ const {
   ROLE_DASHBOARD_PATHS,
 } = await import("../../lib/workspace/nav.ts");
 
-test("admin nav puts messages near the top under Today", () => {
-  const items = getRoleNavItems("admin");
-  const messagesIndex = items.findIndex(
+test("legacy admin nav matches Head Teacher (no Users directory)", () => {
+  const adminItems = getRoleNavItems("admin");
+  const principalItems = getRoleNavItems("principal");
+  const messagesIndex = adminItems.findIndex(
     (item) => item.href === "/app/messages",
   );
-  const usersIndex = items.findIndex(
-    (item) => item.href === "/app/admin/users",
+  const staffIndex = adminItems.findIndex(
+    (item) => item.href === "/app/principal/staff",
   );
-  const auditIndex = items.findIndex(
+  const auditIndex = adminItems.findIndex(
     (item) => item.href === "/app/admin/audit",
   );
 
   assert.ok(messagesIndex >= 0);
-  assert.ok(messagesIndex < usersIndex);
+  assert.ok(staffIndex >= 0);
+  assert.ok(messagesIndex < staffIndex);
   assert.ok(messagesIndex < auditIndex);
+  assert.ok(!adminItems.some((item) => item.href === "/app/admin/users"));
+  assert.deepEqual(
+    adminItems.map((i) => i.href),
+    principalItems.map((i) => i.href),
+  );
 });
 
-test("admin nav sections group daily tools separately from school setup", () => {
+test("admin nav sections match Head Teacher workspace groups", () => {
   const sections = roleNavSections.admin;
   assert.equal(sections[0].label, "Today");
   assert.match(
     sections[0].items.map((item) => item.href).join(","),
     /\/app\/messages/,
   );
-  assert.equal(sections.at(-1)?.label, "School & system");
+  assert.equal(sections.at(-1)?.label, "Account");
+  assert.ok(
+    !sections
+      .flatMap((s) => s.items)
+      .some((item) => item.href === "/app/admin/users"),
+  );
 });
 
 test("flattenNavSections dedupes repeated routes", () => {
@@ -87,7 +99,8 @@ test("teacher and student nav sections use mounted /app workspace routes", () =>
 });
 
 test("ROLE_DASHBOARD_PATHS gives each role a canonical dashboard route", () => {
-  assert.equal(ROLE_DASHBOARD_PATHS.admin, "/app/dashboard");
+  // Legacy admin collapses into Head Teacher home.
+  assert.equal(ROLE_DASHBOARD_PATHS.admin, "/app/principal");
   assert.equal(ROLE_DASHBOARD_PATHS.teacher, "/app/teacher");
   assert.equal(ROLE_DASHBOARD_PATHS.student, "/app/student");
   assert.equal(ROLE_DASHBOARD_PATHS.parent, "/app/parent");

@@ -67,7 +67,7 @@ export async function GET(req: Request) {
 
     const rate = await applyPlatformRateLimit({
       scope: "account-shell",
-      // Platform super_admin has no school — share the "platform" bucket, not "".
+      // Platform super_admin has no school - share the "platform" bucket, not "".
       schoolId: schoolId ?? "platform",
       req,
       userId,
@@ -89,7 +89,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // Cache miss — build from Supabase
+    // Cache miss - build from Supabase
     const payload = await buildShellPayload(access.context);
 
     // Write to Redis (fire-and-forget)
@@ -245,7 +245,7 @@ async function loadTeacherShell(
 ) {
   const today = new Date().toISOString().slice(0, 10);
 
-  // Head counts only — never pull full result rows for shell badges.
+  // Head counts only - never pull full result rows for shell badges.
   const [attendanceResult, assignmentCountResult, assignmentRows] =
     await Promise.all([
       supabaseAdmin

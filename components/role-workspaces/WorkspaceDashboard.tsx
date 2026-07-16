@@ -1,6 +1,6 @@
 /**
  * Shared primitives for role-scoped workspace dashboards.
- * Premium slate desk pattern — restrained colour, clear modules + workflow.
+ * Premium slate desk pattern - restrained colour, clear modules + workflow.
  */
 import Link from "next/link";
 import type { ComponentType } from "react";

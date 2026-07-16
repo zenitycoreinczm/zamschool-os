@@ -45,9 +45,9 @@ type NamedOption = { id: string; name: string };
 function nestedName(
   value: { name?: string } | { name?: string }[] | null | undefined,
 ): string {
-  if (!value) return "—";
-  if (Array.isArray(value)) return value[0]?.name || "—";
-  return value.name || "—";
+  if (!value) return "-";
+  if (Array.isArray(value)) return value[0]?.name || "-";
+  return value.name || "-";
 }
 
 function formatDue(value: string) {

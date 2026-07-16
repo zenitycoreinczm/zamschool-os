@@ -10,28 +10,11 @@ type AttendanceSummary = {
 const STATUS_CARDS: Array<{
   key: keyof AttendanceSummary;
   label: string;
-  tone: string;
 }> = [
-  {
-    key: "PRESENT",
-    label: "Present lessons",
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  },
-  {
-    key: "ABSENT",
-    label: "Absent lessons",
-    tone: "border-rose-200 bg-rose-50 text-rose-700",
-  },
-  {
-    key: "LATE",
-    label: "Late arrivals",
-    tone: "border-amber-200 bg-amber-50 text-amber-700",
-  },
-  {
-    key: "EXCUSED",
-    label: "Excused lessons",
-    tone: "border-sky-200 bg-sky-50 text-sky-700",
-  },
+  { key: "PRESENT", label: "Present lessons" },
+  { key: "ABSENT", label: "Absent lessons" },
+  { key: "LATE", label: "Late arrivals" },
+  { key: "EXCUSED", label: "Excused lessons" },
 ];
 
 export default function ParentAttendanceSummary({
@@ -75,12 +58,14 @@ export default function ParentAttendanceSummary({
         {STATUS_CARDS.map((card) => (
           <div
             key={card.key}
-            className={`rounded-2xl border px-4 py-4 ${card.tone}`}
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
           >
-            <p className="text-xs font-medium uppercase tracking-[0.18em]">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
               {card.label}
             </p>
-            <p className="mt-3 text-3xl font-semibold">{summary[card.key]}</p>
+            <p className="mt-3 text-3xl font-semibold tabular-nums text-slate-900">
+              {summary[card.key]}
+            </p>
           </div>
         ))}
       </div>

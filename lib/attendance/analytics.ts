@@ -158,6 +158,6 @@ export function buildAttendanceStatusEmoji(status: string | null | undefined): s
     case "EXCUSED":
       return "🟡";
     default:
-      return "—";
+      return "-";
   }
 }

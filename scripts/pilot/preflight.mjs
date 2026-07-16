@@ -1,5 +1,5 @@
 /**
- * Pilot go-live preflight — aggregates Week 1–6 gates.
+ * Pilot go-live preflight - aggregates Week 1–6 gates.
  * Usage: npm run pilot:preflight
  */
 import { spawnSync } from "node:child_process";

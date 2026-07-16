@@ -17,7 +17,7 @@ let host = "your-app.example.com";
 try {
   host = new URL(originRaw).host;
 } catch {
-  console.warn(`Invalid origin "${originRaw}" — using placeholder host in expressions.\n`);
+  console.warn(`Invalid origin "${originRaw}" - using placeholder host in expressions.\n`);
 }
 
 const pathExpr = (p) =>
@@ -25,30 +25,30 @@ const pathExpr = (p) =>
 
 const cacheRules = [
   {
-    name: "ZamSchool — cache private dashboard reads",
+    name: "ZamSchool - cache private dashboard reads",
     expression: pathExpr('starts_with(http.request.uri.path, "/api/dashboard")'),
     settings: { cache: true, edge_ttl: "respect_origin", browser_ttl: "respect_origin" },
     notes: "Origin sends private, max-age=30 via lib/edge-cache.ts. Vary: Authorization.",
   },
   {
-    name: "ZamSchool — cache workspace context",
+    name: "ZamSchool - cache workspace context",
     expression: pathExpr('http.request.uri.path eq "/api/account/workspace-context"'),
     settings: { cache: true, edge_ttl: "respect_origin", browser_ttl: "respect_origin" },
   },
   {
-    name: "ZamSchool — bypass inbox polling",
+    name: "ZamSchool - bypass inbox polling",
     expression: pathExpr(
       '(http.request.uri.path eq "/api/account/unread-summary" or http.request.uri.path eq "/api/account/inbox-preview")'
     ),
     settings: { cache: false },
   },
   {
-    name: "ZamSchool — bypass auth APIs",
+    name: "ZamSchool - bypass auth APIs",
     expression: pathExpr('starts_with(http.request.uri.path, "/api/auth/")'),
     settings: { cache: false },
   },
   {
-    name: "ZamSchool — static Next assets",
+    name: "ZamSchool - static Next assets",
     expression: pathExpr('starts_with(http.request.uri.path, "/_next/static/")'),
     settings: { cache: true, edge_ttl: 86400, browser_ttl: 86400 },
   },
@@ -56,7 +56,7 @@ const cacheRules = [
 
 const rateLimitRules = [
   {
-    name: "ZamSchool — auth brute-force guard",
+    name: "ZamSchool - auth brute-force guard",
     expression: pathExpr(
       'http.request.method eq "POST" and starts_with(http.request.uri.path, "/api/auth/")'
     ),
@@ -65,7 +65,7 @@ const rateLimitRules = [
     requests_per_period: 10,
   },
   {
-    name: "ZamSchool — login page POST",
+    name: "ZamSchool - login page POST",
     expression: pathExpr('http.request.method eq "POST" and http.request.uri.path eq "/login"'),
     characteristics: ["ip.src"],
     period: 60,

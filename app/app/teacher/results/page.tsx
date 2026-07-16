@@ -512,7 +512,7 @@ export default function TeacherResultsPage() {
                       <span className="font-medium text-sky-600">browse</span>
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      CSV or Excel — columns: ExamNumber, Marks, Grade
+                      CSV or Excel - columns: ExamNumber, Marks, Grade
                     </p>
                   </>
                 )}
@@ -542,7 +542,7 @@ export default function TeacherResultsPage() {
                 <div className="flex items-center gap-3">
                   <Eye className="h-4 w-4 text-slate-400" />
                   <span className="text-sm font-semibold text-slate-800">
-                    Preview — {parsedRows.length} rows
+                    Preview - {parsedRows.length} rows
                   </span>
                   <span className="text-sm text-emerald-600 font-medium">
                     {matchedCount} matched
@@ -577,10 +577,10 @@ export default function TeacherResultsPage() {
                           {row.identifier}
                         </td>
                         <td className="px-3 py-2 text-slate-700">
-                          {row.marks ?? "—"}
+                          {row.marks ?? "-"}
                         </td>
                         <td className="px-3 py-2 text-slate-700">
-                          {row.grade ?? "—"}
+                          {row.grade ?? "-"}
                         </td>
                         <td className="px-5 py-2">
                           {row.matchedStudent ? (
@@ -857,7 +857,7 @@ export default function TeacherResultsPage() {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
                   6
                 </span>
-                Check completeness — certificates auto-generate when all
+                Check completeness - certificates auto-generate when all
                 subjects are uploaded
               </li>
               <li className="flex gap-2">

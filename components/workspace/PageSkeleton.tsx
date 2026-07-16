@@ -16,7 +16,7 @@ type PageSkeletonProps = {
 
 /**
  * Route-level skeleton layouts. Prefer these over full-screen spinners
- * once the shell is already painted — feels faster and keeps structure.
+ * once the shell is already painted - feels faster and keeps structure.
  */
 export function PageSkeleton({
   variant = "dashboard",

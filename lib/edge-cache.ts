@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
  */
 
 export const EDGE_CACHE = {
-  /** Dashboard/summary reads — brief per-user cache. */
+  /** Dashboard/summary reads - brief per-user cache. */
   privateRead: "private, max-age=60, stale-while-revalidate=180",
   /** Workspace shell context. */
   privateWorkspace: "private, max-age=90, stale-while-revalidate=300",
@@ -18,9 +18,9 @@ export const EDGE_CACHE = {
   announcements: "private, max-age=300, stale-while-revalidate=600",
   /** Events and attendance summaries (2–5 min SWR). */
   eventsRead: "private, max-age=60, stale-while-revalidate=300",
-  /** Dashboard summaries — slightly longer SWR for read-heavy teacher/parent/student dashboards. */
+  /** Dashboard summaries - slightly longer SWR for read-heavy teacher/parent/student dashboards. */
   dashboardRead: "private, max-age=90, stale-while-revalidate=300",
-  /** Inbox badges, auth, attendance, results, mutations — never cache. */
+  /** Inbox badges, auth, attendance, results, mutations - never cache. */
   noStore: "private, no-store, max-age=0, must-revalidate",
   /** Public CDN assets. */
   publicAsset: "public, max-age=86400, stale-while-revalidate=604800",
@@ -42,7 +42,7 @@ export function applyEdgeCacheHeaders(
   return response;
 }
 
-/** @deprecated Use EDGE_CACHE.privateRead — kept for existing imports. */
+/** @deprecated Use EDGE_CACHE.privateRead - kept for existing imports. */
 export const READ_MOSTLY_PRIVATE_CACHE = EDGE_CACHE.privateRead;
 
 const NO_STORE_PATH_PREFIXES = [

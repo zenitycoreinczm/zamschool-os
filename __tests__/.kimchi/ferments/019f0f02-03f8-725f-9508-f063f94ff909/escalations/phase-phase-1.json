@@ -10,7 +10,7 @@
       "problem": "Project test command (`npm test`) did not validate.",
       "evidence": "test script does not reference a known runner (vitest, jest, mocha, ava, tap, node --test, playwright test, bun test); got: node ./scripts/run-tests.mjs",
       "severity": "block",
-      "redirect": "Wire test properly before completing this phase — make `npm test` a real, installable command (resolve the runner, fix the script)."
+      "redirect": "Wire test properly before completing this phase - make `npm test` a real, installable command (resolve the runner, fix the script)."
     }
   ],
   "options": [

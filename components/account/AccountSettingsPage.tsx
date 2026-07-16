@@ -47,7 +47,7 @@ function isAuthError(err: unknown) {
   return msg.includes("Unauthorized") || msg.includes("401");
 }
 
-/** Soft icon chip — monochrome slate so settings matches every other desk. */
+/** Soft icon chip - monochrome slate so settings matches every other desk. */
 function accentIconShell(_accent?: HeroAccent) {
   void _accent;
   return "bg-slate-100 text-slate-700 ring-slate-200";
@@ -508,7 +508,7 @@ export function AccountSettingsPage({
         </div>
       </Surface>
 
-      {/* Available to every role via Settings — authenticator app (TOTP) 2FA. */}
+      {/* Available to every role via Settings - authenticator app (TOTP) 2FA. */}
       <div id="settings-2fa" className="scroll-mt-24">
         <MfaSetup />
       </div>

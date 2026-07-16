@@ -102,7 +102,10 @@ export function AccountProfilePage({
   const [form, setForm] = useState<ProfileForm>(() =>
     buildFormState(initialProfileData),
   );
-  const { invalidate: invalidateWorkspace } = useWorkspaceContext();
+  const {
+    invalidate: invalidateWorkspace,
+    refresh: refreshWorkspace,
+  } = useWorkspaceContext();
 
   const fullName = useMemo(
     () => `${form.first_name} ${form.last_name}`.trim(),
@@ -220,7 +223,13 @@ export function AccountProfilePage({
         ...current,
         avatar_url: avatarUrl || current.avatar_url,
       }));
+      // Refresh shell workspace context so the top-right avatar updates immediately.
       invalidateWorkspace();
+      try {
+        await refreshWorkspace({ force: true });
+      } catch {
+        // Non-blocking - invalidate already triggers a background reload.
+      }
 
       const configMessage = avatarUrl
         ? getRemoteImageConfigMessage(avatarUrl)

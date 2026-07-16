@@ -113,7 +113,7 @@ async function main() {
   if (SET_JWT_SECRET) {
     const secret = process.env.SUPABASE_JWT_SECRET;
     if (!secret) {
-      console.log("\n  SUPABASE_JWT_SECRET not in environment — skipping secret set.");
+      console.log("\n  SUPABASE_JWT_SECRET not in environment - skipping secret set.");
       console.log("  Run manually: echo '<secret>' | wrangler secret put SUPABASE_JWT_SECRET");
     } else if (!DRY_RUN) {
       console.log("\n  Setting SUPABASE_JWT_SECRET...");
@@ -138,7 +138,7 @@ async function main() {
   console.log("\n=== Summary ===");
   console.log(`SESSION_CACHE KV: ${sessionCacheId}`);
   console.log(`RATE_LIMITS KV:   ${rateLimitsId}`);
-  console.log(`wrangler.toml:    ${DRY_RUN ? "(not written — dry run)" : "patched"}`);
+  console.log(`wrangler.toml:    ${DRY_RUN ? "(not written - dry run)" : "patched"}`);
   console.log("\nNext steps:");
   console.log("  1. Run: node --env-file=.env.local scripts/run-wrangler-with-env.mjs -- deploy");
   console.log("  2. Set NEXT_PUBLIC_GATEWAY_URL in Vercel to the deployed worker URL");

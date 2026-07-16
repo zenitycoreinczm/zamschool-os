@@ -152,7 +152,7 @@ export function WorkspaceInboxCenter({
     }
   }, [initialUnread?.messages, initialUnread?.notifications, publishUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Click outside closes the dropdown panel (not the detail modal — that has its own backdrop).
+  // Click outside closes the dropdown panel (not the detail modal - that has its own backdrop).
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       if (!panel) return;
@@ -186,7 +186,7 @@ export function WorkspaceInboxCenter({
   }, [panel, detailKind]);
 
   const openMessageDetail = (message: InboxMessagePreview) => {
-    // Open immediately — don't wait on mark-read network.
+    // Open immediately - don't wait on mark-read network.
     setPanel(null);
     setDetailKind("message");
     setActiveMessage(message);
@@ -452,7 +452,7 @@ export function WorkspaceInboxCenter({
         ) : null}
       </div>
 
-      {/* Compact centered detail — click outside (backdrop) to dismiss */}
+      {/* Compact centered detail - click outside (backdrop) to dismiss */}
       {detailKind ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"

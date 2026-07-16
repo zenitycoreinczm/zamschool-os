@@ -224,13 +224,13 @@ export function AdminAcademicHub() {
           {
             label: "Academic years",
             value: years.length,
-            hint: activeYear ? `Active: ${String(activeYear[yearNameKey] || "—")}` : "None active",
+            hint: activeYear ? `Active: ${String(activeYear[yearNameKey] || "-")}` : "None active",
             tone: "sky",
           },
           {
             label: "Terms",
             value: terms.length,
-            hint: activeTerm ? `Active: ${String(activeTerm[termNameKey] || "—")}` : "None active",
+            hint: activeTerm ? `Active: ${String(activeTerm[termNameKey] || "-")}` : "None active",
             tone: "violet",
           },
           {
@@ -290,7 +290,7 @@ export function AdminAcademicHub() {
             </button>
 
             <div className="space-y-2">
-              {years.length === 0 ? <EmptyRow label="No academic years yet — add your first year above." /> : null}
+              {years.length === 0 ? <EmptyRow label="No academic years yet - add your first year above." /> : null}
               {years.map((year) => {
                 const isActive = Boolean(year[yearActiveKey]);
                 const yearTerms = termsByYear.get(String(year.id)) || [];
@@ -394,7 +394,7 @@ export function AdminAcademicHub() {
             </button>
 
             <div className="space-y-2">
-              {terms.length === 0 ? <EmptyRow label="No terms yet — link each term to an academic year." /> : null}
+              {terms.length === 0 ? <EmptyRow label="No terms yet - link each term to an academic year." /> : null}
               {terms.map((term) => {
                 const isActive = Boolean(term[termActiveKey]);
                 const parentYear = years.find((year) => String(year.id) === String(term[termYearKey]));
@@ -481,7 +481,7 @@ function EmptyRow({ label }: { label: string }) {
 }
 
 function formatDateLabel(value: unknown) {
-  if (!value) return "—";
+  if (!value) return "-";
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });

@@ -10,24 +10,28 @@ export interface Env {
   SESSION_CACHE: KVNamespace;
   RATE_LIMITS: KVNamespace;
 
-  // D1 database (offline read-replica)
-  SCHOOL_DB: D1Database;
+  // D1 database (optional offline read-replica - currently stubbed)
+  SCHOOL_DB?: D1Database;
 
   // Durable Objects
   SYNC_QUEUE: DurableObjectNamespace;
 
-  // Config vars (non-secret — see wrangler.toml / README)
+  // Config vars (non-secret - see wrangler.toml / README)
   UPSTREAM_API: string;
   CORS_ALLOWED_ORIGINS?: string;
-  /** Set via `wrangler secret put SUPABASE_JWT_SECRET` in production. */
+  /** Set via `wrangler secret put SUPABASE_JWT_SECRET` when using HS256 legacy secret. */
   SUPABASE_JWT_SECRET?: string;
   /** Optional issuer check, e.g. https://<project-ref>.supabase.co/auth/v1 */
   SUPABASE_JWT_ISSUER?: string;
+  /** Project URL for JWKS discovery (ES256). e.g. https://xxx.supabase.co */
+  SUPABASE_URL?: string;
+  /** Override JWKS URL (defaults to {issuer}/.well-known/jwks.json). */
+  SUPABASE_JWKS_URL?: string;
   /** Defaults to "authenticated" when unset. */
   SUPABASE_JWT_AUDIENCE?: string;
   /** signature (default when secret set) | decode (local only with ALLOW_INSECURE_JWT_DECODE) */
   JWT_VERIFY_MODE?: string;
-  /** Must be "true" to allow decode mode — never enable in production. */
+  /** Must be "true" to allow decode mode - never enable in production. */
   ALLOW_INSECURE_JWT_DECODE?: string;
   /** Set to "true" to enable KV rate limiting at the edge. */
   RATE_LIMIT_ENABLED?: string;
@@ -71,7 +75,7 @@ export const GATEWAY_NATIVE_ROUTES = {
 
 /**
  * GET routes safe to cache at the edge (never auth, attendance, or results).
- * Align with lib/edge-cache.ts — sensitive reads must stay no-store upstream.
+ * Align with lib/edge-cache.ts - sensitive reads must stay no-store upstream.
  */
 export const CACHEABLE_GET_PREFIXES = [
   "/api/admin/classes",

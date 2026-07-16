@@ -18,7 +18,7 @@ export default function OfflineStatusBanner() {
   const label = isOffline ? "You are offline" : "Network is slow";
   const detail = isOffline
     ? "You can still open recently used school pages. Changes cannot be saved until you reconnect."
-    : "Mobile data or school Wi‑Fi is slow — pages may take longer to load.";
+    : "Mobile data or school Wi‑Fi is slow - pages may take longer to load.";
 
   return (
     <div

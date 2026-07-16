@@ -23,7 +23,7 @@ export default function GlobalError({
       console.error("Global error caught:", error?.digest || error?.name);
     }
 
-    // Stale webpack/HMR chunks after deploy or heavy edits — one hard reload.
+    // Stale webpack/HMR chunks after deploy or heavy edits - one hard reload.
     if (typeof window === "undefined" || !isChunkLoadError) return;
     const key = "zamschool:chunk-reload";
     try {

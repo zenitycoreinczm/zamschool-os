@@ -76,13 +76,14 @@ export const STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] = [
   {
     value: "teacher",
     label: getRoleDisplayLabel("teacher"),
-    hint: "Classroom teaching workspace. Prefer Users → Teachers for full class setup.",
+    hint: "Classroom teaching workspace. Prefer People → Teachers (Add) for full class setup.",
   },
 ];
 
 /**
  * Role options for the Head Teacher staff invitation UI.
- * Excludes teacher — those are managed via Users → Teachers.
+ * Excludes teacher - classroom teachers are created via People/Users → Teachers (Add + tabs).
+ * Students and parents are also created there, not via staff invitations.
  */
 export const PRINCIPAL_STAFF_INVITE_ROLE_OPTIONS: StaffInviteRoleOption[] =
   STAFF_INVITE_ROLE_OPTIONS.filter((option) => option.value !== "teacher");

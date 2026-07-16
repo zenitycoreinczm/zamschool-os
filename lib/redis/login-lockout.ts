@@ -234,7 +234,7 @@ export async function clearLoginFailures(params: {
 }): Promise<void> {
   const emailMem = hashRedisIdentifier(params.email);
   memoryEmailFails.delete(emailMem);
-  // Do not clear IP counter on single success — shared school NATs.
+  // Do not clear IP counter on single success - shared school NATs.
 
   if (!isRedisConfigured()) return;
   await redisDel(loginFailureEmailKey(params.email));

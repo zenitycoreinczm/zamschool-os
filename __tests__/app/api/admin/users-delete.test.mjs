@@ -61,6 +61,6 @@ test("deleteParentRecords does not delete all parent_students by school_id alone
   assert.match(
     deleteChain,
     /\.in\(\s*["']parent_id["']/,
-    "parent_students delete must include .in('parent_id', ...) — the old bug only filtered by school_id",
+    "parent_students delete must include .in('parent_id', ...) - the old bug only filtered by school_id",
   );
 });

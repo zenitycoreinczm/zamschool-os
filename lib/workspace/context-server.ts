@@ -11,6 +11,7 @@ import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import type { ActorContext } from "@/lib/server-auth-core";
 import { toProtectedAvatarUrl } from "@/lib/avatar-url";
+import { roleToStoredValue } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isRedisConfigured, redisGetJson, redisSetJson } from "@/lib/redis/client";
 import { workspaceCacheKey } from "@/lib/redis/keys";
@@ -95,7 +96,10 @@ async function loadStableWorkspaceSlice(
         throw profileError;
       }
 
-      const role = String(profile?.role || actor.role || "").trim();
+      // Canonical stored role (legacy admin → principal / Head Teacher).
+      const rawRole = String(profile?.role || actor.role || "").trim();
+      const role =
+        roleToStoredValue(rawRole) || rawRole.toLowerCase() || rawRole;
       const schoolId = profile?.school_id || actor.schoolId || null;
       const email = profile?.email || authMeta.email || "";
       const firstName = profile?.first_name?.trim() || null;
@@ -136,7 +140,7 @@ async function loadStableWorkspaceSlice(
         email,
         emailConfirmed: authMeta.emailConfirmed,
         role,
-        workspaceRole: role.toLowerCase(),
+        workspaceRole: role,
         schoolId,
         displayName,
         firstName,

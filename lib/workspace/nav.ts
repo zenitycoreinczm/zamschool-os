@@ -76,7 +76,8 @@ export function flattenNavSections(
 // mixed-state /app/dashboard, /app/teacher, /app/<role> entries so the
 // first nav slot means the same thing across every workspace shell.
 export const ROLE_DASHBOARD_PATHS: Record<WorkspaceRoleKey, string> = {
-  admin: "/app/dashboard",
+  // Legacy admin collapsed into Head Teacher (principal).
+  admin: "/app/principal",
   principal: "/app/principal",
   deputy_head: "/app/deputy-head",
   bursar: "/app/bursar",
@@ -95,7 +96,8 @@ export const ROLE_DASHBOARD_PATHS: Record<WorkspaceRoleKey, string> = {
 
 /** Role-owned settings path (includes MFA via AccountSettingsPage). */
 export const ROLE_SETTINGS_PATHS: Record<WorkspaceRoleKey, string> = {
-  admin: "/app/settings",
+  // Legacy admin collapsed into Head Teacher (principal).
+  admin: "/app/principal/settings",
   principal: "/app/principal/settings",
   deputy_head: "/app/deputy-head/settings",
   bursar: "/app/bursar/settings",
@@ -167,55 +169,6 @@ export function staffTodayItems(options: {
   return items;
 }
 
-const adminSections: WorkspaceNavSection[] = [
-  {
-    label: "Today",
-    items: [
-      { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
-      { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/app/events", label: "Events", icon: Calendar },
-    ],
-  },
-  {
-    label: "People & classes",
-    items: [
-      { href: "/app/admin/users", label: "Users", icon: Users },
-      { href: "/app/admin/classes", label: "Classes", icon: GraduationCap },
-      { href: "/app/admin/assignments", label: "Assignments", icon: FileText },
-      { href: "/app/admin/timetable", label: "Timetable", icon: CalendarClock },
-    ],
-  },
-  {
-    label: "Academics",
-    items: [
-      { href: "/app/admin/subjects", label: "Subjects", icon: FileText },
-      { href: "/app/admin/academic", label: "Academic Years", icon: Calendar },
-      {
-        href: "/app/admin/grading-scales",
-        label: "Grades & Scales",
-        icon: ClipboardList,
-      },
-    ],
-  },
-  {
-    label: "Finance",
-    items: [
-      { href: "/app/admin/fees", label: "Payments", icon: CreditCard },
-      { href: "/app/admin/finance", label: "Finance", icon: FileBarChart2 },
-    ],
-  },
-  {
-    label: "School & system",
-    items: [
-      { href: "/app/admin/school", label: "School", icon: Building2 },
-      { href: "/app/admin/audit", label: "Audit", icon: Shield },
-      { href: "/app/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
-
 const principalSections: WorkspaceNavSection[] = [
   {
     label: "Today",
@@ -228,7 +181,6 @@ const principalSections: WorkspaceNavSection[] = [
     label: "Governance",
     items: [
       { href: "/app/principal/staff", label: "Invite staff", icon: UserPlus },
-      { href: "/app/admin/users", label: "Users directory", icon: Users },
       { href: "/app/admin/audit", label: "Audit trail", icon: Shield },
       { href: "/app/admin/school", label: "School profile", icon: Building2 },
       {
@@ -280,12 +232,6 @@ const deputyHeadSections: WorkspaceNavSection[] = [
     ],
   },
   {
-    label: "Oversight",
-    items: [
-      { href: "/app/admin/users", label: "Staff & students", icon: Users },
-    ],
-  },
-  {
     label: "Account",
     items: [
       { href: "/app/deputy-head/settings", label: "Settings", icon: Settings },
@@ -331,7 +277,6 @@ const guidanceSections: WorkspaceNavSection[] = [
   {
     label: "Student care",
     items: [
-      { href: "/app/admin/users", label: "Students", icon: Users },
       {
         href: "/app/admin/attendance",
         label: "Attendance",
@@ -409,7 +354,7 @@ const hrAdminSections: WorkspaceNavSection[] = [
   {
     label: "People",
     items: [
-      { href: "/app/admin/users", label: "Staff directory", icon: Users },
+      { href: "/app/hr-admin/directory", label: "Staff directory", icon: Users },
       {
         href: "/app/admin/departments",
         label: "Departments",
@@ -434,7 +379,7 @@ const ictAdminSections: WorkspaceNavSection[] = [
   {
     label: "Support",
     items: [
-      { href: "/app/admin/users", label: "User recovery", icon: Users },
+      { href: "/app/ict-admin/recovery", label: "User recovery", icon: Users },
       { href: "/app/admin/audit", label: "Audit trail", icon: Shield },
       { href: "/app/admin/school", label: "School profile", icon: Building2 },
     ],
@@ -456,7 +401,6 @@ const disciplineAdminSections: WorkspaceNavSection[] = [
   {
     label: "Conduct",
     items: [
-      { href: "/app/admin/users", label: "Students", icon: Users },
       { href: "/app/admin/classes", label: "Classes", icon: GraduationCap },
       {
         href: "/app/admin/attendance",
@@ -710,7 +654,8 @@ export const parentPortalSections: WorkspaceNavSection[] = [
 
 export const roleNavSections: Record<WorkspaceRoleKey, WorkspaceNavSection[]> =
   {
-    admin: adminSections,
+    // Legacy School Administrator → same nav as Head Teacher (no Users directory).
+    admin: principalSections,
     principal: principalSections,
     deputy_head: deputyHeadSections,
     bursar: bursarSections,
@@ -735,7 +680,7 @@ export const roleNavSections: Record<WorkspaceRoleKey, WorkspaceNavSection[]> =
   };
 
 export function getRoleNavItems(role: WorkspaceRoleKey): WorkspaceNavItem[] {
-  return flattenNavSections(roleNavSections[role] || adminSections);
+  return flattenNavSections(roleNavSections[role] || principalSections);
 }
 
 function pickDockItem(items: WorkspaceNavItem[], href: string) {
@@ -769,10 +714,11 @@ export function buildRoleMobileDock(
       return uniqueDockItems([
         home,
         pickDockItem(items, "/app/messages"),
-        pickDockItem(items, "/app/admin/users"),
+        // Head Teacher invites staff; people directory is registrar/HR/ICT - not HT.
+        pickDockItem(items, "/app/principal/staff"),
         pickDockItem(items, "/app/admin/finance"),
         {
-          href: getRoleSettingsPath(role === "principal" ? "principal" : "admin"),
+          href: getRoleSettingsPath("principal"),
           label: "Settings",
           icon: Settings,
         },
@@ -787,7 +733,9 @@ export function buildRoleMobileDock(
       return uniqueDockItems([
         home,
         pickDockItem(items, "/app/messages"),
-        pickDockItem(items, "/app/admin/users"),
+        pickDockItem(items, "/app/hr-admin/directory") ||
+          pickDockItem(items, "/app/ict-admin/recovery") ||
+          pickDockItem(items, "/app/registrar/people"),
         items.find((item) => item.href.includes("/admin/")) || items[1],
         {
           href: getRoleSettingsPath(role),

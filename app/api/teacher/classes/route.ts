@@ -50,7 +50,15 @@ export async function GET(req: Request) {
     });
 
     const supabaseAdmin = getSupabaseAdmin();
-    const [taughtLessons, supervisedLessons] = await Promise.all([
+    // Class teachers see all periods for supervised classes; subject teachers
+    // see their own periods plus any periods in classes they teach (full class access).
+    const classIdsForAllLessons = Array.from(
+      new Set([
+        ...assignmentScope.supervisedClassIds,
+        ...assignmentScope.taughtClassIds,
+      ]),
+    );
+    const [taughtLessons, classScopedLessons] = await Promise.all([
       fetchLessonsByTeacherIds(supabaseAdmin, {
         schoolId,
         dayOfWeek: lessonDayOfWeek,
@@ -59,11 +67,11 @@ export async function GET(req: Request) {
       fetchLessonsByClassIds(supabaseAdmin, {
         schoolId,
         dayOfWeek: lessonDayOfWeek,
-        classIds: assignmentScope.supervisedClassIds,
+        classIds: classIdsForAllLessons,
       }),
     ]);
 
-    const lessons = dedupeLessonsById([...taughtLessons, ...supervisedLessons]);
+    const lessons = dedupeLessonsById([...taughtLessons, ...classScopedLessons]);
 
     const classIds = Array.from(
       new Set(
@@ -88,6 +96,8 @@ export async function GET(req: Request) {
             classesById.get(lesson.class_id || "")?.supervisor_id || null,
           lessonSchoolId: lesson.school_id,
           actorSchoolId: schoolId,
+          classId: lesson.class_id,
+          allowedClassIds: assignmentScope.allowedClassIds,
         }),
       ),
     );

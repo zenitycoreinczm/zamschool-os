@@ -235,7 +235,7 @@ export default function ParentFeesPage() {
                     {formatCurrency(fee.balance)}
                   </td>
                   <td className="px-4 py-3 text-slate-500">
-                    {fee.dueDate || "—"}
+                    {fee.dueDate || "-"}
                   </td>
                   <td className="px-4 py-3">
                     <span

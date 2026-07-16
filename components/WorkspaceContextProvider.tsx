@@ -75,14 +75,12 @@ export function WorkspaceContextProvider({
   useEffect(() => {
     // Re-assert JS-readable CSRF cookie ASAP so registrar/admin mutations work.
     void warmCsrfToken();
-    // Always refresh when cache is empty OR missing schoolId (poisoned cache).
-    const needsLoad = !initial || !isWorkspaceContextReady(initial);
-    if (needsLoad) {
-      void load({ force: true }).catch(() => {
-        // load() already sets error state; guard against unhandled rejections.
-      });
-    }
-  }, [initial, load]);
+    // Always force a network refresh on mount. Cached sessionStorage can belong
+    // to a previous user/role after logout+login in the same tab.
+    void load({ force: true }).catch(() => {
+      // load() already sets error state; guard against unhandled rejections.
+    });
+  }, [load]);
 
   const refresh = useCallback(
     async (options: { force?: boolean } = {}) => {
@@ -92,9 +90,13 @@ export function WorkspaceContextProvider({
   );
 
   const invalidate = useCallback(() => {
+    // Clear local caches then force a network refresh so avatar/name updates
+    // show in the shell header without a full page reload.
     invalidateWorkspaceContext();
-    setData(null);
-  }, []);
+    void load({ force: true }).catch(() => {
+      // load() already surfaces errors
+    });
+  }, [load]);
 
   const role = useMemo(
     () => normalizeAppWorkspaceRole(data?.role),

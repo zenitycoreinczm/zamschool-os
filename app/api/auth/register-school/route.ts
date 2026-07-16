@@ -64,7 +64,7 @@ const registerSchoolSchema = z
     schoolName: z.string().min(2).max(120),
     schoolCode: z.string().min(4).max(50),
     headTeacherName: z.string().min(2).max(120).optional(),
-    /** @deprecated Use headTeacherName — kept for older registration clients */
+    /** @deprecated Use headTeacherName - kept for older registration clients */
     adminName: z.string().min(2).max(120).optional(),
     phone: z.string().max(40).optional().default(""),
     address: z.string().max(300).optional().default(""),
@@ -363,7 +363,7 @@ export async function POST(req: Request) {
       initialization,
     });
   } catch (error: unknown) {
-    // Server log only — never echo SQL / schema / stack to the client.
+    // Server log only - never echo SQL / schema / stack to the client.
     const { logServerError, publicErrorBody } = await import("@/lib/safe-error");
     logServerError("register-school", error);
     return NextResponse.json(

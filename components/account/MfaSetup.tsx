@@ -46,7 +46,7 @@ function MfaQrCode({ qrCodeUrl }: { qrCodeUrl: string }) {
     );
   }
 
-  // Ephemeral enroll QR — plain img avoids next/image src validation on data: URIs
+  // Ephemeral enroll QR - plain img avoids next/image src validation on data: URIs
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img

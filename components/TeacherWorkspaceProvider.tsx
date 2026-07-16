@@ -130,7 +130,7 @@ export function TeacherWorkspaceProvider({ children }: { children: React.ReactNo
           }
           setLoading(false);
         } catch {
-          // Shell failed — fall through to bootstrap
+          // Shell failed - fall through to bootstrap
         }
       }
 

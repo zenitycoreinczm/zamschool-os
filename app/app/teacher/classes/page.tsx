@@ -52,9 +52,9 @@ export default function TeacherClassesPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <AssignmentCard
           title="Assigned classes"
-          description="Classes connected to your timetable and student roster."
+          description="Classes you teach (subject or timetable). You have full student access for these classes - class teacher assignment is not required."
           items={assignedClasses}
-          empty="No classes assigned yet."
+          empty="No teaching assignments yet. Once a class + subject is assigned to you, the full student roster appears here."
           href={(id) => `/app/teacher/students?class=${id}`}
         />
 

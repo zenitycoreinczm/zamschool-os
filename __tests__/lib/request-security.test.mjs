@@ -16,6 +16,10 @@ describe("isBlockedAttackPath", () => {
     assert.equal(isBlockedAttackPath("/phpmyadmin"), true);
     assert.equal(isBlockedAttackPath("/.git/config"), true);
     assert.equal(isBlockedAttackPath("/xmlrpc.php"), true);
+    assert.equal(isBlockedAttackPath("/.ssh/id_rsa"), true);
+    assert.equal(isBlockedAttackPath("/actuator/health"), true);
+    assert.equal(isBlockedAttackPath("/backup.sql"), true);
+    assert.equal(isBlockedAttackPath("/phpinfo.php"), true);
   });
 
   it("allows normal app paths", () => {
@@ -23,6 +27,7 @@ describe("isBlockedAttackPath", () => {
     assert.equal(isBlockedAttackPath("/app/registrar"), false);
     assert.equal(isBlockedAttackPath("/api/auth/login-guard"), false);
     assert.equal(isBlockedAttackPath("/"), false);
+    assert.equal(isBlockedAttackPath("/.well-known/security.txt"), false);
   });
 });
 
@@ -53,12 +58,88 @@ describe("classifyClientBot", () => {
     assert.equal(result.suspicious, false);
   });
 
-  it("blocks sqlmap on auth surfaces", () => {
+  it("blocks sqlmap site-wide including product pages", () => {
     const result = classifyClientBot({
       userAgent: "sqlmap/1.7",
-      pathname: "/api/auth/login-guard",
+      pathname: "/app/admin/timetable",
     });
     assert.equal(result.block, true);
+  });
+
+  it("blocks curl/python scrapers on public pages in production", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      assert.equal(
+        classifyClientBot({
+          userAgent: "curl/8.0.0",
+          pathname: "/",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "python-requests/2.31.0",
+          pathname: "/api/admin/timetable",
+        }).block,
+        true,
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
+  it("blocks AI training scrapers everywhere", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 AppleWebKit/537.36 (compatible; GPTBot/1.0)",
+          pathname: "/",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "ClaudeBot/1.0",
+          pathname: "/privacy",
+        }).block,
+        true,
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
+  it("allows Googlebot only on public marketing paths", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
+          pathname: "/",
+        }).block,
+        false,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
+          pathname: "/app/principal",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
+          pathname: "/api/admin/users",
+        }).block,
+        true,
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
   });
 
   it("blocks empty user agent on login in production-like scoring", () => {

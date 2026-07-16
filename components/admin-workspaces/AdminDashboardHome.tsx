@@ -16,6 +16,11 @@ const FALLBACK_LABELS = [
   { label: "Outstanding", hint: "Unpaid balances" },
 ];
 
+/**
+ * Legacy `/app/dashboard` home. School Administrator was collapsed into
+ * Head Teacher - this surface no longer links to the Users directory.
+ * Prefer `/app/principal` (shell redirects admin/principal here).
+ */
 export default function AdminDashboardHome() {
   const workspaceCtx = useWorkspaceContext() ?? undefined;
   const workspace = workspaceCtx?.data ?? null;
@@ -26,31 +31,31 @@ export default function AdminDashboardHome() {
 
   const schoolName = workspace?.schoolName || "Your school";
   const yearTerm = workspace?.yearTerm || "Academic context";
-  const displayName = workspace?.displayName || "Administrator";
+  const displayName = workspace?.displayName || "Head Teacher";
 
   const heroStats = schoolHeroStatsFromSummary(metrics, FALLBACK_LABELS, loading);
 
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHero
-        eyebrow="School administrator workspace"
+        eyebrow="Head Teacher overview"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Operational overview for ${yearTerm}.`}
+        description={`Welcome back, ${displayName}. Leadership snapshot for ${yearTerm}.`}
         accent="slate"
         stats={heroStats}
         actions={
           <Link
-            href="/app/admin/users"
+            href="/app/principal/staff"
             className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
           >
-            Users & accounts
+            Invite staff
           </Link>
         }
       />
 
       <FocusPills items={highlights} />
 
-      <SchoolAdminDashboard />
+      <SchoolAdminDashboard peopleMode="principal" />
     </div>
   );
 }

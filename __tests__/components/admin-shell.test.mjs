@@ -48,11 +48,15 @@ test("admin shell targets the mounted admin and shared workspace route set", asy
   );
   const shellSource = await readFile(shellPath, "utf8");
 
-  assert.match(navSource, /href: "\/app\/dashboard", label: "Dashboard"/);
-  assert.match(navSource, /href: "\/app\/admin\/users", label: "Users"/);
+  // Head Teacher (and legacy admin) use principal workspace - Invite staff, not Users.
+  assert.match(navSource, /homeHref: "\/app\/principal"/);
+  assert.match(navSource, /homeLabel: "Overview"/);
+  assert.match(navSource, /href: "\/app\/principal\/staff", label: "Invite staff"/);
   assert.match(navSource, /href: "\/app\/messages", label: "Messages"/);
   assert.match(navSource, /href: "\/app\/profile", label: "Profile"/);
   assert.match(navSource, /href: "\/app\/settings", label: "Settings"/);
+  assert.match(navSource, /admin: principalSections/);
+  assert.doesNotMatch(navSource, /href: "\/app\/admin\/users", label: "Users"/);
 
   assert.match(navSource, /href: "\/app\/parent", label: "Dashboard"/);
 

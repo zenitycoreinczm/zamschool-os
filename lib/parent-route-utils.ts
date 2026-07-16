@@ -112,7 +112,7 @@ export async function getLinkedStudents(input: {
 
   let links = linksResult.data || [];
   if (linksResult.error) {
-    // Some installs only accept parents.id for parent_id FK — retry narrowly.
+    // Some installs only accept parents.id for parent_id FK - retry narrowly.
     const retry = await supabaseAdmin
       .from("parent_students")
       .select("parent_id, student_id, relationship")
@@ -128,7 +128,7 @@ export async function getLinkedStudents(input: {
   let students: any[] = [];
   if (linkStudentKeys.length > 0) {
     // parent_students.student_id may be students.id OR profiles.id depending on
-    // how the link was created historically — resolve both.
+    // how the link was created historically - resolve both.
     const byId = await supabaseAdmin
       .from("students")
       .select("id, profile_id, school_id, class_id, student_number")

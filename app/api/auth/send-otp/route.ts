@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
     if (!stored) {
       console.error(
-        "[send-otp] Both Redis and Postgres unavailable — cannot store OTP",
+        "[send-otp] Both Redis and Postgres unavailable - cannot store OTP",
       );
       return NextResponse.json(
         { error: "Unable to send verification email. Please try again later." },
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Send via custom SMTP (always — no Supabase fallback)
+    // Send via custom SMTP (always - no Supabase fallback)
     const authUser = await supabaseAdmin.auth.admin.getUserById(target.userId);
     const userName =
       (authUser.data.user?.user_metadata?.first_name as string) || undefined;

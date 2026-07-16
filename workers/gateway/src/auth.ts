@@ -1,6 +1,6 @@
 import type { Env, SessionSnapshot } from "./types.ts";
 
-type JwtHeader = { alg?: string; typ?: string };
+type JwtHeader = { alg?: string; typ?: string; kid?: string };
 type JwtPayload = {
   sub?: string;
   role?: string;
@@ -8,12 +8,24 @@ type JwtPayload = {
   exp?: number;
   iss?: string;
   aud?: string | string[];
-  user_metadata?: { school_id?: string };
+  user_metadata?: { school_id?: string; role?: string };
+  app_metadata?: { school_id?: string; role?: string; provider?: string };
 };
+
+type Jwk = JsonWebKey & { kid?: string; alg?: string; kty?: string };
+
+type JwksCache = {
+  keys: Jwk[];
+  fetchedAt: number;
+  jwksUrl: string;
+};
+
+const JWKS_TTL_MS = 60 * 60 * 1000; // 1 hour
+let jwksCache: JwksCache | null = null;
 
 /**
  * Validates the Authorization header.
- * - Production: verifies Supabase HS256 JWT signature when SUPABASE_JWT_SECRET is set.
+ * - Production: verifies JWT via HS256 secret and/or ES256 JWKS (Supabase signing keys).
  * - Offline: serves cached session snapshots from SESSION_CACHE KV.
  * - Local dev only: JWT_VERIFY_MODE=decode with ALLOW_INSECURE_JWT_DECODE=true skips signature check.
  */
@@ -69,10 +81,6 @@ async function validateJwt(token: string, env: Env): Promise<JwtPayload | null> 
     return null;
   }
 
-  if (header.alg !== "HS256") {
-    return null;
-  }
-
   if (!payload.sub || !payload.exp || payload.exp <= Date.now() / 1000) {
     return null;
   }
@@ -91,15 +99,29 @@ async function validateJwt(token: string, env: Env): Promise<JwtPayload | null> 
     }
   }
 
-  const verifyMode = String(env.JWT_VERIFY_MODE || "signature").toLowerCase();
+  const signedContent = `${headerPart}.${payloadPart}`;
+  const alg = String(header.alg || "").toUpperCase();
   const secret = String(env.SUPABASE_JWT_SECRET || "").trim();
+  const verifyMode = String(env.JWT_VERIFY_MODE || "signature").toLowerCase();
 
-  if (secret) {
-    const valid = await verifyHs256Signature(secret, `${headerPart}.${payloadPart}`, signaturePart);
-    if (!valid) {
+  if (alg === "ES256") {
+    const ok = await verifyEs256WithJwks(env, header, signedContent, signaturePart);
+    return ok ? payload : null;
+  }
+
+  if (alg === "HS256") {
+    if (secret) {
+      const valid = await verifyHs256Signature(secret, signedContent, signaturePart);
+      return valid ? payload : null;
+    }
+  } else {
+    // Unknown algorithm - do not accept unless insecure decode is explicitly allowed.
+    if (
+      verifyMode !== "decode" ||
+      String(env.ALLOW_INSECURE_JWT_DECODE || "").toLowerCase() !== "true"
+    ) {
       return null;
     }
-    return payload;
   }
 
   if (
@@ -107,14 +129,111 @@ async function validateJwt(token: string, env: Env): Promise<JwtPayload | null> 
     String(env.ALLOW_INSECURE_JWT_DECODE || "").toLowerCase() === "true"
   ) {
     if (env.NODE_ENV === "production" || env.VERCEL_ENV === "production") {
-      console.error("[auth] CRITICAL: ALLOW_INSECURE_JWT_DECODE is enabled in production — refusing to start");
+      console.error(
+        "[auth] CRITICAL: ALLOW_INSECURE_JWT_DECODE is enabled in production - refusing",
+      );
       return null;
     }
-    console.warn("[auth] ALLOW_INSECURE_JWT_DECODE enabled — signature not verified");
+    console.warn("[auth] ALLOW_INSECURE_JWT_DECODE enabled - signature not verified");
     return payload;
   }
 
   return null;
+}
+
+function resolveJwksUrl(env: Env): string | null {
+  const explicit = String(env.SUPABASE_JWKS_URL || "").trim();
+  if (explicit) return explicit;
+
+  const issuer = String(env.SUPABASE_JWT_ISSUER || "").trim().replace(/\/$/, "");
+  if (issuer) {
+    return `${issuer}/.well-known/jwks.json`;
+  }
+
+  const supabaseUrl = String(env.SUPABASE_URL || "").trim().replace(/\/$/, "");
+  if (supabaseUrl) {
+    return `${supabaseUrl}/auth/v1/.well-known/jwks.json`;
+  }
+
+  return null;
+}
+
+async function loadJwks(env: Env): Promise<Jwk[] | null> {
+  const jwksUrl = resolveJwksUrl(env);
+  if (!jwksUrl) {
+    console.error("[auth] ES256 JWT but no SUPABASE_JWT_ISSUER / SUPABASE_JWKS_URL / SUPABASE_URL");
+    return null;
+  }
+
+  const now = Date.now();
+  if (
+    jwksCache &&
+    jwksCache.jwksUrl === jwksUrl &&
+    now - jwksCache.fetchedAt < JWKS_TTL_MS
+  ) {
+    return jwksCache.keys;
+  }
+
+  try {
+    const fetchImpl = env.fetch || fetch;
+    const res = await fetchImpl(jwksUrl, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      console.error("[auth] JWKS fetch failed", res.status, jwksUrl);
+      return jwksCache?.jwksUrl === jwksUrl ? jwksCache.keys : null;
+    }
+    const body = (await res.json()) as { keys?: Jwk[] };
+    const keys = Array.isArray(body.keys) ? body.keys : [];
+    jwksCache = { keys, fetchedAt: now, jwksUrl };
+    return keys;
+  } catch (err) {
+    console.error("[auth] JWKS fetch error", err);
+    return jwksCache?.jwksUrl === jwksUrl ? jwksCache.keys : null;
+  }
+}
+
+async function verifyEs256WithJwks(
+  env: Env,
+  header: JwtHeader,
+  signedContent: string,
+  signaturePart: string,
+): Promise<boolean> {
+  const keys = await loadJwks(env);
+  if (!keys?.length) return false;
+
+  const candidates = header.kid
+    ? keys.filter((k) => k.kid === header.kid)
+    : keys.filter((k) => (k.alg || "ES256") === "ES256" || k.kty === "EC");
+
+  const tryKeys = candidates.length > 0 ? candidates : keys;
+
+  // Web Crypto ECDSA expects IEEE P-1363 (raw r||s), which is what JWT uses.
+  const signature = base64UrlToBytes(signaturePart);
+  const data = new TextEncoder().encode(signedContent);
+
+  for (const jwk of tryKeys) {
+    try {
+      const key = await crypto.subtle.importKey(
+        "jwk",
+        jwk,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["verify"],
+      );
+      const ok = await crypto.subtle.verify(
+        { name: "ECDSA", hash: "SHA-256" },
+        key,
+        signature as BufferSource,
+        data,
+      );
+      if (ok) return true;
+    } catch {
+      // try next key
+    }
+  }
+
+  return false;
 }
 
 function sessionFromPayload(payload: JwtPayload): SessionSnapshot | null {
@@ -122,10 +241,21 @@ function sessionFromPayload(payload: JwtPayload): SessionSnapshot | null {
     return null;
   }
 
+  const role =
+    payload.app_metadata?.role ||
+    payload.user_metadata?.role ||
+    payload.role ||
+    "authenticated";
+
+  const schoolId =
+    payload.app_metadata?.school_id ||
+    payload.user_metadata?.school_id ||
+    "unknown";
+
   return {
     userId: payload.sub,
-    role: payload.role || "authenticated",
-    schoolId: payload.user_metadata?.school_id || "unknown",
+    role,
+    schoolId,
     email: payload.email || "",
     exp: payload.exp || Math.floor(Date.now() / 1000) + 86400,
   };
@@ -134,7 +264,7 @@ function sessionFromPayload(payload: JwtPayload): SessionSnapshot | null {
 async function verifyHs256Signature(
   secret: string,
   signedContent: string,
-  signaturePart: string
+  signaturePart: string,
 ): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -142,7 +272,7 @@ async function verifyHs256Signature(
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["verify"]
+    ["verify"],
   );
 
   const signature = new Uint8Array(base64UrlToBytes(signaturePart));
@@ -175,7 +305,7 @@ async function sha256(message: string) {
 export async function signTestJwt(
   secret: string,
   payload: Record<string, unknown>,
-  header: Record<string, unknown> = { alg: "HS256", typ: "JWT" }
+  header: Record<string, unknown> = { alg: "HS256", typ: "JWT" },
 ): Promise<string> {
   const encoder = new TextEncoder();
   const headerPart = bytesToBase64Url(encoder.encode(JSON.stringify(header)));
@@ -187,10 +317,15 @@ export async function signTestJwt(
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(signedContent));
   return `${signedContent}.${bytesToBase64Url(new Uint8Array(signature))}`;
+}
+
+/** Test helper: reset JWKS in-memory cache between tests. */
+export function resetJwksCacheForTests() {
+  jwksCache = null;
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {

@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 
-// Registrar is excluded from announcements — their role is strictly user
+// Registrar is excluded from announcements - their role is strictly user
 // registration (students, parents, teachers), not school communications.
 const ANNOUNCEMENT_ALLOWED_ROLES = KNOWN_ROLES.filter(
   (r) => r !== "REGISTRAR",

@@ -72,7 +72,7 @@ if (present("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN")) {
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok && String(body.result || "").toUpperCase() === "PONG") {
-      ok("Upstash Redis", "PING OK — distributed bans & rate limits ready");
+      ok("Upstash Redis", "PING OK - distributed bans & rate limits ready");
     } else {
       fail("Upstash Redis", `PING failed HTTP ${res.status}`);
     }
@@ -82,7 +82,7 @@ if (present("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN")) {
 } else {
   fail(
     "Upstash Redis",
-    "Required for national scale — set UPSTASH_REDIS_REST_URL + TOKEN",
+    "Required for national scale - set UPSTASH_REDIS_REST_URL + TOKEN",
   );
 }
 
@@ -110,9 +110,9 @@ if (present("ALLOWED_HOSTS") || present("NEXT_PUBLIC_APP_ORIGIN")) {
 
 // Object storage off Supabase
 if (present("R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY")) {
-  ok("Cloudflare R2", "credentials present — use for school file storage");
+  ok("Cloudflare R2", "credentials present - use for school file storage");
 } else {
-  warn("Cloudflare R2", "missing — files may hit Supabase Storage quotas");
+  warn("Cloudflare R2", "missing - files may hit Supabase Storage quotas");
 }
 
 // Edge gateway
@@ -121,13 +121,13 @@ if (present("NEXT_PUBLIC_GATEWAY_URL")) {
 } else {
   warn(
     "Gateway worker",
-    "Optional edge layer — set NEXT_PUBLIC_GATEWAY_URL after wrangler deploy",
+    "Optional edge layer - set NEXT_PUBLIC_GATEWAY_URL after wrangler deploy",
   );
 }
 
 // Strict DC mode flags
 if (env.ZAMSCHOOL_DC_MODE === "true") {
-  ok("ZAMSCHOOL_DC_MODE", "enabled — production security posture");
+  ok("ZAMSCHOOL_DC_MODE", "enabled - production security posture");
 } else {
   warn(
     "ZAMSCHOOL_DC_MODE",
@@ -136,7 +136,7 @@ if (env.ZAMSCHOOL_DC_MODE === "true") {
 }
 
 if (env.ZAMSCHOOL_DC_STRICT === "true") {
-  ok("ZAMSCHOOL_DC_STRICT", "enabled — refuse boot if gates fail");
+  ok("ZAMSCHOOL_DC_STRICT", "enabled - refuse boot if gates fail");
 } else {
   warn(
     "ZAMSCHOOL_DC_STRICT",
@@ -164,7 +164,7 @@ console.log("--- Summary ---");
 console.log(
   fails === 0
     ? "Server security preflight: READY for multi-school data-center deploy."
-    : `Server security preflight: ${fails} critical gap(s) — fix before national roll-out.`,
+    : `Server security preflight: ${fails} critical gap(s) - fix before national roll-out.`,
 );
 console.log("");
 

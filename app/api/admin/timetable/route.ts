@@ -123,17 +123,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // lessons.title is NOT NULL in the DB - UI often omits title (subject-driven).
+    const lessonTitle =
+      String(body.title || "").trim() ||
+      (await resolveSubjectTitle(schoolId, body.subjectId)) ||
+      "Lesson";
+
     const payload: Record<string, any> = {
       school_id: schoolId,
-      title: body.title?.trim() || null,
+      title: lessonTitle,
       subject_id: body.subjectId,
       class_id: body.classId,
       teacher_id: assignment.data.teacherRowId,
       day_of_week: body.dayOfWeek,
       start_time: body.startTime,
       end_time: body.endTime,
-      room: body.room?.trim() || null,
     };
+    // room is not on the baseline lessons table; only include if provided and
+    // the schema supports it (safeInsertLesson strips unknown columns).
+    if (body.room !== undefined && String(body.room || "").trim()) {
+      payload.room = String(body.room).trim();
+    }
 
     const data = await safeInsertLesson(payload);
 
@@ -147,7 +157,16 @@ export async function POST(req: Request) {
       ipAddress: ip,
     });
 
-    return NextResponse.json({ success: true, data });
+    // Return UI-ready fields so the client can paint the lesson immediately
+    // without waiting on a full list re-fetch / browser cache.
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...data,
+        teacher_row_id: assignment.data.teacherRowId,
+        teacher_profile_id: assignment.data.teacherProfileId,
+      },
+    });
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to create lesson") },
@@ -222,14 +241,29 @@ export async function PUT(req: Request) {
     }
 
     const payload: Record<string, any> = {};
-    if (body.title !== undefined) payload.title = body.title?.trim() || null;
+    if (body.title !== undefined) {
+      const nextTitle = String(body.title || "").trim();
+      // Never write NULL into lessons.title (NOT NULL constraint).
+      if (nextTitle) {
+        payload.title = nextTitle;
+      } else if (body.subjectId) {
+        payload.title =
+          (await resolveSubjectTitle(schoolId, body.subjectId)) || "Lesson";
+      }
+    } else if (body.subjectId) {
+      // Keep title in sync when the subject changes and no title was sent.
+      payload.title =
+        (await resolveSubjectTitle(schoolId, body.subjectId)) || "Lesson";
+    }
     if (body.subjectId) payload.subject_id = body.subjectId;
     if (body.classId) payload.class_id = body.classId;
     if (body.teacherId) payload.teacher_id = assignment.data.teacherRowId;
     if (body.dayOfWeek !== undefined) payload.day_of_week = body.dayOfWeek;
     if (body.startTime) payload.start_time = body.startTime;
     if (body.endTime) payload.end_time = body.endTime;
-    if (body.room !== undefined) payload.room = body.room.trim() || null;
+    if (body.room !== undefined && String(body.room || "").trim()) {
+      payload.room = String(body.room).trim();
+    }
 
     const data = await safeUpdateLesson(body.id, schoolId, payload);
 
@@ -395,8 +429,24 @@ async function fetchTimetableRows(input: {
   return attachTeacherProfiles(rows, input.schoolId);
 }
 
+async function resolveSubjectTitle(schoolId: string, subjectId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("subjects")
+    .select("name")
+    .eq("school_id", schoolId)
+    .eq("id", subjectId)
+    .maybeSingle();
+  if (error) return null;
+  const name = String(data?.name || "").trim();
+  return name || null;
+}
+
 async function safeInsertLesson(payload: Record<string, any>) {
   let working = { ...payload };
+  // Hard guarantee for NOT NULL title even if callers forget.
+  if (!String(working.title || "").trim()) {
+    working.title = "Lesson";
+  }
   for (let i = 0; i < 10; i++) {
     const { data, error } = await supabaseAdmin
       .from("lessons")
@@ -407,11 +457,40 @@ async function safeInsertLesson(payload: Record<string, any>) {
     if (!error) return data;
 
     const unknown = extractMissingColumn(error.message);
-    if (!unknown || !(unknown in working)) throw error;
+    if (!unknown || !(unknown in working)) {
+      throw mapLessonWriteError(error, "Failed to create lesson");
+    }
     delete working[unknown];
   }
 
   throw new Error("Failed to insert lesson");
+}
+
+function mapLessonWriteError(error: unknown, fallback: string) {
+  const message = String(
+    (error as { message?: string | null } | null)?.message || "",
+  ).toLowerCase();
+  if (
+    message.includes("null value") &&
+    message.includes("title") &&
+    message.includes("not-null")
+  ) {
+    return new Error(
+      "Lesson title is required. Choose a subject so a title can be set automatically.",
+    );
+  }
+  if (message.includes("lessons_teacher_id_fkey") || message.includes("teacher_id")) {
+    return new Error(
+      "That teacher record is invalid or incomplete. Open People → Teachers and ensure the teacher is fully set up, then try again.",
+    );
+  }
+  if (message.includes("foreign key") || message.includes("violates foreign key")) {
+    return new Error(
+      "Class, subject, or teacher is missing. Refresh the page and try again.",
+    );
+  }
+  if (error instanceof Error) return error;
+  return new Error(fallback);
 }
 
 async function safeUpdateLesson(
@@ -432,7 +511,9 @@ async function safeUpdateLesson(
     if (!error) return data;
 
     const unknown = extractMissingColumn(error.message);
-    if (!unknown || !(unknown in working)) throw error;
+    if (!unknown || !(unknown in working)) {
+      throw mapLessonWriteError(error, "Failed to update lesson");
+    }
     delete working[unknown];
   }
 
@@ -474,14 +555,12 @@ async function attachTeacherProfiles(rows: any[], schoolId: string) {
   );
 
   if (teacherIds.length === 0) {
-    return hydrateTimetableRows(rows, {});
+    return hydrateTimetableRows(rows, {}, []);
   }
 
-  const teacherProfileLookup = await fetchTeacherProfileLookup(
-    schoolId,
-    teacherIds,
-  );
-  return hydrateTimetableRows(rows, teacherProfileLookup);
+  const { lookup: teacherProfileLookup, teacherRows } =
+    await fetchTeacherProfileLookup(schoolId, teacherIds);
+  return hydrateTimetableRows(rows, teacherProfileLookup, teacherRows);
 }
 
 async function fetchTeacherProfileLookup(
@@ -535,11 +614,13 @@ async function fetchTeacherProfileLookup(
     linkedProfiles = linkedProfilesResult.data || [];
   }
 
-  return buildTeacherProfileLookup({
+  const lookup = buildTeacherProfileLookup({
     teacherIds,
     teacherRows,
     profileRows: [...(directProfilesResult.data || []), ...linkedProfiles],
   });
+
+  return { lookup, teacherRows };
 }
 
 async function validateLessonMutation(input: {

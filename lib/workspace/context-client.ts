@@ -51,10 +51,12 @@ export function invalidateWorkspaceSummary() {
   cachedSummary = null;
 }
 
-/** Memory TTL — long enough to cover multi-page navigations without re-auth fanout. */
+/** Memory TTL - long enough to cover multi-page navigations without re-auth fanout. */
 const WORKSPACE_CONTEXT_TTL_MS = 3 * 60_000;
 const SESSION_STORAGE_KEY = "zamschool_workspace_context_v1";
 const SESSION_STORAGE_TTL_MS = 5 * 60_000;
+/** Bound sessionStorage entries to this auth user so logins never cross-wire. */
+const SESSION_STORAGE_USER_KEY = "zamschool_workspace_context_user_v1";
 
 let cachedContext: { expiresAt: number; data: WorkspaceContextData } | null =
   null;
@@ -68,9 +70,23 @@ function readSessionStorageContext(): WorkspaceContextData | null {
     const parsed = JSON.parse(raw) as {
       expiresAt?: number;
       data?: WorkspaceContextData;
+      userId?: string;
     };
     if (!parsed?.data || !parsed.expiresAt || Date.now() >= parsed.expiresAt) {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_USER_KEY);
+      return null;
+    }
+    const boundUserId = String(
+      parsed.userId ||
+        sessionStorage.getItem(SESSION_STORAGE_USER_KEY) ||
+        "",
+    ).trim();
+    const dataUserId = String(parsed.data.userId || "").trim();
+    // Reject cross-user leftovers from a previous login in the same tab.
+    if (boundUserId && dataUserId && boundUserId !== dataUserId) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_USER_KEY);
       return null;
     }
     return parsed.data;
@@ -82,15 +98,20 @@ function readSessionStorageContext(): WorkspaceContextData | null {
 function writeSessionStorageContext(data: WorkspaceContextData) {
   if (typeof window === "undefined") return;
   try {
+    const userId = String(data.userId || "").trim();
     sessionStorage.setItem(
       SESSION_STORAGE_KEY,
       JSON.stringify({
         expiresAt: Date.now() + SESSION_STORAGE_TTL_MS,
         data,
+        userId,
       }),
     );
+    if (userId) {
+      sessionStorage.setItem(SESSION_STORAGE_USER_KEY, userId);
+    }
   } catch {
-    // quota / private mode — ignore
+    // quota / private mode - ignore
   }
 }
 
@@ -98,8 +119,35 @@ function clearSessionStorageContext() {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(SESSION_STORAGE_USER_KEY);
   } catch {
     // ignore
+  }
+}
+
+/** Patch unread counts on the in-memory + session workspace cache after mark-read. */
+export function patchCachedWorkspaceUnread(unread: {
+  messages?: number;
+  notifications?: number;
+}) {
+  if (cachedContext?.data) {
+    cachedContext = {
+      ...cachedContext,
+      data: {
+        ...cachedContext.data,
+        unread: {
+          messages:
+            typeof unread.messages === "number"
+              ? Math.max(0, unread.messages)
+              : cachedContext.data.unread.messages,
+          notifications:
+            typeof unread.notifications === "number"
+              ? Math.max(0, unread.notifications)
+              : cachedContext.data.unread.notifications,
+        },
+      },
+    };
+    writeSessionStorageContext(cachedContext.data);
   }
 }
 
@@ -151,7 +199,7 @@ async function requestWorkspaceContextWithRetry() {
   const first = await requestWorkspaceContext();
   if (isUsableWorkspaceContext(first)) return first;
 
-  // Transient miss after login / cache purge — one short retry often recovers.
+  // Transient miss after login / cache purge - one short retry often recovers.
   await new Promise((r) => setTimeout(r, 450));
   return requestWorkspaceContext();
 }

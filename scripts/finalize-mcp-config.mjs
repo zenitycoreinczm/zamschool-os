@@ -61,7 +61,7 @@ url = "https://docs.mcp.cloudflare.com/mcp"
 enabled = true
 `;
 
-// Full API MCP — requires unrestricted API token (no client IP filter)
+// Full API MCP - requires unrestricted API token (no client IP filter)
 if (cfToken) {
   text += `
 [mcp_servers.cloudflare]

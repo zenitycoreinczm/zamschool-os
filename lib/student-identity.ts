@@ -11,12 +11,12 @@ export type StudentIdentityParts = {
 
 export function formatStudentIdentityLine(parts: StudentIdentityParts): string {
   const name = String(parts.displayName || "").trim() || "Student";
-  const classLabel = String(parts.className || "").trim() || "—";
+  const classLabel = String(parts.className || "").trim() || "-";
   const numberRaw = parts.classNumber;
   const number =
     numberRaw == null || numberRaw === ""
-      ? "—"
-      : String(numberRaw).trim() || "—";
+      ? "-"
+      : String(numberRaw).trim() || "-";
   return `${name} | ${classLabel} | ${number}`;
 }
 

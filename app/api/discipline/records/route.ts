@@ -239,7 +239,7 @@ export async function POST(req: Request) {
         await enqueueNotifications(schoolId, notifications);
       }
     } catch {
-      // Non-critical — don't fail the request
+      // Non-critical - don't fail the request
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });

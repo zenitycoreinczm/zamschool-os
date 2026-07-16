@@ -3,11 +3,67 @@ export type TimetableLesson = {
   title: string | null;
   subject_id: string;
   class_id: string;
+  /** Stored FK: teachers.id (row id). */
   teacher_id: string;
+  /** Profile id when available (UI teacher pickers use profile id). */
+  teacher_profile_id?: string | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
 };
+
+/**
+ * Profile id and teachers-row id for the same person must both match when
+ * filtering timetable views (UI lists profile ids; lessons store teachers.id).
+ */
+export function teacherIdentityMatches(
+  lesson: Pick<TimetableLesson, "teacher_id" | "teacher_profile_id">,
+  selectedTeacher: string,
+  teacherAliases?: Map<string, Set<string>>,
+): boolean {
+  const selected = String(selectedTeacher || "").trim();
+  if (!selected || selected === "all") return true;
+
+  const lessonTeacherId = String(lesson.teacher_id || "").trim();
+  const lessonProfileId = String(lesson.teacher_profile_id || "").trim();
+  if (lessonTeacherId === selected || lessonProfileId === selected) {
+    return true;
+  }
+
+  if (teacherAliases) {
+    const aliases = teacherAliases.get(selected);
+    if (aliases?.has(lessonTeacherId) || aliases?.has(lessonProfileId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/** Build profile_id ↔ teachers.row_id alias map for filtering and counts. */
+export function buildTeacherAliasMap(
+  teachers: Array<{ id: string; role_record_id?: string | null }>,
+): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  const add = (key: string, value: string) => {
+    if (!key || !value) return;
+    const set = map.get(key) || new Set<string>();
+    set.add(value);
+    set.add(key);
+    map.set(key, set);
+  };
+
+  for (const teacher of teachers) {
+    const profileId = String(teacher.id || "").trim();
+    const rowId = String(teacher.role_record_id || "").trim();
+    if (profileId) add(profileId, profileId);
+    if (profileId && rowId) {
+      add(profileId, rowId);
+      add(rowId, profileId);
+    }
+  }
+  return map;
+}
 
 type TimetableMaps = {
   classMap: Record<string, string>;
@@ -19,6 +75,8 @@ type TimetableArgs = TimetableMaps & {
   lessons: TimetableLesson[];
   selectedClass?: string;
   selectedTeacher?: string;
+  /** Optional profile_id ↔ teachers.row_id aliases for filter matching. */
+  teacherAliases?: Map<string, Set<string>>;
 };
 
 type DayDef = {
@@ -79,8 +137,14 @@ export function buildTimetableBoard({
   classMap,
   subjectMap,
   teacherMap,
+  teacherAliases,
 }: TimetableArgs): TimetableBoard {
-  const filtered = filterLessons(lessons, selectedClass, selectedTeacher);
+  const filtered = filterLessons(
+    lessons,
+    selectedClass,
+    selectedTeacher,
+    teacherAliases,
+  );
   const visibleLessonCards = filtered.map((lesson, index) =>
     toLessonCard(lesson, index, classMap, subjectMap, teacherMap)
   );
@@ -119,8 +183,14 @@ export function buildMobileDaySections({
   classMap,
   subjectMap,
   teacherMap,
+  teacherAliases,
 }: TimetableArgs) {
-  const filtered = filterLessons(lessons, selectedClass, selectedTeacher);
+  const filtered = filterLessons(
+    lessons,
+    selectedClass,
+    selectedTeacher,
+    teacherAliases,
+  );
   return DAYS.map((day) => {
     const dayLessons = filtered
       .filter((lesson) => getLessonDayKey(lesson) === day.key)
@@ -150,6 +220,79 @@ export function getLessonActionItems(_lesson: { id: string }) {
   ] as const;
 }
 
+/** App day keys: Mon=1 … Fri=5 (matches form + board). JS getDay() is the same for Mon–Fri. */
+export function getTodayDayKey(now = new Date()): number {
+  return now.getDay();
+}
+
+export function getDayFullLabel(dayKey: number): string {
+  return DAYS.find((d) => d.key === dayKey)?.fullLabel || "Day";
+}
+
+/**
+ * Compact “what’s next” list: remaining lessons today, then the rest of the week.
+ * Sorted by day then start time.
+ */
+export function buildNextUpLessons(
+  lessons: TimetableLesson[],
+  maps: TimetableMaps & {
+    selectedClass?: string;
+    selectedTeacher?: string;
+    teacherAliases?: Map<string, Set<string>>;
+  },
+  limit = 5,
+  now = new Date(),
+): LessonCardView[] {
+  const filtered = filterLessons(
+    lessons,
+    maps.selectedClass ?? "all",
+    maps.selectedTeacher ?? "all",
+    maps.teacherAliases,
+  );
+  const todayKey = getTodayDayKey(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const ranked = filtered
+    .map((lesson, index) => {
+      const day = getLessonDayKey(lesson);
+      const start = toMinutes(lesson.start_time);
+      // Past lessons today sort after remaining-today / upcoming days for "next".
+      const isPastToday = day === todayKey && start < nowMinutes;
+      const sortDay =
+        day < todayKey || day === 0
+          ? day + 7
+          : day === todayKey && isPastToday
+            ? day + 0.5
+            : day;
+      return {
+        lesson,
+        index,
+        sortKey: sortDay * 10_000 + start,
+        isPastToday,
+      };
+    })
+    .filter((row) => {
+      // Weekdays only Mon–Fri for glance strip
+      const day = getLessonDayKey(row.lesson);
+      return day >= 1 && day <= 5;
+    })
+    .sort((a, b) => a.sortKey - b.sortKey);
+
+  // Prefer not-yet-started; if all past, still show today's remaining / week
+  const upcoming = ranked.filter((row) => !row.isPastToday);
+  const source = upcoming.length > 0 ? upcoming : ranked;
+
+  return source.slice(0, limit).map((row) =>
+    toLessonCard(
+      row.lesson,
+      row.index,
+      maps.classMap,
+      maps.subjectMap,
+      maps.teacherMap,
+    ),
+  );
+}
+
 export function buildTimeSlots(start: string, end: string, stepMinutes: number) {
   const out: string[] = [];
   let cur = toMinutes(start);
@@ -170,12 +313,16 @@ function filterLessons(
   lessons: TimetableLesson[],
   selectedClass = "all",
   selectedTeacher = "all",
+  teacherAliases?: Map<string, Set<string>>,
 ) {
   return lessons.filter((lesson) => {
     if (selectedClass !== "all" && lesson.class_id !== selectedClass) {
       return false;
     }
-    if (selectedTeacher !== "all" && lesson.teacher_id !== selectedTeacher) {
+    if (
+      selectedTeacher !== "all" &&
+      !teacherIdentityMatches(lesson, selectedTeacher, teacherAliases)
+    ) {
       return false;
     }
     return true;
@@ -190,7 +337,7 @@ function buildSlotWindow(lessons: TimetableLesson[]) {
     };
   }
 
-  // Fit the board to actual lessons — do not force a 07:00–16:00 shell of
+  // Fit the board to actual lessons - do not force a 07:00–16:00 shell of
   // empty rows when the day only has a few periods.
   let earliestMinutes = Infinity;
   let latestMinutes = -Infinity;
@@ -232,11 +379,17 @@ function toLessonCard(
 ): LessonCardView {
   const startsAt = normalizeClockTime(lesson.start_time);
   const endsAt = normalizeClockTime(lesson.end_time);
+  const teacherName =
+    teacherMap[lesson.teacher_id] ||
+    (lesson.teacher_profile_id
+      ? teacherMap[lesson.teacher_profile_id]
+      : undefined) ||
+    "Teacher";
   return {
     id: lesson.id,
     title: lesson.title?.trim() || subjectMap[lesson.subject_id] || "Lesson",
     subject: subjectMap[lesson.subject_id] || "Subject",
-    teacher: teacherMap[lesson.teacher_id] || "Teacher",
+    teacher: teacherName,
     className: classMap[lesson.class_id] || "Class",
     dayOfWeek: getLessonDayKey(lesson),
     startsAt,

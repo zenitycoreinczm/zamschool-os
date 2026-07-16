@@ -32,7 +32,7 @@ type AttentionItem = {
 
 const WORK_AREAS = [
   {
-    href: "/app/admin/users",
+    href: "/app/hr-admin/directory",
     title: "Staff directory",
     description:
       "View and update employment details for teachers already on the system. You do not create accounts here.",
@@ -191,7 +191,7 @@ export default function HrAdminDashboard() {
       <AdminPageHero
         eyebrow="People desk"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Your HR hub for ${yearTerm} — see staffing levels, department structure, and the work that needs attention.`}
+        description={`Welcome back, ${displayName}. Your HR hub for ${yearTerm} - see staffing levels, department structure, and the work that needs attention.`}
         accent="slate"
         stats={heroStats}
         actions={
@@ -212,7 +212,7 @@ export default function HrAdminDashboard() {
 
       <FocusPills items={focusItems} accent="slate" />
 
-      {/* Attention — what needs you now */}
+      {/* Attention - what needs you now */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-end justify-between gap-3">
           <div>
@@ -230,7 +230,7 @@ export default function HrAdminDashboard() {
 
         {attention.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-sm text-slate-500">
-            Nothing urgent right now. Staff counts and departments look in shape —
+            Nothing urgent right now. Staff counts and departments look in shape -
             use the work areas below for routine updates.
           </div>
         ) : (
@@ -263,7 +263,7 @@ export default function HrAdminDashboard() {
         )}
       </section>
 
-      {/* What you have — live snapshot cards */}
+      {/* What you have - live snapshot cards */}
       <section>
         <div className="mb-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -285,7 +285,7 @@ export default function HrAdminDashboard() {
                 : String(staffCount ?? "0")
             }
             hint="Teachers + office staff roles"
-            href="/app/admin/users"
+            href="/app/hr-admin/directory"
           />
           <SnapshotCard
             label="Teachers"
@@ -295,7 +295,7 @@ export default function HrAdminDashboard() {
                 : String(teacherCount ?? "0")
             }
             hint="Teaching accounts"
-            href="/app/admin/users"
+            href="/app/hr-admin/directory"
           />
           <SnapshotCard
             label="Departments"
@@ -320,7 +320,7 @@ export default function HrAdminDashboard() {
         </div>
       </section>
 
-      {/* What you do — work areas */}
+      {/* What you do - work areas */}
       <section>
         <div className="mb-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -331,7 +331,7 @@ export default function HrAdminDashboard() {
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             Open a tool to update records. Staff invitations are sent by the Head
-            Teacher — you maintain the people once they are on the system.
+            Teacher - you maintain the people once they are on the system.
           </p>
         </div>
         <div className="grid gap-2.5 sm:grid-cols-2">
@@ -435,7 +435,7 @@ export default function HrAdminDashboard() {
           <p className="font-semibold text-slate-900">Your role vs Head Teacher</p>
           <p className="mt-1 leading-relaxed">
             You update employment records and departments only. You never create
-            logins or send invitations — the Head Teacher invites office staff
+            logins or send invitations - the Head Teacher invites office staff
             and others. When they accept, they appear in your directory to
             complete.
           </p>
@@ -474,7 +474,7 @@ function SnapshotCard({
 }
 
 function parseMetricNumber(value: string | undefined): number | null {
-  if (value == null || value === "" || value === "—") return null;
+  if (value == null || value === "" || value === "-") return null;
   const cleaned = String(value).replace(/,/g, "").trim();
   if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
   const n = Number(cleaned);
@@ -494,14 +494,14 @@ function buildAttentionItems(input: {
   const teachersReady =
     input.teacherCount != null && input.teacherCount > 0;
 
-  // Empty directory / missing teachers first — unblocks department heads later.
+  // Empty directory / missing teachers first - unblocks department heads later.
   if (input.staffCount === 0) {
     items.push({
       id: "no-staff",
       title: "Staff directory is empty",
       detail:
         "Ask the Head Teacher to send staff invites. After they accept, complete employment profiles here.",
-      href: "/app/admin/users",
+      href: "/app/hr-admin/directory",
       cta: "Open directory",
       priority: "high",
     });
@@ -510,8 +510,8 @@ function buildAttentionItems(input: {
       id: "no-teachers",
       title: "No teachers on the directory yet",
       detail:
-        "Teaching accounts appear after the Head Teacher’s invites are accepted — then you can complete records.",
-      href: "/app/admin/users",
+        "Teaching accounts appear after the Head Teacher’s invites are accepted - then you can complete records.",
+      href: "/app/hr-admin/directory",
       cta: "Open directory",
       priority: "high",
     });
@@ -545,7 +545,7 @@ function buildAttentionItems(input: {
       title: `${input.inviteCount} staff invitation${input.inviteCount === 1 ? "" : "s"} still open`,
       detail:
         "Only the Head Teacher manages invites. Open your directory to prepare records for when they accept.",
-      href: "/app/admin/users",
+      href: "/app/hr-admin/directory",
       cta: "Open directory",
       priority: "normal",
     });

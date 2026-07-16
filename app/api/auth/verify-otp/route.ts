@@ -92,13 +92,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Code matched — clear the used token and mark email confirmed
+    // Code matched - clear the used token and mark email confirmed
     await clearOtpToken(target.userId);
     await markEmailConfirmed(target.userId);
     // Attest in Redis that this user just proved email control. The
     // register-school flow consumes this flag as a self-heal if the admin
     // update above silently left `email_confirmed_at` null (e.g. transient
-    // Supabase API failure). Window is 1h — long enough to span a
+    // Supabase API failure). Window is 1h - long enough to span a
     // follow-up page render, short enough to limit replay.
     await markOtpVerificationAttested(target.userId);
 

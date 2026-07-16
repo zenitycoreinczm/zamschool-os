@@ -260,7 +260,7 @@ export async function GET(req: Request) {
     const pending = Math.max(lessonSessionKeys.size - completed, 0);
     const displayName = buildDisplayName(profile, "Your Account");
 
-    // Return a plain payload only — never cache NextResponse/streams
+    // Return a plain payload only - never cache NextResponse/streams
     // (re-using a locked ReadableStream causes "failed to pipe response").
     return {
       success: true as const,

@@ -34,16 +34,25 @@ function resolveDailyMessageLimit(): number {
 }
 
 export function getDailyLimit(feature: string): number {
+  // Free-tier defaults keep Upstash + Vercel + Supabase usage predictable.
+  // Opt out with ZAMSCHOOL_FREE_TIER=false on paid plans.
+  const freeTier =
+    process.env.ZAMSCHOOL_FREE_TIER !== "false" &&
+    (process.env.ZAMSCHOOL_FREE_TIER === "true" ||
+      process.env.VERCEL_ENV === "production" ||
+      process.env.NODE_ENV === "production");
+
   const limits: Record<string, number> = {
     messages_send: resolveDailyMessageLimit(),
-    image_uploads: 50,
-    file_upload: 50,
-    exports: 10,
-    announcements: 20,
-    api_calls: 10_000,
+    image_uploads: freeTier ? 30 : 50,
+    file_upload: freeTier ? 30 : 50,
+    exports: freeTier ? 5 : 10,
+    announcements: freeTier ? 15 : 20,
+    // Soft ceiling per user/day for expensive platform paths (not every API).
+    api_calls: freeTier ? 5_000 : 10_000,
   };
 
-  return limits[feature] ?? 100;
+  return limits[feature] ?? (freeTier ? 60 : 100);
 }
 
 function memoryBucketKey(feature: string, userId: string, day: string) {

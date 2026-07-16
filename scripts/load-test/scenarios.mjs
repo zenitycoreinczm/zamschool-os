@@ -1,5 +1,5 @@
 /**
- * Load test scenarios — paths and methods only (auth via env in runner).
+ * Load test scenarios - paths and methods only (auth via env in runner).
  */
 
 /** @typedef {{ id: string, method: string, path: string, auth?: boolean, body?: object }} LoadScenario */

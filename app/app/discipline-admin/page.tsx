@@ -458,7 +458,7 @@ export default function DisciplineAdminPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {record.category?.name || "—"}
+                      {record.category?.name || "-"}
                     </td>
                     <td className="px-4 py-3">
                       <span

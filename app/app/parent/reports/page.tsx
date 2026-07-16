@@ -181,7 +181,7 @@ export default function ParentReportsPage() {
                               {result.assignmentTitle}
                             </td>
                             <td className="px-5 py-2 font-medium text-slate-900">
-                              {result.score != null ? `${result.score}%` : "—"}
+                              {result.score != null ? `${result.score}%` : "-"}
                             </td>
                             <td className="px-5 py-2">
                               <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">

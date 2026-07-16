@@ -106,7 +106,7 @@ function looksSensitive(key) {
 }
 
 async function sampleValue(key, type) {
-  if (looksSensitive(key)) return "(redacted — sensitive key name)";
+  if (looksSensitive(key)) return "(redacted - sensitive key name)";
   try {
     if (type === "string") {
       const v = await redis("GET", key);

@@ -1,5 +1,5 @@
 /**
- * Upstash Redis (REST API) — server-only, approved use cases only.
+ * Upstash Redis (REST API) - server-only, approved use cases only.
  *
  * Web-app jobs Redis owns here:
  * - Rate limiting (atomic sliding window)
@@ -13,7 +13,7 @@
  * DO NOT use for: dashboards, student lists, attendance, exam data, or general API caching.
  * See lib/redis/keys.ts, lib/supabase-protection.ts (TTL/dev-bucket policy), and .env.example.
  *
- * Uses @upstash/redis over HTTPS REST — no TCP pools (safe on Vercel serverless).
+ * Uses @upstash/redis over HTTPS REST - no TCP pools (safe on Vercel serverless).
  * Every write must use a TTL (setex / EX / PEXPIRE / clampRedisTtl).
  */
 
@@ -25,7 +25,7 @@ type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
 const CIRCUIT_THRESHOLD = 5;
 const CIRCUIT_COOLDOWN_MS = 30_000;
-/** DNS / permanent host failures — stay open longer and log less. */
+/** DNS / permanent host failures - stay open longer and log less. */
 const CIRCUIT_COOLDOWN_DNS_MS = 5 * 60_000;
 const LOG_THROTTLE_MS = 60_000;
 
@@ -99,7 +99,7 @@ function recordFailure(err?: unknown) {
     if (now - lastOpenLogAt > LOG_THROTTLE_MS) {
       console.warn(
         `[Redis] Circuit breaker: CLOSED → OPEN after ${consecutiveFailures} failures` +
-          (dnsFailureMode ? " (DNS/host unreachable — long cooldown)" : ""),
+          (dnsFailureMode ? " (DNS/host unreachable - long cooldown)" : ""),
       );
       lastOpenLogAt = now;
     }
@@ -221,7 +221,7 @@ export async function redisDel(key: string): Promise<void> {
   await withCircuitBreaker(() => redis.del(key).then(() => {}), undefined);
 }
 
-/** Get JSON — SDK auto-deserializes objects, arrays, numbers, booleans. */
+/** Get JSON - SDK auto-deserializes objects, arrays, numbers, booleans. */
 export async function redisGetJson<T>(key: string): Promise<T | null> {
   assertKey(key);
   const redis = await getRedisClient();
@@ -232,7 +232,7 @@ export async function redisGetJson<T>(key: string): Promise<T | null> {
   }, null);
 }
 
-/** Set JSON — SDK auto-serializes objects, arrays, numbers, booleans. */
+/** Set JSON - SDK auto-serializes objects, arrays, numbers, booleans. */
 export async function redisSetJson(
   key: string,
   value: unknown,
@@ -301,7 +301,7 @@ redis.call('PEXPIRE', key, window)
 return {1, max - count - 1, now + window}
 `;
 
-/** Sliding-window rate limit (sorted set) — atomic Upstash/Lua pattern. */
+/** Sliding-window rate limit (sorted set) - atomic Upstash/Lua pattern. */
 export async function redisSlidingWindowHit(params: {
   key: string;
   windowMs: number;

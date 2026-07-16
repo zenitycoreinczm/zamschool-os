@@ -57,7 +57,7 @@ function markKvAuthFailure(status: number) {
     console.warn(
       "[KV] Cloudflare KV REST returned " +
         status +
-        " — token lacks Workers KV edit permission or IP is blocked. " +
+        " - token lacks Workers KV edit permission or IP is blocked. " +
         "Disabling KV for 10m; Upstash Redis remains the primary rate-limit backend.",
     );
   }

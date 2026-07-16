@@ -58,7 +58,7 @@ test("server device bucket stays stable across calls (not per-call)", async () =
   try {
     mod.installSupabaseFetchGuard();
 
-    // Make multiple requests — old code created a new device ID per call,
+    // Make multiple requests - old code created a new device ID per call,
     // so activeDevices would grow. New code uses a stable server-pid bucket.
     for (let i = 0; i < 5; i++) {
       await fetch(`https://fake-project.supabase.co/rest/v1/call-${i}`);

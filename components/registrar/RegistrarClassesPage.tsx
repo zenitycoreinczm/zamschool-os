@@ -26,7 +26,7 @@ const PAGE_SIZE = 12;
 function gradeLabel(row: ClassRow) {
   if (row.grades?.name) return row.grades.name;
   if (row.grade_level != null) return `Grade ${row.grade_level}`;
-  return "—";
+  return "-";
 }
 
 function supervisorLabel(row: ClassRow) {
@@ -404,7 +404,7 @@ export default function RegistrarClassesPage() {
                       <p className="truncate text-[15px] font-semibold tracking-tight text-slate-900">{row.name}</p>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
                         <span><span className="font-medium text-slate-600">Grade:</span> {gradeLabel(row)}</span>
-                        <span className="tabular-nums"><span className="font-medium text-slate-600">Capacity:</span> {row.capacity ?? "—"}</span>
+                        <span className="tabular-nums"><span className="font-medium text-slate-600">Capacity:</span> {row.capacity ?? "-"}</span>
                         <span><span className="font-medium text-slate-600">Class teacher:</span> {supervisorLabel(row)}</span>
                         <span className="tabular-nums"><span className="font-medium text-slate-600">Students:</span> {enrolled}</span>
                       </div>
@@ -515,7 +515,7 @@ export default function RegistrarClassesPage() {
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Manage students</h2>
                 <p className="text-sm text-slate-500">
-                  {studentPanelClass.name} — {studentsInCurrentClass.length} enrolled
+                  {studentPanelClass.name} - {studentsInCurrentClass.length} enrolled
                 </p>
               </div>
               <button onClick={() => setStudentPanelClass(null)} className="w-8 h-8 rounded-lg bg-slate-100 grid place-items-center">

@@ -26,7 +26,7 @@ import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 
 // Roles that own the class entity (create/edit/delete). Everyone else with
 // access to this page (e.g. Academic Admin, Discipline Admin) gets a
-// read-only view — classes are created and managed by the Registrar.
+// read-only view - classes are created and managed by the Registrar.
 const CLASS_MANAGER_ROLES = new Set([
   "principal",
   "super_admin",
@@ -77,7 +77,7 @@ function gradeLabel(row: ClassRow) {
   if (row.grade_level != null) {
     return `Grade ${row.grade_level}`;
   }
-  return "—";
+  return "-";
 }
 
 function supervisorLabel(row: ClassRow) {
@@ -261,10 +261,10 @@ export default function AdminClassesPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href="/app/admin/users"
+              href="/app/registrar/people"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
             >
-              Users
+              People
             </Link>
             {canManageClasses ? (
               <button
@@ -450,7 +450,7 @@ export default function AdminClassesPage() {
                       </span>
                       <span className="tabular-nums">
                         <span className="font-medium text-slate-600">Capacity:</span>{" "}
-                        {row.capacity ?? "—"}
+                        {row.capacity ?? "-"}
                       </span>
                       <span>
                         <span className="font-medium text-slate-600">Class teacher:</span>{" "}

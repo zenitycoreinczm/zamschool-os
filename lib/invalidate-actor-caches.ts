@@ -16,24 +16,33 @@ export async function invalidateProfileCache(userId: string): Promise<void> {
 /**
  * Node API routes only: profile cache + middleware role map + Redis actor snapshot.
  * Pass the Supabase auth user id when known.
+ * Always pass schoolId when available - workspace Redis keys are school-scoped.
  */
-export async function invalidateActorCaches(authUserId: string): Promise<void> {
+export async function invalidateActorCaches(
+  authUserId: string,
+  schoolId?: string | null,
+): Promise<void> {
   const id = String(authUserId || "").trim();
   if (!id) return;
+  const school = String(schoolId || "").trim() || null;
 
   await invalidateProfileCache(id);
   invalidateMiddlewareProfileRole(id);
   invalidateWorkspaceHotRead(id);
-  invalidateInboxHotReads(id);
+  invalidateInboxHotReads(id, school);
 
   const { invalidateRoleCache } = await import("@/lib/redis/role-cache");
   await invalidateRoleCache(id);
 
   const { redisDel } = await import("@/lib/redis/client");
-  await Promise.all([
-    redisDel(shellCacheKey(id, null)),
-    redisDel(workspaceCacheKey(id, null)),
-  ]);
+  const keys = [
+    shellCacheKey(id, null),
+    workspaceCacheKey(id, null),
+  ];
+  if (school) {
+    keys.push(shellCacheKey(id, school), workspaceCacheKey(id, school));
+  }
+  await Promise.all(keys.map((key) => redisDel(key)));
 }
 
 /** Resolve profile id ↔ auth_user_id and invalidate all linked identity keys. */

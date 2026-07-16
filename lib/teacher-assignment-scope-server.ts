@@ -26,6 +26,14 @@ export async function loadTeacherAssignmentScope(input: {
     assignments: [],
   });
 
+  // Teaching assignments key off profile id; class teacher / lessons may use
+  // either profile id or teachers.id (both live in actorTeacherIds).
+  const actorProfileIds = Array.from(
+    new Set(
+      [input.actorProfileId, ...scopeWithActors.actorTeacherIds].filter(Boolean),
+    ),
+  );
+
   const [classesResult, lessonsResult, assignmentsResult] = await Promise.all([
     scopeWithActors.actorTeacherIds.length > 0
       ? supabaseAdmin
@@ -41,12 +49,12 @@ export async function loadTeacherAssignmentScope(input: {
           .eq("school_id", input.schoolId)
           .in("teacher_id", scopeWithActors.actorTeacherIds)
       : Promise.resolve({ data: [], error: null }),
-    scopeWithActors.actorTeacherIds.length > 0
+    actorProfileIds.length > 0
       ? supabaseAdmin
           .from("teacher_class_subject_assignments")
           .select("school_id, class_id, teacher_profile_id")
           .eq("school_id", input.schoolId)
-          .in("teacher_profile_id", scopeWithActors.actorTeacherIds)
+          .in("teacher_profile_id", actorProfileIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
 

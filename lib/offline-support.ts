@@ -2,16 +2,18 @@
  * Core routes and APIs that should remain useful when school networks drop
  * (common on shared LAN / mobile data in Zambian schools).
  *
- * Keep this list tight — over-caching sensitive write surfaces is harmful.
+ * Keep this list tight - over-caching sensitive write surfaces is harmful.
  * Warmup is role- and school-aware: platform super_admin must never fan out
  * into school-scoped APIs (those return 403 and thrash compile + Supabase).
  */
 
 export const OFFLINE_CORE_PAGE_URLS = [
-  // Leadership & admin
-  "/app/dashboard",
+  // Leadership & admin (legacy /app/admin/users retired)
   "/app/principal",
-  "/app/admin/users",
+  "/app/principal/staff",
+  "/app/hr-admin/directory",
+  "/app/ict-admin/recovery",
+  "/app/registrar/people",
   "/app/admin/fees",
   "/app/admin/finance",
   "/app/admin/classes",
@@ -77,7 +79,10 @@ const PAYMENTS_APIS = [
 
 const SCHOOL_ADMIN_PAGES = [
   "/app/principal",
-  "/app/admin/users",
+  "/app/principal/staff",
+  "/app/hr-admin/directory",
+  "/app/ict-admin/recovery",
+  "/app/registrar/people",
   "/app/admin/fees",
   "/app/admin/finance",
   "/app/admin/classes",
@@ -153,7 +158,7 @@ export function resolveOfflineWarmupApis(params: {
     return [];
   }
 
-  // No tenant yet (onboarding / broken link) — warming only produces 403 storms.
+  // No tenant yet (onboarding / broken link) - warming only produces 403 storms.
   if (!schoolId) {
     return [];
   }
@@ -185,7 +190,7 @@ export function resolveOfflineWarmupApis(params: {
     for (const path of PAYMENTS_APIS) apis.add(path);
   }
 
-  // Super admin with an explicit school link (rare) — admin pack only.
+  // Super admin with an explicit school link (rare) - admin pack only.
   if (role === "super_admin") {
     for (const path of SCHOOL_ADMIN_APIS) apis.add(path);
   }
@@ -195,7 +200,7 @@ export function resolveOfflineWarmupApis(params: {
 
 /**
  * App routes to soft-prefetch for offline navigation.
- * Keep this small — each path can force a multi-second Next compile in dev.
+ * Keep this small - each path can force a multi-second Next compile in dev.
  */
 export function resolveOfflineWarmupPages(params: {
   role?: string | null;

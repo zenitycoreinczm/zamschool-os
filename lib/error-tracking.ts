@@ -5,7 +5,7 @@
  * 1. Logs the error through the structured logger (always)
  * 2. Forwards to Sentry when SENTRY_DSN is set (production only)
  *
- * This avoids adding @sentry/node as a hard dependency — it only activates
+ * This avoids adding @sentry/node as a hard dependency - it only activates
  * when configured. In development, errors are logged but not forwarded.
  *
  * Usage:
@@ -39,10 +39,10 @@ async function getSentryHub() {
   }
 
   try {
-    // Dynamic import — only loaded when SENTRY_DSN is set.
-    // @sentry/node is an optional dependency (not in package.json) — the
+    // Dynamic import - only loaded when SENTRY_DSN is set.
+    // @sentry/node is an optional dependency (not in package.json) - the
     // catch block below handles the case where it is not installed.
-    // @ts-expect-error — module is optional and may not be installed
+    // @ts-expect-error - module is optional and may not be installed
     const Sentry = await import("@sentry/node");
     Sentry.init({
       dsn,
@@ -58,7 +58,7 @@ async function getSentryHub() {
     };
     return sentryHub;
   } catch {
-    // @sentry/node not installed — silently fall back to logger only
+    // @sentry/node not installed - silently fall back to logger only
     return null;
   }
 }
@@ -67,7 +67,7 @@ async function getSentryHub() {
  * Capture an error: log it through the structured logger and optionally
  * forward to Sentry when configured.
  *
- * Always non-throwing — safe to call in catch blocks.
+ * Always non-throwing - safe to call in catch blocks.
  */
 export function captureError(error: unknown, context: ErrorTrackingContext = {}): void {
   logger.error("error.captured", {
@@ -94,7 +94,7 @@ export function captureMessage(message: string, context: ErrorTrackingContext = 
   if (process.env.NODE_ENV === "production" && process.env.SENTRY_DSN) {
     void getSentryHub().then((hub) => {
       if (hub) {
-        // @ts-expect-error — captureMessage is optional on our hub interface
+        // @ts-expect-error - captureMessage is optional on our hub interface
         hub.captureMessage?.(message, context);
       }
     });

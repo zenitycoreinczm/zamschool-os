@@ -82,10 +82,10 @@ export default function AppPaymentFeesPage() {
             <tbody>
               {filtered.map((row) => (
                 <tr key={row.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3">{row.student ? `${row.student.first_name} ${row.student.last_name}` : "—"}</td>
+                  <td className="px-4 py-3">{row.student ? `${row.student.first_name} ${row.student.last_name}` : "-"}</td>
                   <td className="px-4 py-3 font-medium">K{row.amount}</td>
-                  <td className="px-4 py-3">{row.reference_number || "—"}</td>
-                  <td className="px-4 py-3">{row.payment_type || "—"}</td>
+                  <td className="px-4 py-3">{row.reference_number || "-"}</td>
+                  <td className="px-4 py-3">{row.payment_type || "-"}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs ${row.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : row.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
                       {row.status}

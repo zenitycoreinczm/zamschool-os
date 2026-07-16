@@ -192,10 +192,18 @@ export async function loadProfilesByIdentityIds(
 export function serializeAccountMessages(
   rows: any[],
   userId: string,
-  profilesByIdentity: Map<string, MessageParticipantProfile>
+  profilesByIdentity: Map<string, MessageParticipantProfile>,
+  actorIdentityIds?: string[],
 ) {
+  const actorIds = new Set(
+    [userId, ...(actorIdentityIds || [])]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean),
+  );
+
   return rows.map((row: any) => {
-    const isFromMe = row.sender_id === userId;
+    const senderId = String(row.sender_id || "").trim();
+    const isFromMe = actorIds.has(senderId);
     const otherIdentityId = isFromMe ? row.recipient_id : row.sender_id;
     const otherProfile = profilesByIdentity.get(String(otherIdentityId || "")) || null;
     const senderProfile = profilesByIdentity.get(String(row.sender_id || "")) || null;

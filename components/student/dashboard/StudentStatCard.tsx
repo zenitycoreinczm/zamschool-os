@@ -1,63 +1,27 @@
 import { cn } from "@/lib/utils";
 
-type Tone = "emerald" | "rose" | "amber" | "sky";
-
-const toneStyles: Record<
-  Tone,
-  { bar: string; soft: string; value: string }
-> = {
-  emerald: {
-    bar: "bg-emerald-500",
-    soft: "from-emerald-50/80 to-white",
-    value: "text-emerald-900",
-  },
-  rose: {
-    bar: "bg-rose-500",
-    soft: "from-rose-50/80 to-white",
-    value: "text-rose-900",
-  },
-  amber: {
-    bar: "bg-amber-500",
-    soft: "from-amber-50/80 to-white",
-    value: "text-amber-900",
-  },
-  sky: {
-    bar: "bg-sky-500",
-    soft: "from-sky-50/80 to-white",
-    value: "text-sky-900",
-  },
-};
+/** Kept for call-site compatibility; cards are now a single neutral palette. */
+type Tone = "emerald" | "rose" | "amber" | "sky" | "neutral";
 
 export function StudentStatCard({
   label,
   value,
-  tone,
 }: {
   label: string;
   value: string;
-  /** @deprecated Decorative icons removed — kept optional for call-site compatibility */
+  /** @deprecated Decorative icons removed - kept optional for call-site compatibility */
   icon?: React.ComponentType<{ className?: string }>;
-  tone: Tone;
+  /** @deprecated Multi-tone cards removed - ignored for a calmer single palette */
+  tone?: Tone;
 }) {
-  const styles = toneStyles[tone];
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200/90 bg-gradient-to-b p-4 shadow-sm sm:rounded-3xl sm:p-5",
-        styles.soft,
+        "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-5",
       )}
     >
-      <div
-        className={cn("mb-3 h-1 w-7 rounded-full", styles.bar)}
-        aria-hidden
-      />
       <p className="text-xs font-medium text-slate-500 sm:text-sm">{label}</p>
-      <p
-        className={cn(
-          "mt-1.5 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl",
-          styles.value,
-        )}
-      >
+      <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight text-slate-900 sm:text-3xl">
         {value}
       </p>
     </div>

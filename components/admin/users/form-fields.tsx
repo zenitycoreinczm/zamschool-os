@@ -71,7 +71,7 @@ export function SelectField({
       >
         {options.map((option) => (
           <option key={option || "__empty"} value={option}>
-            {option || "—"}
+            {option || "-"}
           </option>
         ))}
       </select>

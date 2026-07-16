@@ -150,10 +150,10 @@ async function loadSchoolName(schoolId: string): Promise<string | null> {
   return data?.name ? String(data.name) : null;
 }
 
-/** Minimal PDF 1.4 (text only) — no external deps. */
+/** Minimal PDF 1.4 (text only) - no external deps. */
 export function buildSchoolBackupPdf(snapshot: SchoolBackupSnapshot): Uint8Array {
   const lines = [
-    "ZamSchool OS — School backup summary",
+    "ZamSchool OS - School backup summary",
     "====================================",
     "",
     `School: ${snapshot.schoolName}`,
@@ -190,7 +190,7 @@ export function buildSchoolBackupPdf(snapshot: SchoolBackupSnapshot): Uint8Array
     "",
     "Note: This is an aggregate backup for Head Teacher / ICT Admin.",
     "Full learner records remain in the live system of record.",
-    "This file is not stored permanently — regenerate next period if needed.",
+    "This file is not stored permanently - regenerate next period if needed.",
   ];
 
   return encodeSimplePdf(lines);

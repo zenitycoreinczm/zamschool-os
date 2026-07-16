@@ -16,7 +16,7 @@ export function isR2CdnConfigured(): boolean {
   return Boolean(getConfiguredR2PublicUrl());
 }
 
-/** Dev/local fallback only — production should set R2_PUBLIC_URL. */
+/** Dev/local fallback only - production should set R2_PUBLIC_URL. */
 export function shouldUseAssetsAppProxy(): boolean {
   return !isR2CdnConfigured();
 }

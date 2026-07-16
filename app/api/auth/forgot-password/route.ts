@@ -36,7 +36,7 @@ async function findUserByEmail(
   }
 
   // 2. Fallback: search auth.users directly (handles auth-only accounts)
-  //    Uses a bounded scan — safe for school-scale user counts.
+  //    Uses a bounded scan - safe for school-scale user counts.
   const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
     perPage: 50,
   });
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     // Create a stateless HMAC-signed reset token (no Redis/DB storage needed)
     const token = createResetToken(user.id);
 
-    // Send reset email via custom SMTP (always — no Supabase fallback)
+    // Send reset email via custom SMTP (always - no Supabase fallback)
     const origin = getAppOrigin();
     const resetUrl = `${origin}/reset-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
 
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     );
 
     const text = [
-      "ZamSchool OS — Password Reset",
+      "ZamSchool OS - Password Reset",
       "",
       greeting,
       "",

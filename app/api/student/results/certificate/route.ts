@@ -231,14 +231,14 @@ async function loadStudentCertificates(profileId: string, schoolId: string | nul
     const sortedTotals = Array.from(classTotals.entries()).sort((a, b) => b[1] - a[1]);
     const rank = sortedTotals.findIndex(([sid]) => sid === studentRowId) + 1;
     const classSize = sortedTotals.length || 1;
-    const positionStr = rank > 0 ? `${getOrdinal(rank)} of ${classSize}` : "—";
+    const positionStr = rank > 0 ? `${getOrdinal(rank)} of ${classSize}` : "-";
 
     const verificationCode = generateVerificationCode(studentRowId, examTitle, schoolId || "");
 
     examResults.push({
       examTitle,
       studentName,
-      examNumber: studentRecord.student_number || "—",
+      examNumber: studentRecord.student_number || "-",
       className,
       schoolName,
       year: new Date().getFullYear(),

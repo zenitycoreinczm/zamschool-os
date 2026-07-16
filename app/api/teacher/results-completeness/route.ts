@@ -183,7 +183,7 @@ export async function GET(req: Request) {
         studentName:
           [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
           "Student",
-        examNumber: s.student_number || "—",
+        examNumber: s.student_number || "-",
         expectedSubjects: expectedCount,
         uploadedSubjects: uploadedCount,
         isComplete,

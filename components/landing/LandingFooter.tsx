@@ -6,19 +6,21 @@ const footerLinks = [
   {
     heading: "Platform",
     links: [
-      { label: "Admin Dashboard", href: "/login" },
-      { label: "Teacher Portal", href: "/login" },
-      { label: "Student Portal", href: "/login" },
-      { label: "Parent Portal", href: "/login" },
-      { label: "Register School", href: "/register" },
+      { label: "Features", href: "/#features" },
+      { label: "How it works", href: "/#how-it-works" },
+      { label: "Pricing", href: "/#pricing" },
+      { label: "Start free trial", href: "/register" },
+      { label: "Log in", href: "/login" },
     ],
   },
   {
-    heading: "Legal",
+    heading: "Trust & legal",
     links: [
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
       { label: "Cookie Policy", href: "/cookies" },
+      { label: "Security & trust", href: "/#trust" },
+      { label: "Contact", href: "mailto:zamschoolos@gmail.com" },
     ],
   },
 ];
@@ -47,18 +49,25 @@ export default function LandingFooter() {
             <span className="text-xl font-bold text-white">ZamSchool OS</span>
           </Link>
 
+          <p className="max-w-sm text-sm leading-6 text-slate-500">
+            School operating system for modern African schools: attendance,
+            people, communication, fees, and results in one place.
+          </p>
           <div className="flex flex-col gap-2.5 text-sm">
             <a
               href="mailto:zamschoolos@gmail.com"
               className="group flex items-center gap-2.5 transition-colors hover:text-white"
             >
               <Mail className="h-4 w-4 shrink-0 text-slate-600 transition-colors group-hover:text-sky-400" />
-              zamschoolos.com
+              zamschoolos@gmail.com
             </a>
-            <span className="flex items-center gap-2.5">
+            <a
+              href="tel:+260973385988"
+              className="flex items-center gap-2.5 transition-colors hover:text-white"
+            >
               <Phone className="h-4 w-4 shrink-0 text-slate-600" />
-              +260973385988
-            </span>
+              +260 973 385 988
+            </a>
             <span className="flex items-center gap-2.5">
               <MapPin className="h-4 w-4 shrink-0 text-slate-600" />
               Mungu, Zambia

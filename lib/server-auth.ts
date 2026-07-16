@@ -147,7 +147,7 @@ export async function requireActorContext(
     }
   }
 
-  // Session touch is best-effort telemetry — never block the request path.
+  // Session touch is best-effort telemetry - never block the request path.
   void touchActiveSession({
     userId: user.id,
     lastSeenAt: Date.now(),
@@ -230,7 +230,7 @@ export async function requirePrincipalContext(req?: Request) {
 }
 
 /**
- * Head Teacher override gate — for operations that only the Head Teacher
+ * Head Teacher override gate - for operations that only the Head Teacher
  * can perform (e.g. unpublishing results, overriding discipline records).
  */
 export async function requirePrincipalOverrideContext(req?: Request) {
@@ -371,7 +371,7 @@ export async function requireTeacherOrParentContext(req?: Request) {
 
 const FINANCIAL_ROLES: KnownRole[] = ["BURSAR", "PAYMENTS", "SUPER_ADMIN"];
 const FINANCIAL_DELEGATED_READ_ROLES: KnownRole[] = ["PRINCIPAL"];
-/** Single auth pass for chart/list reads — avoids double getUser for principals. */
+/** Single auth pass for chart/list reads - avoids double getUser for principals. */
 const FINANCIAL_READ_ROLES: KnownRole[] = [
   ...FINANCIAL_ROLES,
   ...FINANCIAL_DELEGATED_READ_ROLES,

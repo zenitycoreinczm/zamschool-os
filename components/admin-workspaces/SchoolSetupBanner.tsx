@@ -133,7 +133,7 @@ export default function SchoolSetupBanner({
               <li key={key}>
                 <span className="font-medium text-slate-700">{key}</span>: {result.status}
                 {typeof result.count === "number" ? ` (${result.count})` : ""}
-                {result.error ? ` — ${result.error}` : ""}
+                {result.error ? ` - ${result.error}` : ""}
               </li>
             ))}
           </ul>

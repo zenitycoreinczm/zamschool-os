@@ -39,7 +39,7 @@ export const LOAD_TEST_TIERS: Record<
     label: "1000 concurrent users",
     concurrency: 200,
     durationSec: 180,
-    description: "Stress test — expect Supabase pool / Redis limits",
+    description: "Stress test - expect Supabase pool / Redis limits",
   },
 };
 

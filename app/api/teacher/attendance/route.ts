@@ -274,6 +274,8 @@ export async function POST(req: Request) {
           classSupervisorId: classRow?.supervisor_id || null,
           lessonSchoolId: lesson.school_id,
           actorSchoolId: schoolId,
+          classId: lesson.class_id,
+          allowedClassIds: assignmentScope.allowedClassIds,
         }),
     );
 
@@ -431,7 +433,7 @@ export async function POST(req: Request) {
       return { parentCount: 0, notificationCount: 0 };
     });
 
-    // Don't await — let it run in the background
+    // Don't await - let it run in the background
     const notificationDelivery = await notificationPromise;
 
     return NextResponse.json({
@@ -741,7 +743,7 @@ async function loadExistingAttendance(input: {
   sessionTime?: string | null;
 }) {
   const supabaseAdmin = getSupabaseAdmin();
-  // Don't filter by session_time — the unique constraint
+  // Don't filter by session_time - the unique constraint
   // (attendance_roll_call_unique) doesn't include it, and NULL ≠ "" in
   // Postgres would silently break the lookup. Session name is the
   // distinguishing key (e.g. "Morning - Math" vs "Afternoon - Math").

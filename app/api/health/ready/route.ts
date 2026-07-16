@@ -6,7 +6,7 @@ import { isKvConfigured } from "@/lib/kv-client";
 import { isR2CdnConfigured } from "@/lib/r2-config";
 
 /**
- * Dependency readiness probe — boolean status only.
+ * Dependency readiness probe - boolean status only.
  * Does not expose architecture details, hostnames, or secrets.
  */
 export async function GET(req: Request) {
@@ -37,6 +37,18 @@ export async function GET(req: Request) {
   const r2PublicCdn = isR2CdnConfigured();
   const kvConfigured = isKvConfigured();
   const gatewayConfigured = Boolean(process.env.NEXT_PUBLIC_GATEWAY_URL?.trim());
+  const supabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+  );
+  const freeTierProtected =
+    process.env.ZAMSCHOOL_FREE_TIER !== "false" &&
+    (process.env.ZAMSCHOOL_FREE_TIER === "true" ||
+      process.env.VERCEL_ENV === "production" ||
+      process.env.NODE_ENV === "production");
+  const supabaseGuardDisabled =
+    process.env.NEXT_PUBLIC_DISABLE_SUPABASE_GUARD === "true";
 
   const production = process.env.NODE_ENV === "production";
   const redisRequired = production || redisConfigured;
@@ -57,9 +69,16 @@ export async function GET(req: Request) {
         configured: r2Credentials,
         publicCdn: r2PublicCdn,
       },
+      supabase: {
+        configured: supabaseConfigured,
+        guardDisabled: supabaseGuardDisabled,
+      },
       edge: {
         kvConfigured,
         gatewayConfigured,
+      },
+      protection: {
+        freeTier: freeTierProtected,
       },
     },
   };

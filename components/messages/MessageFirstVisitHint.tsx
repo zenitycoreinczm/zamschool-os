@@ -46,7 +46,7 @@ export function MessageFirstVisitHint({
         </span>
         <p className="min-w-0 text-sm leading-relaxed text-slate-600">
           <span className="font-semibold text-slate-900">Tip: </span>
-          Up to {dailyLimit} school messages per day — homework help, a contact number, or meeting
+          Up to {dailyLimit} school messages per day - homework help, a contact number, or meeting
           on campus. Reading is always unlimited.
         </p>
       </div>

@@ -21,7 +21,7 @@ function readArg(name) {
 const severity = (readArg("severity") || "P3").toUpperCase();
 const summary = readArg("summary");
 const school = readArg("school") || "Pilot school";
-const reporter = readArg("reporter") || "—";
+const reporter = readArg("reporter") || "-";
 const status = readArg("status") || "open";
 
 if (!summary) {
@@ -56,7 +56,7 @@ const block = `
 | **Impact** | TBD |
 | **Root cause** | TBD |
 | **Mitigation** | TBD |
-| **Closed** | — |
+| **Closed** | - |
 `;
 
 let next = source;

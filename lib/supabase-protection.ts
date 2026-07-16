@@ -1,5 +1,5 @@
 /**
- * ZamSchool OS — Supabase protection policy (source of truth for what may hit Postgres).
+ * ZamSchool OS - Supabase protection policy (source of truth for what may hit Postgres).
  *
  * Layer stack: Cloudflare → Next.js Cache-Control → in-memory hot-read → Redis (approved keys) → Supabase.
  */
@@ -10,10 +10,10 @@ export const SUPABASE_PROTECTION = {
   /** Redis actor snapshot (role + schoolId). */
   redisRoleTtlSec: 15 * 60,
   /** Debounced unread badge counts (in-memory, per process). */
-  unreadCountsTtlSec: 45,
+  unreadCountsTtlSec: 15,
   /** Workspace shell stable fields (profile, school name, term). */
   workspaceStableTtlSec: 120,
-  /** Auth admin metadata (email_confirmed) — expensive admin API. */
+  /** Auth admin metadata (email_confirmed) - expensive admin API. */
   authMetaTtlSec: 300,
 } as const;
 

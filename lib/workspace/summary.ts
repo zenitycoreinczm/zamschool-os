@@ -19,7 +19,7 @@ export type WorkspaceSummary = {
   role: KnownRole;
   metrics: WorkspaceMetric[];
   highlights: string[];
-  /** Where school-wide counts came from — helps ops verify Redis shielding. */
+  /** Where school-wide counts came from - helps ops verify Redis shielding. */
   metricsSource?: "redis" | "supabase" | "memory";
 };
 
@@ -166,7 +166,7 @@ function metricsForRole(
 
   switch (role) {
     case "PRINCIPAL":
-      // Header omits Students/Teachers — those live in School pulse / UserCards.
+      // Header omits Students/Teachers - those live in School pulse / UserCards.
       return [
         metric("Classes", String(data.classCount), "Active classes"),
         metric("Pending Invites", String(data.pendingInvites), "Awaiting acceptance"),
@@ -297,7 +297,7 @@ function highlightsForRole(
         `${data.pendingInvites} staff invitation(s) still awaiting acceptance`,
       );
     } else {
-      items.push("No open staff invitations — directory is the source of truth");
+      items.push("No open staff invitations - directory is the source of truth");
     }
     items.push("Keep departments and employment records current for payroll-ready profiles");
   }
@@ -512,7 +512,7 @@ async function loadLinkedChildrenCount(schoolId: string, parentProfileId: string
     .maybeSingle();
 
   if (!parentRow?.id) {
-    // profiles.parent_id does not exist in baseline schema — no legacy count.
+    // profiles.parent_id does not exist in baseline schema - no legacy count.
     return 0;
   }
 

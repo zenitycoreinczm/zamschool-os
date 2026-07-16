@@ -94,7 +94,7 @@ export function useWorkspaceSummary() {
   const [error, setError] = useState("");
 
   const refresh = useCallback(async (force = false) => {
-    // School metrics APIs require a tenant — skip for platform super_admin.
+    // School metrics APIs require a tenant - skip for platform super_admin.
     if (!schoolId) {
       setMetrics([]);
       setHighlights([]);

@@ -142,7 +142,7 @@ export function getPublicUrl(
     return `${r2Public}/${encodedKey}`;
   }
 
-  // Same-origin proxy — works with next/image without extra remotePatterns
+  // Same-origin proxy - works with next/image without extra remotePatterns
   return `/api/public/assets/${encodedKey}`;
 }
 

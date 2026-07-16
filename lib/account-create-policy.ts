@@ -9,13 +9,30 @@ import { normalizeRole, roleToStoredValue } from "./roles.ts";
 const BLOCKED_TARGET_ROLES = new Set([
   "principal",
   "super_admin",
-  // Legacy value — also blocked if any client still posts it raw before normalize.
+  // Legacy value - also blocked if any client still posts it raw before normalize.
   "admin",
 ]);
 
 /**
- * Head Teacher and platform Super Admin can provision school staff roles
- * (Deputy Head, bursar, registrar, teachers, …) — not another Head Teacher.
+ * Office / leadership roles Head Teacher may invite via Staff invitations.
+ * Students, parents, and classroom teachers are Registrar People only.
+ */
+const PRINCIPAL_STAFF_CREATE_ROLES = new Set([
+  "deputy_head",
+  "bursar",
+  "payments",
+  "guidance_office",
+  "academic_admin",
+  "hr_admin",
+  "ict_admin",
+  "discipline_admin",
+  "registrar",
+]);
+
+/**
+ * Head Teacher invites office staff only (not students/parents/teachers).
+ * Platform Super Admin can provision any non-blocked school role.
+ * Registrar owns classroom people: student / parent / teacher.
  */
 export function canActorCreateSchoolRole(
   actorRole: string | null | undefined,
@@ -28,12 +45,16 @@ export function canActorCreateSchoolRole(
   }
 
   // normalizeRole maps legacy admin → PRINCIPAL
-  if (actor === "PRINCIPAL" || actor === "SUPER_ADMIN") {
+  if (actor === "PRINCIPAL") {
+    return PRINCIPAL_STAFF_CREATE_ROLES.has(target);
+  }
+
+  if (actor === "SUPER_ADMIN") {
     return true;
   }
 
   if (actor === "ICT_ADMIN") {
-    // ICT manages system accounts only — not finance ownership roles.
+    // ICT manages system accounts only - not finance ownership roles.
     const ictAllowedTargets = new Set([
       "teacher",
       "student",
@@ -50,9 +71,8 @@ export function canActorCreateSchoolRole(
     return ictAllowedTargets.has(target);
   }
 
-  // HR maintains existing staff records only — never provisions accounts.
-  // Head Teacher invites office staff; Registrar (or Head Teacher) creates
-  // students/parents/teachers as appropriate.
+  // HR maintains existing staff records only - never provisions accounts.
+  // Head Teacher invites office staff; Registrar creates students/parents/teachers.
   if (actor === "HR_ADMIN") {
     return false;
   }
@@ -77,6 +97,20 @@ export function blockedRoleCreationMessage(
   const raw = String(targetRole || "")
     .trim()
     .toLowerCase();
+
+  if (actor === "PRINCIPAL") {
+    if (
+      target === "student" ||
+      target === "parent" ||
+      target === "teacher" ||
+      raw === "student" ||
+      raw === "parent" ||
+      raw === "teacher"
+    ) {
+      return "Students, parents, and classroom teachers are created by the Registrar on People - not from Head Teacher. Use Invite staff for office roles only.";
+    }
+  }
+
   if (target === "principal" || raw === "admin" || raw === "administrator") {
     return "Head Teacher accounts are created only when the school is registered. School Administrator is no longer a separate role.";
   }

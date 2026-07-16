@@ -526,7 +526,7 @@ export default function SuperAdminPage() {
         </button>
       </div>
 
-      {/* Stats — text only, no decorative icons */}
+      {/* Stats - text only, no decorative icons */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Total", value: stats.total },
@@ -555,7 +555,7 @@ export default function SuperAdminPage() {
             <strong>3 hours</strong> (customizable).
           </li>
           <li>
-            By default a code can only be used <strong>once</strong> — one school
+            By default a code can only be used <strong>once</strong> - one school
             registration.
           </li>
           <li>

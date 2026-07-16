@@ -133,16 +133,18 @@ export const EMPTY_FORM: UserForm = {
   supervised_class_ids: [],
 };
 
-/** Admin-subtype roles that shouldn't use the principal user console. */
+/** Roles that should not use the people directory console (redirect home). */
 export const ADMIN_SUBTYPE_ROLE_DASHBOARDS: Record<string, string> = {
+  // Head Teacher manages access via Invite staff - not the people directory.
+  PRINCIPAL: "/app/principal/staff",
   DEPUTY_HEAD: "/app/deputy-head",
   BURSAR: "/app/bursar",
   GUIDANCE_OFFICE: "/app/guidance",
   ACADEMIC_ADMIN: "/app/academic-admin",
-  HR_ADMIN: "/app/hr-admin",
-  ICT_ADMIN: "/app/ict-admin",
+  HR_ADMIN: "/app/hr-admin/directory",
+  ICT_ADMIN: "/app/ict-admin/recovery",
   DISCIPLINE_ADMIN: "/app/discipline-admin",
-  REGISTRAR: "/app/registrar",
+  REGISTRAR: "/app/registrar/people",
 };
 
 export function adminSubtypeHomePath(role: string): string | null {
@@ -151,11 +153,11 @@ export function adminSubtypeHomePath(role: string): string | null {
 
 /** Canonical role strings (same values as KnownRole in lib/roles). */
 export const USERS_CONSOLE_ALLOWED_ROLES = new Set<string>([
-  "PRINCIPAL",
+  // Head Teacher uses Invite staff - not this directory.
   "SUPER_ADMIN",
   "REGISTRAR",
   "ICT_ADMIN",
-  // HR owns staff records — must open the directory (not bounce to HR hub).
+  // HR owns staff records - must open the directory (not bounce to HR hub).
   "HR_ADMIN",
 ]);
 

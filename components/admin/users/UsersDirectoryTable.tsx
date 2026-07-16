@@ -99,7 +99,7 @@ export function UsersDirectoryTable({
         }
         description={
           hasSearch
-            ? "Try a different name, email, or ID — or clear the search to see everyone."
+            ? "Try a different name, email, or ID - or clear the search to see everyone."
             : canCreateUsers
               ? `Add the first ${meta.singular} to start building your school directory.`
               : "No staff on the directory yet. The Head Teacher invites people; they appear here after they accept."
@@ -192,15 +192,15 @@ export function UsersDirectoryTable({
                       ) : null}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {row.email || "—"}
+                      {row.email || "-"}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {row.phone || "—"}
+                      {row.phone || "-"}
                     </td>
                     {activeTab === "students" ? (
                       <>
                         <td className="px-4 py-3 text-slate-600">
-                          {row.admission_number || "—"}
+                          {row.admission_number || "-"}
                         </td>
                         <td className="px-4 py-3 text-slate-600">
                           {(row.class_id
@@ -208,17 +208,17 @@ export function UsersDirectoryTable({
                             : undefined) ||
                             row.class_name ||
                             row.class ||
-                            "—"}
+                            "-"}
                         </td>
                       </>
                     ) : null}
                     {activeTab === "teachers" ? (
                       <>
                         <td className="px-4 py-3 text-slate-600">
-                          {row.employee_id || "—"}
+                          {row.employee_id || "-"}
                         </td>
                         <td className="px-4 py-3 text-slate-600">
-                          {row.department || "—"}
+                          {row.department || "-"}
                         </td>
                       </>
                     ) : null}
@@ -227,13 +227,13 @@ export function UsersDirectoryTable({
                         <td className="px-4 py-3 text-slate-600">
                           {(typeof parentMeta.relation_type === "string" &&
                             parentMeta.relation_type) ||
-                            "—"}
+                            "-"}
                         </td>
                         <td className="px-4 py-3 text-slate-600">
                           {(typeof parentMeta.occupation === "string" &&
                             parentMeta.occupation) ||
                             row.occupation ||
-                            "—"}
+                            "-"}
                         </td>
                       </>
                     ) : null}

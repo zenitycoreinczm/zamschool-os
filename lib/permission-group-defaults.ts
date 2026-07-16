@@ -20,6 +20,15 @@ export type PermissionGroupSeed = {
  * Canonical permission group seeds written to permission_groups /
  * permission_group_roles / permission_features during school initialization.
  */
+/**
+ * Permission seeds.
+ *
+ * Rule of thumb for domain owners:
+ * - Use full() when the role both creates AND removes records (CRUD lifecycle).
+ * - Use writable() only when delete must stay blocked (rare).
+ * - writable() sets can_delete=false - that caused "can create but not delete"
+ *   bugs (timetable, subjects, announcements, etc.).
+ */
 export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
   {
     name: "Head Teacher Authority",
@@ -37,10 +46,10 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       full("grading_scales", false),
       full("academic_years", false),
       full("terms", false),
-      writable("settings"),
-      writable("announcements"),
-      writable("messages"),
-      writable("notifications"),
+      full("settings"),
+      full("announcements"),
+      full("messages"),
+      full("notifications"),
       full("finance"),
       full("payments"),
       full("audit"),
@@ -49,28 +58,28 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
   },
   {
     name: "Deputy Head Authority",
-    description: "Academic quality control — review and validate, not create.",
+    description: "Academic quality control - review and validate, not create.",
     roles: ["DEPUTY_HEAD"],
     features: [
       readOnly("users"),
       readOnly("classes"),
       readOnly("subjects"),
-      writable("attendance"),
-      writable("grades"),
+      full("attendance"),
+      full("grades"),
       readOnly("timetable"),
       readOnly("grading_scales"),
       readOnly("academic_years"),
       readOnly("terms"),
-      writable("announcements"),
-      writable("messages"),
-      writable("notifications"),
+      full("announcements"),
+      full("messages"),
+      full("notifications"),
     ],
   },
   {
     name: "Finance Office",
     description: "Separated financial access for bursars and payments staff",
     roles: ["BURSAR", "PAYMENTS"],
-    features: [writable("finance"), writable("payments"), readOnly("users")],
+    features: [full("finance"), full("payments"), readOnly("users")],
   },
   {
     name: "Guidance Office",
@@ -79,19 +88,19 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     features: [
       readOnly("users"),
       readOnly("attendance"),
-      writable("discipline"),
-      writable("messages"),
+      full("discipline"),
+      full("messages"),
     ],
   },
   {
     name: "Discipline Management",
-    description: "Student conduct administration — no academic data access.",
+    description: "Student conduct administration - no academic data access.",
     roles: ["DISCIPLINE_ADMIN"],
     features: [
       readOnly("users"),
       readOnly("attendance"),
-      writable("discipline"),
-      writable("messages"),
+      full("discipline"),
+      full("messages"),
     ],
   },
   {
@@ -100,11 +109,11 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       "Technical support, user recovery (including authenticator reset), and audit. No academic data access. Session console is not shipped yet.",
     roles: ["ICT_ADMIN"],
     features: [
-      writable("users"),
-      writable("settings"),
+      full("users"),
+      full("settings"),
       readOnly("audit"),
-      writable("messages"),
-      writable("notifications"),
+      full("messages"),
+      full("notifications"),
     ],
   },
   {
@@ -113,13 +122,13 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       "Student admissions, parent registration, transfers, and biodata management. No finance, grading, or HR access.",
     roles: ["REGISTRAR"],
     features: [
-      writable("users"),
-      writable("classes"),
+      full("users"),
+      full("classes"),
       readOnly("attendance"),
       readOnly("grades"),
       readOnly("announcements"),
-      writable("messages"),
-      writable("notifications"),
+      full("messages"),
+      full("notifications"),
     ],
   },
   {
@@ -130,14 +139,15 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     features: [
       readOnly("users"),
       readOnly("classes"),
-      writable("subjects"),
+      // full() on every feature that has a DELETE API - create without delete is broken UX.
+      full("subjects"),
       readOnly("attendance"),
-      writable("grades"),
-      writable("assignments"),
-      writable("timetable"),
-      writable("grading_scales"),
-      writable("academic_years"),
-      writable("terms"),
+      full("grades"),
+      full("assignments"),
+      full("timetable"),
+      full("grading_scales"),
+      full("academic_years"),
+      full("terms"),
     ],
   },
   {
@@ -146,7 +156,7 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       "Maintain existing staff employment records and departments. Does not create accounts or send invitations (Head Teacher).",
     roles: ["HR_ADMIN"],
     features: [
-      // Read + update staff profiles only — no create/delete accounts.
+      // Read + update staff profiles only - no create/delete accounts.
       readUpdate("users"),
       // Class/subject labels needed when viewing teacher employment assignments.
       readOnly("classes"),
@@ -161,9 +171,10 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
     description: "Teacher access scoped to assigned classes and departments",
     roles: ["TEACHER"],
     features: [
-      writable("attendance", "own"),
-      writable("grades", "own"),
-      writable("assignments", "own"),
+      // Teachers need delete on own attendance corrections / draft assignments / grades.
+      full("attendance", true, "own"),
+      full("grades", true, "own"),
+      full("assignments", true, "own"),
       readOnly("users", "department"),
     ],
   },

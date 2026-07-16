@@ -6,7 +6,7 @@
  * with configurable concurrency limits.
  *
  * Note: In serverless, module state is per-isolate (not global across
- * instances). That is intentional — each isolate self-throttles so a
+ * instances). That is intentional - each isolate self-throttles so a
  * single cold start cannot open unbounded concurrent Supabase calls.
  */
 

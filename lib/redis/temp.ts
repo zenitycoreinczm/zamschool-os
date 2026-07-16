@@ -29,7 +29,7 @@ export async function storeTempToken(
 ): Promise<boolean> {
   if (!isRedisConfigured()) return false;
   if (payload.length > 512) {
-    console.warn("[Redis] Temp token payload too large — rejected");
+    console.warn("[Redis] Temp token payload too large - rejected");
     return false;
   }
   return redisSet(tempTokenKey(kind, id), payload, ttlSeconds);

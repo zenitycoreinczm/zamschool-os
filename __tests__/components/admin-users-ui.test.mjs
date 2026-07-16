@@ -77,7 +77,7 @@ describe("admin users UI polish", () => {
     const directory = read("useUsersDirectory.ts");
     assert.match(directory, /fetchClassOptions/);
     assert.match(directory, /fetchSubjectOptions/);
-    // Both helpers must catch errors — HR lacks classes:read on many schools
+    // Both helpers must catch errors - HR lacks classes:read on many schools
     // and a hard throw previously aborted the whole directory load.
     assert.match(
       directory,

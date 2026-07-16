@@ -35,7 +35,7 @@ if (r2Endpoint && r2Key && r2Secret) {
     const url = getPublicUrl(key, 'assets');
     ok('R2 S3 API (upload)', `Credentials work. Sample URL: ${url}`);
     if (!publicUrl) {
-      fail('R2 public CDN URL', 'R2_PUBLIC_URL unset — avatars use /api/public/assets proxy (slower).');
+      fail('R2 public CDN URL', 'R2_PUBLIC_URL unset - avatars use /api/public/assets proxy (slower).');
     } else if (url.startsWith(publicUrl.replace(/\/+$/, ''))) {
       ok('R2 public CDN URL', publicUrl);
     } else {
@@ -77,12 +77,12 @@ if (!accountId || !apiToken) {
     if (code === 9109) {
       fail(
         'CF API R2 permissions',
-        `${msg} — add your current IP to the token allowlist in Cloudflare Dashboard → My Profile → API Tokens.`
+        `${msg} - add your current IP to the token allowlist in Cloudflare Dashboard → My Profile → API Tokens.`
       );
     } else {
       fail(
         'CF API R2 permissions',
-        `${msg} — create a token with Account → R2 → Read (and Workers if deploying gateway).`
+        `${msg} - create a token with Account → R2 → Read (and Workers if deploying gateway).`
       );
     }
   }
@@ -123,9 +123,9 @@ if (whoami.includes('You are logged in') || whoami.includes('@')) {
 } else if (whoami.includes('not authenticated')) {
   fail('Wrangler auth', 'Run: cd workers/gateway && npx wrangler login');
 } else if (whoami.includes('9109') || whoami.includes('location')) {
-  fail('Wrangler auth', 'API token IP allowlist blocks this machine — update token in dashboard');
+  fail('Wrangler auth', 'API token IP allowlist blocks this machine - update token in dashboard');
 } else if (whoami.includes('10000') || whoami.includes('Authentication error')) {
-  fail('Wrangler auth', 'Token lacks permissions — use R2 Read + Workers Scripts Edit for gateway deploy');
+  fail('Wrangler auth', 'Token lacks permissions - use R2 Read + Workers Scripts Edit for gateway deploy');
 } else {
   fail('Wrangler auth', whoami.trim().split('\n').slice(-3).join(' ') || 'unknown');
 }

@@ -15,12 +15,12 @@ test("sanitizeWorkspaceSearchQuery trims and strips unsafe characters", () => {
 
 test("navItemsToWorkspacePages maps sidebar routes into page results", () => {
   const pages = navItemsToWorkspacePages([
-    { href: "/app/admin/users", label: "Users" },
+    { href: "/app/registrar/people", label: "Users" },
   ]);
 
   assert.equal(pages.length, 1);
   assert.equal(pages[0].kind, "page");
-  assert.equal(pages[0].href, "/app/admin/users");
+  assert.equal(pages[0].href, "/app/registrar/people");
 });
 
 test("mergeWorkspaceSearchResults prioritizes page matches and dedupes", () => {
@@ -31,7 +31,7 @@ test("mergeWorkspaceSearchResults prioritizes page matches and dedupes", () => {
         kind: "page",
         label: "Users",
         hint: "app / admin / users",
-        href: "/app/admin/users",
+        href: "/app/registrar/people",
       },
     ],
     [
@@ -40,7 +40,7 @@ test("mergeWorkspaceSearchResults prioritizes page matches and dedupes", () => {
         kind: "person",
         label: "John Users",
         hint: "Student",
-        href: "/app/admin/users?q=John%20Users",
+        href: "/app/registrar/people?q=John%20Users",
       },
     ],
     "users"
@@ -53,7 +53,7 @@ test("mergeWorkspaceSearchResults prioritizes page matches and dedupes", () => {
 test("filterWorkspacePageItems returns suggestions when query is empty", () => {
   const pages = navItemsToWorkspacePages([
     { href: "/app/dashboard", label: "Dashboard" },
-    { href: "/app/admin/users", label: "Users" },
+    { href: "/app/registrar/people", label: "Users" },
   ]);
 
   assert.equal(filterWorkspacePageItems(pages, "").length, 2);

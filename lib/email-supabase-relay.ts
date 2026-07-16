@@ -2,11 +2,11 @@
  * Supabase Email Relay
  *
  * Sends emails through Supabase Auth's configured SMTP (set in the Supabase dashboard)
- * by calling the GoTrue admin API directly — no SMTP env vars required.
+ * by calling the GoTrue admin API directly - no SMTP env vars required.
  *
  * This handles auth-triggered emails: password recovery, invite, and magic link emails.
  * For custom-content emails (OTP codes, temporary credentials), direct SMTP credentials
- * in .env.local are required — the relay logs these for development.
+ * in .env.local are required - the relay logs these for development.
  *
  * Supabase SMTP is configured at:
  *   Supabase Dashboard → Project → Auth → Settings → SMTP Provider

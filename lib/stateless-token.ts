@@ -1,7 +1,7 @@
 /**
  * Stateless, self-validating tokens using HMAC-SHA256.
  *
- * No Redis or database storage needed — the token carries its own
+ * No Redis or database storage needed - the token carries its own
  * payload (userId + expiry) signed with a server-side secret.
  *
  * Used for password-reset links so custom SMTP works even when
@@ -17,7 +17,7 @@ function getTokenSecret(): string {
     process.env.RESET_TOKEN_SECRET;
   if (!seed) {
     throw new Error(
-      "Security Error: Cannot mint reset token — no HMAC secret available. " +
+      "Security Error: Cannot mint reset token - no HMAC secret available. " +
         "Set SUPABASE_SERVICE_ROLE_KEY, SMTP_PASS, or RESET_TOKEN_SECRET.",
     );
   }

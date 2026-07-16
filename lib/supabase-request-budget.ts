@@ -113,7 +113,7 @@ let lastBudgetWarningAt = 0;
 const BUDGET_WARNING_THROTTLE_MS = 10_000;
 
 /**
- * Log a warning if approaching the limit (throttled — page loads can hit this
+ * Log a warning if approaching the limit (throttled - page loads can hit this
  * many times per second and spam the console).
  */
 function checkWarning(): void {

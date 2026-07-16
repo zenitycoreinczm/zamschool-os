@@ -110,7 +110,7 @@ export function SchoolBackupCard({
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast.success("PDF downloaded — keep a copy offline");
+      toast.success("PDF downloaded - keep a copy offline");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Download failed");
     } finally {
@@ -171,7 +171,7 @@ export function SchoolBackupCard({
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Meta
             label="Period"
-            value={status?.periodLabel || status?.periodId || "—"}
+            value={status?.periodLabel || status?.periodId || "-"}
           />
           <Meta
             label="Generated"
@@ -186,7 +186,7 @@ export function SchoolBackupCard({
             value={
               snap?.expiresAt
                 ? new Date(snap.expiresAt).toLocaleString()
-                : "—"
+                : "-"
             }
           />
           <Meta

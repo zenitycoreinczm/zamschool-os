@@ -54,11 +54,10 @@ export function useUsersDirectory() {
     normalizedWorkspaceRole &&
       USERS_RECOVERY_ROLES.has(normalizedWorkspaceRole),
   );
-  const canInviteStaff =
-    normalizedWorkspaceRole === "PRINCIPAL" ||
-    normalizedWorkspaceRole === "SUPER_ADMIN";
+  // Head Teacher invites from /app/principal/staff only (not this directory).
+  const canInviteStaff = normalizedWorkspaceRole === "SUPER_ADMIN";
   const isHrConsole = normalizedWorkspaceRole === "HR_ADMIN";
-  /** HR maintains records only — never creates or deletes accounts. */
+  /** HR maintains records only - never creates or deletes accounts. */
   const canCreateUsers = !isHrConsole && !isRecoveryConsole;
   const canDeleteUsers = !isHrConsole && !isRecoveryConsole;
 
@@ -140,7 +139,7 @@ export function useUsersDirectory() {
       setClassOptions(options);
       return options;
     } catch {
-      // HR and other limited roles may lack classes:read — directory still works.
+      // HR and other limited roles may lack classes:read - directory still works.
       setClassOptions([]);
       return [] as ClassOption[];
     }

@@ -17,12 +17,12 @@ test("onConflict target matches attendance_roll_call_unique (no session_time)", 
   assert.match(
     attendanceSource,
     /onConflict:\s*["']school_id,class_id,student_id,attendance_date,session_name["']/,
-    "onConflict must not include session_time — it doesn't match any unique constraint",
+    "onConflict must not include session_time - it doesn't match any unique constraint",
   );
   assert.doesNotMatch(
     attendanceSource,
     /onConflict:\s*["']school_id,class_id,student_id,attendance_date,session_name,session_time["']/,
-    "old onConflict with session_time must be gone — it causes a DB error",
+    "old onConflict with session_time must be gone - it causes a DB error",
   );
 });
 
@@ -34,7 +34,7 @@ test("loadExistingAttendance does not filter by session_time", () => {
   assert.doesNotMatch(
     fnMatch[0],
     /\.eq\(\s*["']session_time["']/,
-    "loadExistingAttendance must not filter by session_time — NULL ≠ '' breaks the query",
+    "loadExistingAttendance must not filter by session_time - NULL ≠ '' breaks the query",
   );
 });
 
@@ -87,7 +87,7 @@ test("SICK status is not in the Zod schema (DB doesn't support it)", () => {
   assert.doesNotMatch(
     attendanceSource,
     /attendanceStatusSchema[\s\S]*?"SICK"/,
-    "SICK must not be in the Zod schema — the DB CHECK constraint only allows present/absent/late/excused",
+    "SICK must not be in the Zod schema - the DB CHECK constraint only allows present/absent/late/excused",
   );
 });
 
@@ -99,7 +99,7 @@ test("Evening is available in SESSION_TYPES on the frontend", () => {
   assert.match(
     pageSource,
     /["']Evening["']/,
-    "Evening must be in SESSION_TYPES — it was missing, causing evening lessons to have no matching dropdown option",
+    "Evening must be in SESSION_TYPES - it was missing, causing evening lessons to have no matching dropdown option",
   );
 });
 

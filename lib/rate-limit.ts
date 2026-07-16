@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { isKvConfigured, checkKvRateLimit } from "./kv-client";
 import { isRedisConfigured, redisSlidingWindowHit } from "./redis/client";
 import { rateLimitKey } from "@/lib/redis/keys";
+import {
+  freeTierPublicRateLimits,
+  isFreeTierMode,
+} from "@/lib/free-tier-guard";
 
 interface RateLimitConfig {
   windowMs: number;
@@ -9,28 +13,30 @@ interface RateLimitConfig {
   keyPrefix?: string;
 }
 
+const freePublic = freeTierPublicRateLimits();
+
 export const RATE_LIMITS = {
   admin: {
-    default: { windowMs: 60 * 1000, maxRequests: 100 },
-    heavy: { windowMs: 60 * 1000, maxRequests: 30 },
-    export: { windowMs: 60 * 1000, maxRequests: 10 },
+    default: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 60 : 100 },
+    heavy: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 20 : 30 },
+    export: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 5 : 10 },
   },
   teacher: {
-    default: { windowMs: 60 * 1000, maxRequests: 80 },
-    attendance: { windowMs: 60 * 1000, maxRequests: 50 },
-    results: { windowMs: 60 * 1000, maxRequests: 30 },
+    default: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 50 : 80 },
+    attendance: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 35 : 50 },
+    results: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 20 : 30 },
   },
   parent: {
-    default: { windowMs: 60 * 1000, maxRequests: 60 },
-    polling: { windowMs: 60 * 1000, maxRequests: 30 },
-    heavy: { windowMs: 60 * 1000, maxRequests: 20 },
+    default: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 40 : 60 },
+    polling: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 20 : 30 },
+    heavy: { windowMs: 60 * 1000, maxRequests: isFreeTierMode() ? 12 : 20 },
   },
   public: {
-    default: { windowMs: 60 * 1000, maxRequests: 20 },
-    login: { windowMs: 5 * 60 * 1000, maxRequests: 5 },
-    signup: { windowMs: 15 * 60 * 1000, maxRequests: 3 },
+    default: freePublic.default,
+    login: freePublic.login,
+    signup: freePublic.signup,
     /** Stricter defaults for unauthenticated probing. */
-    authBurst: { windowMs: 60 * 1000, maxRequests: 12 },
+    authBurst: freePublic.authBurst,
   },
 } as const;
 

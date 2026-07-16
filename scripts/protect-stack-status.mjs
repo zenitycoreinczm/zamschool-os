@@ -49,7 +49,7 @@ const redisToken = env.UPSTASH_REDIS_REST_TOKEN || "";
 if (!redisUrl || !redisToken) {
   fail(
     "Upstash Redis",
-    "Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN — login lockout & rate limits will not be distributed.",
+    "Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN - login lockout & rate limits will not be distributed.",
   );
 } else {
   try {
@@ -59,9 +59,9 @@ if (!redisUrl || !redisToken) {
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok && String(body.result || "").toUpperCase() === "PONG") {
-      ok("Upstash Redis", `PING OK (${host}) — primary protection backend`);
+      ok("Upstash Redis", `PING OK (${host}) - primary protection backend`);
     } else {
-      fail("Upstash Redis", `HTTP ${res.status} — ${JSON.stringify(body)}`);
+      fail("Upstash Redis", `HTTP ${res.status} - ${JSON.stringify(body)}`);
     }
 
     // Lightweight job smoke: SET/GET/DEL probe key
@@ -112,7 +112,7 @@ if (r2Public.startsWith("https://") && r2Public.includes("r2.dev")) {
 } else {
   fail(
     "Cloudflare R2 public CDN",
-    "R2_PUBLIC_URL unset — app will proxy assets (more origin load). Enable Public Development URL on zamschool-assets.",
+    "R2_PUBLIC_URL unset - app will proxy assets (more origin load). Enable Public Development URL on zamschool-assets.",
   );
 }
 
@@ -123,7 +123,7 @@ const kvToken = (env.KV_REST_API_TOKEN || "").trim();
 if (!kvUrl || !kvToken) {
   info(
     "Cloudflare KV REST",
-    "Not configured — OK if Upstash Redis is healthy (Redis is primary for rate limits).",
+    "Not configured - OK if Upstash Redis is healthy (Redis is primary for rate limits).",
   );
 } else if (!kvUrl.includes("api.cloudflare.com")) {
   fail(
@@ -142,7 +142,7 @@ if (!kvUrl || !kvToken) {
       body: "1",
     });
     if (put.ok) {
-      ok("Cloudflare KV REST", "Write OK — secondary rate-limit backend ready");
+      ok("Cloudflare KV REST", "Write OK - secondary rate-limit backend ready");
       await fetch(`${kvUrl}/values/${encodeURIComponent(probe)}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${kvToken}` },
@@ -150,7 +150,7 @@ if (!kvUrl || !kvToken) {
     } else if (put.status === 401 || put.status === 403) {
       fail(
         "Cloudflare KV REST",
-        `HTTP ${put.status} — create an API token with Account → Workers KV Storage → Edit, and remove IP allowlist blocks for this machine. Redis still protects the app.`,
+        `HTTP ${put.status} - create an API token with Account → Workers KV Storage → Edit, and remove IP allowlist blocks for this machine. Redis still protects the app.`,
       );
     } else {
       fail("Cloudflare KV REST", `HTTP ${put.status}`);
@@ -166,7 +166,7 @@ if (env.NEXT_PUBLIC_GATEWAY_URL) {
 } else {
   info(
     "Gateway worker URL",
-    "NEXT_PUBLIC_GATEWAY_URL unset — API traffic goes origin → Redis/hot-read → Supabase (fine for pilot).",
+    "NEXT_PUBLIC_GATEWAY_URL unset - API traffic goes origin → Redis/hot-read → Supabase (fine for pilot).",
   );
 }
 
@@ -177,7 +177,7 @@ if (supabaseUrl) {
     const res = await fetch(supabaseUrl, { method: "HEAD", redirect: "manual" });
     ok(
       "Supabase reachable",
-      `${new URL(supabaseUrl).host} HTTP ${res.status} — protect with Redis + R2, not open browser→DB traffic`,
+      `${new URL(supabaseUrl).host} HTTP ${res.status} - protect with Redis + R2, not open browser→DB traffic`,
     );
   } catch (e) {
     fail("Supabase reachable", e instanceof Error ? e.message : String(e));
@@ -208,17 +208,17 @@ console.log("--- Summary ---");
 console.log(
   redisOk
     ? "Upstash: ACTIVE (login lockout, rate limits, role/session/shell caches)"
-    : "Upstash: BROKEN — fix before production",
+    : "Upstash: BROKEN - fix before production",
 );
 console.log(
   r2Ok
     ? "Cloudflare R2: credentials present (use 10GB free storage for assets)"
-    : "Cloudflare R2: incomplete — files may hit Supabase Storage / origin",
+    : "Cloudflare R2: incomplete - files may hit Supabase Storage / origin",
 );
 console.log(
   hardFails === 0
-    ? "\nSTATUS: READY — protection stack is healthy enough for pilot.\n"
-    : `\nSTATUS: ${hardFails} issue(s) — see ✗ rows above.\n`,
+    ? "\nSTATUS: READY - protection stack is healthy enough for pilot.\n"
+    : `\nSTATUS: ${hardFails} issue(s) - see ✗ rows above.\n`,
 );
 
 // Fail CI/hard only when Redis (primary protection) is down.

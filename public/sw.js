@@ -44,6 +44,12 @@ self.addEventListener("fetch", (event) => {
 
   // 3. API Requests (either same-origin or Gateway)
   if (url.pathname.startsWith("/api/")) {
+    // Never cache auth/session/workspace payloads - they are user-specific and
+    // stale shells cause "still in student workspace after teacher login".
+    if (isAuthSensitiveApi(url.pathname)) {
+      event.respondWith(fetch(request));
+      return;
+    }
     event.respondWith(networkFirst(request, API_CACHE));
     return;
   }
@@ -116,5 +122,26 @@ function isStaticAssetRequest(pathname) {
     pathname.endsWith(".jpg") ||
     pathname.endsWith(".woff2") ||
     pathname.endsWith(".ico")
+  );
+}
+
+/** User-bound endpoints - must never be served from SW API cache. */
+function isAuthSensitiveApi(pathname) {
+  const sensitivePrefixes = [
+    "/api/account/bootstrap",
+    "/api/account/workspace-context",
+    "/api/account/unread-summary",
+    "/api/account/session",
+    "/api/account/shell",
+    "/api/account/messages",
+    "/api/account/notifications",
+    "/api/account/inbox-preview",
+    "/api/auth/",
+    "/api/teacher/bootstrap",
+    "/api/teacher/messages",
+    "/api/teacher/notifications",
+  ];
+  return sensitivePrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix),
   );
 }

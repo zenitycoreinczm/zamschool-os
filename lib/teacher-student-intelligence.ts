@@ -452,7 +452,7 @@ async function loadResultRows(schoolId: string, studentIdentityKeys: string[]) {
 
   if (error) {
     if (!isSchemaCompatibilityError(error)) throw error;
-    // If schema is incompatible, return empty — the caller handles it gracefully
+    // If schema is incompatible, return empty - the caller handles it gracefully
     return [] as RawResultRow[];
   }
 

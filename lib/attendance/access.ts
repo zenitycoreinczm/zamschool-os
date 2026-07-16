@@ -4,6 +4,13 @@ export type TeacherLessonAccessInput = {
   classSupervisorId: string | null;
   lessonSchoolId: string | null;
   actorSchoolId: string | null;
+  /**
+   * Class id for the lesson. When set with `allowedClassIds`, any teacher who
+   * teaches that class (subject assignment / timetable / class teacher) gets
+   * the same lesson access as the class teacher - not only the supervisor.
+   */
+  classId?: string | null;
+  allowedClassIds?: string[] | null;
 };
 
 export type ParentStudentLink = {
@@ -23,13 +30,33 @@ export type StudentRosterRow = {
 };
 
 export function canTeacherAccessLesson(input: TeacherLessonAccessInput) {
-  return Boolean(
-    input.actorId &&
-      (input.lessonTeacherId === input.actorId ||
-        input.classSupervisorId === input.actorId) &&
-      input.lessonSchoolId &&
-      input.lessonSchoolId === input.actorSchoolId
-  );
+  if (
+    !input.actorId ||
+    !input.lessonSchoolId ||
+    input.lessonSchoolId !== input.actorSchoolId
+  ) {
+    return false;
+  }
+
+  // Own lesson period or class teacher (homeroom supervisor).
+  if (
+    input.lessonTeacherId === input.actorId ||
+    input.classSupervisorId === input.actorId
+  ) {
+    return true;
+  }
+
+  // Subject / assigned teachers for the class: full class student access.
+  const classId = String(input.classId || "").trim();
+  if (
+    classId &&
+    Array.isArray(input.allowedClassIds) &&
+    input.allowedClassIds.includes(classId)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function buildParentStudentScope(input: {

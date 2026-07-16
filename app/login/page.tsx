@@ -27,6 +27,7 @@ import { applyCsrfHeader, captureCsrfFromResponse } from "@/lib/csrf-client";
 import { buildLoginCooldown, getLoginCooldownState, clearLoginCooldown } from "@/lib/login-cooldown";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { supabase } from "@/lib/supabase";
+import { clearClientAuthCaches } from "@/lib/workspace/clear-client-auth-caches";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
 import { cn } from "@/lib/utils";
 
@@ -133,7 +134,7 @@ function LoginContent() {
   const [existingSession, setExistingSession] = useState<ExistingSessionState | null>(null);
   const [cooldown, setCooldown] = useState<{ email: string; until: number } | null>(null);
   const [cooldownNow, setCooldownNow] = useState(() => Date.now());
-  /** Bot honeypot — humans never see or fill this. */
+  /** Bot honeypot - humans never see or fill this. */
   const [honeypot, setHoneypot] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -246,7 +247,11 @@ function LoginContent() {
     setError(null);
 
     try {
-      await supabase.auth.signOut();
+      clearClientAuthCaches();
+      await supabase.auth.signOut({ scope: "global" }).catch(async () => {
+        await supabase.auth.signOut({ scope: "local" });
+      });
+      clearClientAuthCaches();
       setExistingSession(null);
     } catch (signOutError: any) {
       setError(signOutError?.message || "Unable to clear the current session");
@@ -306,7 +311,7 @@ function LoginContent() {
       }
 
       // Honeypot: only block empty-password bot posts. Password managers sometimes
-      // autofill hidden fields — never block a user who typed real credentials.
+      // autofill hidden fields - never block a user who typed real credentials.
       if (honeypot.trim().length > 0 && !data.password.trim()) {
         await new Promise((r) => setTimeout(r, 800 + Math.random() * 400));
         setError("Invalid login credentials");
@@ -314,7 +319,7 @@ function LoginContent() {
       }
 
       const email = data.email.trim().toLowerCase();
-      // Trim ends only — copy/paste of temp passwords often adds a trailing space.
+      // Trim ends only - copy/paste of temp passwords often adds a trailing space.
       const password = data.password.trim();
       if (!email || !password) {
         setError("Enter your email and password.");
@@ -334,8 +339,14 @@ function LoginContent() {
         return;
       }
 
+      // Always drop previous role/workspace caches before a new sign-in so a
+      // student → logout → teacher login cannot keep the student shell.
+      clearClientAuthCaches();
       if (existingSession) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "global" }).catch(async () => {
+          await supabase.auth.signOut({ scope: "local" });
+        });
+        clearClientAuthCaches();
         setExistingSession(null);
       }
 
@@ -360,7 +371,7 @@ function LoginContent() {
           );
           return;
         }
-        // No soft 30s lock after a single bad password — staff often retry
+        // No soft 30s lock after a single bad password - staff often retry
         // immediately with the correct temporary password.
         throw authError;throw authError;
       }
@@ -424,6 +435,9 @@ function LoginContent() {
           return;
         }
       }
+
+      // Drop any caches rehydrated during sign-in before the full navigation.
+      clearClientAuthCaches();
 
       // Full page load after sign-in so session cookies + middleware settle.
       // Soft replace+refresh races and can abort the RSC flight for destinations

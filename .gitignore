@@ -67,3 +67,5 @@ supa_token.txt
 
 # Misc
 .vercel/
+.vercel
+.env*

@@ -206,7 +206,7 @@ async function updateOwnProfile(
     const remainingKeys = Object.keys(working).filter((k) => working[k] !== undefined);
     if (remainingKeys.length === 0) {
       throw new Error(
-        "All requested profile fields map to missing database columns — no update was performed",
+        "All requested profile fields map to missing database columns - no update was performed",
       );
     }
 
@@ -228,7 +228,7 @@ async function updateOwnProfile(
     );
     if (profileIdMissingColumn && profileIdMissingColumn in working) {
       console.warn(
-        `[updateOwnProfile] Column "${profileIdMissingColumn}" missing from profiles table — dropping from update payload`,
+        `[updateOwnProfile] Column "${profileIdMissingColumn}" missing from profiles table - dropping from update payload`,
       );
       delete working[profileIdMissingColumn];
       continue;
@@ -256,7 +256,7 @@ async function updateOwnProfile(
     );
     if (authUserIdMissingColumn && authUserIdMissingColumn in working) {
       console.warn(
-        `[updateOwnProfile] Column "${authUserIdMissingColumn}" missing from profiles table — dropping from update payload`,
+        `[updateOwnProfile] Column "${authUserIdMissingColumn}" missing from profiles table - dropping from update payload`,
       );
       delete working[authUserIdMissingColumn];
       continue;

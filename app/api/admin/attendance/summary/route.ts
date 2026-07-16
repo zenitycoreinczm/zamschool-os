@@ -62,7 +62,7 @@ export async function GET(req: Request) {
       .order("date", { ascending: true });
 
     if (error) {
-      // Table may not exist yet — return empty gracefully
+      // Table may not exist yet - return empty gracefully
       if (error.code === "42P01" /* relation does not exist */) {
         const empty = NextResponse.json({
           success: true,

@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** Canonical workspace layout and surface classes — use instead of hard-coded hex values. */
+/** Canonical workspace layout and surface classes - use instead of hard-coded hex values. */
 export const ws = {
   canvas: "bg-workspace-canvas text-workspace-foreground",
   sidebar: "bg-workspace-sidebar border-workspace-border",
@@ -38,7 +38,7 @@ export function shellNavClass(
   _accent: ShellNavAccent = "neutral",
 ) {
   void _accent;
-  // Monochrome staff nav — one active style everywhere (no sky/teal/indigo variants).
+  // Monochrome staff nav - one active style everywhere (no sky/teal/indigo variants).
   return cn(
     "flex items-center gap-3 rounded-workspace-lg px-2.5 py-2 text-sm font-medium transition-all duration-[var(--duration-workspace-normal)] ease-[var(--ease-workspace-out)]",
     // Allow badge pills to sit flush on the right without shrinking the label.
@@ -63,7 +63,7 @@ export function secondaryButton(className?: string) {
   );
 }
 
-/** Canonical in-page spinner color — use instead of sky/amber/emerald spinners. */
+/** Canonical in-page spinner color - use instead of sky/amber/emerald spinners. */
 export const spinnerClass = "h-5 w-5 animate-spin text-slate-500";
 
 export const roleStatSurface: Record<"admin" | "teacher" | "student" | "parent", string> = {

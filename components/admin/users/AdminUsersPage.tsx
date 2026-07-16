@@ -116,9 +116,9 @@ export default function AdminUsersPage() {
           u.isRecoveryConsole
             ? "Search students, teachers, and parents to troubleshoot access. Open a profile and use Reset temporary password when someone is locked out or needs a fresh login."
             : u.canInviteStaff
-              ? "Add students, parents, and teachers with the Add button and tabs below. Invite Deputy Head, Bursar, Registrar, and other office staff in the Staff invitations section — not through Add student/teacher/parent."
+              ? "Add students, parents, and teachers with the Add button and tabs below. Invite Deputy Head, Bursar, Registrar, and other office staff in the Staff invitations section - not through Add student/teacher/parent."
               : u.isHrConsole
-                ? "View and update employment records for teachers already on the system. You do not create accounts or send invitations — the Head Teacher does that."
+                ? "View and update employment records for teachers already on the system. You do not create accounts or send invitations - the Head Teacher does that."
                 : "Register students, parents, and teachers for your school. Use the Add button and tabs below to create accounts and assign classes."
         }
         accent={u.isHrConsole ? "slate" : "sky"}
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
           <p className="font-semibold text-slate-900">HR scope</p>
           <p className="mt-1">
             Edit teacher employment details, department, and status. Account
-            creation and invitations are not part of HR — use{" "}
+            creation and invitations are not part of HR - use{" "}
             <a
               href="/app/admin/departments"
               className="font-medium text-slate-800 underline-offset-2 hover:underline"

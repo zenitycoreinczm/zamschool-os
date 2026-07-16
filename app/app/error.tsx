@@ -80,7 +80,7 @@ export default function WorkspaceError({
         </div>
 
         <p className="mt-6 text-xs text-slate-500">
-          Error ID: {error.digest || "unknown"} — share this with support if the
+          Error ID: {error.digest || "unknown"} - share this with support if the
           problem continues.
         </p>
       </div>

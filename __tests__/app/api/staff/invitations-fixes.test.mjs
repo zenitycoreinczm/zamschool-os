@@ -172,7 +172,7 @@ test("domain staff defaults grant their required backend features", () => {
   assert.match(
     permissionDefaultsSource,
     /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?readOnly\("classes"\)/,
-    "Academic Admin no longer creates classes — the Registrar owns class creation",
+    "Academic Admin no longer creates classes - the Registrar owns class creation",
   );
   assert.match(
     permissionDefaultsSource,
@@ -242,7 +242,7 @@ test("POST handler does not set accepted_at at creation time", () => {
   assert.doesNotMatch(
     postMatch[0],
     /accepted_at:\s*nowIso/,
-    "POST must not set accepted_at at creation — it breaks pending listings, revoke, and accept",
+    "POST must not set accepted_at at creation - it breaks pending listings, revoke, and accept",
   );
   assert.doesNotMatch(
     postMatch[0],
@@ -252,7 +252,7 @@ test("POST handler does not set accepted_at at creation time", () => {
 });
 
 test("POST handler sets status to 'accepted' instead of accepted_at", () => {
-  // Search the full source — the insert block has status: "accepted"
+  // Search the full source - the insert block has status: "accepted"
   assert.match(
     invitationsSource,
     /status:\s*["']accepted["']/,
@@ -270,7 +270,7 @@ test("DELETE handler filters on revoked_at IS NULL (not accepted_at)", () => {
   assert.doesNotMatch(
     deleteMatch[0],
     /\.is\(\s*["']accepted_at["']\s*,\s*null\)/,
-    "DELETE must not filter on accepted_at IS NULL — that field is no longer set at creation",
+    "DELETE must not filter on accepted_at IS NULL - that field is no longer set at creation",
   );
   assert.match(
     deleteMatch[0],
@@ -294,7 +294,7 @@ test("DELETE handler updates status to 'cancelled' (schema CHECK value)", () => 
   assert.doesNotMatch(
     deleteMatch[0],
     /status:\s*["']revoked["']/,
-    "DELETE must not set status to 'revoked' — that violates the CHECK constraint",
+    "DELETE must not set status to 'revoked' - that violates the CHECK constraint",
   );
 });
 

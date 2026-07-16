@@ -447,8 +447,8 @@ export function useUserForm({
         editTarget
           ? "User updated"
           : credentialsEmailSent
-            ? "User created — sign-in details emailed"
-            : "User created — copy the temporary password to share",
+            ? "User created - sign-in details emailed"
+            : "User created - copy the temporary password to share",
         { id: t },
       );
     } catch (err: unknown) {

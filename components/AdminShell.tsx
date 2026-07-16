@@ -401,14 +401,22 @@ function resolveWorkspaceRedirect({
     return "/verify-email";
   }
 
-  if (nextRole === "admin" && pathname.startsWith("/app/principal")) {
-    return "/app/principal";
-  }
+  // Legacy admin is Head Teacher - allow principal workspace routes.
+  // Old School Administrator home and the Users directory are not HT tools.
   if (
     (nextRole === "principal" || nextRole === "admin") &&
     pathname === "/app/dashboard"
   ) {
     return "/app/principal";
+  }
+  if (
+    (nextRole === "principal" || nextRole === "admin") &&
+    (pathname === "/app/admin/users" ||
+      pathname.startsWith("/app/admin/users/") ||
+      pathname === "/app/admin/staff-invitations" ||
+      pathname.startsWith("/app/admin/staff-invitations/"))
+  ) {
+    return "/app/principal/staff";
   }
   if (nextRole === "deputy_head" && pathname === "/app/dashboard") {
     return "/app/deputy-head";

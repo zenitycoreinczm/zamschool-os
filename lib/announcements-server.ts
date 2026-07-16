@@ -32,7 +32,7 @@ export async function invalidateSchoolAnnouncementsCache() {
 
 /**
  * Schema-aligned primary select. Baseline has `content` (not `body`).
- * Only fall back when PostgREST reports a missing column — never on
+ * Only fall back when PostgREST reports a missing column - never on
  * timeouts/network errors (those used to cascade into 4×10s waits).
  */
 async function fetchSchoolAnnouncementsFromDb(schoolId: string, limit: number) {

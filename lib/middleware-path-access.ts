@@ -32,6 +32,17 @@ export function canAccessPath(
   if (pathname === "/dashboard" || pathname === "/app/dashboard")
     return role === "PRINCIPAL";
   if (pathname.startsWith("/app/super-admin")) return role === "SUPER_ADMIN";
+  // Retired Users & accounts directory - never allow Head Teacher (or anyone)
+  // to use it as a people-invite console. Role-specific desks own that work.
+  if (
+    pathname === "/app/admin/users" ||
+    pathname.startsWith("/app/admin/users/") ||
+    pathname === "/admin/users" ||
+    pathname.startsWith("/admin/users/")
+  ) {
+    return false;
+  }
+
   if (pathname.startsWith("/app/admin") || pathname.startsWith("/admin")) {
     return [
       "PRINCIPAL",

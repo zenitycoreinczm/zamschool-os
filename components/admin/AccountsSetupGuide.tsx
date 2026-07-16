@@ -14,7 +14,7 @@ export function AccountsSetupGuide({
           Students, parents & teachers
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-slate-500">
-          Create school community logins here — not in the staff invitations
+          Create school community logins here - not in the staff invitations
           panel.
         </p>
         <ol className="mt-4 space-y-2 text-sm text-slate-600">
@@ -59,7 +59,7 @@ export function AccountsSetupGuide({
         <p className="mt-1 text-sm leading-relaxed text-slate-600">
           Deputy Head, Bursar, Registrar, ICT, HR, and other office staff are{" "}
           <strong className="font-medium text-slate-800">invited</strong> in the
-          panel below — not through the Add student/teacher/parent button. The
+          panel below - not through the Add student/teacher/parent button. The
           Head Teacher account is only created when the school is registered.
         </p>
         <ul className="mt-4 space-y-2 text-sm text-slate-600">

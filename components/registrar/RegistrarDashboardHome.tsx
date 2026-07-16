@@ -77,7 +77,7 @@ export default function RegistrarDashboardHome() {
       <AdminPageHero
         eyebrow="Admissions desk"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Enrolment for ${yearTerm} — register people, place learners, and keep family links current.`}
+        description={`Welcome back, ${displayName}. Enrolment for ${yearTerm} - register people, place learners, and keep family links current.`}
         accent="slate"
         stats={heroStats}
         actions={
@@ -103,7 +103,7 @@ export default function RegistrarDashboardHome() {
       <section>
         <SectionIntro
           title="What you can do"
-          description="Core admissions tasks — open one and start working."
+          description="Core admissions tasks - open one and start working."
         />
         <div className="grid gap-2.5 sm:grid-cols-2">
           {PRIMARY_ACTIONS.map((item) => (

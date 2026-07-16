@@ -31,6 +31,10 @@ import {
   isEdgeContentLengthAllowed,
   isOnStaticIpBlocklist,
 } from "./lib/server-security-edge";
+import {
+  freeTierFloodLimits,
+  isProductionInvocationBlockedPath,
+} from "./lib/free-tier-guard";
 
 const API_CORS_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
 const DEFAULT_ALLOWED_HEADERS = "Authorization, Content-Type";
@@ -78,7 +82,7 @@ export async function proxy(request: NextRequest) {
     return denied;
   }
 
-  // Distributed temporary bans (Redis) — fail open if Redis is unreachable.
+  // Distributed temporary bans (Redis) - fail open if Redis is unreachable.
   try {
     const { getIpBanRemainingSec } = await import("./lib/ip-reputation");
     const bannedFor = await getIpBanRemainingSec(ip);
@@ -107,7 +111,15 @@ export async function proxy(request: NextRequest) {
     return blocked;
   }
 
-  // Bot / automation gate on auth surfaces (login, register, auth APIs).
+  // Never pay a serverless invocation for debug/test routes in production.
+  if (isProductionInvocationBlockedPath(pathname)) {
+    const blocked = new NextResponse(null, { status: 404 });
+    applySecurityHeaders(blocked, request);
+    return blocked;
+  }
+
+  // Bot / AI scraper / automation gate - site-wide (not only login).
+  // Blocks curl/python/scrapers and AI training agents from harvesting UI/API.
   const bot = classifyClientBot({
     userAgent: request.headers.get("user-agent"),
     pathname,
@@ -122,16 +134,21 @@ export async function proxy(request: NextRequest) {
       { status: 403 },
     );
     applySecurityHeaders(denied, request);
+    applyRobotHeaders(denied, pathname);
     return denied;
   }
 
   // Edge flood guards (per-isolate; Redis still enforces distributed limits on routes).
+  // Free-tier / Hobby uses tighter ceilings so scrapers cannot burn Vercel quota.
   {
+    const floodLimits = freeTierFloodLimits();
     if (isSensitiveAuthSurface(pathname)) {
       const flood = checkMiddlewareFloodLimit({
         key: `auth-edge:${ip}`,
-        limit: bot.suspicious ? 20 : 60,
-        windowMs: 60_000,
+        limit: bot.suspicious
+          ? floodLimits.auth.suspicious
+          : floodLimits.auth.normal,
+        windowMs: floodLimits.windowMs,
       });
       if (!flood.allowed) {
         void import("./lib/ip-reputation")
@@ -148,11 +165,13 @@ export async function proxy(request: NextRequest) {
         return limited;
       }
     } else if (pathname.startsWith("/api/")) {
-      // General API flood ceiling — stops scrapers before route handlers run.
+      // General API flood ceiling - stops scrapers before route handlers run.
       const apiFlood = checkMiddlewareFloodLimit({
         key: `api-edge:${ip}`,
-        limit: bot.suspicious ? 60 : 180,
-        windowMs: 60_000,
+        limit: bot.suspicious
+          ? floodLimits.api.suspicious
+          : floodLimits.api.normal,
+        windowMs: floodLimits.windowMs,
       });
       if (!apiFlood.allowed) {
         void import("./lib/ip-reputation")
@@ -163,6 +182,29 @@ export async function proxy(request: NextRequest) {
           {
             status: 429,
             headers: { "Retry-After": String(apiFlood.retryAfterSec) },
+          },
+        );
+        applySecurityHeaders(limited, request);
+        return limited;
+      }
+    } else {
+      // HTML/page flood - blocks site scrapers on free Vercel bandwidth.
+      const pageFlood = checkMiddlewareFloodLimit({
+        key: `page-edge:${ip}`,
+        limit: bot.suspicious
+          ? floodLimits.page.suspicious
+          : floodLimits.page.normal,
+        windowMs: floodLimits.windowMs,
+      });
+      if (!pageFlood.allowed) {
+        void import("./lib/ip-reputation")
+          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "page_flood"))
+          .catch(() => {});
+        const limited = NextResponse.json(
+          { error: "Too many requests. Please try again shortly." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(pageFlood.retryAfterSec) },
           },
         );
         applySecurityHeaders(limited, request);
@@ -203,7 +245,7 @@ export async function proxy(request: NextRequest) {
       "/api/auth/forgot-password",
       "/api/auth/reset-password",
       "/api/auth/complete-first-login",
-      // Pre-auth login lockout (Redis) — called before session exists; still rate-limited.
+      // Pre-auth login lockout (Redis) - called before session exists; still rate-limited.
       "/api/auth/login-guard",
       "/api/staff/invitations/accept",
       "/api/auth/mfa",
@@ -405,6 +447,32 @@ function applyCorsHeaders(response: NextResponse, headers: Headers) {
   });
 }
 
+function applyRobotHeaders(response: NextResponse, pathname: string) {
+  const path = (pathname.split("?")[0] || pathname).toLowerCase();
+  const isPublicIndexable =
+    path === "/" ||
+    path === "/privacy" ||
+    path === "/terms" ||
+    path === "/cookies" ||
+    path === "/sitemap.xml" ||
+    path === "/robots.txt" ||
+    path === "/icon.png" ||
+    path.startsWith("/_next/static/") ||
+    path.startsWith("/.well-known/");
+
+  if (isPublicIndexable) {
+    // Search engines may index marketing pages; AI training scrapers are told no.
+    response.headers.set("X-Robots-Tag", "noai, noimageai");
+    return;
+  }
+
+  // Login, app workspaces, APIs - never index, never train on.
+  response.headers.set(
+    "X-Robots-Tag",
+    "noindex, nofollow, noarchive, nosnippet, noimageindex, noai, noimageai",
+  );
+}
+
 function applySecurityHeaders(response: NextResponse, request: NextRequest) {
   const isHttps =
     request.headers.get("x-forwarded-proto") === "https" ||
@@ -433,7 +501,10 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
   // Never advertise server tech stacks on responses we control.
   response.headers.delete("X-Powered-By");
   response.headers.delete("Server");
-  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+
+  // Indexing + AI-training policy (enforced headers; robots.txt is also updated).
+  applyRobotHeaders(response, request.nextUrl.pathname || "/");
+
   // Cache-control for auth HTML already set elsewhere; reinforce no-store for cookies.
   if (!response.headers.has("X-Content-Type-Options")) {
     response.headers.set("X-Content-Type-Options", "nosniff");

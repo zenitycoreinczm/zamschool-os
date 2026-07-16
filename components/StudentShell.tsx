@@ -206,7 +206,7 @@ export default function StudentShell({
             </button>
           </div>
 
-          {/* Name | Class | Number — primary desk identity */}
+          {/* Name | Class | Number - primary desk identity */}
           <div className="border-b border-slate-200/80 bg-gradient-to-br from-teal-50/90 via-white to-sky-50/60 px-4 py-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-800/70">
               Your desk
@@ -222,7 +222,7 @@ export default function StudentShell({
               </span>
               <span className="mx-1.5 font-normal text-slate-300">|</span>
               <span className="tabular-nums text-sky-800">
-                {classNumber != null ? classNumber : "—"}
+                {classNumber != null ? classNumber : "-"}
               </span>
             </p>
             {shellExtras.gradeLabel ? (
@@ -299,7 +299,7 @@ export default function StudentShell({
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/app/student/messages"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-teal-200 hover:text-teal-700"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
               aria-label={
                 unreadMessages > 0
                   ? `Messages, ${unreadMessages} unread`
@@ -308,7 +308,7 @@ export default function StudentShell({
             >
               <MessageSquare className="h-4.5 w-4.5" />
               {unreadMessages > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-teal-600 px-1 text-[10px] font-bold text-white">
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] font-bold text-white">
                   {formatNavBadgeCount(unreadMessages) ||
                     (unreadMessages > 9 ? "9+" : String(unreadMessages))}
                 </span>
@@ -316,7 +316,7 @@ export default function StudentShell({
             </Link>
             <Link
               href="/app/student/profile"
-              className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-teal-200 bg-teal-600 text-sm font-semibold text-white shadow-sm"
+              className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-800 shadow-sm"
               aria-label="Open profile"
             >
               {(() => {

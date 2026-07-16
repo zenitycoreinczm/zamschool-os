@@ -90,9 +90,10 @@ export default function CountChart() {
         <h2 className="text-lg font-semibold text-slate-900">Students</h2>
         <button
           type="button"
-          onClick={() => router.push("/app/admin/users")}
+          onClick={() => router.push("/app/registrar/people")}
           className="grid h-9 w-9 place-items-center rounded-full text-gray-400 transition hover:bg-slate-100 hover:text-slate-700"
-          aria-label="Open student management"
+          aria-label="Open student enrolment (Registrar)"
+          title="Students are enrolled by the Registrar"
         >
           <MoreHorizontal className="w-5 h-5" />
         </button>

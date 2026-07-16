@@ -52,7 +52,7 @@ export function StudentUpcomingAssignments({
                       {formatSubmissionStatus(assignment.submissionStatus)}
                     </span>
                     {assignment.urgent ? (
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
                         Due soon
                       </span>
                     ) : null}
@@ -71,7 +71,7 @@ export function StudentUpcomingAssignments({
                       href={assignment.submissionLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-3 inline-flex text-sm font-medium text-sky-700 hover:text-sky-800"
+                      className="mt-3 inline-flex text-sm font-medium text-slate-800 underline-offset-2 hover:underline"
                     >
                       View submitted link
                     </a>

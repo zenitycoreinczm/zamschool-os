@@ -30,7 +30,7 @@ const FROM_RE = /supabaseAdmin\s*\.\s*from\s*\(\s*["'`]([^"'`]+)["'`]\s*\)/g;
 /** Documented exceptions: cross-tenant lookups that are safe by design. */
 const DOCUMENTED_EXCEPTIONS = [
   { file: "app/api/auth/forgot-password/route.ts", table: "profiles", reason: "Cross-tenant email lookup for password reset (no school context)" },
-  { file: "app/api/staff/invitations/route.ts", table: "staff_invitations", reason: "Insert only — scoped via payload's school_id/created_by/invited_by/accepted_by rather than an `.eq()` chain. Heuristic flagged it because its scan window doesn't see the insert payload." },
+  { file: "app/api/staff/invitations/route.ts", table: "staff_invitations", reason: "Insert only - scoped via payload's school_id/created_by/invited_by/accepted_by rather than an `.eq()` chain. Heuristic flagged it because its scan window doesn't see the insert payload." },
 ];
 
 function listTsFiles(dir, prefix = "") {
@@ -82,7 +82,7 @@ function classify(table, windowText, fileRel) {
     return { level: "ok", reason: "tenant guard signal in window" };
   }
   if (fileRel.includes("super-admin")) {
-    return { level: "review", reason: "super-admin route — verify intentional cross-tenant access" };
+    return { level: "review", reason: "super-admin route - verify intentional cross-tenant access" };
   }
   return { level: STRICT ? "fail" : "review", reason: "no school_id guard detected in scan window" };
 }
@@ -173,7 +173,7 @@ function buildReport(findings) {
   md += `| Review | ${findings.filter((f) => f.level === "review").length} |\n\n`;
 
   if (!findings.length) {
-    md += `_No findings — all scanned calls matched tenant guard heuristics._\n`;
+    md += `_No findings - all scanned calls matched tenant guard heuristics._\n`;
     return md;
   }
 

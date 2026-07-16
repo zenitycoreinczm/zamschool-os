@@ -188,7 +188,7 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          {/* Desk identity — Name | focus summary */}
+          {/* Desk identity - Name | focus summary */}
           <div className="border-b border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-sky-50/40 px-4 py-3.5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               Your desk

@@ -117,7 +117,7 @@ export function UserFormModal({
       title={`${isEditing ? "Edit" : "Create"} ${roleLabel}`}
       description={
         activeTab === "teachers"
-          ? "Set up the teacher profile, specializations, teaching assignments, and class teacher responsibilities in one guided flow."
+          ? "Set up the teacher profile, specializations, and teaching assignments. Any class they teach gives full student roster access - class teacher is optional."
           : "Complete the user profile details and save the account."
       }
       onClose={onClose}
@@ -535,9 +535,9 @@ function TeacherAssignmentSection({
                   Teaching assignments
                 </p>
                 <p className="text-xs text-slate-500">
-                  Map the exact classes and subjects this teacher teaches. Each
-                  row should answer one clear question: which subject does this
-                  teacher handle in this class?
+                  Map each class + subject this teacher teaches. That alone
+                  gives them the full student roster for those classes - you do
+                  not need to wait for a class teacher assignment.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -604,8 +604,9 @@ function TeacherAssignmentSection({
 
             {form.teaching_assignments.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
-                No teaching assignments yet. Add the classes and subjects this
-                teacher will handle.
+                No teaching assignments yet. Add each class + subject this
+                teacher handles - that alone grants full student access for
+                those classes (class teacher role is optional).
               </div>
             ) : (
               <div className="space-y-3">

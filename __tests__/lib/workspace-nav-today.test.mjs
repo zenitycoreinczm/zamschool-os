@@ -32,10 +32,16 @@ test("deputy and guidance nav include Today feed + role tools", () => {
   assert.ok(guidance.some((i) => i.href === "/app/announcements"));
 });
 
-test("principal nav includes users directory", () => {
+test("principal nav uses invite staff, not users directory", () => {
   const principal = roleNavSections.principal.flatMap((s) => s.items);
-  assert.ok(principal.some((i) => i.href === "/app/admin/users"));
   assert.ok(principal.some((i) => i.href === "/app/principal/staff"));
+  assert.ok(!principal.some((i) => i.href === "/app/admin/users"));
+});
+
+test("legacy admin nav uses invite staff, not users directory", () => {
+  const admin = roleNavSections.admin.flatMap((s) => s.items);
+  assert.ok(admin.some((i) => i.href === "/app/principal/staff"));
+  assert.ok(!admin.some((i) => i.href === "/app/admin/users"));
 });
 
 test("payments settings points at role settings path", () => {

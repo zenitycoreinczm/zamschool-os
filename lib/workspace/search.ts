@@ -153,8 +153,9 @@ export function buildWorkspaceUsersHref(
     params.set("profileId", profileId);
   }
 
+  // Registrar people desk is the shared search landing (legacy /app/admin/users retired).
   const qs = params.toString();
-  return qs ? `/app/admin/users?${qs}` : "/app/admin/users";
+  return qs ? `/app/registrar/people?${qs}` : "/app/registrar/people";
 }
 
 export function navItemsToWorkspacePages(

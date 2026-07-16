@@ -15,7 +15,7 @@ test("register-school does not self-bootstrap email confirmation without OTP att
   assert.doesNotMatch(
     source,
     /self-bootstrap/,
-    "self-bootstrap branch must not exist — it bypassed email verification",
+    "self-bootstrap branch must not exist - it bypassed email verification",
   );
   assert.doesNotMatch(
     source,

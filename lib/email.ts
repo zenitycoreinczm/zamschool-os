@@ -42,7 +42,7 @@ class EmailService {
 
       if (!this.config.auth.user || !this.config.auth.pass) {
         console.log(
-          "[EmailService] SMTP not configured — SMTP_USER or SMTP_PASS missing",
+          "[EmailService] SMTP not configured - SMTP_USER or SMTP_PASS missing",
         );
         return;
       }
@@ -50,7 +50,7 @@ class EmailService {
       this.transporter = nodemailer.createTransport(this.config);
       this.configured = true;
       console.log(
-        `[EmailService] SMTP configured — host=${this.config.host}:${this.config.port} user=${this.config.auth.user} from=${process.env.SMTP_FROM || this.config.auth.user}`,
+        `[EmailService] SMTP configured - host=${this.config.host}:${this.config.port} user=${this.config.auth.user} from=${process.env.SMTP_FROM || this.config.auth.user}`,
       );
     } catch (error) {
       console.error("Failed to initialize email transporter:", error);
@@ -72,7 +72,7 @@ class EmailService {
       const fromAddress =
         options.from || process.env.SMTP_FROM || this.config.auth.user;
       console.log(
-        `[EmailService] Sending email — to=${options.to} subject="${options.subject}" from=${fromAddress}`,
+        `[EmailService] Sending email - to=${options.to} subject="${options.subject}" from=${fromAddress}`,
       );
 
       const result = await this.transporter.sendMail({
@@ -114,7 +114,7 @@ class EmailService {
     );
 
     const text = [
-      "ZamSchool OS — Email Verification",
+      "ZamSchool OS - Email Verification",
       "",
       greeting,
       "",

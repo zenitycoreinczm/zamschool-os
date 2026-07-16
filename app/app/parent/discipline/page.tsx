@@ -122,7 +122,7 @@ export default function ParentDisciplinePage() {
                     <h3 className="mt-1 font-semibold text-slate-900">{record.title}</h3>
                     <p className="mt-1 text-sm text-slate-500">
                       {record.incident_date}
-                      {record.incident_location ? ` — ${record.incident_location}` : ""}
+                      {record.incident_location ? ` - ${record.incident_location}` : ""}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -164,7 +164,7 @@ export default function ParentDisciplinePage() {
                             </span>
                           )}
                           {action.description && (
-                            <span className="text-slate-500">— {action.description}</span>
+                            <span className="text-slate-500">- {action.description}</span>
                           )}
                         </div>
                       ))}

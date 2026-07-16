@@ -37,7 +37,7 @@ const HEAD_TEACHER_FOCUS = [
 ];
 
 export default function PrincipalWorkspace() {
-  // Defensive read — context may not be ready immediately after login.
+  // Defensive read - context may not be ready immediately after login.
   const ctxRaw = useWorkspaceContext();
   const ctx = ctxRaw || {};
   const workspace = (ctx as any)?.data ?? null;
@@ -231,7 +231,7 @@ export default function PrincipalWorkspace() {
           title="School pulse"
           description="Live counts, attendance, finance, calendar, and announcements."
         />
-        <SchoolAdminDashboard />
+        <SchoolAdminDashboard peopleMode="principal" />
       </section>
     </div>
   );

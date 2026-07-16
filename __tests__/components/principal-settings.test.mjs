@@ -67,7 +67,7 @@ test("/api/account/session logs the underlying error before returning 500", asyn
     /logServerError\s*\(\s*["']account\.session["']/,
     "/api/account/session must log errors with logServerError",
   );
-  // Client body must use sanitized publicErrorBody — no raw cause/stack.
+  // Client body must use sanitized publicErrorBody - no raw cause/stack.
   assert.match(
     source,
     /publicErrorBody\s*\(/,
@@ -82,7 +82,7 @@ test("/api/account/session logs the underlying error before returning 500", asyn
 
 test("accountApiJson surfaces sanitized error text from API bodies", async () => {
   const source = await readFile(apiClientPath, "utf8");
-  // Client only surfaces the public `error` field — never raw stacks.
+  // Client only surfaces the public `error` field - never raw stacks.
   assert.match(
     source,
     /error\?:\s*string[\s\S]{0,80}\?\.error|body as \{ error\?: string \}/,

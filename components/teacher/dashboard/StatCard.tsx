@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-// Single accent family — avoid rainbow stats across the teacher portal.
+// Single accent family - avoid rainbow stats across the teacher portal.
 const statTone = {
   sky: "bg-slate-700",
   violet: "bg-slate-600",

@@ -340,7 +340,7 @@ export default function TeacherAttendancePage() {
                                 {student.displayName}
                               </p>
                               <p className="text-xs text-slate-400">
-                                {student.admissionNumber || "—"}
+                                {student.admissionNumber || "-"}
                               </p>
                             </div>
                             <div className="flex gap-1">

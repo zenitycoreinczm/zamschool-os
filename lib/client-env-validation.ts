@@ -80,7 +80,7 @@ export function assertClientEnvValid(): void {
 }
 
 /**
- * Returns only set/missing flags — never raw env values on window
+ * Returns only set/missing flags - never raw env values on window
  * (anon keys and origins must not be dumpable via devtools globals).
  */
 export function getClientEnvStatus(): Record<string, "set" | "missing"> {
@@ -105,7 +105,7 @@ declare global {
   }
 }
 
-// Only attach the presence map in development — never in production builds.
+// Only attach the presence map in development - never in production builds.
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   window.__ZAMSCHOOL_ENV_STATUS__ = getClientEnvStatus();
 }

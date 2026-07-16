@@ -1,5 +1,5 @@
 {
-  "comment": "Routes exempt from one or more audit checks (auth/feature/audit). Each entry maps a route path to the checks it is exempt from. These are routes where the standard enforcement pattern does not apply — e.g. auth routes where the user is not yet authenticated, self-service account routes that use session-scoped identity instead of feature permissions, or test utilities.",
+  "comment": "Routes exempt from one or more audit checks (auth/feature/audit). Each entry maps a route path to the checks it is exempt from. These are routes where the standard enforcement pattern does not apply - e.g. auth routes where the user is not yet authenticated, self-service account routes that use session-scoped identity instead of feature permissions, or test utilities.",
   "exemptions": {
     "app/api/account/avatar/route.ts": ["feature", "audit"],
     "app/api/account/change-password/route.ts": ["auth", "feature", "audit"],

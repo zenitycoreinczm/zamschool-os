@@ -318,7 +318,7 @@ export default function AdminSchoolPage() {
               {" "}
               As HR, manage{" "}
               <Link
-                href="/app/admin/users"
+                href="/app/hr-admin/directory"
                 className="font-semibold text-slate-900 underline-offset-2 hover:underline"
               >
                 staff directory

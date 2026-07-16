@@ -7,7 +7,19 @@ import {
   markAllNotificationsReadForUser,
   markNotificationReadForUser,
 } from "@/lib/inbox/queries";
+import { expandMessagingIdentityIds } from "@/lib/messages/participants";
 import { safeErrorMessage } from "@/lib/server-guards";
+
+async function actorIdentityIds(actor: {
+  userId: string;
+  schoolId: string;
+  profileId?: string | null;
+}) {
+  return expandMessagingIdentityIds(
+    [actor.userId, actor.profileId].filter(Boolean) as string[],
+    actor.schoolId,
+  );
+}
 
 export async function GET(req: Request) {
   try {
@@ -16,10 +28,12 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const limit = Math.min(Math.max(Number(searchParams.get("limit") || 50), 1), 100);
+    const identityIds = await actorIdentityIds(actor);
     const rows = await loadNotificationsForUser({
       userId: actor.userId,
       schoolId: actor.schoolId,
       limit,
+      identityIds,
     });
 
     return NextResponse.json({
@@ -44,11 +58,13 @@ export async function PUT(req: Request) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     const body = await req.json().catch(() => ({}));
+    const identityIds = await actorIdentityIds(actor);
 
     if (body?.markAll) {
       const updatedCount = await markAllNotificationsReadForUser({
         userId: actor.userId,
         schoolId: actor.schoolId,
+        identityIds,
       });
       invalidateInboxHotReads(actor.userId, actor.schoolId);
       return NextResponse.json({ success: true, data: { updatedCount } });
@@ -62,6 +78,7 @@ export async function PUT(req: Request) {
       id,
       userId: actor.userId,
       schoolId: actor.schoolId,
+      identityIds,
     });
     if (!updated) {
       return NextResponse.json({ error: "Notification not found" }, { status: 404 });

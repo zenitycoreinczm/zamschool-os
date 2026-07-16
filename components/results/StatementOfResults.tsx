@@ -183,7 +183,7 @@ export const StatementOfResults = forwardRef<HTMLDivElement, StatementOfResultsP
                   color: "#1a1a1a",
                 }}
               >
-                {item.value || "—"}
+                {item.value || "-"}
               </div>
             </div>
           ))}
@@ -289,7 +289,7 @@ export const StatementOfResults = forwardRef<HTMLDivElement, StatementOfResultsP
                   {subj.name}
                 </td>
                 <td style={{ padding: "12px", border: "1px solid #e5e7eb", color: "#6b7280" }}>
-                  {subj.code || "—"}
+                  {subj.code || "-"}
                 </td>
                 <td
                   style={{

@@ -111,7 +111,7 @@ export function normalizeWorkspaceContextValue(
  */
 export function useWorkspaceContext(): WorkspaceContextValue {
   const value = useContext(getWorkspaceContext());
-  // normalize is total — but keep the nullish fallback as belt-and-suspenders
+  // normalize is total - but keep the nullish fallback as belt-and-suspenders
   // against unexpected future edits to the normalizer.
   return normalizeWorkspaceContextValue(value) ?? fallbackWorkspaceContext;
 }

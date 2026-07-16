@@ -244,7 +244,7 @@ async function loadCertificateResults(input: {
     const rank = sortedTotals.findIndex(([sid]) => sid === group.studentId) + 1;
     const classSize = sortedTotals.length;
 
-    const positionStr = rank > 0 ? `${getOrdinal(rank)} of ${classSize}` : "—";
+    const positionStr = rank > 0 ? `${getOrdinal(rank)} of ${classSize}` : "-";
 
     const lastResult = resultRows.find((r: any) =>
       r.student_id === group.studentId &&
@@ -258,7 +258,7 @@ async function loadCertificateResults(input: {
     examResults.push({
       examTitle: group.examTitle,
       studentName: buildDisplayName(studentProfile?.profile || {}),
-      examNumber: student?.student_number || "—",
+      examNumber: student?.student_number || "-",
       className: classInfo?.name || "Class",
       schoolName,
       year: new Date().getFullYear(),

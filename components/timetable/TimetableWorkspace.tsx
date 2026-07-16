@@ -6,17 +6,14 @@ import Link from "next/link";
 import {
   CalendarDays,
   ChevronLeft,
-  Clock3,
-  Eye,
   Loader2,
   Plus,
+  Search,
   Trash2,
-  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { fetchGatewayRead } from "@/lib/gateway-read-client";
 import { getDisplayName } from "@/lib/profile-utils";
@@ -25,7 +22,10 @@ import { cn } from "@/lib/utils";
 
 import {
   buildMobileDaySections,
-  buildTimetableBoard,
+  buildNextUpLessons,
+  buildTeacherAliasMap,
+  getDayFullLabel,
+  getTodayDayKey,
   toMinutes,
   type LessonCardView,
   type TimetableLesson,
@@ -35,6 +35,11 @@ import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 export type TimetableViewMode = "class" | "teacher" | "self";
 
 type SelectOpt = { id: string; name: string };
+type TeacherOpt = {
+  id: string;
+  name: string;
+  role_record_id?: string | null;
+};
 type LessonForm = {
   class_id: string;
   subject_id: string;
@@ -63,35 +68,12 @@ const EMPTY_FORM: LessonForm = {
   end_time: "08:00",
 };
 
-const VIEW_COPY: Record<
-  TimetableViewMode,
-  { eyebrow: string; title: string; description: string }
-> = {
-  class: {
-    eyebrow: "Class timetable",
-    title: "Weekly class schedule",
-    description:
-      "Plan lessons by class, inspect the full week, and manage period assignments.",
-  },
-  teacher: {
-    eyebrow: "Teacher timetable",
-    title: "Weekly teacher schedule",
-    description:
-      "Select a teacher, then assign the classes they teach and when each lesson runs.",
-  },
-  self: {
-    eyebrow: "My timetable",
-    title: "Your teaching schedule",
-    description:
-      "See every class you teach this week, with subjects and times in one place.",
-  },
-};
-
-export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }) {
-  const {
-    data: wsData,
-    loading: workspaceLoading,
-  } = useWorkspaceContext();
+export function TimetableWorkspace({
+  viewMode,
+}: {
+  viewMode: TimetableViewMode;
+}) {
+  const { data: wsData, loading: workspaceLoading } = useWorkspaceContext();
   const currentUserId = wsData?.userId || null;
   const workspaceSchoolId = String(wsData?.schoolId || "").trim() || null;
   const readOnly = viewMode === "self";
@@ -102,10 +84,11 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
   const [schoolId, setSchoolId] = useState<string | null>(null);
   const [classes, setClasses] = useState<SelectOpt[]>([]);
   const [subjects, setSubjects] = useState<SelectOpt[]>([]);
-  const [teachers, setTeachers] = useState<Array<{ id: string; name: string }>>([]);
+  const [teachers, setTeachers] = useState<TeacherOpt[]>([]);
   const [lessons, setLessons] = useState<TimetableLesson[]>([]);
   const [selectedClass, setSelectedClass] = useState("all");
   const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [teacherQuery, setTeacherQuery] = useState("");
   const [form, setForm] = useState<LessonForm>(EMPTY_FORM);
   const [openForm, setOpenForm] = useState(false);
   const [detailLessonId, setDetailLessonId] = useState<string | null>(null);
@@ -118,8 +101,17 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
     () => Object.fromEntries(classes.map((x) => [x.id, x.name])),
     [classes],
   );
-  const teacherMap = useMemo(
-    () => Object.fromEntries(teachers.map((x) => [x.id, x.name])),
+  const teacherMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const teacher of teachers) {
+      if (teacher.id) map[teacher.id] = teacher.name;
+      if (teacher.role_record_id) map[teacher.role_record_id] = teacher.name;
+    }
+    return map;
+  }, [teachers]);
+
+  const teacherAliases = useMemo(
+    () => buildTeacherAliasMap(teachers),
     [teachers],
   );
 
@@ -130,28 +122,7 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
         ? selectedTeacher
         : "all";
 
-  const board = useMemo(
-    () =>
-      buildTimetableBoard({
-        lessons,
-        selectedClass: viewMode === "class" ? selectedClass : "all",
-        selectedTeacher: activeTeacherId,
-        classMap,
-        subjectMap,
-        teacherMap,
-      }),
-    [
-      lessons,
-      viewMode,
-      selectedClass,
-      activeTeacherId,
-      classMap,
-      subjectMap,
-      teacherMap,
-    ],
-  );
-
-  const mobileSections = useMemo(
+  const weekSections = useMemo(
     () =>
       buildMobileDaySections({
         lessons,
@@ -160,6 +131,7 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
         classMap,
         subjectMap,
         teacherMap,
+        teacherAliases,
       }),
     [
       lessons,
@@ -169,50 +141,97 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
       classMap,
       subjectMap,
       teacherMap,
+      teacherAliases,
+    ],
+  );
+
+  // Always show Mon–Fri columns (including empty days) for a stable glance grid.
+  const weekColumns = useMemo(() => {
+    const byDay = new Map(weekSections.map((s) => [s.key, s.lessons]));
+    return DAY_OPTIONS.map((day) => ({
+      key: Number(day.value),
+      label: day.label.slice(0, 3),
+      fullLabel: day.label,
+      lessons: byDay.get(Number(day.value)) || [],
+    }));
+  }, [weekSections]);
+
+  const totalInView = useMemo(
+    () => weekColumns.reduce((sum, d) => sum + d.lessons.length, 0),
+    [weekColumns],
+  );
+
+  const nextUp = useMemo(
+    () =>
+      buildNextUpLessons(
+        lessons,
+        {
+          classMap,
+          subjectMap,
+          teacherMap,
+          selectedClass: viewMode === "class" ? selectedClass : "all",
+          selectedTeacher: activeTeacherId,
+          teacherAliases,
+        },
+        4,
+      ),
+    [
+      lessons,
+      classMap,
+      subjectMap,
+      teacherMap,
+      viewMode,
+      selectedClass,
+      activeTeacherId,
+      teacherAliases,
     ],
   );
 
   const teacherLessonCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const lesson of lessons) {
-      counts.set(lesson.teacher_id, (counts.get(lesson.teacher_id) || 0) + 1);
-    }
-    return counts;
-  }, [lessons]);
-
-  const cardsById = useMemo(() => {
-    const map = new Map<string, LessonCardView>();
-    for (const day of board.days) {
-      for (const slot of day.slots) {
-        for (const lesson of slot.lessons) {
-          if (!map.has(lesson.id)) map.set(lesson.id, lesson);
-        }
+      const keys = new Set<string>();
+      if (lesson.teacher_id) keys.add(lesson.teacher_id);
+      if (lesson.teacher_profile_id) keys.add(lesson.teacher_profile_id);
+      const aliases = teacherAliases.get(String(lesson.teacher_id || ""));
+      if (aliases) for (const key of aliases) keys.add(key);
+      for (const key of keys) {
+        counts.set(key, (counts.get(key) || 0) + 1);
       }
     }
-    return map;
-  }, [board.days]);
+    return counts;
+  }, [lessons, teacherAliases]);
+
+  const filteredTeachers = useMemo(() => {
+    const q = teacherQuery.trim().toLowerCase();
+    if (!q) return teachers;
+    return teachers.filter((t) => t.name.toLowerCase().includes(q));
+  }, [teachers, teacherQuery]);
 
   const detailLesson = detailLessonId
     ? (lessons.find((x) => x.id === detailLessonId) ?? null)
     : null;
-  const detailCard = detailLessonId
-    ? (cardsById.get(detailLessonId) ?? null)
-    : null;
+  const detailCard = useMemo(() => {
+    if (!detailLesson) return null;
+    const flat = weekColumns.flatMap((d) => d.lessons);
+    return flat.find((c) => c.id === detailLesson.id) || null;
+  }, [detailLesson, weekColumns]);
 
-  const lensLabel =
-    viewMode === "class"
-      ? selectedClass === "all"
-        ? "All classes"
-        : classMap[selectedClass] || "Selected class"
-      : viewMode === "teacher"
-        ? teacherMap[selectedTeacher] || "Selected teacher"
-        : "Your lessons";
-
-  const copy = VIEW_COPY[viewMode];
   const cardLens = viewMode === "class" ? "teacher" : "class";
+  const todayKey = getTodayDayKey();
+
+  const title =
+    viewMode === "teacher" && selectedTeacher
+      ? teacherMap[selectedTeacher] || "Teacher schedule"
+      : viewMode === "class"
+        ? selectedClass === "all"
+          ? "Class schedules"
+          : classMap[selectedClass] || "Class schedule"
+        : viewMode === "self"
+          ? "My teaching week"
+          : "Teacher schedules";
 
   useEffect(() => {
-    // Wait for shell context so we don't hard-fail on a transient null schoolId.
     if (workspaceLoading && !workspaceSchoolId) return;
 
     let cancelled = false;
@@ -224,7 +243,8 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
           const schoolBody = await adminApiJson<{
             data?: { profile?: { school_id?: string | null } };
           }>("/api/admin/school");
-          sid = String(schoolBody.data?.profile?.school_id || "").trim() || null;
+          sid =
+            String(schoolBody.data?.profile?.school_id || "").trim() || null;
         }
         if (!sid) {
           await new Promise((r) => setTimeout(r, 500));
@@ -232,7 +252,8 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
           const retryBody = await adminApiJson<{
             data?: { profile?: { school_id?: string | null } };
           }>("/api/admin/school");
-          sid = String(retryBody.data?.profile?.school_id || "").trim() || null;
+          sid =
+            String(retryBody.data?.profile?.school_id || "").trim() || null;
         }
         if (!sid) throw new Error(schoolLinkUserMessage());
         if (cancelled) return;
@@ -254,26 +275,45 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
     };
   }, [workspaceLoading, workspaceSchoolId]);
 
-  async function fetchAll() {
-    const [classesRes, subjectRes, teacherRes, lessonsRes] = await Promise.all([
-      fetchGatewayRead("/api/admin/classes", {
-        cache: "no-store",
-        fallbackToLocal: true,
-      }),
-      adminApiJson<{ data?: SelectOpt[] }>("/api/admin/subjects"),
-      adminApiJson<{ data?: { teachers?: unknown[] } }>("/api/admin/users"),
-      fetchGatewayRead("/api/admin/timetable", {
-        cache: "no-store",
-        fallbackToLocal: true,
-      }),
-    ]);
+  async function fetchAll(options: { lessonsOnly?: boolean } = {}) {
+    // Always no-store so create/delete is not masked by browser/gateway cache.
+    const fetchInit = { cache: "no-store" as RequestCache };
+
+    if (options.lessonsOnly) {
+      // Cache-buster avoids inflight GET dedupe / stale intermediary caches.
+      const lessonsBody = await adminApiJson<{
+        data?: TimetableLesson[];
+        success?: boolean;
+      }>(`/api/admin/timetable?_ts=${Date.now()}`, fetchInit);
+      const rawLessons = Array.isArray(lessonsBody?.data)
+        ? lessonsBody.data
+        : Array.isArray(lessonsBody)
+          ? lessonsBody
+          : [];
+      setLessons(rawLessons as TimetableLesson[]);
+      return;
+    }
+
+    const [classesRes, subjectRes, teacherRes, lessonsBody] = await Promise.all(
+      [
+        fetchGatewayRead("/api/admin/classes", {
+          cache: "no-store",
+          fallbackToLocal: true,
+        }),
+        adminApiJson<{ data?: SelectOpt[] }>("/api/admin/subjects", fetchInit),
+        adminApiJson<{ data?: { teachers?: unknown[] } }>(
+          "/api/admin/users",
+          fetchInit,
+        ),
+        adminApiJson<{ data?: TimetableLesson[]; success?: boolean }>(
+          "/api/admin/timetable",
+          fetchInit,
+        ),
+      ],
+    );
     const classesBody = await classesRes.json();
-    const lessonsBody = await lessonsRes.json();
     if (!classesRes.ok) {
       throw new Error(classesBody?.error || "Failed to load classes");
-    }
-    if (!lessonsRes.ok) {
-      throw new Error(lessonsBody?.error || "Failed to load timetable");
     }
     const nextClasses = toClassOptions(classesBody?.data);
     const nextSubjects = (subjectRes.data || []).map((x) => ({
@@ -282,18 +322,85 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
     }));
     const nextTeachers = (teacherRes.data?.teachers || []).map((x: unknown) => {
       const row = x as Record<string, unknown>;
-      return { id: String(row.id || ""), name: getDisplayName(row) };
+      const profileId = String(row.id || row.profile_id || "").trim();
+      const roleRecordId = String(
+        row.role_record_id || row.teacher_row_id || "",
+      ).trim();
+      return {
+        id: profileId,
+        name: getDisplayName(row),
+        role_record_id: roleRecordId || null,
+      } satisfies TeacherOpt;
     });
     setClasses(nextClasses);
     setSubjects(nextSubjects);
     setTeachers(nextTeachers);
-    setLessons((lessonsBody?.data || []) as TimetableLesson[]);
+    const rawLessons = Array.isArray(lessonsBody?.data)
+      ? lessonsBody.data
+      : Array.isArray(lessonsBody)
+        ? lessonsBody
+        : [];
+    setLessons(rawLessons as TimetableLesson[]);
     setForm((prev) => ({
       ...prev,
       class_id: prev.class_id || nextClasses[0]?.id || "",
       subject_id: prev.subject_id || nextSubjects[0]?.id || "",
       teacher_id: prev.teacher_id || nextTeachers[0]?.id || "",
     }));
+  }
+
+  function mapCreatedLesson(
+    data: Record<string, unknown> | null | undefined,
+    draft: {
+      classId: string;
+      subjectId: string;
+      teacherProfileId: string;
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+    },
+  ): TimetableLesson | null {
+    if (!data || !data.id) {
+      // Still paint a temporary row so the board never feels stuck.
+      const tempId = `temp-${Date.now()}`;
+      return {
+        id: tempId,
+        title: subjectMap[draft.subjectId] || "Lesson",
+        subject_id: draft.subjectId,
+        class_id: draft.classId,
+        teacher_id:
+          teachers.find((t) => t.id === draft.teacherProfileId)
+            ?.role_record_id || draft.teacherProfileId,
+        teacher_profile_id: draft.teacherProfileId,
+        day_of_week: draft.dayOfWeek,
+        start_time: draft.startTime,
+        end_time: draft.endTime,
+      };
+    }
+
+    const teacherRowId = String(
+      data.teacher_id || data.teacher_row_id || "",
+    ).trim();
+    const teacherProfileId = String(
+      data.teacher_profile_id || draft.teacherProfileId || "",
+    ).trim();
+
+    return {
+      id: String(data.id),
+      title:
+        (data.title as string | null) ||
+        subjectMap[String(data.subject_id || draft.subjectId)] ||
+        "Lesson",
+      subject_id: String(data.subject_id || draft.subjectId),
+      class_id: String(data.class_id || draft.classId),
+      teacher_id: teacherRowId || draft.teacherProfileId,
+      teacher_profile_id: teacherProfileId || null,
+      day_of_week: Number(data.day_of_week ?? draft.dayOfWeek),
+      start_time: normalizeTimeValue(
+        String(data.start_time || draft.startTime),
+      ),
+      end_time: normalizeTimeValue(String(data.end_time || draft.endTime)),
+    };
   }
 
   function openAddLesson() {
@@ -326,28 +433,57 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
       return;
     }
     setSaving(true);
-    const id = toast.loading("Saving lesson...");
+    const toastId = toast.loading("Saving lesson...");
+    const draft = {
+      classId: form.class_id,
+      subjectId: form.subject_id,
+      teacherProfileId: form.teacher_id,
+      dayOfWeek: Number(form.day_of_week),
+      startTime,
+      endTime,
+    };
+
+    // Close form immediately so the board is visible while we save.
+    setOpenForm(false);
+
     try {
-      await adminApiJson("/api/admin/timetable", {
+      const result = await adminApiJson<{
+        success?: boolean;
+        data?: Record<string, unknown>;
+      }>("/api/admin/timetable", {
         method: "POST",
+        cache: "no-store",
         body: JSON.stringify({
-          // Title is derived from the subject on display — no manual label needed.
-          classId: form.class_id,
-          subjectId: form.subject_id,
-          teacherId: form.teacher_id,
-          dayOfWeek: Number(form.day_of_week),
-          startTime,
-          endTime,
+          classId: draft.classId,
+          subjectId: draft.subjectId,
+          teacherId: draft.teacherProfileId,
+          dayOfWeek: draft.dayOfWeek,
+          startTime: draft.startTime,
+          endTime: draft.endTime,
         }),
       });
-      await fetchAll();
-      setOpenForm(false);
-      toast.success("Lesson saved", { id });
+
+      const created = mapCreatedLesson(result?.data, draft);
+      if (created) {
+        setLessons((prev) => {
+          if (prev.some((row) => row.id === created.id)) return prev;
+          return [...prev, created];
+        });
+      }
+
+      toast.success("Lesson saved", { id: toastId });
+
+      // Background reconcile (do not block UI). Lessons-only is enough.
+      void fetchAll({ lessonsOnly: true }).catch(() => {
+        // optimistic row already painted
+      });
     } catch (err: unknown) {
       toast.error(
         err instanceof Error ? err.message : "Failed to save lesson",
-        { id },
+        { id: toastId },
       );
+      // Re-open form so the user can fix without re-entering everything.
+      setOpenForm(true);
     } finally {
       setSaving(false);
     }
@@ -357,15 +493,21 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
     if (!schoolId) return;
     if (!confirm("Delete this lesson from the timetable?")) return;
     const toastId = toast.loading("Deleting lesson...");
+
+    const previous = lessons;
+    // Optimistic remove - board updates instantly.
+    setLessons((prev) => prev.filter((row) => row.id !== id));
+    setDetailLessonId(null);
+
     try {
       await adminApiJson(
         `/api/admin/timetable?id=${encodeURIComponent(id)}`,
-        { method: "DELETE" },
+        { method: "DELETE", cache: "no-store" },
       );
-      await fetchAll();
-      setDetailLessonId(null);
       toast.success("Lesson deleted", { id: toastId });
+      void fetchAll({ lessonsOnly: true }).catch(() => {});
     } catch (err: unknown) {
+      setLessons(previous);
       toast.error(
         err instanceof Error ? err.message : "Failed to delete lesson",
         { id: toastId },
@@ -375,140 +517,108 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-3 rounded-workspace-xl border border-slate-200 bg-white p-12">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-10">
+        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
         <span className="text-sm text-slate-500">Loading timetable…</span>
       </div>
     );
   }
 
+  // ── Teacher picker (compact list) ─────────────────────────────────────────
   if (viewMode === "teacher" && !selectedTeacher) {
     return (
-      <div className="flex flex-col gap-4">
-        <AdminPageHero
-          eyebrow={copy.eyebrow}
-          title="Choose a teacher"
-          description="Open a teacher’s weekly board to view or schedule their lessons. Teachers see the same plan on their own timetable."
-          accent="slate"
-          stats={[
-            {
-              label: "Teachers",
-              value: teachers.length,
-              hint: "On staff directory",
-              tone: "violet",
-            },
-            {
-              label: "Lessons total",
-              value: lessons.length,
-              hint: "School-wide",
-              tone: "sky",
-            },
-            {
-              label: "With schedule",
-              value: teachers.filter((t) => (teacherLessonCounts.get(t.id) || 0) > 0)
-                .length,
-              hint: "At least one lesson",
-              tone: "emerald",
-            },
-            {
-              label: "No lessons yet",
-              value: teachers.filter((t) => !(teacherLessonCounts.get(t.id) || 0))
-                .length,
-              hint: "Need a first period",
-              tone: "amber",
-            },
-          ]}
-          actions={<ViewModeTabs active="teacher" onDark />}
+      <div className="flex flex-col gap-3">
+        <CompactHeader
+          title="Teacher schedules"
+          subtitle={`${teachers.length} teachers · ${lessons.length} lessons school-wide`}
+          tabs={<ViewModeTabs active="teacher" />}
         />
 
-        {teachers.length === 0 ? (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            value={teacherQuery}
+            onChange={(e) => setTeacherQuery(e.target.value)}
+            placeholder="Search teacher…"
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+          />
+        </div>
+
+        {filteredTeachers.length === 0 ? (
           <EmptyBoard
-            title="No teachers yet"
-            body="Add teaching staff under Users, then come back to build their schedules."
+            title="No teachers found"
+            body="Add teaching staff under People, then build their schedules here."
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {teachers.map((teacher) => {
-              const count = teacherLessonCounts.get(teacher.id) || 0;
-              return (
-                <button
-                  key={teacher.id}
-                  type="button"
-                  onClick={() => setSelectedTeacher(teacher.id)}
-                  className="group flex items-start gap-3 rounded-workspace-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-md"
-                >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
-                    <User className="h-4.5 w-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-slate-900">
-                      {teacher.name}
-                    </p>
-                    <p className="mt-0.5 text-sm text-slate-500">
-                      {count === 0
-                        ? "No lessons yet"
-                        : `${count} lesson${count === 1 ? "" : "s"}`}
-                    </p>
-                  </div>
-                  <ChevronLeft className="h-4 w-4 shrink-0 rotate-180 text-slate-300 transition group-hover:text-indigo-500" />
-                </button>
-              );
-            })}
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-slate-100 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-3 py-2">Teacher</th>
+                  <th className="px-3 py-2 w-28 text-right">Lessons</th>
+                  <th className="px-3 py-2 w-16" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredTeachers.map((teacher) => {
+                  const count = teacherLessonCounts.get(teacher.id) || 0;
+                  return (
+                    <tr
+                      key={teacher.id}
+                      className="cursor-pointer hover:bg-slate-50/80"
+                      onClick={() => setSelectedTeacher(teacher.id)}
+                    >
+                      <td className="px-3 py-2 font-medium text-slate-900">
+                        {teacher.name}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums text-slate-600">
+                        {count === 0 ? (
+                          <span className="text-amber-600">None</span>
+                        ) : (
+                          count
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-400">
+                        <ChevronLeft className="inline h-4 w-4 rotate-180" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
     );
   }
 
-  const heroAccent =
-    viewMode === "teacher" ? "indigo" : viewMode === "self" ? "emerald" : "sky";
-
+  // ── Main compact week view ────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-4">
-      <AdminPageHero
-        eyebrow={copy.eyebrow}
-        title={
-          viewMode === "teacher"
-            ? teacherMap[selectedTeacher] || copy.title
-            : copy.title
+    <div className="flex flex-col gap-3">
+      <CompactHeader
+        title={title}
+        subtitle={
+          totalInView === 0
+            ? "No lessons in this view yet"
+            : `${totalInView} lesson${totalInView === 1 ? "" : "s"} this week`
         }
-        description={copy.description}
-        accent={heroAccent}
-        stats={[
-          {
-            label: "Lessons",
-            value: board.totalLessons,
-            hint: "In this view",
-            tone: "sky",
-          },
-          {
-            label: "Busiest day",
-            value: board.busiestDayLabel,
-            hint: "Most periods",
-            tone: "violet",
-          },
-          {
-            label: viewMode === "class" ? "Class" : "Focus",
-            value: lensLabel,
-            hint: viewMode === "self" ? "Your schedule" : "Current filter",
-            tone: "amber",
-          },
-          {
-            label: "Subjects",
-            value: subjects.length,
-            hint: "In school catalog",
-            tone: "emerald",
-          },
-        ]}
+        tabs={
+          viewMode !== "self" ? (
+            <ViewModeTabs
+              active={viewMode === "class" ? "class" : "teacher"}
+            />
+          ) : null
+        }
         actions={
           <>
             {viewMode === "teacher" ? (
               <button
                 type="button"
                 onClick={() => setSelectedTeacher("")}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
                 All teachers
               </button>
             ) : null}
@@ -516,9 +626,9 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
               <button
                 type="button"
                 onClick={openAddLesson}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+                className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 Add lesson
               </button>
             ) : null}
@@ -526,143 +636,98 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
         }
       />
 
-      {/* Toolbar: mode + filter in one calm row */}
-      <div className="flex flex-col gap-3 rounded-workspace-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-4">
-        {viewMode !== "self" ? (
-          <ViewModeTabs active={viewMode === "class" ? "class" : "teacher"} />
-        ) : (
-          <p className="text-sm font-medium text-slate-600">Your teaching week</p>
-        )}
-
+      {/* Filters */}
+      {viewMode === "class" ? (
         <div className="flex flex-wrap items-center gap-2">
-          {viewMode === "class" ? (
-            <label className="flex min-w-[12rem] flex-1 items-center gap-2 sm:flex-none">
-              <span className="sr-only">Filter by class</span>
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-sky-100 sm:min-w-[14rem]"
-              >
-                <option value="all">All classes</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {canEdit ? (
-            <button
-              type="button"
-              onClick={openAddLesson}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white hover:bg-slate-800 sm:hidden"
+          <label className="flex min-w-[10rem] items-center gap-2">
+            <span className="text-xs font-medium text-slate-500">Class</span>
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-slate-200"
             >
-              <Plus className="h-4 w-4" />
-              Add
-            </button>
-          ) : null}
+              <option value="all">All classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      </div>
+      ) : null}
 
-      {/* Mobile day list */}
-      <section className="space-y-3 lg:hidden">
-        {mobileSections.length === 0 ? (
-          <EmptyBoard
-            title="No lessons in this view"
-            body={
-              canEdit
-                ? "Add a lesson to place the first period on the week."
-                : "Nothing is scheduled for you in this range yet."
-            }
-            action={
-              canEdit ? (
-                <button
-                  type="button"
-                  onClick={openAddLesson}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add lesson
-                </button>
-              ) : null
-            }
-          />
-        ) : (
-          mobileSections.map((section) => (
-            <div
-              key={section.key}
-              className="rounded-workspace-xl border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <div className="mb-3 flex items-baseline justify-between gap-2">
-                <h2 className="text-base font-semibold text-slate-900">
-                  {section.label}
-                </h2>
-                <p className="text-xs font-medium text-slate-400">
-                  {section.lessons.length}{" "}
-                  {section.lessons.length === 1 ? "lesson" : "lessons"}
-                </p>
-              </div>
-              <div className="space-y-2">
-                {section.lessons.map((lesson) => (
-                  <LessonCard
-                    key={lesson.id}
-                    lesson={lesson}
-                    compact
-                    lens={cardLens}
-                    onView={() => setDetailLessonId(lesson.id)}
-                    onDelete={() => void deleteLesson(lesson.id)}
-                    readOnly={readOnly}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* Desktop weekly board */}
-      <section className="hidden overflow-hidden rounded-workspace-xl border border-slate-200 bg-white shadow-sm lg:block">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">
-              Weekly board
+      {/* What's next - at a glance */}
+      {nextUp.length > 0 ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              What&apos;s next
             </h2>
-            <p className="text-xs text-slate-500">
-              {board.totalLessons === 0
-                ? "Empty week — add a lesson to start the grid."
-                : `Showing ${board.totalLessons} lesson${board.totalLessons === 1 ? "" : "s"} · slots follow lesson times`}
+            <p className="text-[11px] text-slate-400">
+              Today · {getDayFullLabel(todayKey)}
             </p>
           </div>
-          {canEdit && board.totalLessons > 0 ? (
-            <button
-              type="button"
-              onClick={openAddLesson}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-            >
-              <Plus className="h-4 w-4" />
-              Add lesson
-            </button>
-          ) : null}
+          <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
+            {nextUp.map((lesson, i) => (
+              <button
+                key={lesson.id}
+                type="button"
+                onClick={() => setDetailLessonId(lesson.id)}
+                className={cn(
+                  "flex items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition hover:border-slate-300 hover:bg-slate-50",
+                  i === 0
+                    ? "border-emerald-200 bg-emerald-50/60"
+                    : "border-slate-100 bg-slate-50/40",
+                )}
+              >
+                <span className="mt-0.5 shrink-0 rounded bg-white px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-600 ring-1 ring-slate-200">
+                  {lesson.startsAt}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold text-slate-900">
+                    {lesson.subject}
+                  </span>
+                  <span className="block truncate text-[11px] text-slate-500">
+                    {getDayFullLabel(lesson.dayOfWeek).slice(0, 3)}
+                    {" · "}
+                    {cardLens === "teacher"
+                      ? lesson.teacher
+                      : lesson.className}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Compact Mon–Fri glance grid (no empty hour rows) */}
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
+          <h2 className="text-sm font-semibold text-slate-900">Week at a glance</h2>
+          <p className="text-[11px] text-slate-400">
+            {totalInView} period{totalInView === 1 ? "" : "s"}
+          </p>
         </div>
 
-        {board.totalLessons === 0 ? (
-          <div className="p-6">
+        {totalInView === 0 ? (
+          <div className="p-4">
             <EmptyBoard
-              title="Nothing scheduled yet"
+              title="Nothing scheduled in this view"
               body={
                 canEdit
-                  ? "Create the first lesson for this view. The board grows around real periods instead of empty hours."
-                  : "No lessons match this view."
+                  ? "Add a lesson - it appears under that day immediately."
+                  : "No lessons match this filter."
               }
               action={
                 canEdit ? (
                   <button
                     type="button"
                     onClick={openAddLesson}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+                    className="mt-3 inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5" />
                     Add lesson
                   </button>
                 ) : null
@@ -670,55 +735,48 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div
-              className="grid min-w-[960px]"
-              style={{
-                gridTemplateColumns: "88px repeat(5, minmax(0, 1fr))",
-              }}
-            >
-              <div className="sticky left-0 z-10 border-b border-r border-slate-100 bg-slate-50/95 px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 backdrop-blur">
-                Time
-              </div>
-              {board.days.map((day) => (
-                <div
+          <>
+            {/* Desktop: 5 columns */}
+            <div className="hidden md:grid md:grid-cols-5 md:divide-x md:divide-slate-100">
+              {weekColumns.map((day) => (
+                <DayColumn
                   key={day.key}
-                  className="border-b border-r border-slate-100 bg-slate-50/80 px-3 py-3 last:border-r-0"
-                >
-                  <div className="text-sm font-semibold text-slate-800">
-                    {day.label}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">
-                    {day.totalLessons === 0
-                      ? "Free"
-                      : `${day.totalLessons} lesson${day.totalLessons === 1 ? "" : "s"}`}
-                  </div>
-                </div>
-              ))}
-              {board.days[0]?.slots.map((slot, index) => (
-                <ScheduleRow
-                  key={slot.label}
-                  slotLabel={slot.label}
-                  slotIndex={index}
-                  days={board.days}
+                  day={day}
+                  isToday={day.key === todayKey}
                   lens={cardLens}
+                  readOnly={readOnly}
                   onView={(id) => setDetailLessonId(id)}
                   onDelete={(id) => void deleteLesson(id)}
-                  readOnly={readOnly}
                 />
               ))}
             </div>
-          </div>
+
+            {/* Mobile: stacked days, only those with lessons first + empty compact */}
+            <div className="divide-y divide-slate-100 md:hidden">
+              {weekColumns.map((day) => (
+                <DayColumn
+                  key={day.key}
+                  day={day}
+                  isToday={day.key === todayKey}
+                  lens={cardLens}
+                  readOnly={readOnly}
+                  onView={(id) => setDetailLessonId(id)}
+                  onDelete={(id) => void deleteLesson(id)}
+                  stacked
+                />
+              ))}
+            </div>
+          </>
         )}
       </section>
 
       {openForm ? (
         <Modal
           title="Add lesson"
-          subtitle="Pick class, subject, teacher, day, and time. The board uses the subject name automatically."
+          subtitle="Class, subject, teacher, day, and time."
           onClose={() => setOpenForm(false)}
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <SelectField
               label="Class"
               value={form.class_id}
@@ -753,25 +811,25 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
               options={DAY_OPTIONS}
             />
             <TimeField
-              label="Start time"
+              label="Start"
               value={form.start_time}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, start_time: value }))
               }
             />
             <TimeField
-              label="End time"
+              label="End"
               value={form.end_time}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, end_time: value }))
               }
             />
           </div>
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setOpenForm(false)}
-              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700"
             >
               Cancel
             </button>
@@ -779,14 +837,14 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
               type="button"
               onClick={() => void createLesson()}
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Plus className="h-4 w-4" />
               )}
-              Save lesson
+              Save
             </button>
           </div>
         </Modal>
@@ -794,24 +852,21 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
 
       {detailLesson && detailCard ? (
         <Modal
-          title={detailCard.title}
-          subtitle={`${DAY_OPTIONS.find((day) => Number(day.value) === detailLesson.day_of_week)?.label || "Day"} · ${detailCard.timeRange}`}
+          title={detailCard.subject || detailCard.title}
+          subtitle={`${getDayFullLabel(detailCard.dayOfWeek)} · ${detailCard.timeRange}`}
           onClose={() => setDetailLessonId(null)}
         >
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Metric label="Subject" value={detailCard.subject} />
+          <div className="grid grid-cols-2 gap-2">
             <Metric label="Teacher" value={detailCard.teacher} />
             <Metric label="Class" value={detailCard.className} />
-            <Metric
-              label="Duration"
-              value={`${detailCard.durationMinutes} minutes`}
-            />
+            <Metric label="Starts" value={detailCard.startsAt} />
+            <Metric label="Ends" value={detailCard.endsAt} />
           </div>
-          <div className="mt-6 flex justify-end gap-2">
+          <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setDetailLessonId(null)}
-              className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700"
             >
               Close
             </button>
@@ -819,9 +874,10 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
               <button
                 type="button"
                 onClick={() => void deleteLesson(detailLesson.id)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white"
               >
-                <Trash2 className="h-4 w-4" /> Delete lesson
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
               </button>
             ) : null}
           </div>
@@ -831,34 +887,179 @@ export function TimetableWorkspace({ viewMode }: { viewMode: TimetableViewMode }
   );
 }
 
-function ViewModeTabs({
-  active,
-  onDark = false,
+// ─── Compact pieces ─────────────────────────────────────────────────────────
+
+function CompactHeader({
+  title,
+  subtitle,
+  tabs,
+  actions,
 }: {
-  active: "class" | "teacher";
-  /** Lighter control for use on AdminPageHero. */
-  onDark?: boolean;
+  title: string;
+  subtitle: string;
+  tabs?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">
+            {title}
+          </h1>
+          {tabs}
+        </div>
+        <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+      </div>
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DayColumn({
+  day,
+  isToday,
+  lens,
+  readOnly,
+  onView,
+  onDelete,
+  stacked = false,
+}: {
+  day: {
+    key: number;
+    label: string;
+    fullLabel: string;
+    lessons: LessonCardView[];
+  };
+  isToday: boolean;
+  lens: "class" | "teacher";
+  readOnly: boolean;
+  onView: (id: string) => void;
+  onDelete: (id: string) => void;
+  stacked?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "inline-flex rounded-xl p-0.5",
-        onDark
-          ? "border border-white/20 bg-white/10"
-          : "border border-slate-200 bg-slate-50",
+        "min-h-0",
+        isToday && "bg-emerald-50/40",
+        stacked && "px-3 py-2",
       )}
     >
+      <div
+        className={cn(
+          "sticky top-0 z-[1] flex items-center justify-between gap-1 border-b border-slate-100 bg-inherit px-2 py-1.5",
+          stacked && "static border-0 px-0 pb-1.5 pt-0",
+        )}
+      >
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "text-xs font-bold",
+              isToday ? "text-emerald-800" : "text-slate-800",
+            )}
+          >
+            {stacked ? day.fullLabel : day.label}
+          </span>
+          {isToday ? (
+            <span className="rounded bg-emerald-100 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-emerald-700">
+              Today
+            </span>
+          ) : null}
+        </div>
+        <span className="text-[10px] tabular-nums text-slate-400">
+          {day.lessons.length || "-"}
+        </span>
+      </div>
+
+      <div className={cn("space-y-1 p-1.5", stacked && "px-0 pb-1 pt-0")}>
+        {day.lessons.length === 0 ? (
+          <p className="px-1 py-3 text-center text-[10px] text-slate-300">
+            Free
+          </p>
+        ) : (
+          day.lessons.map((lesson) => (
+            <LessonChip
+              key={lesson.id}
+              lesson={lesson}
+              lens={lens}
+              readOnly={readOnly}
+              onView={() => onView(lesson.id)}
+              onDelete={() => onDelete(lesson.id)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LessonChip({
+  lesson,
+  lens,
+  readOnly,
+  onView,
+  onDelete,
+}: {
+  lesson: LessonCardView;
+  lens: "class" | "teacher";
+  readOnly: boolean;
+  onView: () => void;
+  onDelete: () => void;
+}) {
+  const context = lens === "teacher" ? lesson.className : lesson.teacher;
+
+  return (
+    <div
+      className={cn(
+        "group rounded-md border border-slate-200/90 bg-white px-1.5 py-1 shadow-sm",
+        "hover:border-slate-300",
+      )}
+    >
+      <button type="button" onClick={onView} className="w-full text-left">
+        <div className="flex items-baseline justify-between gap-1">
+          <span className="truncate text-[11px] font-semibold leading-tight text-slate-900">
+            {lesson.subject || lesson.title}
+          </span>
+          <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-500">
+            {lesson.startsAt}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-[10px] leading-tight text-slate-500">
+          {context}
+          <span className="text-slate-300"> · </span>
+          {lesson.endsAt}
+        </p>
+      </button>
+      {!readOnly ? (
+        <div className="mt-0.5 hidden justify-end gap-0.5 group-hover:flex">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="rounded px-1 py-0.5 text-[10px] font-medium text-rose-600 hover:bg-rose-50"
+          >
+            Delete
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ViewModeTabs({ active }: { active: "class" | "teacher" }) {
+  return (
+    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
       <Link
         href="/app/admin/timetable/classes"
         className={cn(
-          "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+          "rounded-md px-2 py-1 text-[11px] font-semibold transition",
           active === "class"
-            ? onDark
-              ? "bg-white text-slate-900 shadow-sm"
-              : "bg-white text-sky-900 shadow-sm ring-1 ring-slate-200/80"
-            : onDark
-              ? "text-white/75 hover:text-white"
-              : "text-slate-500 hover:text-slate-800",
+            ? "bg-white text-slate-900 shadow-sm"
+            : "text-slate-500 hover:text-slate-800",
         )}
       >
         By class
@@ -866,14 +1067,10 @@ function ViewModeTabs({
       <Link
         href="/app/admin/timetable/teachers"
         className={cn(
-          "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+          "rounded-md px-2 py-1 text-[11px] font-semibold transition",
           active === "teacher"
-            ? onDark
-              ? "bg-white text-slate-900 shadow-sm"
-              : "bg-white text-indigo-900 shadow-sm ring-1 ring-slate-200/80"
-            : onDark
-              ? "text-white/75 hover:text-white"
-              : "text-slate-500 hover:text-slate-800",
+            ? "bg-white text-slate-900 shadow-sm"
+            : "text-slate-500 hover:text-slate-800",
         )}
       >
         By teacher
@@ -892,156 +1089,13 @@ function EmptyBoard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-workspace-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
-      <span className="mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
-        <CalendarDays className="h-5 w-5" />
-      </span>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-8 text-center">
+      <CalendarDays className="mb-2 h-5 w-5 text-slate-300" />
       <p className="text-sm font-semibold text-slate-800">{title}</p>
-      <p className="mt-1 max-w-sm text-sm leading-relaxed text-slate-500">
+      <p className="mt-1 max-w-xs text-xs leading-relaxed text-slate-500">
         {body}
       </p>
       {action}
-    </div>
-  );
-}
-
-function ScheduleRow({
-  slotLabel,
-  slotIndex,
-  days,
-  lens,
-  onView,
-  onDelete,
-  readOnly = false,
-}: {
-  slotLabel: string;
-  slotIndex: number;
-  days: ReturnType<typeof buildTimetableBoard>["days"];
-  lens: "class" | "teacher";
-  onView: (id: string) => void;
-  onDelete: (id: string) => void;
-  readOnly?: boolean;
-}) {
-  const rowHasLessons = days.some(
-    (day) => (day.slots[slotIndex]?.lessons.length || 0) > 0,
-  );
-
-  return (
-    <>
-      <div
-        className={cn(
-          "sticky left-0 z-10 border-b border-r border-slate-100 px-2 py-2 text-center text-[11px] font-medium tabular-nums text-slate-500 backdrop-blur",
-          rowHasLessons ? "bg-white" : "bg-slate-50/40",
-        )}
-      >
-        {slotLabel}
-      </div>
-      {days.map((day) => {
-        const slot = day.slots[slotIndex];
-        const lessons = slot?.lessons || [];
-        return (
-          <div
-            key={`${day.key}-${slotLabel}`}
-            className={cn(
-              "min-h-[3.25rem] border-b border-r border-slate-100 p-1.5 last:border-r-0",
-              lessons.length === 0 && "bg-slate-50/20",
-            )}
-          >
-            {lessons.length === 0 ? null : (
-              <div className="space-y-1.5">
-                {lessons.map((lesson) => (
-                  <LessonCard
-                    key={lesson.id}
-                    lesson={lesson}
-                    lens={lens}
-                    onView={() => onView(lesson.id)}
-                    onDelete={() => onDelete(lesson.id)}
-                    readOnly={readOnly}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </>
-  );
-}
-
-function LessonCard({
-  lesson,
-  compact = false,
-  lens,
-  onView,
-  onDelete,
-  readOnly = false,
-}: {
-  lesson: LessonCardView;
-  compact?: boolean;
-  lens: "class" | "teacher";
-  onView: () => void;
-  onDelete: () => void;
-  readOnly?: boolean;
-}) {
-  const tone = toneClasses(lesson.tone);
-  // Subject first; class view shows teacher (+ class when useful), teacher view shows class.
-  const contextLine =
-    lens === "teacher"
-      ? lesson.className
-      : compact
-        ? lesson.teacher
-        : [lesson.teacher, lesson.className].filter(Boolean).join(" · ");
-
-  return (
-    <div
-      className={cn(
-        "group relative rounded-xl border px-2.5 py-2 shadow-sm transition hover:shadow-md",
-        tone,
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          onClick={onView}
-          className="min-w-0 flex-1 text-left"
-        >
-          <p className="truncate text-sm font-semibold leading-snug text-slate-900">
-            {lesson.subject || lesson.title}
-          </p>
-          <p className="mt-0.5 truncate text-[11px] text-slate-600">
-            {contextLine}
-          </p>
-          <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium tabular-nums text-slate-600">
-            <Clock3 className="h-3 w-3 shrink-0 opacity-70" />
-            {lesson.timeRange}
-            {!compact ? (
-              <span className="font-normal text-slate-400">
-                · {lesson.durationMinutes}m
-              </span>
-            ) : null}
-          </p>
-        </button>
-        {!readOnly ? (
-          <div className="flex shrink-0 flex-col gap-0.5 opacity-80 group-hover:opacity-100">
-            <button
-              type="button"
-              onClick={onView}
-              className="grid h-7 w-7 place-items-center rounded-lg bg-white/80 text-slate-500 ring-1 ring-slate-200/80 hover:text-slate-800"
-              aria-label="View lesson"
-            >
-              <Eye className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="grid h-7 w-7 place-items-center rounded-lg bg-white/80 text-rose-500 ring-1 ring-rose-100 hover:bg-rose-50"
-              aria-label="Delete lesson"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 }
@@ -1057,9 +1111,6 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  // Pin to the viewport (not the long timetable board). Without a body portal,
-  // fixed positioning can bind to the shell scroll area and the dialog lands
-  // mid-page — users had to scroll twice to find "Add lesson".
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -1080,43 +1131,34 @@ function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] overflow-y-auto bg-slate-950/40 p-3 backdrop-blur-sm"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="mx-auto flex min-h-full w-full max-w-3xl items-start justify-center py-4 sm:items-center sm:py-8">
+      <div className="mx-auto flex min-h-full w-full max-w-lg items-start justify-center py-6 sm:items-center">
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="timetable-modal-title"
-          className="w-full max-h-[min(92vh,880px)] overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-5 shadow-2xl md:p-6"
+          className="w-full max-h-[min(90vh,720px)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl"
           onMouseDown={(event) => event.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">
-                Timetable
-              </p>
-              <h2
-                id="timetable-modal-title"
-                className="mt-2 text-xl font-semibold text-slate-900"
-              >
-                {title}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+              <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+              <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-slate-100 text-slate-600"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-600"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-4">{children}</div>
+          <div className="mt-3">{children}</div>
         </div>
       </div>
     </div>,
@@ -1126,12 +1168,46 @@ function Modal({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </div>
-      <div className="mt-2 text-sm font-medium text-slate-900">{value}</div>
+      <div className="mt-0.5 text-sm font-medium text-slate-900">{value}</div>
     </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-200 disabled:bg-slate-50"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -1145,10 +1221,9 @@ function TimeField({
   onChange: (value: string) => void;
 }) {
   const listId = useId();
-
   return (
-    <label>
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+    <label className="block">
+      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </span>
       <input
@@ -1156,115 +1231,49 @@ function TimeField({
         list={listId}
         value={value}
         inputMode="numeric"
-        placeholder="07:00"
         onChange={(e) => onChange(e.target.value)}
-        onBlur={(e) => onChange(normalizeTimeValue(e.target.value))}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-sky-100"
+        className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums outline-none focus:ring-2 focus:ring-slate-200"
       />
       <datalist id={listId}>
-        {TIME_CHOICES.map((option) => (
-          <option key={option} value={option} />
+        {TIME_CHOICES.map((t) => (
+          <option key={t} value={t} />
         ))}
       </datalist>
     </label>
   );
 }
 
-function SelectField({
-  label,
-  value,
-  onChange,
-  options,
-  disabled = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  disabled?: boolean;
-}) {
-  return (
-    <label>
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-        {label}
-      </span>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100 disabled:text-slate-500"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function toneClasses(tone: LessonCardView["tone"]) {
-  switch (tone) {
-    case "emerald":
-      return "border-emerald-200 bg-emerald-50/80";
-    case "amber":
-      return "border-amber-200 bg-amber-50/80";
-    case "violet":
-      return "border-violet-200 bg-violet-50/80";
-    case "rose":
-      return "border-rose-200 bg-rose-50/80";
-    default:
-      return "border-sky-200 bg-sky-50/80";
-  }
-}
-
-function toClassOptions(rows: unknown): SelectOpt[] {
-  if (!Array.isArray(rows)) return [];
-  return rows.flatMap((row: unknown) => {
-    const record = row as Record<string, unknown>;
-    const id = typeof record?.id === "string" ? record.id : "";
-    const className =
-      typeof record?.name === "string" ? record.name.trim() : "";
-    const grades = record?.grades as Record<string, unknown> | undefined;
-    const gradeName =
-      typeof grades?.name === "string" ? grades.name.trim() : "";
-    const name =
-      [gradeName, className].filter(Boolean).join(" - ") ||
-      className ||
-      gradeName;
-    return id && name ? [{ id, name }] : [];
-  });
-}
-
-function buildTimeChoices(start: string, end: string, stepMinutes: number) {
-  const out: string[] = [];
-  let cursor = toMinutes(start);
-  const endMinutes = toMinutes(end);
-
-  while (cursor <= endMinutes) {
-    out.push(toClockValue(cursor));
-    cursor += stepMinutes;
-  }
-
-  return out;
+function toClassOptions(data: unknown): SelectOpt[] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      const id = String(r.id || "").trim();
+      const name = String(r.name || r.label || "").trim();
+      return id && name ? { id, name } : null;
+    })
+    .filter(Boolean) as SelectOpt[];
 }
 
 function normalizeTimeValue(value: string) {
   const match = String(value || "")
     .trim()
     .match(/^(\d{1,2}):(\d{2})/);
-  if (!match) {
-    return String(value || "").trim();
-  }
-
+  if (!match) return String(value || "").trim();
   return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
-function toClockValue(totalMinutes: number) {
-  const hours = Math.floor(totalMinutes / 60)
-    .toString()
-    .padStart(2, "0");
-  const minutes = (totalMinutes % 60).toString().padStart(2, "0");
-  return `${hours}:${minutes}`;
+function buildTimeChoices(start: string, end: string, stepMinutes: number) {
+  const out: string[] = [];
+  let cur = toMinutes(start);
+  const endMin = toMinutes(end);
+  while (cur <= endMin) {
+    const h = Math.floor(cur / 60)
+      .toString()
+      .padStart(2, "0");
+    const m = (cur % 60).toString().padStart(2, "0");
+    out.push(`${h}:${m}`);
+    cur += stepMinutes;
+  }
+  return out;
 }

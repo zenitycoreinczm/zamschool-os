@@ -12,7 +12,43 @@ import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabe
 
 type UserCardType = keyof typeof roleStatSurface;
 
-export default function UserCard({ type }: { type: UserCardType }) {
+/** Display labels - never show legacy "admins" for Head Teacher / office leadership. */
+const ROLE_CARD_LABELS: Record<UserCardType, string> = {
+  admin: "Leadership",
+  teacher: "Teachers",
+  student: "Students",
+  parent: "Parents",
+};
+
+/**
+ * Where each card navigates. Head Teacher does not use the people directory
+ * (`/app/admin/users`); office leadership and teachers go to Invite staff.
+ * Students/parents are Registrar work - cards stay informational for HT.
+ */
+const PRINCIPAL_CARD_HREFS: Record<UserCardType, string | null> = {
+  admin: "/app/principal/staff",
+  teacher: "/app/principal/staff",
+  student: null,
+  parent: null,
+};
+
+const DIRECTORY_CARD_HREFS: Record<UserCardType, string> = {
+  admin: "/app/hr-admin/directory",
+  teacher: "/app/hr-admin/directory",
+  student: "/app/registrar/people?role=student",
+  parent: "/app/registrar/people?role=parent",
+};
+
+export type UserCardPeopleMode = "directory" | "principal";
+
+export default function UserCard({
+  type,
+  peopleMode = "directory",
+}: {
+  type: UserCardType;
+  /** Head Teacher: no Users directory. Default keeps registrar/HR directory links. */
+  peopleMode?: UserCardPeopleMode;
+}) {
   const [fallbackSummary, setFallbackSummary] = useState<
     NonNullable<ReturnType<typeof useDashboardSummary>>["summary"] | null
   >(null);
@@ -22,9 +58,16 @@ export default function UserCard({ type }: { type: UserCardType }) {
   const count = summary?.roleCounts[type] ?? null;
   const academicLabel = summary?.academicLabel ?? "Current term";
   const loading = !summary && (dashboard?.loading ?? true);
+  const label = ROLE_CARD_LABELS[type];
+  const href =
+    peopleMode === "principal"
+      ? PRINCIPAL_CARD_HREFS[type]
+      : DIRECTORY_CARD_HREFS[type];
+  const interactive = Boolean(href);
 
   const handleClick = () => {
-    router.push(`/app/admin/users?role=${encodeURIComponent(type)}`);
+    if (!href) return;
+    router.push(href);
   };
 
   useEffect(() => {
@@ -58,15 +101,16 @@ export default function UserCard({ type }: { type: UserCardType }) {
     };
   }, [type, dashboard?.summary, dashboard?.loading]);
 
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className={cn(
-        "group ws-card-glow ws-hover-lift min-w-[8.125rem] rounded-workspace-xl border bg-gradient-to-br p-4 text-left shadow-workspace-sm focus-visible:shadow-workspace-focus relative overflow-hidden backdrop-blur-sm",
-        roleStatSurface[type]
-      )}
-    >
+  const surfaceClass = cn(
+    "group ws-card-glow min-w-[8.125rem] rounded-workspace-xl border bg-gradient-to-br p-4 text-left shadow-workspace-sm relative overflow-hidden backdrop-blur-sm",
+    roleStatSurface[type],
+    interactive &&
+      "ws-hover-lift cursor-pointer focus-visible:shadow-workspace-focus",
+    !interactive && "cursor-default",
+  );
+
+  const body = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex max-w-[10.5rem] items-baseline gap-1 truncate rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-slate-800 shadow-2xs ring-1 ring-black/5">
           <AcademicContextLabel
@@ -75,24 +119,48 @@ export default function UserCard({ type }: { type: UserCardType }) {
             termClassName="text-[9px] font-medium uppercase tracking-[0.1em] text-slate-500"
           />
         </span>
-        <span
-          className="text-slate-500/80 transition group-hover:scale-110 group-hover:text-slate-900"
-          aria-hidden
-        >
-          <MoreHorizontal className="h-5 w-5" />
-        </span>
+        {interactive ? (
+          <span
+            className="text-slate-500/80 transition group-hover:scale-110 group-hover:text-slate-900"
+            aria-hidden
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </span>
+        ) : null}
       </div>
-      <p className={cn("mt-4 text-[2rem] font-bold leading-none tracking-tight text-slate-900", ws.tabular)}>
+      <p
+        className={cn(
+          "mt-4 text-[2rem] font-bold leading-none tracking-tight text-slate-900",
+          ws.tabular,
+        )}
+      >
         {loading ? (
-          <Loader2 className="h-7 w-7 animate-spin text-slate-400" aria-label="Loading count" />
+          <Loader2
+            className="h-7 w-7 animate-spin text-slate-400"
+            aria-label="Loading count"
+          />
         ) : (
           (count ?? 0).toLocaleString()
         )}
       </p>
       <div className="mt-2 flex items-center justify-between">
-        <p className="text-sm font-semibold capitalize text-slate-700">{type}s</p>
-        <span className="text-[11px] font-medium text-slate-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100">View &rarr;</span>
+        <p className="text-sm font-semibold text-slate-700">{label}</p>
+        {interactive ? (
+          <span className="text-[11px] font-medium text-slate-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+            View &rarr;
+          </span>
+        ) : null}
       </div>
+    </>
+  );
+
+  if (!interactive) {
+    return <div className={surfaceClass}>{body}</div>;
+  }
+
+  return (
+    <button type="button" onClick={handleClick} className={surfaceClass}>
+      {body}
     </button>
   );
 }

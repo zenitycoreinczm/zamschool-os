@@ -27,7 +27,7 @@ const WORKFLOW = [
 
 const MODULES = [
   {
-    href: "/app/admin/users",
+    href: "/app/ict-admin/recovery",
     title: "User recovery",
     description:
       "Password resets and disable authenticator (2FA) for locked-out users.",
@@ -98,7 +98,7 @@ export default function IctAdminDashboard() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href="/app/admin/users"
+              href="/app/ict-admin/recovery"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100"
             >
               <Users className="h-4 w-4 text-slate-700" />

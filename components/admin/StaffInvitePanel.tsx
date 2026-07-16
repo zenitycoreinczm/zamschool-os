@@ -94,7 +94,7 @@ export function StaffInvitePanel({
   roleOptions = STAFF_INVITE_ROLE_OPTIONS,
   eyebrow = "Staff access",
   title = "Staff & leadership accounts",
-  description = "Create Deputy Head, Bursar, Registrar, ICT, HR, and other office staff logins instantly. Head Teacher is only created when the school is registered. Each person gets a temporary password — share it in person or by phone. They will sign in and change it on first login. For students, parents, and classroom teachers, use the Users tabs below instead.",
+  description = "Invite Deputy Head, Bursar, Registrar, ICT, HR, and other office staff here. Head Teacher is only created when the school is registered. Each person gets a temporary password - share it in person or by phone. They will sign in and change it on first login. Students, parents, and classroom teachers are added with the Add button and tabs - not through this section.",
   primaryInviteLabel = "Invite Deputy Head",
   secondaryInviteLabel = "Invite other staff",
   accent = "emerald",
@@ -207,7 +207,7 @@ export function StaffInvitePanel({
       setForm({ ...EMPTY_FORM, role: defaultRole });
       setForm(EMPTY_FORM);
       toast.success(
-        "Staff account created — share the temporary password below.",
+        "Staff account created - share the temporary password below.",
       );
       await loadInvitations();
     } finally {
@@ -221,7 +221,7 @@ export function StaffInvitePanel({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Could not copy to clipboard — select and copy manually.");
+      toast.error("Could not copy to clipboard - select and copy manually.");
     }
   }
 
@@ -323,7 +323,7 @@ export function StaffInvitePanel({
                       <span className="font-semibold">{issued.email}</span>.
                       {issued.credentialsEmailSent
                         ? " Credentials have been emailed."
-                        : " Share the temporary password below — they will change it on first login."}
+                        : " Share the temporary password below - they will change it on first login."}
                     </p>
 
                     {issued.temporaryPassword && (

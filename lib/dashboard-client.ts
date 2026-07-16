@@ -95,7 +95,7 @@ export async function fetchDashboardSummary(options: { force?: boolean } = {}) {
   return summaryPromise;
 }
 
-/** @deprecated Prefer fetchDashboardSummary — kept for callers that only need scope. */
+/** @deprecated Prefer fetchDashboardSummary - kept for callers that only need scope. */
 export async function loadDashboardScope(): Promise<DashboardScope | null> {
   try {
     const summary = await fetchDashboardSummary();

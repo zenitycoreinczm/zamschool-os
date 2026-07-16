@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
     for (const [index, row] of rows.entries()) {
       const identifier = pickFirst(row, STUDENT_ID_COL_KEYS);
       if (!identifier.trim()) {
-        warnings.push(`Row ${index + 1}: No student identifier found — skipped. Required columns: ${STUDENT_ID_COL_KEYS.slice(0, 5).join(", ")}, etc.`);
+        warnings.push(`Row ${index + 1}: No student identifier found - skipped. Required columns: ${STUDENT_ID_COL_KEYS.slice(0, 5).join(", ")}, etc.`);
         continue;
       }
 
@@ -171,11 +171,11 @@ export async function POST(req: NextRequest) {
       if (rawMarks.trim()) {
         marks = Number(rawMarks);
         if (isNaN(marks)) {
-          warnings.push(`Row ${index + 1}: "${rawMarks}" is not a valid number — skipped`);
+          warnings.push(`Row ${index + 1}: "${rawMarks}" is not a valid number - skipped`);
           continue;
         }
         if (marks < 0 || marks > totalMarks) {
-          warnings.push(`Row ${index + 1}: marks ${marks} out of range 0–${totalMarks} — clamped`);
+          warnings.push(`Row ${index + 1}: marks ${marks} out of range 0–${totalMarks} - clamped`);
           marks = Math.max(0, Math.min(totalMarks, marks));
         }
       }
@@ -451,13 +451,13 @@ async function fallbackCreateAssignment(
 
     if (created) return created.id;
 
-    // Unique violation — another teacher created it concurrently, retry
+    // Unique violation - another teacher created it concurrently, retry
     if (error && (error.code === "23505" || error.message?.includes("unique"))) {
       continue;
     }
     throw error || new Error("Failed to create assignment");
   }
-  throw new Error("Could not create assignment after retries — concurrent conflict");
+  throw new Error("Could not create assignment after retries - concurrent conflict");
 }
 
 async function fallbackUpsertResults(
@@ -487,7 +487,7 @@ async function fallbackUpsertResults(
         .from("results")
         .insert(row);
       if (error) {
-        // Unique violation — row was inserted concurrently, treat as update
+        // Unique violation - row was inserted concurrently, treat as update
         if (error.code === "23505" || error.message?.includes("unique")) {
           updated++;
           continue;

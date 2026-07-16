@@ -150,7 +150,7 @@ const totalFail = results.length - totalPass;
 if (isJson) {
   process.stdout.write(JSON.stringify({ totalPass, totalFail, results }, null, 2) + "\n");
 } else {
-  process.stdout.write(`Audit refresh — true at ${new Date().toISOString()}\n\n`);
+  process.stdout.write(`Audit refresh - true at ${new Date().toISOString()}\n\n`);
   for (const r of results) {
     const status = r.pass ? "PASS" : "FAIL";
     process.stdout.write(`[${status}] ${r.id}\n`);

@@ -55,7 +55,7 @@ export function hashTemporaryPassword(password: string): string {
 /**
  * Role-table fields that may ride along in profileExtras for teacher/student
  * inserts, but must never be written to `public.profiles` (PostgREST PGRST204
- * if they are — e.g. hire_date lives only on teachers).
+ * if they are - e.g. hire_date lives only on teachers).
  */
 const PROFILE_EXTRAS_ROLE_TABLE_ONLY = new Set(["hire_date"]);
 

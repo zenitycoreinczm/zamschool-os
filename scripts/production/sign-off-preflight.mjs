@@ -46,7 +46,7 @@ async function main() {
   if (pilotPreflight.status === 0) {
     pass("Pilot preflight (platform gates)", "passed");
   } else {
-    fail("Pilot preflight (platform gates)", "failed — run npm run pilot:preflight");
+    fail("Pilot preflight (platform gates)", "failed - run npm run pilot:preflight");
   }
 
   const openP1 = existsSync(resolve(ROOT, "docs", "pilot", "INCIDENT_LOG.md"))
@@ -54,7 +54,7 @@ async function main() {
     : false;
 
   if (openP1) {
-    fail("Pilot incidents", "open P1 incident — resolve before sign-off");
+    fail("Pilot incidents", "open P1 incident - resolve before sign-off");
   } else {
     pass("Pilot incidents", "no open P1 in incident log index");
   }

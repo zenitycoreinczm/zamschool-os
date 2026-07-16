@@ -11,7 +11,7 @@ import { useEffect } from "react";
 
 export default function SupabaseGuardBootstrap() {
   useEffect(() => {
-    // Dynamic import to avoid circular deps — installs the fetch guard
+    // Dynamic import to avoid circular deps - installs the fetch guard
     // that intercepts ALL *.supabase.co HTTP requests globally
     import("@/lib/supabase-fetch-guard")
       .then((m) => {

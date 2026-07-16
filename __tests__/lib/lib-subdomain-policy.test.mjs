@@ -70,7 +70,7 @@ test("rule fires a warning for an unknown top-level file and stays silent once w
   );
 
   try {
-    // Add the sentinel basename to the whitelist, scan — must be silent.
+    // Add the sentinel basename to the whitelist, scan - must be silent.
     const raw = await readFile(whitelistPath, "utf8");
     const list = JSON.parse(raw);
     list.push("_zamschool-policy-sentinel.ts");

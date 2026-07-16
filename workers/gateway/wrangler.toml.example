@@ -42,7 +42,8 @@ bindings = [
 
 [[migrations]]
 tag = "v1"
-new_classes = ["SchoolSyncQueue"]
+# Free plan requires SQLite-backed Durable Objects (new_sqlite_classes).
+new_sqlite_classes = ["SchoolSyncQueue"]
 
 # --- Production vars (non-secret) ---
 [vars]

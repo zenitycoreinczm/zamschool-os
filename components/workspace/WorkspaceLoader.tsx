@@ -12,7 +12,7 @@ type WorkspaceLoaderProps = {
 
 /**
  * Full-shell loading (workspace bootstrap, sign-out).
- * Uses brand mark + motion — not a raw spinner.
+ * Uses brand mark + motion - not a raw spinner.
  */
 export function WorkspaceLoader({
   label = "Preparing your workspace",

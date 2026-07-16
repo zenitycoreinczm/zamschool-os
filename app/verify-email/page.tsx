@@ -217,7 +217,7 @@ function VerifyEmailContent() {
           description="Enter the 6-digit code we sent to confirm the Head Teacher account."
         />
 
-        {/* Same step language as /register — verification sits after account creation */}
+        {/* Same step language as /register - verification sits after account creation */}
         <div className="mb-8 flex items-center justify-between gap-2">
           <MiniStep done label="Code" />
           <div className="h-px flex-1 bg-slate-900" />

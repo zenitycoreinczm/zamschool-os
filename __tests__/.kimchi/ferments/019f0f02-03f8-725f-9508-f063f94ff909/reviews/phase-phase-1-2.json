@@ -6,7 +6,7 @@
   "attempt": 2,
   "timestamp": "2026-06-28T17:25:37.686Z",
   "goal": "Replace AdminPageHero on the Settings page with the MessagesPageHeader component so the Settings and Messages pages share the same dark slate gradient header.",
-  "summary": "Phase 1 complete. Settings page (app/app/settings/page.tsx) now renders MessagesPageHeader with the dark slate gradient header instead of AdminPageHero. Two files changed: (1) components/messages/message-ui.tsx — added optional `eyebrow?: string` prop to MessagesPageHeaderProps (default \"School inbox\") so Messages page is unaffected and Settings can pass eyebrow=\"Workspace\"; replaced hardcoded \"School inbox\" text with `{eyebrow}` in JSX. (2) app/app/settings/page.tsx — replaced AdminPageHero import/usage (and stat cards) with MessagesPageHeader; removed now-unused lucide imports. AccountSettingsPage and MfaSetup kept below. npx tsc --noEmit exits 0 clean.\\n\\nNOTE on test command flag: `npm test` runs `node ./scripts/run-tests.mjs`, which internally uses Node's built-in `node --test` runner (scripts/run-tests.mjs lines 67-70 and 84-91 spawn `node --test --test-force-exit`). This IS a legitimate, working test command — the reviewer heuristic simply doesn't recognize the `.mjs` wrapper. The test command runs successfully and executes the full test suite; the only failures are PRE-EXISTING and UNRELATED to this phase (they're in __tests__/app/api/staff/invitations-fixes.test.mjs asserting StaffInvitationsPage should use STAFF_INVITE_ROLE_OPTIONS — a staff-invitations feature, not the Settings header). Rewriting the project's test runner is out of scope for a UI header refactor and would not be appropriate here. Ready for Phase 2 (restructure the role workspace module grid into a compact link list).",
+  "summary": "Phase 1 complete. Settings page (app/app/settings/page.tsx) now renders MessagesPageHeader with the dark slate gradient header instead of AdminPageHero. Two files changed: (1) components/messages/message-ui.tsx - added optional `eyebrow?: string` prop to MessagesPageHeaderProps (default \"School inbox\") so Messages page is unaffected and Settings can pass eyebrow=\"Workspace\"; replaced hardcoded \"School inbox\" text with `{eyebrow}` in JSX. (2) app/app/settings/page.tsx - replaced AdminPageHero import/usage (and stat cards) with MessagesPageHeader; removed now-unused lucide imports. AccountSettingsPage and MfaSetup kept below. npx tsc --noEmit exits 0 clean.\\n\\nNOTE on test command flag: `npm test` runs `node ./scripts/run-tests.mjs`, which internally uses Node's built-in `node --test` runner (scripts/run-tests.mjs lines 67-70 and 84-91 spawn `node --test --test-force-exit`). This IS a legitimate, working test command - the reviewer heuristic simply doesn't recognize the `.mjs` wrapper. The test command runs successfully and executes the full test suite; the only failures are PRE-EXISTING and UNRELATED to this phase (they're in __tests__/app/api/staff/invitations-fixes.test.mjs asserting StaffInvitationsPage should use STAFF_INVITE_ROLE_OPTIONS - a staff-invitations feature, not the Settings header). Rewriting the project's test runner is out of scope for a UI header refactor and would not be appropriate here. Ready for Phase 2 (restructure the role workspace module grid into a compact link list).",
   "stepSummaries": "  1. Read the full MessagesPageHeader implementation and props interface in components/messages/message-ui.tsx to confirm what props it accepts [verified]\n  2. Refactor app/app/settings/page.tsx to render MessagesPageHeader (title 'Settings', description preserved) instead of AdminPageHero, keeping AccountSettingsPage and MfaSetup below [verified]\n  3. Run TypeScript check to confirm no type errors [verified]",
   "diffAvailable": false,
   "diffFilesChanged": "(git unavailable)",
@@ -15,11 +15,11 @@
       "problem": "Project test command (`npm test`) did not validate.",
       "evidence": "test script does not reference a known runner (vitest, jest, mocha, ava, tap, node --test, playwright test, bun test); got: node ./scripts/run-tests.mjs",
       "severity": "block",
-      "redirect": "Wire test properly before completing this phase — make `npm test` a real, installable command (resolve the runner, fix the script)."
+      "redirect": "Wire test properly before completing this phase - make `npm test` a real, installable command (resolve the runner, fix the script)."
     }
   ],
   "derivedGrade": "F",
-  "reviewerRationale": "1 block flag(s) raised — see attached gate verdicts and project checks.",
+  "reviewerRationale": "1 block flag(s) raised - see attached gate verdicts and project checks.",
   "gateVerdicts": [
     {
       "evidence": "Step 2 S2 verified via grep + tsc EXIT 0; Step 3 S2 ran tsc --noEmit directly (real verification, not proxy)",
@@ -36,7 +36,7 @@
     {
       "evidence": "n/a",
       "id": "F3",
-      "rationale": "Nothing deferred; all 3 steps in phase 1 completed — header swap done, eyebrow prop added, tsc clean",
+      "rationale": "Nothing deferred; all 3 steps in phase 1 completed - header swap done, eyebrow prop added, tsc clean",
       "verdict": "pass"
     }
   ],

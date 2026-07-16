@@ -34,7 +34,7 @@ async function fetchProfileFromDb<T = Record<string, unknown>>(
   columns: string,
   userEmail?: string | null
 ): Promise<{ data: T | null; error: any }> {
-  // 1. Look up by profile id (direct match — works when profile id === auth uid)
+  // 1. Look up by profile id (direct match - works when profile id === auth uid)
   const byId = await client
     .from("profiles")
     .select(columns)

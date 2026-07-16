@@ -140,7 +140,7 @@ export async function applyRateLimit(params: {
     }
 
     /* Redis is configured but the call returned null (connection error, timeout, etc.).
-       With failOpen: false, fail closed — deny the request. */
+       With failOpen: false, fail closed - deny the request. */
     if (!params.failOpen) {
       return { allowed: false as const, retryAfterSec: 60 };
     }
@@ -176,7 +176,7 @@ export async function parseJsonWithSchema<T>(
 
 /**
  * Reject empty / scanner user-agents and path probes on auth routes.
- * Does not replace CSRF or rate limits — first-line bot hygiene only.
+ * Does not replace CSRF or rate limits - first-line bot hygiene only.
  */
 export function validateRequestSecurity(req: Request) {
   let pathname = "/";

@@ -81,10 +81,9 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
   const userId = workspace?.userId || "";
   const role = workspace?.workspaceRole || workspace?.role || null;
   const schoolId = String(workspace?.schoolId || "").trim();
-  // Platform super_admin has no school — skip school-scoped feed badge fan-out.
+  // Platform super_admin has no school - skip school-scoped feed badge fan-out.
   const canTrackSchoolFeeds = Boolean(schoolId);
-  const workspaceUnreadMessages = workspace?.unread?.messages;
-  const workspaceUnreadNotifications = workspace?.unread?.notifications;
+  const workspaceUserId = workspace?.userId || "";
 
   const [counts, setCounts] = useState<NavBadgeCounts>(() => ({
     ...EMPTY_NAV_BADGES,
@@ -93,22 +92,14 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
       initialNotifications ?? workspace?.unread?.notifications ?? 0,
   }));
 
-  // Keep messages/notifications in sync when workspace context refreshes.
+  // When the authenticated user changes, zero badges until the live summary loads.
   useEffect(() => {
-    if (
-      workspaceUnreadMessages === undefined &&
-      workspaceUnreadNotifications === undefined
-    ) {
-      return;
-    }
-    setCounts((prev) => ({
-      ...prev,
-      messages: workspaceUnreadMessages ?? prev.messages,
-      notifications: workspaceUnreadNotifications ?? prev.notifications,
-    }));
-  }, [workspaceUnreadMessages, workspaceUnreadNotifications]);
+    if (!workspaceUserId) return;
+    setCounts({ ...EMPTY_NAV_BADGES });
+  }, [workspaceUserId]);
 
-  // Seed from explicit initial values (teacher workload).
+  // Seed from explicit initial values (teacher workload) only once per value -
+  // never overwrite fresher unread-summary results with stale workspace.unread.
   useEffect(() => {
     if (typeof initialMessages === "number") {
       setCounts((prev) => ({ ...prev, messages: initialMessages }));

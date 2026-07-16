@@ -21,7 +21,7 @@ test("uses placeholders when class or number missing", async () => {
   const { formatStudentIdentityLine } = await load();
   assert.equal(
     formatStudentIdentityLine({ displayName: "Ada" }),
-    "Ada | — | —",
+    "Ada | - | -",
   );
 });
 

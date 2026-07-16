@@ -34,7 +34,18 @@ export function humanizeHttpError(
   if (status === 409) return trimmed || "This conflicts with an existing record.";
   if (status === 422) return trimmed || "Some of the information provided is invalid.";
   if (status === 429) return RATE_LIMIT_MESSAGE;
-  if (status >= 500) return SERVER_UNAVAILABLE_MESSAGE;
+  // Prefer a concrete server message when present so timetable/create failures
+  // are not always masked as a generic outage.
+  if (status >= 500) {
+    if (
+      trimmed &&
+      trimmed.length < 220 &&
+      !/internal server error|unexpected token|stack|exception/i.test(trimmed)
+    ) {
+      return trimmed;
+    }
+    return SERVER_UNAVAILABLE_MESSAGE;
+  }
   return trimmed || "Something went wrong. Please try again.";
 }
 

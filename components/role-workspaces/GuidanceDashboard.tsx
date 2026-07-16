@@ -20,11 +20,6 @@ import { schoolHeroStatsFromSummary } from "@/lib/workspace/metric-display";
 
 const MODULES = [
   {
-    href: "/app/admin/users",
-    title: "Student directory",
-    description: "Profiles and guardian context for welfare follow-up.",
-  },
-  {
     href: "/app/admin/attendance",
     title: "Attendance signals",
     description: "Absence and lateness patterns that may need support.",
@@ -108,7 +103,7 @@ export default function GuidanceDashboard() {
       <AdminPageHero
         eyebrow="Guidance office"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Student welfare desk for ${yearTerm} — attendance signals, conduct follow-up, and sensitive coordination.`}
+        description={`Welcome back, ${displayName}. Student welfare desk for ${yearTerm} - attendance signals, conduct follow-up, and sensitive coordination.`}
         accent="slate"
         stats={heroStats}
         actions={

@@ -5,7 +5,7 @@ import { importTsModule } from "../../scripts/test-ts-module.mjs";
 
 // Genuine runtime tests (not static-grep): these execute the real
 // tenant-isolation helpers against fakes, proving the behavioral invariant
-// the audit called out as missing — that unscoped queries and cross-tenant
+// the audit called out as missing - that unscoped queries and cross-tenant
 // rate-limit key collisions are structurally impossible, not just
 // grep-matched in the source.
 const {
@@ -54,7 +54,7 @@ test("tenantRateLimitScope isolates identical scopes across different schools", 
   const schoolA = tenantRateLimitScope("admin-users", "school-a");
   const schoolB = tenantRateLimitScope("admin-users", "school-b");
 
-  // Same feature scope, different tenant — the resulting rate-limit bucket
+  // Same feature scope, different tenant - the resulting rate-limit bucket
   // keys must never collide, or one school's traffic could exhaust another
   // school's quota.
   assert.notEqual(schoolA, schoolB);

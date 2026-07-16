@@ -16,6 +16,7 @@ import {
   resolveMessagingIdentityId,
   serializeTeacherInboxMessages,
 } from "@/lib/messages/participants";
+import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
 import { getMessageSendQuota } from "@/lib/messages/send-quota";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -158,6 +159,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
     const updatedCount = await markMessagesAsRead(access.context.userId, schoolId, payload);
+    invalidateInboxHotReads(access.context.userId, schoolId);
 
     return NextResponse.json({
       success: true,
@@ -211,18 +213,27 @@ async function markMessagesAsRead(
   payload: z.infer<typeof markMessagesReadSchema>
 ) {
   const targetIds = Array.from(new Set((payload.ids || []).filter(Boolean)));
+  const actorIds = await expandMessagingIdentityIds([userId], schoolId);
+  const recipientIds = actorIds.length > 0 ? actorIds : [userId];
 
   let query = supabaseAdmin
     .from("messages")
     .update({ is_read: true })
     .eq("school_id", schoolId)
-    .eq("recipient_id", userId)
+    .in("recipient_id", recipientIds)
     .eq("is_read", false);
 
   if (targetIds.length > 0) {
     query = query.in("id", targetIds);
   } else if (payload.conversationId) {
-    query = query.eq("sender_id", payload.conversationId);
+    const peerIds = await expandMessagingIdentityIds(
+      [payload.conversationId],
+      schoolId,
+    );
+    query = query.in(
+      "sender_id",
+      peerIds.length > 0 ? peerIds : [payload.conversationId],
+    );
   } else if (!payload.markAll) {
     return 0;
   }

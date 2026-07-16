@@ -224,7 +224,7 @@ export function validateUserForm(input: {
     return {
       tone: "error",
       message:
-        "Assign this teacher to at least one class — add a teaching row (class + subject) or a class teacher responsibility.",
+        "Assign this teacher to at least one class - add a teaching row (class + subject) or a class teacher responsibility.",
     };
   }
 

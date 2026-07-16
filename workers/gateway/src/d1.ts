@@ -1,7 +1,7 @@
 import type { Env } from "./types.ts";
 
 /**
- * D1 SYNC — INTENTIONALLY DISABLED
+ * D1 SYNC - INTENTIONALLY DISABLED
  * ==================================
  *
  * The D1 offline read-replica (SCHOOL_DB) is a planned feature that has

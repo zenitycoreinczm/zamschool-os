@@ -1,6 +1,6 @@
 /**
  * Process-local debounce cache for very hot reads (badges, workspace shell).
- * NOT a replacement for Supabase — short TTL only to collapse burst traffic.
+ * NOT a replacement for Supabase - short TTL only to collapse burst traffic.
  */
 
 import { SUPABASE_PROTECTION } from "./supabase-protection";
@@ -64,12 +64,17 @@ export function invalidateInboxHotReads(userId: string, schoolId?: string | null
 export function invalidateWorkspaceHotRead(userId: string): void {
   const uid = String(userId || "").trim();
   if (!uid) return;
-  store.delete(hotReadKey(["workspace", `user:${uid}`]));
-  store.delete(hotReadKey(["auth-meta", `user:${uid}`]));
+  // Workspace keys include school segment: workspace|user:{id}|school:{sid}
+  invalidateHotReadKeys(
+    (key) =>
+      key.includes(`user:${uid}`) &&
+      (key.includes("workspace") || key.includes("auth-meta")),
+  );
 }
 
 export const HOT_READ_TTL = {
-  unreadCounts: SUPABASE_PROTECTION.unreadCountsTtlSec,
+  // Keep unread badges snappy after mark-as-read (was 45s - felt "stuck").
+  unreadCounts: Math.min(SUPABASE_PROTECTION.unreadCountsTtlSec, 15),
   workspaceStable: SUPABASE_PROTECTION.workspaceStableTtlSec,
   authMeta: SUPABASE_PROTECTION.authMetaTtlSec,
   /** Payments shell / billing summary-style hot reads */

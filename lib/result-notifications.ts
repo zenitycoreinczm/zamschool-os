@@ -46,7 +46,7 @@ export function buildExamCertificateNotificationPayloads(input: {
     user_id: recipientId,
     dedupe_key: `${recipientId}:${input.studentId}:exam:${input.examTitle}`,
     title,
-    message: `${input.teacherName} published ${input.studentName}'s ${input.examTitle} results (${input.className}) — ${input.subjectCount} subjects. View certificate.`,
+    message: `${input.teacherName} published ${input.studentName}'s ${input.examTitle} results (${input.className}) - ${input.subjectCount} subjects. View certificate.`,
     type: "general",
   }));
 }

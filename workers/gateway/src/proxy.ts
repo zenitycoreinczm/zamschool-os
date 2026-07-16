@@ -112,7 +112,7 @@ export async function handleCachedProxy(
     // Upstream returned an error (e.g. 502 Bad Gateway), try cache fallback.
     throw new Error(`Upstream error: ${response.status}`);
   } catch (_error) {
-    // Network failure or upstream error: try the cache. We never bleed data —
+    // Network failure or upstream error: try the cache. We never bleed data -
     // the cache key already locks this to the same Authorization header.
     const cached =
       allowedByPrefix && hasAuthorization ? await cache.match(cacheKey) : null;
@@ -126,7 +126,7 @@ export async function handleCachedProxy(
       });
     }
 
-    // Nothing in cache — surface the figure-out-network error to the caller
+    // Nothing in cache - surface the figure-out-network error to the caller
     // with a 503 so the client can fall back to /api/* (see
     // lib/gateway-read-client.ts → fallbackToLocal).
     return new Response("Offline and not cached", { status: 503 });

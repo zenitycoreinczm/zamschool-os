@@ -124,6 +124,29 @@ export function normalizeLegacyDashboardPath(pathname: string): string {
   return pathname;
 }
 
+function isLegacyUsersDirectoryPath(pathname: string): boolean {
+  const pathOnly = String(pathname || "").split("?")[0] || "";
+  return (
+    pathOnly === "/app/admin/users" || pathOnly.startsWith("/app/admin/users/")
+  );
+}
+
+/**
+ * Canonical home for the retired `/app/admin/users` directory.
+ * That route no longer hosts the people console - role desks own it.
+ */
+export function resolveUsersDirectoryRedirect(
+  role: string | null | undefined,
+): string {
+  const normalized = normalizeRole(role);
+  if (normalized === "PRINCIPAL") return `${PRINCIPAL_DASHBOARD_PATH}/staff`;
+  if (normalized === "REGISTRAR") return "/app/registrar/people";
+  if (normalized === "HR_ADMIN") return "/app/hr-admin/directory";
+  if (normalized === "ICT_ADMIN") return "/app/ict-admin/recovery";
+  if (normalized === "SUPER_ADMIN") return SUPER_ADMIN_DASHBOARD_PATH;
+  return roleToPath(normalized);
+}
+
 export function resolveRoleAwareProtectedPath(
   role: string | null | undefined,
   pathname: string,
@@ -142,6 +165,25 @@ export function resolveRoleAwareProtectedPath(
   if (normalized === "PARENT") {
     return mapParentSharedPath(pathname);
   }
+
+  // Retired shared Users directory - never leave HT (or others) on that page.
+  if (normalized && isLegacyUsersDirectoryPath(pathname)) {
+    return resolveUsersDirectoryRedirect(normalized);
+  }
+
+  if (normalized === "PRINCIPAL") {
+    if (pathname === ADMIN_DASHBOARD_PATH || pathname === "/app/dashboard") {
+      return PRINCIPAL_DASHBOARD_PATH;
+    }
+    // Twin staff-invite route under /app/admin - keep HT on principal desk only.
+    if (
+      pathname === "/app/admin/staff-invitations" ||
+      pathname.startsWith("/app/admin/staff-invitations/")
+    ) {
+      return `${PRINCIPAL_DASHBOARD_PATH}/staff`;
+    }
+  }
+
   return pathname;
 }
 
@@ -187,6 +229,13 @@ export function resolvePostLoginPath(
     // Old School Administrator home (/app/dashboard) → Head Teacher home.
     if (normalizedRedirect === ADMIN_DASHBOARD_PATH) {
       return PRINCIPAL_DASHBOARD_PATH;
+    }
+    // Head Teacher does not use the shared Users directory - Invite staff instead.
+    if (
+      normalizedRedirect === "/app/admin/users" ||
+      normalizedRedirect.startsWith("/app/admin/users/")
+    ) {
+      return `${PRINCIPAL_DASHBOARD_PATH}/staff`;
     }
     if (
       normalizedRedirect === PRINCIPAL_DASHBOARD_PATH ||

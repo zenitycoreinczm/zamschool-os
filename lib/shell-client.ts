@@ -56,7 +56,7 @@ export async function fetchShell(
  * Routes through adminApiJson which now prefers the Worker (when
  * NEXT_PUBLIC_GATEWAY_URL is set) and falls back to /api/* otherwise. The
  * legacy `token` argument is accepted for backwards compatibility but is no
- * longer required — adminApiJson uses the live Supabase session.
+ * longer required - adminApiJson uses the live Supabase session.
  */
 async function requestShell(_token?: string): Promise<ShellData> {
   const payload = await adminApiJson<ShellResponse>("/api/account/shell");

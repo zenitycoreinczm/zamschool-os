@@ -21,13 +21,13 @@ import {
 const bodySchema = z.object({
   email: z.string().email().max(320),
   outcome: z.enum(["check", "failure", "success"]),
-  /** Honeypot — must always be empty. Bots that fill it are rejected. */
+  /** Honeypot - must always be empty. Bots that fill it are rejected. */
   website: z.string().max(200).optional(),
 });
 
 /**
  * Server-side login lockout backed by Upstash Redis.
- * Client localStorage cooldowns alone are bypassable — this is the real gate.
+ * Client localStorage cooldowns alone are bypassable - this is the real gate.
  */
 export async function POST(req: Request) {
   try {
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     const redis = isRedisConfigured();
     if (!redis && process.env.NODE_ENV === "production") {
       console.warn(
-        "[login-guard] UPSTASH Redis is not configured in production — using process-local lockout only.",
+        "[login-guard] UPSTASH Redis is not configured in production - using process-local lockout only.",
       );
     }
 
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // success — clear email-scoped failures
+    // success - clear email-scoped failures
     await clearLoginFailures({ email, ip });
     return NextResponse.json({
       ok: true,

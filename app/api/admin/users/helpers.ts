@@ -187,7 +187,7 @@ export async function buildParentDetail(baseProfile: any, schoolId: string) {
 
 export async function deleteParentRecords(profileId: string, schoolId: string) {
   // Find the parent record(s) for this profile so we can scope link deletion
-  // to only this parent — deleting by school_id alone wipes every parent's
+  // to only this parent - deleting by school_id alone wipes every parent's
   // student links in the school.
   const { data: parentRows } = await supabaseAdmin
     .from("parents")
@@ -256,6 +256,22 @@ export async function syncTeacherClassSubjectAssignments(input: {
     .eq("school_id", input.schoolId)
     .eq("teacher_profile_id", input.teacherProfileId);
 
+  // Resolve teachers row for legacy class_subjects mirror (RLS still uses it).
+  const { data: teacherRow } = await supabaseAdmin
+    .from("teachers")
+    .select("id")
+    .eq("school_id", input.schoolId)
+    .eq("profile_id", input.teacherProfileId)
+    .maybeSingle();
+  const teacherRowId = teacherRow?.id ? String(teacherRow.id) : null;
+
+  if (teacherRowId) {
+    await supabaseAdmin
+      .from("class_subjects")
+      .delete()
+      .eq("teacher_id", teacherRowId);
+  }
+
   if (input.teachingAssignments.length === 0) return;
 
   const records = input.teachingAssignments.map((assignment) => ({
@@ -270,6 +286,22 @@ export async function syncTeacherClassSubjectAssignments(input: {
     .insert(records);
   if (error && !isMissingRelationError(error)) {
     console.error("sync assignment error", error);
+  }
+
+  // Mirror into class_subjects so legacy RLS helpers treat subject teachers
+  // the same as class teachers for student/class access.
+  if (teacherRowId && input.teachingAssignments.length > 0) {
+    const legacyRows = input.teachingAssignments.map((assignment) => ({
+      class_id: assignment.classId,
+      subject_id: assignment.subjectId,
+      teacher_id: teacherRowId,
+    }));
+    const { error: legacyError } = await supabaseAdmin
+      .from("class_subjects")
+      .upsert(legacyRows, { onConflict: "class_id,subject_id" });
+    if (legacyError && !isMissingRelationError(legacyError)) {
+      console.error("sync class_subjects mirror error", legacyError);
+    }
   }
 }
 
@@ -340,7 +372,7 @@ export function assertTeacherHasClassAssignments(input: {
   return NextResponse.json(
     {
       error:
-        "Assign this teacher to at least one class — add a teaching assignment (class + subject) or a class teacher responsibility.",
+        "Assign this teacher to at least one class - add a teaching assignment (class + subject) or a class teacher responsibility.",
     },
     { status: 400 },
   );

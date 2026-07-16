@@ -36,7 +36,7 @@ export async function loadDashboardSummary(schoolId: string): Promise<DashboardS
 
 async function buildDashboardSummary(schoolId: string): Promise<DashboardSummary> {
   // All queries run in parallel. Role counts and gender breakdown are computed
-  // server-side with targeted count queries — no full profiles table scan.
+  // server-side with targeted count queries - no full profiles table scan.
   const [
     yearResult,
     termResult,

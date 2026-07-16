@@ -106,7 +106,7 @@ test("verifyResetToken rejects a malformed token", async () => {
 });
 
 test("verifyResetToken rejects a token signed with a different secret", async () => {
-  // Mint with one secret, verify with another — HMAC mismatch must fail.
+  // Mint with one secret, verify with another - HMAC mismatch must fail.
   let token;
   await withEnv(
     { SUPABASE_SERVICE_ROLE_KEY: undefined, SMTP_PASS: undefined, RESET_TOKEN_SECRET: "secret-A" },

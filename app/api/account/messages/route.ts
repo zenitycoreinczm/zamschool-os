@@ -11,6 +11,7 @@ import {
 } from "@/lib/platform-api-guard";
 import { safeErrorMessage } from "@/lib/server-guards";
 import {
+  expandMessagingIdentityIds,
   loadProfilesByIdentityIds,
   loadRecipientByIdentity,
   resolveMessagingIdentityId,
@@ -155,9 +156,8 @@ export async function PUT(req: Request) {
       actor.schoolId,
       payload,
     );
-    if (updatedCount > 0) {
-      invalidateInboxHotReads(actor.userId, actor.schoolId);
-    }
+    // Always invalidate - mark may have hit expanded identity ids.
+    invalidateInboxHotReads(actor.userId, actor.schoolId);
 
     return NextResponse.json({
       success: true,
@@ -185,11 +185,17 @@ async function loadMessagesForActor(
   schoolId: string,
   limit: number,
 ) {
+  const actorIds = await expandMessagingIdentityIds([userId], schoolId);
+  const ids = actorIds.length > 0 ? actorIds : [userId];
+  const identityFilter = ids
+    .flatMap((id) => [`sender_id.eq.${id}`, `recipient_id.eq.${id}`])
+    .join(",");
+
   const { data: rows, error: messageError } = await supabaseAdmin
     .from("messages")
     .select("id, sender_id, recipient_id, body, subject, created_at, is_read")
     .eq("school_id", schoolId)
-    .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+    .or(identityFilter)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -209,7 +215,7 @@ async function loadMessagesForActor(
     schoolId,
   );
 
-  return serializeAccountMessages(rows || [], userId, profilesByIdentity);
+  return serializeAccountMessages(rows || [], userId, profilesByIdentity, ids);
 }
 
 async function markMessagesAsRead(
@@ -218,18 +224,28 @@ async function markMessagesAsRead(
   payload: z.infer<typeof markMessagesReadSchema>,
 ) {
   const targetIds = Array.from(new Set((payload.ids || []).filter(Boolean)));
+  const actorIds = await expandMessagingIdentityIds([userId], schoolId);
+  const recipientIds = actorIds.length > 0 ? actorIds : [userId];
 
   let query = supabaseAdmin
     .from("messages")
     .update({ is_read: true })
     .eq("school_id", schoolId)
-    .eq("recipient_id", userId)
+    .in("recipient_id", recipientIds)
     .eq("is_read", false);
 
   if (targetIds.length > 0) {
     query = query.in("id", targetIds);
   } else if (payload.conversationId) {
-    query = query.eq("sender_id", payload.conversationId);
+    // Conversation peer may also be stored as auth or profile id.
+    const peerIds = await expandMessagingIdentityIds(
+      [payload.conversationId],
+      schoolId,
+    );
+    query = query.in(
+      "sender_id",
+      peerIds.length > 0 ? peerIds : [payload.conversationId],
+    );
   } else if (!payload.markAll) {
     return 0;
   }

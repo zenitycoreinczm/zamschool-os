@@ -121,7 +121,7 @@ function SelectField({ label, value, onChange, options }: {
       <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-200">
-        {options.map((o) => <option key={o} value={o}>{o || "—"}</option>)}
+        {options.map((o) => <option key={o} value={o}>{o || "-"}</option>)}
       </select>
     </label>
   );
@@ -350,7 +350,7 @@ export default function RegistrarPeoplePage() {
         if (res.temporaryPassword) {
           setNewCredentials({ email: form.email.trim().toLowerCase(), password: res.temporaryPassword });
         }
-        toast.success(res.credentialsEmailSent ? "User created — credentials emailed" : "User created", { id: t });
+        toast.success(res.credentialsEmailSent ? "User created - credentials emailed" : "User created", { id: t });
       }
       setFormOpen(false);
       setEditTarget(null);
@@ -439,7 +439,10 @@ export default function RegistrarPeoplePage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Registrar workspace</p>
         <h1 className="mt-2 text-2xl font-semibold">People</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Register students, teachers, and parents. Link parents to their children from the Parents tab.
+          Add students, parents, and teachers with the Add button and tabs below.
+          Invite Deputy Head, Bursar, Registrar, and other office staff in Staff
+          invitations (Head Teacher) - not through Add student/teacher/parent.
+          Link parents to their children from the Parents tab.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <div className="relative">
@@ -510,13 +513,13 @@ export default function RegistrarPeoplePage() {
               ) : paginatedRows.map((row) => (
                 <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-800">{getDisplayName(row)}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.email || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.phone || "—"}</td>
-                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{row.admission_number || "—"}</td>}
-                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{classNameById[row.class_id] || row.class_name || "—"}</td>}
-                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.employee_id || "—"}</td>}
-                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.department || "—"}</td>}
-                  {activeTab === "parents" && <td className="px-4 py-3 text-slate-600">{row.relation_type || "—"}</td>}
+                  <td className="px-4 py-3 text-slate-600">{row.email || "-"}</td>
+                  <td className="px-4 py-3 text-slate-600">{row.phone || "-"}</td>
+                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{row.admission_number || "-"}</td>}
+                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{classNameById[row.class_id] || row.class_name || "-"}</td>}
+                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.employee_id || "-"}</td>}
+                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.department || "-"}</td>}
+                  {activeTab === "parents" && <td className="px-4 py-3 text-slate-600">{row.relation_type || "-"}</td>}
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${String(row.status || "ACTIVE").toUpperCase() === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                       <UserCheck className="w-3.5 h-3.5" />

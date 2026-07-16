@@ -72,7 +72,11 @@ export async function POST(req: Request) {
       avatarUrl: protectedUrl,
     });
     const avatarUrl = protectedUrl;
-    await invalidateActorCaches(access.context.userId);
+    // Bust school-scoped workspace Redis + hot-read so header avatar updates immediately.
+    await invalidateActorCaches(access.context.userId, schoolId);
+    if (profileId && profileId !== access.context.userId) {
+      await invalidateActorCaches(profileId, schoolId);
+    }
 
     return NextResponse.json({
       success: true,

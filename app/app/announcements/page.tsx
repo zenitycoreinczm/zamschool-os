@@ -31,7 +31,7 @@ export default function AppAnnouncementsPage() {
   const canManageAnnouncements = ANNOUNCEMENT_MANAGER_ROLES.has(
     normalizedRole || "",
   );
-  // Platform operators have no school — school feeds and class targeting do not apply.
+  // Platform operators have no school - school feeds and class targeting do not apply.
   const isPlatformOnly =
     normalizedRole === "SUPER_ADMIN" && !workspaceLoading && !schoolId;
 
@@ -128,7 +128,7 @@ export default function AppAnnouncementsPage() {
       <AdminPageHero
         eyebrow="School communications"
         title="Announcements"
-        description="Publish once — students, parents, and staff see filtered copies in their portals. Compose below, then review the live feed."
+        description="Publish once - students, parents, and staff see filtered copies in their portals. Compose below, then review the live feed."
         accent="slate"
         stats={[
           {
@@ -159,7 +159,7 @@ export default function AppAnnouncementsPage() {
         />
       )}
 
-      {/* Feed must not wait on class targeting — classes only feed the composer. */}
+      {/* Feed must not wait on class targeting - classes only feed the composer. */}
       {workspaceLoading ? (
         <Surface
           variant="default"

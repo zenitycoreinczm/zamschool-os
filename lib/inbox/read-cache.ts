@@ -4,6 +4,7 @@ import {
   invalidateInboxHotReads,
   withHotReadCache,
 } from "@/lib/hot-read-cache";
+import { expandMessagingIdentityIds } from "@/lib/messages/participants";
 import { countUnreadNotificationsForUser } from "./queries";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -16,16 +17,24 @@ async function fetchUnreadCountsFromDb(input: {
   userId: string;
   schoolId: string;
 }): Promise<UnreadCounts> {
+  // Messages may store recipient as auth uid or profile id - count both.
+  const recipientIds = await expandMessagingIdentityIds(
+    [input.userId],
+    input.schoolId,
+  );
+  const ids = recipientIds.length > 0 ? recipientIds : [input.userId];
+
   const [messagesResult, notifications] = await Promise.all([
     supabaseAdmin
       .from("messages")
       .select("id", { count: "exact", head: true })
       .eq("school_id", input.schoolId)
-      .eq("recipient_id", input.userId)
+      .in("recipient_id", ids)
       .eq("is_read", false),
     countUnreadNotificationsForUser({
       userId: input.userId,
       schoolId: input.schoolId,
+      identityIds: ids,
     }),
   ]);
 
@@ -39,7 +48,7 @@ async function fetchUnreadCountsFromDb(input: {
   };
 }
 
-/** Short TTL cache — safe for header badges; invalidated on read/mark actions. */
+/** Short TTL cache - safe for header badges; invalidated on read/mark actions. */
 export async function getUnreadCountsForUser(input: {
   userId: string;
   schoolId: string;

@@ -23,7 +23,8 @@ const SCHOOLS_DB_CACHE_TTL_MS = 120_000; // 2 minutes
 
 /* ── TTL cache for resolved role permissions ── */
 
-const CACHE_TTL_MS = 60_000; // 60 seconds
+// Short TTL so permission repairs (e.g. can_delete fixes) show up quickly in production.
+const CACHE_TTL_MS = 15_000;
 
 interface CacheEntry {
   value: Record<string, FeaturePerms>;

@@ -229,24 +229,21 @@ export async function markMessageRead(mode: InboxApiMode, messageId: string) {
         method: "PUT",
       },
     );
-    invalidateInboxCaches();
-    return;
-  }
-
-  if (mode === "teacher") {
+  } else if (mode === "teacher") {
     await teacherApiJson("/api/teacher/messages", {
       method: "PUT",
       body: JSON.stringify({ ids: [messageId] }),
     });
-    invalidateInboxCaches();
-    return;
+  } else {
+    await accountApiJson("/api/account/messages", {
+      method: "PUT",
+      body: JSON.stringify({ ids: [messageId] }),
+    });
   }
-
-  await accountApiJson("/api/account/messages", {
-    method: "PUT",
-    body: JSON.stringify({ ids: [messageId] }),
-  });
   invalidateInboxCaches();
+  // Lazy import avoids circular deps with events.ts
+  const { dispatchInboxRefresh } = await import("@/lib/inbox/events");
+  dispatchInboxRefresh();
 }
 
 export async function markNotificationRead(
@@ -262,17 +259,17 @@ export async function markNotificationRead(
         method: "PUT",
       },
     );
-    invalidateInboxCaches();
-    return;
+  } else {
+    await accountApiJson(
+      `/api/account/notifications?id=${encodeURIComponent(notificationId)}`,
+      {
+        method: "PUT",
+      },
+    );
   }
-
-  await accountApiJson(
-    `/api/account/notifications?id=${encodeURIComponent(notificationId)}`,
-    {
-      method: "PUT",
-    },
-  );
   invalidateInboxCaches();
+  const { dispatchInboxRefresh } = await import("@/lib/inbox/events");
+  dispatchInboxRefresh();
 }
 
 export async function sendInboxReply(

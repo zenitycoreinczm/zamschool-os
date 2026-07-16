@@ -111,7 +111,7 @@ export default function TeacherStudentsPage() {
       <TeacherPageHeader
         eyebrow="Roster"
         title="My Students"
-        description="Students connected to your assigned classes, attendance, and results."
+        description="Full class rosters for every class you teach or supervise - not only classes where you are the class teacher."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -214,7 +214,7 @@ export default function TeacherStudentsPage() {
                     Attendance
                   </p>
                   <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
-                    {student.attendance?.rate ?? "—"}%
+                    {student.attendance?.rate ?? "-"}%
                   </p>
                 </div>
                 <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
@@ -222,7 +222,7 @@ export default function TeacherStudentsPage() {
                     Average score
                   </p>
                   <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
-                    {student.results?.averageScore ?? "—"}%
+                    {student.results?.averageScore ?? "-"}%
                   </p>
                 </div>
               </div>

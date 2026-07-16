@@ -681,7 +681,7 @@ export function MessageLimitReachedNotice({ quota }: { quota: MessageSendQuota }
       <p className="text-sm font-semibold text-slate-900">Daily send limit reached</p>
       <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
         You have used all {quota.limit} messages for today. Your allowance renews when the daily
-        counter resets — you can read messages anytime.
+        counter resets - you can read messages anytime.
       </p>
     </section>
   );

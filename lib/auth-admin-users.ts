@@ -126,7 +126,7 @@ export async function createOrUpdateAuthUserWithTemporaryPassword(input: {
     throw createAuth.error || new Error("Failed to create auth user");
   }
 
-  // Some projects race email-confirm / password apply — force a confirmed
+  // Some projects race email-confirm / password apply - force a confirmed
   // password write, then prove sign-in works before we show the password in UI.
   const ensure = await supabaseAdmin.auth.admin.updateUserById(
     createAuth.data.user.id,
@@ -164,7 +164,7 @@ async function assertTemporaryPasswordWorks(
     process.env.SUPABASE_ANON_KEY ||
     "";
   if (!supabaseUrl || !anonKey) {
-    // Cannot verify without anon client — rely on admin write alone.
+    // Cannot verify without anon client - rely on admin write alone.
     return;
   }
 

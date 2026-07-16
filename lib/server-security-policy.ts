@@ -110,7 +110,7 @@ export function resolveMaxBodyBytes(pathname: string): number {
 
 /**
  * Reject oversize Content-Length early (before handlers buffer the body).
- * Missing Content-Length is allowed (chunked) — route handlers still validate.
+ * Missing Content-Length is allowed (chunked) - route handlers still validate.
  */
 export function isContentLengthAllowed(
   contentLengthHeader: string | null,
@@ -168,6 +168,14 @@ export function evaluateProductionSecurityGates(): string[] {
     process.env.SUPABASE_SERVICE_ROLE_KEY === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
     failures.push("SERVICE_ROLE_KEY must not equal ANON_KEY");
+  }
+  if (process.env.ENABLE_UNSAFE_DEV_ROUTES === "true") {
+    failures.push("ENABLE_UNSAFE_DEV_ROUTES must not be true in production");
+  }
+  if (process.env.NEXT_PUBLIC_DISABLE_SUPABASE_GUARD === "true") {
+    failures.push(
+      "NEXT_PUBLIC_DISABLE_SUPABASE_GUARD must not be true in production",
+    );
   }
   const hasCorsOrigin =
     Boolean(process.env.CORS_ALLOWED_ORIGINS?.trim()) ||

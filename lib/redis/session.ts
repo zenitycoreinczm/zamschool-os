@@ -8,7 +8,7 @@ import { sessionMetaKey } from "@/lib/redis/keys";
 import { REDIS_TTL } from "@/lib/redis/ttl";
 
 /**
- * Small session metadata only — not a replacement for Supabase auth cookies.
+ * Small session metadata only - not a replacement for Supabase auth cookies.
  * Intentionally omits email / PII: use userId only; look up identity in Postgres.
  */
 export type SessionMeta = {

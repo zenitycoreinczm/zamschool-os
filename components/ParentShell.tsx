@@ -291,7 +291,7 @@ export default function ParentShell({
             </Link>
             <Link
               href="/app/parent/profile"
-              className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-300 bg-slate-800 text-sm font-semibold text-white shadow-sm"
+              className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-800 shadow-sm"
               aria-label="Open profile"
             >
               {(() => {

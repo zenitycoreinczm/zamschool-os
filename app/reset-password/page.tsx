@@ -169,7 +169,7 @@ function ResetPasswordContent() {
 
       const result = await res.json();
       if (!res.ok) {
-        // Token expired or Redis crashed mid-flight — redirect to
+        // Token expired or Redis crashed mid-flight - redirect to
         // forgot-password which will now use Supabase fallback.
         const isExpired =
           res.status === 400 && result.error?.toLowerCase().includes("expired");

@@ -62,7 +62,7 @@ function hashId(value) {
 const checks = [];
 const ok = (name, pass, detail = "") => {
   checks.push({ name, pass });
-  console.log(`${pass ? "OK" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(`${pass ? "OK" : "FAIL"}  ${name}${detail ? ` - ${detail}` : ""}`);
 };
 
 const host = new URL(base).host;

@@ -1,5 +1,5 @@
 /**
- * Edge-safe (middleware) helpers — no Node-only APIs.
+ * Edge-safe (middleware) helpers - no Node-only APIs.
  * Mirrors the critical checks from server-security-policy for the request edge.
  */
 

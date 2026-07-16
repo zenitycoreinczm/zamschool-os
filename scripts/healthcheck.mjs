@@ -1,7 +1,7 @@
 const BASE = process.env.HEALTHCHECK_BASE || "http://127.0.0.1:3001";
 
 async function main() {
-  const routes = ["/", "/login", "/register", "/forgot-password", "/app/dashboard", "/app/admin/users"];
+  const routes = ["/", "/login", "/register", "/forgot-password", "/app/principal", "/app/principal/staff"];
 
   for (const route of routes) {
     const res = await fetch(`${BASE}${route}`, { redirect: "manual" });

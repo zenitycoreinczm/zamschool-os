@@ -155,7 +155,7 @@ export async function POST(req: Request) {
     }
 
     // Do not let an ICT admin remove their own last recovery path mid-session
-    // without awareness — still allow, but principals may reset anyone including ICT.
+    // without awareness - still allow, but principals may reset anyone including ICT.
     // Super admins / principals / ICT may all disable for school users.
 
     const { data: listData, error: listError } =

@@ -8,7 +8,7 @@ export default function PrincipalStaffPage() {
     <StaffInvitationsView
       roleOptions={PRINCIPAL_STAFF_INVITE_ROLE_OPTIONS}
       title="Invite staff"
-      description="Invite school administrators and support staff. Teachers, students, and parents are managed through their respective sections."
+      description="Invite Deputy Head, Bursar, Registrar, and other office staff here. Students, parents, and classroom teachers are managed by the Registrar on their People desk - not on this page. Head Teacher is only created at school registration."
       accent="slate"
     />
   );

@@ -9,7 +9,7 @@ import {
 import { REDIS_TTL } from "@/lib/redis/ttl";
 
 const ROLE_CACHE_TTL_SEC = REDIS_TTL.roleSec;
-/** Process-local L1 — avoids 1–2s Supabase profile lookups on every API 403 path. */
+/** Process-local L1 - avoids 1–2s Supabase profile lookups on every API 403 path. */
 const MEMORY_TTL_MS = Math.min(ROLE_CACHE_TTL_SEC * 1000, 2 * 60 * 1000);
 const MEMORY_CLEANUP_MS = 5 * 60 * 1000;
 
@@ -78,7 +78,7 @@ function clearMemory(userId: string) {
   memoryCache.delete(userId);
 }
 
-/** Node.js API routes only — not for Edge middleware. */
+/** Node.js API routes only - not for Edge middleware. */
 export async function getCachedActorSnapshot(
   userId: string,
 ): Promise<CachedActorSnapshot | null> {
@@ -117,7 +117,7 @@ export async function setCachedActorSnapshot(
   const role = snapshot.role ?? null;
   const complete = normalizeSnapshot({ role, schoolId, profileId });
 
-  // Incomplete snapshots (no school for school-bound roles) must not be cached —
+  // Incomplete snapshots (no school for school-bound roles) must not be cached -
   // they cause intermittent "No school linked" across every requireSchool route.
   if (!complete) {
     clearMemory(id);
@@ -158,7 +158,7 @@ export async function invalidateRoleCache(userId: string): Promise<void> {
   await redisDel(roleCacheKey(id));
 }
 
-/** Test helper — clear process-local actor snapshots. */
+/** Test helper - clear process-local actor snapshots. */
 export function resetActorSnapshotMemoryCache() {
   memoryCache.clear();
 }

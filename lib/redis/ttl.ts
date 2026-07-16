@@ -1,6 +1,6 @@
 /**
  * TTL defaults for Redis free tier (~25–30MB, allkeys-lru on the server).
- * Every Redis SET must use one of these — keys expire automatically.
+ * Every Redis SET must use one of these - keys expire automatically.
  */
 
 export const REDIS_TTL = {

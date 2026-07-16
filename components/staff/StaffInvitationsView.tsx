@@ -1,4 +1,4 @@
-// Staff invitations view — shared by admin and principal pages.
+// Staff invitations view - shared by admin and principal pages.
 // The API response returns a temporary_password for new staff accounts.
 // This view tracks the last created password via lastCreatedPassword state.
 "use client";

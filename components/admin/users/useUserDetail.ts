@@ -76,7 +76,7 @@ export function useUserDetail({
             : { mfaEnabled: false, verifiedCount: 0, factorCount: 0 },
         );
       } catch {
-        // Actor may lack recovery rights on this deployment — hide quietly.
+        // Actor may lack recovery rights on this deployment - hide quietly.
         setMfaStatus(null);
       } finally {
         setMfaLoading(false);

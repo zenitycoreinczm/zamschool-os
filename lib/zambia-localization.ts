@@ -1,5 +1,5 @@
 /**
- * ZamSchool OS — Zambian Localization & Data Validation Module
+ * ZamSchool OS - Zambian Localization & Data Validation Module
  * Standardizes currency, phone formatting (+260), and ECZ grading structures.
  */
 

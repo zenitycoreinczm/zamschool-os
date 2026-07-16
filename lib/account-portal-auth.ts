@@ -54,7 +54,7 @@ export async function authenticateAccountPortalRequest(
   let schoolId = String(cached?.schoolId || "").trim();
   let profileRole = normalizeRole(cached?.role);
 
-  // Always re-resolve when school is missing — never keep a null schoolId cache.
+  // Always re-resolve when school is missing - never keep a null schoolId cache.
   if (!schoolId || !profileId) {
     const { data: profile, error: profileError } =
       await fetchProfileByIdentity<{

@@ -12,7 +12,7 @@
  * without affecting each other's budgets.
  *
  * Non-Supabase traffic (including Next.js RSC /_rsc flight requests) is
- * returned from the original fetch Promise with no extra async hop — wrapping
+ * returned from the original fetch Promise with no extra async hop - wrapping
  * every call in `async` races AbortSignals and surfaces as
  * "Failed to fetch RSC payload".
  */
@@ -72,7 +72,7 @@ function getDeviceId(): string {
     }
     return deviceId;
   } catch {
-    // Fallback if localStorage is unavailable — use a module-level singleton
+    // Fallback if localStorage is unavailable - use a module-level singleton
     // so the same ID persists for the lifetime of this page/tab.
     if (!fallbackDeviceId) {
       fallbackDeviceId = `fallback-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -245,7 +245,7 @@ function createGuardedFetch(original: typeof globalThis.fetch): typeof globalThi
 /**
  * Install the global fetch interceptor.
  *
- * Safe to call multiple times — subsequent calls are no-ops.
+ * Safe to call multiple times - subsequent calls are no-ops.
  * Call from instrumentation.ts (server) and SupabaseGuardBootstrap.tsx (client).
  */
 export function installSupabaseFetchGuard(): void {
@@ -253,7 +253,7 @@ export function installSupabaseFetchGuard(): void {
 
   if (typeof globalThis === "undefined") {
     console.warn(
-      "[SupabaseFetchGuard] globalThis not available — skipping guard install.",
+      "[SupabaseFetchGuard] globalThis not available - skipping guard install.",
     );
     return;
   }
@@ -283,7 +283,7 @@ export function installSupabaseFetchGuard(): void {
 export function uninstallSupabaseFetchGuard(): void {
   if (!guardInstalled || !originalFetch) {
     console.warn(
-      "[SupabaseFetchGuard] Guard not installed — nothing to uninstall.",
+      "[SupabaseFetchGuard] Guard not installed - nothing to uninstall.",
     );
     return;
   }

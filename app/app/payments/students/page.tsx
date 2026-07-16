@@ -81,10 +81,10 @@ export default function AppPaymentStudentsPage() {
               {filtered.map((row) => (
                 <tr key={row.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{row.first_name} {row.last_name}</td>
-                  <td className="px-4 py-3">{row.admission_number || "—"}</td>
+                  <td className="px-4 py-3">{row.admission_number || "-"}</td>
                   <td className="px-4 py-3 text-emerald-600">K{(row.total_paid || 0).toLocaleString()}</td>
                   <td className="px-4 py-3 text-amber-600">K{(row.outstanding || 0).toLocaleString()}</td>
-                  <td className="px-4 py-3">{row.last_payment_date || "—"}</td>
+                  <td className="px-4 py-3">{row.last_payment_date || "-"}</td>
                 </tr>
               ))}
             </tbody>

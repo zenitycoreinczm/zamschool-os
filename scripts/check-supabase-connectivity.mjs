@@ -12,11 +12,11 @@ console.log(`Checking Supabase host: ${hostname}`);
 const result = await checkSupabaseConnectivity();
 
 if (result.ok) {
-  console.log(`OK — reachable (HTTP ${result.status})`);
+  console.log(`OK - reachable (HTTP ${result.status})`);
   process.exit(0);
 }
 
-console.error(`FAILED — ${result.error}`);
+console.error(`FAILED - ${result.error}`);
 console.error("");
 console.error("Try:");
 console.error("  1. Confirm the project is active in the Supabase dashboard");

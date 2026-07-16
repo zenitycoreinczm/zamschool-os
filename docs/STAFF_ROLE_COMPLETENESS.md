@@ -52,7 +52,7 @@ node --experimental-strip-types --test --test-force-exit `
 
 | Role | Checks | Result |
 |------|--------|--------|
-| Principal | Home metrics; Users directory; Invite staff; Settings/MFA | Pending |
+| Principal | Home metrics; Invite staff (no Users directory); Settings/MFA | Pending |
 | Deputy | Live metrics; Timetable; Attendance; Events in nav | Pending |
 | Guidance | Metrics; Students; Conduct desk; Messages | Pending |
 | ICT | Metrics; User recovery; Disable 2FA; Audit | Pending |

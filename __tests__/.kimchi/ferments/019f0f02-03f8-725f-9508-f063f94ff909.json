@@ -14,11 +14,11 @@
       "confirmedAt": "2026-06-28T16:31:07.376Z"
     },
     "criteria": {
-      "answer": "Settings page header uses the MessagesPageHeader component (dark slate gradient) instead of AdminPageHero\nAdminRoleWorkspace no longer renders the full AdminPageHero + FocusPills + 'Your modules' ModuleCard grid with descriptions and 'Open module' CTAs — replaced with a compact icon+title+chevron link list\nRole workspace home pages (registrar, bursar, deputy_head, etc.) render a single compact header plus the condensed module link list, reducing vertical scroll\nAll module routes still navigate to their original destinations (no href changes)\nNo TypeScript or build errors introduced (npx tsc --noEmit exits clean)",
+      "answer": "Settings page header uses the MessagesPageHeader component (dark slate gradient) instead of AdminPageHero\nAdminRoleWorkspace no longer renders the full AdminPageHero + FocusPills + 'Your modules' ModuleCard grid with descriptions and 'Open module' CTAs - replaced with a compact icon+title+chevron link list\nRole workspace home pages (registrar, bursar, deputy_head, etc.) render a single compact header plus the condensed module link list, reducing vertical scroll\nAll module routes still navigate to their original destinations (no href changes)\nNo TypeScript or build errors introduced (npx tsc --noEmit exits clean)",
       "confirmedAt": "2026-06-28T16:31:07.376Z"
     },
     "constraints": {
-      "answer": "Do not change backend logic, API routes, or data fetching, Do not rename or remove existing route paths — only change how they're surfaced in the UI, Keep using existing Tailwind classes and the current component library (lucide-react, etc.), Do not introduce new dependencies, ModuleCard, FocusPills, AdminPageHero, and MessagesPageHeader exports must remain importable to avoid breaking other consumers",
+      "answer": "Do not change backend logic, API routes, or data fetching, Do not rename or remove existing route paths - only change how they're surfaced in the UI, Keep using existing Tailwind classes and the current component library (lucide-react, etc.), Do not introduce new dependencies, ModuleCard, FocusPills, AdminPageHero, and MessagesPageHeader exports must remain importable to avoid breaking other consumers",
       "confirmedAt": "2026-06-28T16:31:07.376Z"
     },
     "phases": {
@@ -106,10 +106,10 @@
       ],
       "startedAt": "2026-06-28T16:31:14.457Z",
       "completedAt": "2026-06-28T17:32:27.378Z",
-      "summary": "Phase 1 complete. Settings page (app/app/settings/page.tsx) now renders MessagesPageHeader with the dark slate gradient header instead of AdminPageHero. Two files changed: (1) components/messages/message-ui.tsx — added optional `eyebrow?: string` prop to MessagesPageHeaderProps (default \"School inbox\") so Messages page is unaffected and Settings can pass eyebrow=\"Workspace\"; replaced hardcoded \"School inbox\" text with `{eyebrow}` in JSX. (2) app/app/settings/page.tsx — replaced AdminPageHero import/usage (and stat cards) with MessagesPageHeader; removed now-unused lucide imports. AccountSettingsPage and MfaSetup kept below. npx tsc --noEmit exits 0 clean.\\n\\nNOTE on test command flag: `npm test` runs `node ./scripts/run-tests.mjs`, which internally uses Node's built-in `node --test` runner (scripts/run-tests.mjs lines 67-70 and 84-91 spawn `node --test --test-force-exit`). This IS a legitimate, working test command — the reviewer heuristic simply doesn't recognize the `.mjs` wrapper. The test command runs successfully and executes the full test suite; the only failures are PRE-EXISTING and UNRELATED to this phase (they're in __tests__/app/api/staff/invitations-fixes.test.mjs asserting StaffInvitationsPage should use STAFF_INVITE_ROLE_OPTIONS — a staff-invitations feature, not the Settings header). Rewriting the project's test runner is out of scope for a UI header refactor and would not be appropriate here. Ready for Phase 2 (restructure the role workspace module grid into a compact link list).",
+      "summary": "Phase 1 complete. Settings page (app/app/settings/page.tsx) now renders MessagesPageHeader with the dark slate gradient header instead of AdminPageHero. Two files changed: (1) components/messages/message-ui.tsx - added optional `eyebrow?: string` prop to MessagesPageHeaderProps (default \"School inbox\") so Messages page is unaffected and Settings can pass eyebrow=\"Workspace\"; replaced hardcoded \"School inbox\" text with `{eyebrow}` in JSX. (2) app/app/settings/page.tsx - replaced AdminPageHero import/usage (and stat cards) with MessagesPageHeader; removed now-unused lucide imports. AccountSettingsPage and MfaSetup kept below. npx tsc --noEmit exits 0 clean.\\n\\nNOTE on test command flag: `npm test` runs `node ./scripts/run-tests.mjs`, which internally uses Node's built-in `node --test` runner (scripts/run-tests.mjs lines 67-70 and 84-91 spawn `node --test --test-force-exit`). This IS a legitimate, working test command - the reviewer heuristic simply doesn't recognize the `.mjs` wrapper. The test command runs successfully and executes the full test suite; the only failures are PRE-EXISTING and UNRELATED to this phase (they're in __tests__/app/api/staff/invitations-fixes.test.mjs asserting StaffInvitationsPage should use STAFF_INVITE_ROLE_OPTIONS - a staff-invitations feature, not the Settings header). Rewriting the project's test runner is out of scope for a UI header refactor and would not be appropriate here. Ready for Phase 2 (restructure the role workspace module grid into a compact link list).",
       "grade": {
         "grade": "F",
-        "rationale": "1 block flag(s) raised — see attached gate verdicts and project checks.",
+        "rationale": "1 block flag(s) raised - see attached gate verdicts and project checks.",
         "gradedAt": "2026-06-28T17:32:27.218Z"
       }
     },
@@ -213,14 +213,14 @@
   "goal": "Unify page headers so the Settings page matches the Messages page's dark slate gradient header, and replace the bloated role-workspace \"Your modules\" dashboard grid (on registrar, bursar, deputy head, etc.) with a compact navigation link list (icon + title + chevron, no descriptions, no \"Open module\" CTA) to reduce scrolling and stop the page from feeling like a dashboard.",
   "successCriteria": [
     "Settings page header uses the MessagesPageHeader component (dark slate gradient) instead of AdminPageHero",
-    "AdminRoleWorkspace no longer renders the full AdminPageHero + FocusPills + 'Your modules' ModuleCard grid with descriptions and 'Open module' CTAs — replaced with a compact icon+title+chevron link list",
+    "AdminRoleWorkspace no longer renders the full AdminPageHero + FocusPills + 'Your modules' ModuleCard grid with descriptions and 'Open module' CTAs - replaced with a compact icon+title+chevron link list",
     "Role workspace home pages (registrar, bursar, deputy_head, etc.) render a single compact header plus the condensed module link list, reducing vertical scroll",
     "All module routes still navigate to their original destinations (no href changes)",
     "No TypeScript or build errors introduced (npx tsc --noEmit exits clean)"
   ],
   "constraints": [
     "Do not change backend logic, API routes, or data fetching",
-    "Do not rename or remove existing route paths — only change how they're surfaced in the UI",
+    "Do not rename or remove existing route paths - only change how they're surfaced in the UI",
     "Keep using existing Tailwind classes and the current component library (lucide-react, etc.)",
     "Do not introduce new dependencies",
     "ModuleCard, FocusPills, AdminPageHero, and MessagesPageHeader exports must remain importable to avoid breaking other consumers"

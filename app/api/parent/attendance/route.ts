@@ -91,7 +91,7 @@ export async function GET(req: Request) {
 
     const classesById = await getClassesById(schoolId, classIds);
 
-    // Empty `.in()` filters error in PostgREST — skip attendance query when
+    // Empty `.in()` filters error in PostgREST - skip attendance query when
     // we only have profile ids and no students-row mappings.
     let attendanceRows: any[] = [];
     if (scopedStudentRowIds.length > 0) {

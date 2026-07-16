@@ -29,7 +29,7 @@ const ALLOWED_PREFIXES = Object.values(REDIS_KEY_PREFIX);
  * Hash PII (emails, IPs) before embedding in key names.
  * Pure JS so this module is safe to import from client components
  * (e.g. login page → profile-lookup → invalidate-actor-caches → keys).
- * Not a password hash — only for opaque Redis key segments.
+ * Not a password hash - only for opaque Redis key segments.
  */
 export function hashRedisIdentifier(value: string): string {
   const input = String(value || "").trim().toLowerCase();
@@ -76,7 +76,7 @@ export function tempEmailVerifiedKey(userId: string) {
 }
 
 export function rateLimitKey(scope: string, identifier: string) {
-  // Identifiers may contain emails or long tokens — hash those; keep short opaque ids.
+  // Identifiers may contain emails or long tokens - hash those; keep short opaque ids.
   const safeScope = String(scope || "default")
     .trim()
     .replace(/[^a-zA-Z0-9:_-]/g, "_")
@@ -109,7 +109,7 @@ export function workspaceCacheKey(userId: string, schoolId: string | null) {
   return `${REDIS_KEY_PREFIX.ws}${userId}:${schoolId || "none"}`;
 }
 
-/** School-wide stable metrics (student/teacher/class counts) — shared across reloads. */
+/** School-wide stable metrics (student/teacher/class counts) - shared across reloads. */
 export function schoolMetricsCacheKey(schoolId: string) {
   return `${REDIS_KEY_PREFIX.ws}metrics:${String(schoolId || "").trim()}`;
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 /**
  * In-memory cache only (per Node process). NOT backed by Redis.
- * Per free-tier policy: dashboards, profiles, and academic data stay here or in Supabase — not Redis.
+ * Per free-tier policy: dashboards, profiles, and academic data stay here or in Supabase - not Redis.
  */
 
 /**
@@ -274,7 +274,7 @@ export function generateUserCacheKey(
 
 /**
  * withMultiLayerCache is now a thin wrapper over the unified cacheStore.
- * The separate memoryCache Map has been removed — cacheStore already serves
+ * The separate memoryCache Map has been removed - cacheStore already serves
  * as the single in-memory layer, avoiding duplicate storage of the same data.
  */
 export async function withMultiLayerCache<T>(
@@ -287,7 +287,7 @@ export async function withMultiLayerCache<T>(
 }
 
 // Periodic eviction: remove expired entries from cacheStore and staleMarkers.
-// This is the sole eviction mechanism — no per-entry setTimeout timers are used.
+// This is the sole eviction mechanism - no per-entry setTimeout timers are used.
 if (typeof window === "undefined") {
   setInterval(() => {
     const now = Date.now();

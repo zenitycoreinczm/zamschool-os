@@ -1,6 +1,9 @@
 import { importTsModule } from "../../../scripts/test-ts-module.mjs";
 
-const { verifyAuth, signTestJwt } = await importTsModule("./auth.ts", import.meta.url);
+const { verifyAuth, signTestJwt, resetJwksCacheForTests } = await importTsModule(
+  "./auth.ts",
+  import.meta.url,
+);
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -68,7 +71,7 @@ test("verifyAuth rejects tampered JWT signature", async () => {
 
   // Tamper the *payload*, not the signature, so the HMAC is guaranteed to fail.
   // Mutating only the last base64url char of the signature has a ~1/64 chance
-  // of producing a valid HMAC for the original payload — that's a flaky test.
+  // of producing a valid HMAC for the original payload - that's a flaky test.
   const [headerPart, , signaturePart] = token.split(".");
   const tamperedPayload = btoa(
     JSON.stringify({
@@ -160,4 +163,72 @@ test("verifyAuth allows decode mode only with explicit insecure flag", async () 
 
   assert.ok(session);
   assert.equal(session.userId, "user-2");
+});
+
+function bytesToBase64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+test("verifyAuth accepts valid ES256 JWT via JWKS", async () => {
+  resetJwksCacheForTests();
+
+  const keyPair = await crypto.subtle.generateKey(
+    { name: "ECDSA", namedCurve: "P-256" },
+    true,
+    ["sign", "verify"],
+  );
+  const publicJwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+  publicJwk.kid = "test-es256-kid";
+  publicJwk.alg = "ES256";
+  publicJwk.use = "sig";
+
+  const header = { alg: "ES256", typ: "JWT", kid: "test-es256-kid" };
+  const payload = {
+    sub: "es-user",
+    role: "authenticated",
+    aud: "authenticated",
+    iss: "https://example.supabase.co/auth/v1",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    email: "es@school.test",
+    user_metadata: { school_id: "school-es" },
+  };
+
+  const encoder = new TextEncoder();
+  const headerPart = bytesToBase64Url(encoder.encode(JSON.stringify(header)));
+  const payloadPart = bytesToBase64Url(encoder.encode(JSON.stringify(payload)));
+  const signedContent = `${headerPart}.${payloadPart}`;
+  const sig = new Uint8Array(
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      keyPair.privateKey,
+      encoder.encode(signedContent),
+    ),
+  );
+  const token = `${signedContent}.${bytesToBase64Url(sig)}`;
+
+  const env = createEnv({
+    SUPABASE_JWT_SECRET: "",
+    SUPABASE_JWT_ISSUER: "https://example.supabase.co/auth/v1",
+    SUPABASE_JWKS_URL: "https://example.supabase.co/auth/v1/.well-known/jwks.json",
+    fetch: async (url) => {
+      assert.equal(String(url), "https://example.supabase.co/auth/v1/.well-known/jwks.json");
+      return new Response(JSON.stringify({ keys: [publicJwk] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    },
+  });
+
+  const session = await verifyAuth(
+    new Request("https://gateway.test/api/student/dashboard", {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    env,
+  );
+
+  assert.ok(session);
+  assert.equal(session.userId, "es-user");
+  assert.equal(session.schoolId, "school-es");
 });

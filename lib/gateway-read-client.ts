@@ -31,7 +31,7 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export type GatewayOptions = RequestInit & {
   /**
    * Fall back to the same-origin /api/* path on 404 / 5xx or on a
-   * network error. Defaults to TRUE — meant to keep dev/preview working
+   * network error. Defaults to TRUE - meant to keep dev/preview working
    * even if the gateway URL is wrong, dead, or not yet deployed.
    */
   fallbackToLocal?: boolean;
@@ -53,7 +53,7 @@ async function buildHeaders(
   bypassCsrf: boolean,
 ): Promise<Headers> {
   const headers = new Headers(init.headers || {});
-  // The Worker doesn't need Content-Type: application/json baked in — it just
+  // The Worker doesn't need Content-Type: application/json baked in - it just
   // forwards body bytes. We still set it for the same-origin fallback so
   // Next.js route handlers can parse JSON correctly.
   if (
@@ -65,7 +65,7 @@ async function buildHeaders(
     headers.set("Content-Type", "application/json");
   }
   if (!bypassCsrf && MUTATING.has(method.toUpperCase()) && isBrowser()) {
-    // Always inject a real token — never soft-skip (that caused registrar 403s).
+    // Always inject a real token - never soft-skip (that caused registrar 403s).
     const csrf = await ensureCsrfTokenAvailable();
     headers.set("X-CSRF-Token", csrf);
     rememberCsrfToken(csrf);
@@ -105,7 +105,7 @@ async function gatewayFetchImpl(
   const localUrl = String(path || "").trim();
   const headers = await buildHeaders(init, method, bypassCsrf);
 
-  // Same-origin only — same gateway helper used everywhere.
+  // Same-origin only - same gateway helper used everywhere.
   // We strip any Authorization header before forwarding to same-origin routes
   // to ensure cookie-backed authentication is strictly utilized.
   const localFetch = async () => {
@@ -186,7 +186,7 @@ export async function fetchGatewayMutation(
  * The Worker:
  *   1. authorizes via Next.js /api/files/authorize-upload
  *   2. PUTs the byte stream straight into R2 (no Vercel function bandwidth)
- * Always uses the gateway path — never falls back to /api/* because the
+ * Always uses the gateway path - never falls back to /api/* because the
  * /api/files/upload route on Vercel is the *very* thing we're moving bytes
  * off of. When the gateway URL is unset we throw a clear error so callers
  * can decide whether to fall back to the legacy /api/files/upload route.

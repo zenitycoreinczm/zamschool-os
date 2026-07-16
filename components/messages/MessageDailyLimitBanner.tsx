@@ -42,7 +42,7 @@ export function MessageDailyLimitBanner({ quota }: { quota: MessageSendQuota | n
         <div className="min-w-0 flex-1 space-y-2">
           <div>
             <p className="text-sm font-semibold tracking-tight text-slate-900">
-              School messages — {quota.limit} per day
+              School messages - {quota.limit} per day
             </p>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">
               For school-related contact only: ask a teacher for help, share a number, or arrange
@@ -51,7 +51,7 @@ export function MessageDailyLimitBanner({ quota }: { quota: MessageSendQuota | n
           </div>
           {atLimit ? (
             <p className="text-sm font-medium text-slate-800">
-              Limit reached — you can send again {resetLabel}.
+              Limit reached - you can send again {resetLabel}.
             </p>
           ) : (
             <p className="text-xs text-slate-500">Allowance resets {resetLabel}.</p>

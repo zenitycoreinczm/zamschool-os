@@ -21,7 +21,7 @@ export type NotificationPayloadSlice = {
 const BATCH_SIZE = 100;
 
 /**
- * Upsert notification rows (charter delivery layer — domain write → notification row).
+ * Upsert notification rows (charter delivery layer - domain write → notification row).
  */
 export async function enqueueNotifications(
   schoolId: string,

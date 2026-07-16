@@ -9,8 +9,8 @@ type PageLoadingProps = {
   label?: string;
   accent?: HeroAccent;
   /**
-   * `brand` — compact branded loader (default, for in-page waits).
-   * `skeleton` — structural page skeleton (preferred once shell is ready).
+   * `brand` - compact branded loader (default, for in-page waits).
+   * `skeleton` - structural page skeleton (preferred once shell is ready).
    */
   mode?: "brand" | "skeleton";
   skeletonVariant?: PageSkeletonVariant;

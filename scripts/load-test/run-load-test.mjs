@@ -121,7 +121,7 @@ const reportLines = [
   `**Target:** ${baseUrl}`,
   `**Concurrency:** ${tier.concurrency}`,
   `**Duration:** ${durationSec}s`,
-  `**Auth token:** ${bearer ? "provided" : "_not set — authenticated scenarios count 401 as errors_"}`,
+  `**Auth token:** ${bearer ? "provided" : "_not set - authenticated scenarios count 401 as errors_"}`,
   ``,
   `| Scenario | Requests | Errors | Error % | p50 (ms) | **p95 (ms)** | p99 (ms) | SLO p95 | Pass |`,
   `|----------|----------|--------|---------|----------|--------------|----------|---------|------|`,
@@ -140,7 +140,7 @@ for (const [scenarioId, bucket] of Object.entries(results)) {
   const sloBudget = LOAD_TEST_SLOS[scenarioId];
 
   reportLines.push(
-    `| ${scenarioId} | ${stats.total} | ${stats.errors} | ${stats.errorRatePercent}% | ${stats.p50Ms} | **${stats.p95Ms}** | ${stats.p99Ms} | ${sloBudget?.p95Ms ?? "—"} | ${bucket.total === 0 ? "skip" : evaluation.pass ? "✅" : "❌"} |`
+    `| ${scenarioId} | ${stats.total} | ${stats.errors} | ${stats.errorRatePercent}% | ${stats.p50Ms} | **${stats.p95Ms}** | ${stats.p99Ms} | ${sloBudget?.p95Ms ?? "-"} | ${bucket.total === 0 ? "skip" : evaluation.pass ? "✅" : "❌"} |`
   );
 
   console.log(`\n[${scenarioId}]`);
@@ -157,5 +157,5 @@ mkdirSync(dirname(reportPath), { recursive: true });
 writeFileSync(reportPath, `${reportLines.join("\n")}\n`, "utf8");
 
 console.log(`\nReport written: ${reportPath}`);
-console.log(allPass || dryRun ? "\nLoad test complete." : "\nOne or more scenarios missed SLO — see report.");
+console.log(allPass || dryRun ? "\nLoad test complete." : "\nOne or more scenarios missed SLO - see report.");
 process.exit(allPass || dryRun ? 0 : 1);

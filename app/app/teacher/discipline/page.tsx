@@ -216,8 +216,8 @@ export default function TeacherDisciplinePage() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 border-t border-workspace-border pt-3 text-xs text-workspace-muted sm:grid-cols-2">
-                    <span>Incident date: {record.incident_date || "—"}</span>
-                    <span>Location: {record.incident_location || "—"}</span>
+                    <span>Incident date: {record.incident_date || "-"}</span>
+                    <span>Location: {record.incident_location || "-"}</span>
                   </div>
                 </div>
               </TeacherCard>

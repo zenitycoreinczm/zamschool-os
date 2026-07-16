@@ -57,7 +57,7 @@ export async function GET(req: Request) {
     const studentId = searchParams.get("studentId");
     const status = searchParams.get("status");
     const paymentType = searchParams.get("paymentType");
-    // Dashboard FinanceChart only needs amount/status/created_at — skip the
+    // Dashboard FinanceChart only needs amount/status/created_at - skip the
     // full list + student hydration path that was timing out under load.
     const view = String(searchParams.get("view") || "").trim().toLowerCase();
     const chartView = view === "chart" || view === "summary";

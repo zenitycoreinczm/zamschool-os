@@ -108,7 +108,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     eyebrow: "Bursar workspace",
     title: "Finance control room",
     summary:
-      "Fees, payments, receipts, and financial reporting — without unrelated discipline settings.",
+      "Fees, payments, receipts, and financial reporting - without unrelated discipline settings.",
     focus: [
       "Record payments",
       "Review balances",
@@ -192,19 +192,12 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       { label: "Inbox", value: "0", icon: MessageSquare },
     ],
     quickLink: {
-      href: "/app/admin/users",
-      label: "Student directory",
-      icon: Users,
+      href: "/app/admin/attendance",
+      label: "Attendance signals",
+      icon: ClipboardCheck,
     },
     metricIcons: [Users, ClipboardCheck, AlertTriangle, MessageSquare],
     modules: [
-      module(
-        "Student directory",
-        "Profiles and guardian context.",
-        "/app/admin/users",
-        Users,
-        "emerald",
-      ),
       module(
         "Attendance signals",
         "Patterns that may need support.",
@@ -332,7 +325,7 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       { label: "Inbox", value: "0", icon: MessageSquare },
     ],
     quickLink: {
-      href: "/app/admin/users",
+      href: "/app/hr-admin/directory",
       label: "Staff directory",
       icon: Users,
     },
@@ -341,21 +334,21 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       module(
         "Staff directory",
         "Full employee profiles, roles, and contact records.",
-        "/app/admin/users",
+        "/app/hr-admin/directory",
         Users,
         "emerald",
       ),
       module(
         "Departments & structure",
         "School departments, HODs, and staff assignments.",
-        "/app/admin/school",
+        "/app/admin/departments",
         Building2,
         "indigo",
       ),
       module(
         "Bulk staff import",
         "Import staff and teacher records from CSV/Excel files.",
-        "/app/admin/users",
+        "/app/hr-admin/directory",
         FolderOpen,
         "violet",
       ),
@@ -434,13 +427,6 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
     },
     metricIcons: [Users, ClipboardCheck, AlertTriangle, MessageSquare],
     modules: [
-      module(
-        "Student directory",
-        "Profiles for follow-up.",
-        "/app/admin/users",
-        Users,
-        "emerald",
-      ),
       module(
         "Attendance signals",
         "Absence and punctuality patterns.",
@@ -559,7 +545,7 @@ export default function AdminRoleWorkspace({
 }) {
   const config = CONFIG[role] || CONFIG.ict_admin;
 
-  // Safe helper — never throws when provider is mid-HMR / not yet hydrated.
+  // Safe helper - never throws when provider is mid-HMR / not yet hydrated.
   const workspace = useWorkspaceData();
   const { metrics, loading: summaryLoading } = useWorkspaceSummary();
 
@@ -568,7 +554,7 @@ export default function AdminRoleWorkspace({
   const displayName = workspace?.displayName || "Your account";
 
   // Prefer live summary metrics when labels match fallback cards.
-  // Never leave bare "—" on school desks after load — use "…" / "0".
+  // Never leave bare "-" on school desks after load - use "…" / "0".
   const liveByLabel = new Map(
     metrics.map((m) => [m.label.toLowerCase(), m.value]),
   );

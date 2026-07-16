@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       success: true,
       data: summary,
     });
-    // Private short browser cache — reload within TTL reuses client/CDN path;
+    // Private short browser cache - reload within TTL reuses client/CDN path;
     // server still prefers Redis school metrics over Supabase.
     response.headers.set("Cache-Control", EDGE_CACHE.dashboardRead);
     response.headers.set("CDN-Cache-Control", EDGE_CACHE.dashboardRead);

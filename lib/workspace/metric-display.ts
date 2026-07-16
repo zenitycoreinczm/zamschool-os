@@ -1,7 +1,7 @@
 /**
  * School desk / hero stat display helpers.
  *
- * Do not show bare "—" for school metrics across the product. Use:
+ * Do not show bare "-" for school metrics across the product. Use:
  * - "…" while loading
  * - "0" for count/money/rate zeros or missing counts after load
  * - "Not set" only for optional text identity fields
@@ -66,7 +66,7 @@ const TONES = ["sky", "violet", "amber", "emerald"] as const;
 /**
  * Build hero stats from live summary metrics with safe empty handling.
  * When metrics are loaded, use them (up to 4). While loading with no cache, show "…".
- * After load with no metrics, show fallback labels at "0" — never "—".
+ * After load with no metrics, show fallback labels at "0" - never "-".
  */
 export function schoolHeroStatsFromSummary(
   metrics: Array<{ label: string; value: string; hint?: string }>,

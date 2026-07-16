@@ -9,7 +9,7 @@ const DEFAULT_FALLBACK = "An unexpected error occurred";
 
 /** Patterns that indicate an internal/infrastructure message must not leave the server. */
 const LEAKY_MESSAGE_PATTERNS: RegExp[] = [
-  // Credential material — not user-facing validation like "Password is required"
+  // Credential material - not user-facing validation like "Password is required"
   /\bpassword\s*[:=]/i,
   /\bpassword\s+(authentication|hash|salt|store|digest)\b/i,
   /\bsecret\s*[:=]/i,
@@ -131,7 +131,7 @@ export function safeErrorMessage(
 }
 
 /**
- * Full message for server logs only — still redacts obvious secrets in-place.
+ * Full message for server logs only - still redacts obvious secrets in-place.
  */
 export function serverErrorMessage(err: unknown, fallback = "Unknown error"): string {
   const raw = extractRawMessage(err) || fallback;

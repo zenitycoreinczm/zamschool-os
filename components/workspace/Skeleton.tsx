@@ -31,7 +31,7 @@ export function Skeleton({ className, rounded = "lg" }: SkeletonProps) {
   );
 }
 
-/** White card shell with shimmer fill — matches workspace surfaces. */
+/** White card shell with shimmer fill - matches workspace surfaces. */
 export function SkeletonCard({
   className,
   children,

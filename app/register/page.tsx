@@ -457,7 +457,7 @@ function RegisterContent() {
   useEffect(() => {
     if (searchParams.get("resume") !== "school") return;
 
-    // Hydrate from URL params first — used when the login page redirects a
+    // Hydrate from URL params first - used when the login page redirects a
     // half-finished principal back here (user already exists but profile row
     // never landed). sessionStorage may or may not exist for these users.
     const queryEmail = searchParams.get("email");
@@ -952,7 +952,7 @@ function RegisterContent() {
               </div>
 
               <p className="text-xs leading-relaxed text-slate-500">
-                Use a real email — you will verify it before the school is
+                Use a real email - you will verify it before the school is
                 created.
               </p>
 

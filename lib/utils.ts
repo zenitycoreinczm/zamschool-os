@@ -13,9 +13,9 @@ export function formatCurrency(amount: number) {
 }
 
 export function formatDate(date: string | Date | null | undefined) {
-  if (date == null || date === "") return "—";
+  if (date == null || date === "") return "-";
   const parsed = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "—";
+  if (Number.isNaN(parsed.getTime())) return "-";
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",

@@ -1,6 +1,6 @@
 /**
  * Distributed IP reputation for data-center scale.
- * Temporary bans after scanner abuse / flood — backed by Upstash when available,
+ * Temporary bans after scanner abuse / flood - backed by Upstash when available,
  * with process-local fallback so a single instance still defends itself.
  */
 

@@ -360,7 +360,7 @@ export default function AdminSubjectsPage() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
                       <span>
                         <span className="font-medium text-slate-600">Code:</span>{" "}
-                        {row.code || "—"}
+                        {row.code || "-"}
                       </span>
                     </div>
                   </div>

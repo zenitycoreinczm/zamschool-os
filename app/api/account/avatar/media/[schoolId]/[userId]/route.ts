@@ -44,7 +44,8 @@ export async function GET(req: Request, context: RouteParams) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const target = await supabaseAdmin
+    // Path segment may be profile.id (preferred) or auth_user_id (legacy).
+    let target = await supabaseAdmin
       .from("profiles")
       .select("id, school_id, avatar_url")
       .eq("id", userId)
@@ -52,10 +53,22 @@ export async function GET(req: Request, context: RouteParams) {
       .maybeSingle();
 
     if (!target.data?.id) {
+      target = await supabaseAdmin
+        .from("profiles")
+        .select("id, school_id, avatar_url")
+        .eq("auth_user_id", userId)
+        .eq("school_id", schoolId)
+        .maybeSingle();
+    }
+
+    if (!target.data?.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const identity = resolveAvatarIdentity(target.data.avatar_url, { schoolId, userId });
+    const identity = resolveAvatarIdentity(target.data.avatar_url, {
+      schoolId,
+      userId: target.data.id,
+    });
     const objectPath = buildAvatarObjectPath(identity.schoolId, identity.userId);
 
     const { data: blob, error: downloadError } = await supabaseAdmin.storage

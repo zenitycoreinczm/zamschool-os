@@ -5,7 +5,7 @@ import { applyRateLimit, getClientIp } from "@/lib/server-guards";
 
 /**
  * Lightweight liveness probe for load tests, uptime monitors, and k6.
- * Does not hit Supabase — use /api/health/ready for dependency checks later.
+ * Does not hit Supabase - use /api/health/ready for dependency checks later.
  * High rate limit keeps probes healthy while blocking naive flood abuse.
  */
 export async function GET(req: Request) {

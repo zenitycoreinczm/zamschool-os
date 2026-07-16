@@ -43,7 +43,7 @@ function clearSupabaseAuthCookies(
 
 export type VerifiedMiddlewareSession = {
   userId: string;
-  /** From `profiles.role` only — never from user_metadata. */
+  /** From `profiles.role` only - never from user_metadata. */
   role: ReturnType<typeof normalizeRole>;
   mustChangePassword: boolean;
   aal: string | null;

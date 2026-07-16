@@ -43,12 +43,6 @@ const MODULES = [
     statKey: "assignments" as const,
   },
   {
-    href: "/app/admin/users",
-    title: "Staff & students",
-    description: "Directory oversight for academic quality follow-up.",
-    statKey: "students" as const,
-  },
-  {
     href: "/app/messages",
     title: "Messages",
     description: "Coordinate with academic leads and department heads.",
@@ -141,7 +135,7 @@ export default function DeputyHeadDashboard() {
       <AdminPageHero
         eyebrow="Quality hub"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Oversee academic quality for ${yearTerm} — timetables, attendance, assignments, and people.`}
+        description={`Welcome back, ${displayName}. Oversee academic quality for ${yearTerm} - timetables, attendance, assignments, and people.`}
         accent="slate"
         stats={heroStats}
         actions={

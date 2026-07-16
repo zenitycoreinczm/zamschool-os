@@ -312,13 +312,13 @@ export default function DepartmentsWorkspace() {
           <p className="font-semibold text-slate-900">How departments connect</p>
           <p className="mt-1 leading-relaxed">
             Assign a head from any staff account (teachers and office roles).
-            Teacher employment records can use these department names — keep
+            Teacher employment records can use these department names - keep
             names stable so counts stay accurate. Staff invites remain with the{" "}
             <span className="font-medium text-slate-800">Head Teacher</span>.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Link
-              href="/app/admin/users"
+              href="/app/hr-admin/directory"
               className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 underline-offset-2 hover:underline"
             >
               Staff directory
@@ -453,7 +453,7 @@ export default function DepartmentsWorkspace() {
                 </select>
                 {staffOptions.length === 0 ? (
                   <span className="mt-1 block text-[11px] text-slate-400">
-                    No staff on the system yet — leave unassigned for now.
+                    No staff on the system yet - leave unassigned for now.
                   </span>
                 ) : null}
               </label>

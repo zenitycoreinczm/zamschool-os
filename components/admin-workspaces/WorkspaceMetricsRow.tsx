@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 type WorkspaceMetricsRowProps = {
   metrics: WorkspaceMetric[];
   loading: boolean;
-  /** @deprecated Decorative icons removed — prop kept for call-site compatibility */
+  /** @deprecated Decorative icons removed - prop kept for call-site compatibility */
   icons?: ComponentType<LucideProps>[];
   /** When 2, uses a balanced two-column row (principal command center). Default: 4-up grid. */
   columns?: 2 | 4;

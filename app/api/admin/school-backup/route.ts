@@ -15,8 +15,8 @@ const ALLOWED = ["PRINCIPAL", "ICT_ADMIN"] as const;
 
 /**
  * Status of the biweekly school backup snapshot (Head Teacher + ICT).
- * GET — read status / ensure snapshot exists for current period.
- * POST — force regenerate for current period.
+ * GET - read status / ensure snapshot exists for current period.
+ * POST - force regenerate for current period.
  */
 export async function GET(req: Request) {
   try {

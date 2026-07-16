@@ -46,7 +46,7 @@ const ADMIN_SHELL_ROLES = new Set([
   "admin",
 ]);
 
-/** Warn once per role per page session — never spam React re-renders. */
+/** Warn once per role per page session - never spam React re-renders. */
 const warnedUnmappedRoles = new Set<string>();
 
 export default function RoleBasedShell({
@@ -103,7 +103,7 @@ export default function RoleBasedShell({
     return <AdminShell>{children}</AdminShell>;
   }
 
-  // Truly unknown role only — log once so audits still catch gaps.
+  // Truly unknown role only - log once so audits still catch gaps.
   if (typeof window !== "undefined" && role && !warnedUnmappedRoles.has(role)) {
     warnedUnmappedRoles.add(role);
     // eslint-disable-next-line no-console
