@@ -85,21 +85,14 @@ async function resolveParentProfileIds(schoolId: string, studentId: string): Pro
   const linkKeys = [studentId, student?.profile_id].filter(Boolean) as string[];
   if (linkKeys.length === 0) return [];
 
-  const { data: links } = await supabaseAdmin
-    .from("parent_students")
-    .select("parent_id")
-    .in("student_id", linkKeys);
-
-  const parentIds = Array.from(new Set((links || []).map((l: any) => l.parent_id).filter(Boolean)));
-  if (parentIds.length === 0) return [];
-
-  const { data: parents } = await supabaseAdmin
-    .from("parents")
-    .select("id, profile_id")
-    .eq("school_id", schoolId)
-    .in("id", parentIds);
-
-  return (parents || [])
-    .map((p: any) => p.profile_id)
-    .filter(Boolean) as string[];
+  const { loadParentProfileIdsByStudentRowId } = await import(
+    "@/lib/attendance/parent-recipients"
+  );
+  const map = await loadParentProfileIdsByStudentRowId({
+    schoolId,
+    rosterRows: [
+      { id: studentId, profile_id: student?.profile_id || null },
+    ],
+  });
+  return map.get(studentId) || [];
 }

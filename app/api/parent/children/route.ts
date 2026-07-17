@@ -20,7 +20,8 @@ export async function GET(req: Request) {
   try {
     const access = await requireParentContext(req);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
+    const parentIdentityId = profileId || userId;
 
     const rate = await applyPlatformRateLimit({
       scope: "parent-children",
@@ -31,7 +32,11 @@ export async function GET(req: Request) {
     });
     if (!rate.allowed) return platformRateLimitResponse(rate);
 
-    const parentRecord = await getParentRecord({ profileId: userId, schoolId });
+    const parentRecord =
+      (await getParentRecord({ profileId: parentIdentityId, schoolId })) ||
+      (parentIdentityId !== userId
+        ? await getParentRecord({ profileId: userId, schoolId })
+        : null);
 
     if (!parentRecord) {
       return jsonWithPrivateCache({ success: true, data: [] });
@@ -39,7 +44,7 @@ export async function GET(req: Request) {
 
     const linked = await getLinkedStudents({
       parentRecordId: parentRecord.id,
-      parentProfileId: userId,
+      parentProfileId: parentIdentityId,
       schoolId,
       fallbackRelationship: parentRecord.relation_type || null,
     });

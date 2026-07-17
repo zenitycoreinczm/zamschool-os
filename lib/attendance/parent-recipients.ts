@@ -9,27 +9,28 @@ type RosterStudentRow = {
 /**
  * Resolve parent profile IDs for each students-row id.
  *
- * Historical link shapes we must support:
- * - parent_students.student_id → students.id OR profiles.id
- * - parent_students.parent_id  → parents.id OR profiles.id (PARENT role)
+ * Supports every historical link shape used by admin + mobile:
+ * - parent_students.student_id → students.id OR student profiles.id
+ * - parent_students.parent_id  → parents.id OR parent profiles.id OR auth uid
+ *
+ * Returns Map<studentsRowId, parentProfileId[]>
  */
 export async function loadParentProfileIdsByStudentRowId(input: {
   schoolId: string;
   rosterRows: RosterStudentRow[];
 }): Promise<Map<string, string[]>> {
-  const studentRowIds = input.rosterRows.map((row) => row.id).filter(Boolean);
-  if (studentRowIds.length === 0) {
-    return new Map();
-  }
+  const empty = new Map<string, string[]>();
+  const studentRowIds = input.rosterRows.map((row) => String(row.id || "").trim()).filter(Boolean);
+  if (studentRowIds.length === 0) return empty;
 
-  const profileIds = Array.from(
+  const studentProfileIds = Array.from(
     new Set(
       input.rosterRows
-        .map((row) => row.profile_id)
-        .filter(Boolean) as string[],
+        .map((row) => String(row.profile_id || "").trim())
+        .filter(Boolean),
     ),
   );
-  const linkStudentKeys = Array.from(new Set([...studentRowIds, ...profileIds]));
+  const linkStudentKeys = Array.from(new Set([...studentRowIds, ...studentProfileIds]));
 
   const linkQuery = await supabaseAdmin
     .from("parent_students")
@@ -44,103 +45,106 @@ export async function loadParentProfileIdsByStudentRowId(input: {
     parent_id: string;
     student_id: string;
   }>;
-
-  const parentIds = Array.from(
-    new Set(links.map((row) => row.parent_id).filter(Boolean)),
-  );
-  if (parentIds.length === 0) {
-    return new Map();
+  if (links.length === 0) {
+    return empty;
   }
 
-  // Shape A: parent_id is parents.id → resolve parents.profile_id
-  // Shape B: parent_id is already a parent profile id (any case of PARENT/GUARDIAN)
-  const [parentRowsResult, directParentProfilesResult] = await Promise.all([
+  const parentLinkIds = Array.from(
+    new Set(links.map((row) => String(row.parent_id || "").trim()).filter(Boolean)),
+  );
+
+  // 1) parents.id → parents.profile_id (with and without school filter)
+  const [parentsInSchool, parentsAnySchool] = await Promise.all([
     supabaseAdmin
       .from("parents")
       .select("id, profile_id, school_id")
       .eq("school_id", input.schoolId)
-      .in("id", parentIds),
+      .in("id", parentLinkIds),
     supabaseAdmin
-      .from("profiles")
-      .select("id, school_id, role")
-      .eq("school_id", input.schoolId)
-      .in("id", parentIds),
+      .from("parents")
+      .select("id, profile_id, school_id")
+      .in("id", parentLinkIds),
   ]);
 
-  if (parentRowsResult.error) {
-    throw parentRowsResult.error;
-  }
-  if (directParentProfilesResult.error) {
-    throw directParentProfilesResult.error;
-  }
+  // 2) parent_id already a profile id (or auth uid on profile)
+  const [profilesById, profilesByAuth] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select("id, auth_user_id, role, school_id")
+      .in("id", parentLinkIds),
+    supabaseAdmin
+      .from("profiles")
+      .select("id, auth_user_id, role, school_id")
+      .in("auth_user_id", parentLinkIds),
+  ]);
 
-  const parentProfileIdByParentId = new Map<string, string>();
-  for (const row of parentRowsResult.data || []) {
-    if (row.id && row.profile_id) {
-      parentProfileIdByParentId.set(String(row.id), String(row.profile_id));
+  // Map any parent_students.parent_id value → canonical parent profile id
+  const parentProfileByLinkId = new Map<string, string>();
+
+  for (const row of parentsInSchool.data || []) {
+    if (row?.id && row?.profile_id) {
+      parentProfileByLinkId.set(String(row.id), String(row.profile_id));
     }
   }
-  for (const row of directParentProfilesResult.data || []) {
+  for (const row of parentsAnySchool.data || []) {
+    if (row?.id && row?.profile_id && !parentProfileByLinkId.has(String(row.id))) {
+      parentProfileByLinkId.set(String(row.id), String(row.profile_id));
+    }
+  }
+
+  for (const row of profilesById.data || []) {
     if (!row?.id) continue;
     const role = normalizeRole(row.role);
-    // Accept parent / guardian; if role missing but id was linked as parent_id, still accept.
+    // Prefer parent/guardian; if role is missing/unknown still accept — the link
+    // table already asserts this id is a parent of the student.
     if (!role || role === "PARENT") {
-      parentProfileIdByParentId.set(String(row.id), String(row.id));
+      parentProfileByLinkId.set(String(row.id), String(row.id));
     }
   }
 
-  // Fallback: parents table without school filter (mis-scoped rows) still linked.
-  const unresolved = parentIds.filter(
-    (id) => !parentProfileIdByParentId.has(String(id)),
-  );
+  for (const row of profilesByAuth.data || []) {
+    if (!row?.id || !row?.auth_user_id) continue;
+    const role = normalizeRole(row.role);
+    if (!role || role === "PARENT") {
+      parentProfileByLinkId.set(String(row.auth_user_id), String(row.id));
+      parentProfileByLinkId.set(String(row.id), String(row.id));
+    }
+  }
+
+  // 3) parents.profile_id matches link parent_id (reverse lookup)
+  const unresolved = parentLinkIds.filter((id) => !parentProfileByLinkId.has(id));
   if (unresolved.length > 0) {
-    const { data: looseParents, error: looseError } = await supabaseAdmin
+    const { data: byProfileField } = await supabaseAdmin
       .from("parents")
-      .select("id, profile_id, school_id")
-      .in("id", unresolved);
-    if (!looseError) {
-      for (const row of looseParents || []) {
-        if (row.id && row.profile_id) {
-          parentProfileIdByParentId.set(String(row.id), String(row.profile_id));
-        }
-      }
-    }
-
-    // Last resort: treat remaining parent_ids as profile ids if a profile exists.
-    const stillMissing = unresolved.filter(
-      (id) => !parentProfileIdByParentId.has(String(id)),
-    );
-    if (stillMissing.length > 0) {
-      const { data: looseProfiles, error: looseProfilesError } =
-        await supabaseAdmin
-          .from("profiles")
-          .select("id, role")
-          .in("id", stillMissing);
-      if (!looseProfilesError) {
-        for (const row of looseProfiles || []) {
-          if (!row?.id) continue;
-          const role = normalizeRole(row.role);
-          if (!role || role === "PARENT") {
-            parentProfileIdByParentId.set(String(row.id), String(row.id));
-          }
+      .select("id, profile_id")
+      .in("profile_id", unresolved);
+    for (const row of byProfileField || []) {
+      if (row?.profile_id) {
+        parentProfileByLinkId.set(String(row.profile_id), String(row.profile_id));
+        if (row.id) {
+          parentProfileByLinkId.set(String(row.id), String(row.profile_id));
         }
       }
     }
   }
 
+  // Map any student key used in parent_students → students-row id from roster
   const studentRowIdByLinkKey = new Map<string, string>();
   for (const row of input.rosterRows) {
-    studentRowIdByLinkKey.set(String(row.id), String(row.id));
-    if (row.profile_id) {
-      studentRowIdByLinkKey.set(String(row.profile_id), String(row.id));
+    const rowId = String(row.id || "").trim();
+    if (!rowId) continue;
+    studentRowIdByLinkKey.set(rowId, rowId);
+    const profileId = String(row.profile_id || "").trim();
+    if (profileId) {
+      studentRowIdByLinkKey.set(profileId, rowId);
     }
   }
 
   const recipientsByStudentRowId = new Map<string, Set<string>>();
 
   for (const link of links) {
-    const studentRowId = studentRowIdByLinkKey.get(String(link.student_id));
-    const parentProfileId = parentProfileIdByParentId.get(String(link.parent_id));
+    const studentRowId = studentRowIdByLinkKey.get(String(link.student_id || "").trim());
+    const parentProfileId = parentProfileByLinkId.get(String(link.parent_id || "").trim());
     if (!studentRowId || !parentProfileId) continue;
 
     const existing =
