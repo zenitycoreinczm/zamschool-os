@@ -152,8 +152,16 @@ export async function POST(req: Request) {
     const data = await safeInsertWithMissingColumnRetry("events", payload);
     const normalized = normalizeEventRow(data);
 
-    // Push into per-user notifications so every role's top-nav bell lights up.
-    await notifySchoolEventAudience({
+    // Prefer raw body targetRole ("parent"/"teacher") over response UPPERCASE ("PARENT").
+    // Also accept stored audience plurals ("parents") from normalizeAudienceForStorage.
+    const notifyTargetRole =
+      body.targetRole ??
+      (normalized as { audience?: string | null }).audience ??
+      normalized.target_role ??
+      null;
+
+    // In-app bell + Expo push for the selected audience (parents/teachers/all/…).
+    const notifyResult = await notifySchoolEventAudience({
       schoolId,
       eventId: String(data.id),
       title: String(normalized.title || body.title || "School event"),
@@ -161,7 +169,7 @@ export async function POST(req: Request) {
       eventDate: normalized.event_date ?? body.eventDate ?? null,
       startTime: normalized.start_time ?? body.startTime ?? null,
       location: normalized.location ?? body.location ?? null,
-      targetRole: normalized.target_role ?? body.targetRole ?? null,
+      targetRole: notifyTargetRole,
       targetClassId: normalized.target_class_id ?? body.targetClassId ?? null,
     });
 
@@ -171,11 +179,22 @@ export async function POST(req: Request) {
       action: "events.create",
       entityType: "event",
       entityId: data.id,
-      newData: normalized,
+      newData: {
+        ...normalized,
+        notifyRecipients: notifyResult.recipientCount,
+        notifyPushSent: notifyResult.pushSent,
+        notifyAudience: notifyResult.audience,
+      },
       ipAddress: getClientIp(req),
     });
 
-    return NextResponse.json({ success: true, data: normalized });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...normalized,
+        notify: notifyResult,
+      },
+    });
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to create event") },

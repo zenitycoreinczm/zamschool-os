@@ -93,9 +93,18 @@ export default function AppEventsPage() {
       return;
     }
     setSaving(true);
-    const toastId = toast.loading("Creating event...");
+    const toastId = toast.loading("Creating event and notifying audience...");
     try {
-      await adminApiJson("/api/admin/events", {
+      const body = await adminApiJson<{
+        data?: EventRow & {
+          notify?: {
+            recipientCount?: number;
+            notificationsQueued?: number;
+            pushSent?: number;
+            audience?: string;
+          };
+        };
+      }>("/api/admin/events", {
         method: "POST",
         body: JSON.stringify({
           title: form.title.trim(),
@@ -110,7 +119,33 @@ export default function AppEventsPage() {
       setForm(EMPTY_FORM);
       setOpenForm(false);
       await loadEvents();
-      toast.success("Event created", { id: toastId });
+      const notify = body?.data?.notify;
+      const recipients = Number(notify?.recipientCount || 0);
+      const pushSent = Number(notify?.pushSent || 0);
+      const audienceLabel =
+        form.targetRole === "all"
+          ? "entire school"
+          : form.targetRole === "parent"
+            ? "parents"
+            : form.targetRole === "teacher"
+              ? "teachers"
+              : form.targetRole === "student"
+                ? "students"
+                : form.targetRole === "admin"
+                  ? "admins"
+                  : "audience";
+      if (recipients > 0) {
+        toast.success(
+          `Event created · ${recipients} ${audienceLabel} notified` +
+            (pushSent > 0 ? ` · ${pushSent} push sent` : ""),
+          { id: toastId },
+        );
+      } else {
+        toast.success(
+          `Event created · no ${audienceLabel} found to notify. Check user links (e.g. parents linked to students).`,
+          { id: toastId },
+        );
+      }
     } catch (err: any) {
       toast.error(err?.message || "Failed to create event", { id: toastId });
     } finally {
