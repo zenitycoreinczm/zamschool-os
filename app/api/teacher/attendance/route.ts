@@ -400,13 +400,49 @@ export async function POST(req: Request) {
       statuses: body.statuses,
     });
 
-    const { data: savedRows, error: saveError } = await supabaseAdmin
+    // DB has attendance_idempotent_slot_uq on
+    // (school_id, student_id, class_id, attendance_date) — one mark per
+    // student/class/day. Upserting on session_name creates a second row and
+    // 500s with 23505. Always target the day slot so re-saves update in place.
+    let savedRows: unknown[] | null = null;
+    let saveError: { code?: string; message?: string } | null = null;
+
+    const primary = await supabaseAdmin
       .from("attendance")
       .upsert(rows, {
-        onConflict:
-          "school_id,class_id,student_id,attendance_date,session_name",
+        onConflict: "school_id,student_id,class_id,attendance_date",
       })
       .select();
+    savedRows = primary.data;
+    saveError = primary.error;
+
+    if (saveError) {
+      // Fallback for schemas that only have the session-level unique index.
+      const fallback = await supabaseAdmin
+        .from("attendance")
+        .upsert(rows, {
+          onConflict:
+            "school_id,class_id,student_id,attendance_date,session_name",
+        })
+        .select();
+      if (!fallback.error) {
+        savedRows = fallback.data;
+        saveError = null;
+      } else {
+        // Last resort: update existing day rows, then insert missing.
+        const repaired = await repairAttendanceDayRows({
+          schoolId,
+          classId: lesson.class_id,
+          date: body.date,
+          rows,
+        });
+        if (repaired.error) {
+          throw repaired.error;
+        }
+        savedRows = repaired.data;
+        saveError = null;
+      }
+    }
 
     if (saveError) throw saveError;
 
@@ -481,6 +517,98 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+}
+
+/**
+ * When unique indexes disagree (day-slot vs session-slot), update existing
+ * day rows in place and insert only students who have no row yet.
+ */
+async function repairAttendanceDayRows(input: {
+  schoolId: string;
+  classId: string;
+  date: string;
+  rows: Array<Record<string, unknown>>;
+}): Promise<{ data: unknown[] | null; error: unknown | null }> {
+  const supabaseAdmin = getSupabaseAdmin();
+  const studentIds = input.rows
+    .map((row) => String(row.student_id || "").trim())
+    .filter(Boolean);
+
+  const existing = await supabaseAdmin
+    .from("attendance")
+    .select("id, student_id")
+    .eq("school_id", input.schoolId)
+    .eq("class_id", input.classId)
+    .eq("attendance_date", input.date)
+    .in("student_id", studentIds);
+
+  if (existing.error) {
+    // Try date column if attendance_date filter fails
+    const byDate = await supabaseAdmin
+      .from("attendance")
+      .select("id, student_id")
+      .eq("school_id", input.schoolId)
+      .eq("class_id", input.classId)
+      .eq("date", input.date)
+      .in("student_id", studentIds);
+    if (byDate.error) {
+      return { data: null, error: byDate.error };
+    }
+    return applyRepairRows(supabaseAdmin, input.rows, byDate.data || []);
+  }
+
+  return applyRepairRows(supabaseAdmin, input.rows, existing.data || []);
+}
+
+async function applyRepairRows(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  rows: Array<Record<string, unknown>>,
+  existing: Array<{ id: string; student_id: string }>,
+): Promise<{ data: unknown[] | null; error: unknown | null }> {
+  const existingByStudent = new Map(
+    existing.map((row) => [String(row.student_id), row.id]),
+  );
+  const toUpdate: Array<Record<string, unknown> & { id: string }> = [];
+  const toInsert: Array<Record<string, unknown>> = [];
+
+  for (const row of rows) {
+    const studentId = String(row.student_id || "").trim();
+    const existingId = existingByStudent.get(studentId);
+    if (existingId) {
+      toUpdate.push({ ...row, id: existingId });
+    } else {
+      toInsert.push(row);
+    }
+  }
+
+  const saved: unknown[] = [];
+
+  for (const row of toUpdate) {
+    const { id, ...patch } = row;
+    const result = await supabaseAdmin
+      .from("attendance")
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    if (result.data) saved.push(result.data);
+  }
+
+  if (toInsert.length > 0) {
+    const result = await supabaseAdmin
+      .from("attendance")
+      .insert(toInsert)
+      .select();
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    if (Array.isArray(result.data)) saved.push(...result.data);
+  }
+
+  return { data: saved, error: null };
 }
 
 async function getStudentsByClassId(input: {
