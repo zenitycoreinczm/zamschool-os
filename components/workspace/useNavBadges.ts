@@ -17,6 +17,7 @@ import {
   countNewSinceSeen,
   EMPTY_NAV_BADGES,
   markNavSectionsSeenForPath,
+  readFeedItemReadIds,
   readNavSectionSeenAt,
   type NavBadgeCounts,
 } from "@/lib/workspace/nav-badges";
@@ -160,6 +161,8 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
 
       const annSeen = readNavSectionSeenAt(userId, "announcements");
       const eventSeen = readNavSectionSeenAt(userId, "events");
+      const annReadIds = readFeedItemReadIds(userId, "announcements");
+      const eventReadIds = readFeedItemReadIds(userId, "events");
 
       setCounts((prev) => ({
         ...prev,
@@ -167,19 +170,23 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
           ? 0
           : countNewSinceSeen(
               annRows as Array<{
+                id?: string | null;
                 created_at?: string | null;
                 published_at?: string | null;
               }>,
               annSeen,
+              annReadIds,
             ),
         events: viewingEvents
           ? 0
           : countNewSinceSeen(
               eventRows as Array<{
+                id?: string | null;
                 created_at?: string | null;
                 published_at?: string | null;
               }>,
               eventSeen,
+              eventReadIds,
             ),
       }));
     } catch {

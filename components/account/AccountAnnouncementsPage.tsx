@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { PageLoading } from "@/components/workspace/PageLoading";
 import { Surface } from "@/components/workspace/Surface";
 import type { HeroAccent } from "@/components/workspace/heroAccents";
+import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { accountApiJson } from "@/lib/account-portal-api";
+import { markFeedItemsRead } from "@/lib/workspace/nav-badges";
 import { formatDate } from "@/lib/utils";
 
 type Announcement = {
@@ -28,6 +29,8 @@ export function AccountAnnouncementsPage({
   intro?: string;
   accent?: HeroAccent;
 }) {
+  const { data: workspace } = useWorkspaceContext();
+  const userId = workspace?.userId || "";
   const [rows, setRows] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,13 +42,23 @@ export function AccountAnnouncementsPage({
       const body = await accountApiJson<{ data?: Announcement[] }>(
         "/api/account/announcements?limit=50"
       );
-      setRows(body.data || []);
+      const data = body.data || [];
+      setRows(data);
+      // Opening the announcements page marks every loaded item as read so the
+      // sidebar badge stays clear after logout/login on this browser.
+      if (userId && data.length > 0) {
+        markFeedItemsRead(
+          userId,
+          "announcements",
+          data.map((row) => String(row.id || "")),
+        );
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load announcements");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void load();

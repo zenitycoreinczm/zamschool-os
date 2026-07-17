@@ -25,13 +25,16 @@ export function buildAttendanceNotificationPayloads(input: {
   date: string;
   timeLabel?: string | null;
   status: AttendanceNotificationStatus;
+  /** When true, only parents receive the alert (no student profile to write). */
+  parentOnly?: boolean;
 }) {
   const statusLabel = formatAttendanceStatusLabel(input.status);
   const clock = formatLessonClockTime(input.timeLabel);
   const sessionDate = formatAttendanceSessionDate(input.date);
   const sessionTimeKey = normalizeSessionTime(input.sessionTime || input.timeLabel);
+  const normalizedStatus = String(input.status || "").toUpperCase();
 
-  const isPresent = input.status === "PRESENT";
+  const isPresent = normalizedStatus === "PRESENT";
   const title = isPresent
     ? `${input.studentName} is present in ${input.lessonName}`
     : `${input.studentName} is ${statusLabel} in ${input.lessonName}`;
@@ -49,19 +52,26 @@ export function buildAttendanceNotificationPayloads(input: {
   const message = messageParts.join(" ").replace(/\s+/g, " ").trim();
 
   const parentIds = input.parents.map((parent) => parent.id).filter(Boolean);
-  const recipientIds = parentIds.length > 0
-    ? [input.studentUserId, ...parentIds]
-    : [input.studentUserId].filter(Boolean);
+  const studentId = String(input.studentUserId || "").trim();
 
-  return Array.from(new Set(recipientIds)).map((recipientId) => {
-    const isStudent = recipientId === input.studentUserId;
+  let recipientIds: string[];
+  if (input.parentOnly) {
+    recipientIds = parentIds;
+  } else if (parentIds.length > 0) {
+    recipientIds = studentId ? [studentId, ...parentIds] : parentIds;
+  } else {
+    recipientIds = studentId ? [studentId] : [];
+  }
+
+  return Array.from(new Set(recipientIds.filter(Boolean))).map((recipientId) => {
+    const isStudent = Boolean(studentId) && recipientId === studentId;
     const dedupeKeyParts = [
-      isStudent ? input.studentUserId : recipientId,
+      isStudent ? studentId : recipientId,
       input.studentId,
       input.lessonId,
       input.date,
       sessionTimeKey || "na",
-      input.status,
+      normalizedStatus,
     ];
     return {
       user_id: recipientId,

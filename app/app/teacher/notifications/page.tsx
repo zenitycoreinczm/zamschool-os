@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { dispatchInboxRefresh } from "@/lib/inbox/events";
 import { formatDate, cn } from "@/lib/utils";
 
 type NotificationRow = {
@@ -71,6 +72,33 @@ export default function TeacherNotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
+  const markRead = async (notif: NotificationRow) => {
+    if (notif.isRead || !notif.id) return;
+    setNotifications((prev) =>
+      prev.map((row) =>
+        row.id === notif.id ? { ...row, isRead: true } : row,
+      ),
+    );
+    try {
+      await adminApiJson(
+        `/api/teacher/notifications?id=${encodeURIComponent(notif.id)}`,
+        { method: "PUT", body: JSON.stringify({}) },
+      );
+      dispatchInboxRefresh();
+    } catch (err: unknown) {
+      setNotifications((prev) =>
+        prev.map((row) =>
+          row.id === notif.id ? { ...row, isRead: false } : row,
+        ),
+      );
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to mark notification as read",
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center p-4 md:p-6">
@@ -125,10 +153,12 @@ export default function TeacherNotificationsPage() {
       ) : (
         <div className="flex flex-col gap-2">
           {notifications.map((notif) => (
-            <div
+            <button
               key={notif.id}
+              type="button"
+              onClick={() => void markRead(notif)}
               className={cn(
-                "rounded-xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+                "w-full rounded-xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
                 !notif.isRead
                   ? "border-amber-200 bg-amber-50/50"
                   : "border-slate-200",
@@ -152,8 +182,13 @@ export default function TeacherNotificationsPage() {
                     {notif.category}
                   </span>
                 ) : null}
+                {!notif.isRead ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700">
+                    Unread · tap to mark read
+                  </span>
+                ) : null}
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Bell, Loader2, MessageSquare, Send, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,12 +64,26 @@ export function WorkspaceInboxCenter({
   const [replyBody, setReplyBody] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [portalReady, setPortalReady] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   // Drop late responses after mark-as-read / newer polls so old counts never
   // resurrect "new" badges for messages or notifications already cleared.
   const countsRequestId = useRef(0);
   const previewRequestId = useRef(0);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!detailKind) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [detailKind]);
 
   const publishUnread = useCallback(
     (next: { messages: number; notifications: number }) => {
@@ -226,7 +241,7 @@ export function WorkspaceInboxCenter({
   };
 
   const openNotificationDetail = (notification: InboxNotificationPreview) => {
-    // Notifications are independent of direct messages.
+    // Open immediately; persist read on the server so close/logout cannot revive it.
     setPanel(null);
     setDetailKind("notification");
     setActiveNotification(notification);
@@ -252,8 +267,14 @@ export function WorkspaceInboxCenter({
       .then(() => {
         dispatchInboxRefresh(optimisticUnread);
       })
-      .catch(() => {
-        // Non-blocking
+      .catch((err: unknown) => {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Could not mark notification as read",
+        );
+        // Keep the detail open; user already saw it. Next successful poll may
+        // restore the badge until they open it again after the server accepts.
       });
   };
 
@@ -470,125 +491,129 @@ export function WorkspaceInboxCenter({
         ) : null}
       </div>
 
-      {/* Compact centered detail - click outside (backdrop) to dismiss */}
-      {detailKind ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
-          role="presentation"
-        >
-          <button
-            type="button"
-            aria-label="Close"
-            className="absolute inset-0 bg-slate-900/35 backdrop-blur-[1px] transition-opacity"
-            onClick={closeDetail}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="inbox-detail-title"
-            className="relative z-10 flex max-h-[min(85vh,34rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  {detailKind === "message" ? "Message" : "Notification"}
-                </p>
-                <h2
-                  id="inbox-detail-title"
-                  className="mt-0.5 line-clamp-2 text-base font-semibold text-slate-900"
-                >
-                  {detailKind === "message"
-                    ? activeMessage?.subject || "Message"
-                    : activeNotification?.title || "Notification"}
-                </h2>
-                {detailKind === "message" && activeMessage ? (
-                  <p className="mt-0.5 truncate text-xs text-slate-500">
-                    From {activeMessage.senderLabel}
-                    {activeMessage.senderRole
-                      ? ` · ${activeMessage.senderRole}`
-                      : ""}
-                    {activeMessage.created_at
-                      ? ` · ${formatRelativeTime(activeMessage.created_at)}`
-                      : ""}
-                  </p>
-                ) : activeNotification?.created_at ? (
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {formatRelativeTime(activeNotification.created_at)}
-                  </p>
-                ) : null}
-              </div>
+      {/* Portal to document.body so header backdrop-filter cannot pin fixed
+          positioning to the top of the shell (was clipping the modal). */}
+      {portalReady && detailKind
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto p-4 sm:p-6"
+              role="presentation"
+            >
               <button
                 type="button"
-                onClick={closeDetail}
-                className="shrink-0 rounded-full border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
                 aria-label="Close"
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] transition-opacity"
+                onClick={closeDetail}
+              />
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="inbox-detail-title"
+                className="relative z-10 my-auto flex max-h-[min(85vh,36rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+                onClick={(event) => event.stopPropagation()}
               >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              {detailKind === "message" && activeMessage ? (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                  {activeMessage.body}
-                </p>
-              ) : activeNotification ? (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                  {activeNotification.message}
-                </p>
-              ) : null}
-            </div>
-
-            {detailKind === "message" && activeMessage ? (
-              <div className="border-t border-slate-100 bg-slate-50/80 px-4 py-3">
-                <textarea
-                  value={replyBody}
-                  onChange={(event) => setReplyBody(event.target.value)}
-                  placeholder="Write a quick reply…"
-                  rows={2}
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-                />
-                <div className="mt-2 flex items-center gap-2">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      {detailKind === "message" ? "Message" : "Notification"}
+                    </p>
+                    <h2
+                      id="inbox-detail-title"
+                      className="mt-0.5 line-clamp-3 text-base font-semibold text-slate-900"
+                    >
+                      {detailKind === "message"
+                        ? activeMessage?.subject || "Message"
+                        : activeNotification?.title || "Notification"}
+                    </h2>
+                    {detailKind === "message" && activeMessage ? (
+                      <p className="mt-0.5 truncate text-xs text-slate-500">
+                        From {activeMessage.senderLabel}
+                        {activeMessage.senderRole
+                          ? ` · ${activeMessage.senderRole}`
+                          : ""}
+                        {activeMessage.created_at
+                          ? ` · ${formatRelativeTime(activeMessage.created_at)}`
+                          : ""}
+                      </p>
+                    ) : activeNotification?.created_at ? (
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {formatRelativeTime(activeNotification.created_at)}
+                      </p>
+                    ) : null}
+                  </div>
                   <button
                     type="button"
                     onClick={closeDetail}
-                    className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                    className="shrink-0 rounded-full border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                    aria-label="Close"
                   >
-                    Done
-                  </button>
-                  <button
-                    type="button"
-                    disabled={sending || !replyBody.trim()}
-                    onClick={() => void handleSendReply()}
-                    className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 disabled:opacity-50"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    {sending ? "Sending…" : "Send"}
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                  {detailKind === "message" && activeMessage ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                      {activeMessage.body}
+                    </p>
+                  ) : activeNotification ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                      {activeNotification.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                {detailKind === "message" && activeMessage ? (
+                  <div className="shrink-0 border-t border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <textarea
+                      value={replyBody}
+                      onChange={(event) => setReplyBody(event.target.value)}
+                      placeholder="Write a quick reply…"
+                      rows={2}
+                      className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={closeDetail}
+                        className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                      >
+                        Done
+                      </button>
+                      <button
+                        type="button"
+                        disabled={sending || !replyBody.trim()}
+                        onClick={() => void handleSendReply()}
+                        className="ml-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        {sending ? "Sending…" : "Send"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={closeDetail}
+                      className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                    >
+                      Close
+                    </button>
+                    <Link
+                      href={notificationsHref}
+                      onClick={closeDetail}
+                      className="rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50"
+                    >
+                      Full page
+                    </Link>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
-                <button
-                  type="button"
-                  onClick={closeDetail}
-                  className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
-                >
-                  Close
-                </button>
-                <Link
-                  href={notificationsHref}
-                  onClick={closeDetail}
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50"
-                >
-                  Full page
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

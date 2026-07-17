@@ -80,3 +80,15 @@ test("countNewSinceSeen uses published_at when present", () => {
     1,
   );
 });
+
+test("countNewSinceSeen skips individually read items", () => {
+  const items = [
+    { id: "a1", created_at: "2026-07-10T10:00:00.000Z" },
+    { id: "a2", created_at: "2026-07-10T11:00:00.000Z" },
+  ];
+  const readIds = new Set(["a1"]);
+  assert.equal(
+    countNewSinceSeen(items, "2026-07-01T00:00:00.000Z", readIds),
+    1,
+  );
+});
