@@ -58,15 +58,23 @@ const DAY_OPTIONS = [
   { value: "5", label: "Friday" },
 ];
 
-const TIME_CHOICES = buildTimeChoices("06:00", "20:00", 5);
+const FALLBACK_TIME_CHOICES = buildTimeChoices("06:00", "20:00", 5);
 
 const EMPTY_FORM: LessonForm = {
   class_id: "",
   subject_id: "",
   teacher_id: "",
   day_of_week: "1",
-  start_time: "07:00",
-  end_time: "08:00",
+  start_time: "08:00",
+  end_time: "09:00",
+};
+
+type SchoolDayHoursView = {
+  schoolOpensAt: string;
+  classesStartAt: string;
+  classesEndAt: string;
+  schoolClosesAt: string;
+  classWindowLabel?: string;
 };
 
 export function TimetableWorkspace({
@@ -95,6 +103,22 @@ export function TimetableWorkspace({
   const [form, setForm] = useState<LessonForm>(EMPTY_FORM);
   const [openForm, setOpenForm] = useState(false);
   const [detailLessonId, setDetailLessonId] = useState<string | null>(null);
+  const [schoolHours, setSchoolHours] = useState<SchoolDayHoursView | null>(
+    null,
+  );
+
+  const timeChoices = useMemo(() => {
+    if (!schoolHours?.classesStartAt || !schoolHours?.classesEndAt) {
+      return FALLBACK_TIME_CHOICES;
+    }
+    // Pad slightly so academic staff can schedule early assembly / late clubs.
+    const startPad = subtractClock(schoolHours.schoolOpensAt || schoolHours.classesStartAt, 30) ||
+      schoolHours.classesStartAt;
+    const endPad =
+      addClock(schoolHours.schoolClosesAt || schoolHours.classesEndAt, 30) ||
+      schoolHours.classesEndAt;
+    return buildTimeChoices(startPad, endPad, 5);
+  }, [schoolHours]);
 
   const subjectMap = useMemo(
     () => Object.fromEntries(subjects.map((x) => [x.id, x.name])),
@@ -261,6 +285,26 @@ export function TimetableWorkspace({
         if (!sid) throw new Error(schoolLinkUserMessage());
         if (cancelled) return;
         setSchoolId(sid);
+        // School day hours (Head Teacher) guide timetable start/end choices.
+        try {
+          const hoursBody = await adminApiJson<{ data?: SchoolDayHoursView }>(
+            "/api/admin/school-hours",
+            { cache: "no-store" },
+          );
+          if (!cancelled && hoursBody.data?.classesStartAt) {
+            setSchoolHours(hoursBody.data);
+            setForm((prev) => {
+              if (prev.class_id || prev.subject_id) return prev;
+              const start = hoursBody.data!.classesStartAt.slice(0, 5);
+              const end =
+                addClock(start, 60) ||
+                hoursBody.data!.classesEndAt.slice(0, 5);
+              return { ...prev, start_time: start, end_time: end };
+            });
+          }
+        } catch {
+          // Defaults remain usable if hours endpoint fails.
+        }
         await fetchAll();
       } catch (err: unknown) {
         if (!cancelled) {
@@ -408,6 +452,12 @@ export function TimetableWorkspace({
 
   function openAddLesson() {
     if (!canEdit) return;
+    const defaultStart =
+      schoolHours?.classesStartAt?.slice(0, 5) || EMPTY_FORM.start_time;
+    const defaultEnd =
+      addClock(defaultStart, 60) ||
+      schoolHours?.classesEndAt?.slice(0, 5) ||
+      EMPTY_FORM.end_time;
     setForm((prev) => ({
       ...prev,
       class_id:
@@ -419,6 +469,8 @@ export function TimetableWorkspace({
           ? selectedTeacher
           : prev.teacher_id || teachers[0]?.id || "",
       subject_id: prev.subject_id || subjects[0]?.id || "",
+      start_time: prev.start_time || defaultStart,
+      end_time: prev.end_time || defaultEnd,
     }));
     setOpenForm(true);
   }
@@ -435,6 +487,19 @@ export function TimetableWorkspace({
     if (toMinutes(endTime) <= toMinutes(startTime)) {
       toast.error("End time must be after start time");
       return;
+    }
+    if (schoolHours?.classesStartAt && schoolHours?.classesEndAt) {
+      const classStart = toMinutes(schoolHours.classesStartAt);
+      const classEnd = toMinutes(schoolHours.classesEndAt);
+      if (
+        Number.isFinite(classStart) &&
+        Number.isFinite(classEnd) &&
+        (toMinutes(startTime) < classStart || toMinutes(endTime) > classEnd)
+      ) {
+        toast.info(
+          `Note: school classes are set for ${schoolHours.classesStartAt.slice(0, 5)}–${schoolHours.classesEndAt.slice(0, 5)}. You can still save outside that window if needed.`,
+        );
+      }
     }
     setSaving(true);
     const toastId = toast.loading("Saving lesson...");
@@ -600,6 +665,32 @@ export function TimetableWorkspace({
   // ── Main compact week view ────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-3">
+      {schoolHours ? (
+        <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2.5 text-sm text-slate-700">
+          <p className="font-semibold text-violet-900">School day hours</p>
+          <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">
+            Classes run{" "}
+            <span className="font-semibold tabular-nums text-slate-900">
+              {schoolHours.classesStartAt.slice(0, 5)} –{" "}
+              {schoolHours.classesEndAt.slice(0, 5)}
+            </span>
+            {schoolHours.schoolOpensAt ? (
+              <>
+                {" "}
+                · campus open{" "}
+                <span className="tabular-nums">
+                  {schoolHours.schoolOpensAt.slice(0, 5)} –{" "}
+                  {(schoolHours.schoolClosesAt || schoolHours.classesEndAt).slice(
+                    0,
+                    5,
+                  )}
+                </span>
+              </>
+            ) : null}
+            . Set by the Head Teacher under School Profile.
+          </p>
+        </div>
+      ) : null}
       <CompactHeader
         title={title}
         subtitle={
@@ -817,6 +908,7 @@ export function TimetableWorkspace({
             <TimeField
               label="Start"
               value={form.start_time}
+              choices={timeChoices}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, start_time: value }))
               }
@@ -824,6 +916,7 @@ export function TimetableWorkspace({
             <TimeField
               label="End"
               value={form.end_time}
+              choices={timeChoices}
               onChange={(value) =>
                 setForm((prev) => ({ ...prev, end_time: value }))
               }
@@ -1219,10 +1312,12 @@ function TimeField({
   label,
   value,
   onChange,
+  choices = FALLBACK_TIME_CHOICES,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  choices?: string[];
 }) {
   const listId = useId();
   return (
@@ -1239,12 +1334,26 @@ function TimeField({
         className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm tabular-nums outline-none focus:ring-2 focus:ring-slate-200"
       />
       <datalist id={listId}>
-        {TIME_CHOICES.map((t) => (
+        {choices.map((t) => (
           <option key={t} value={t} />
         ))}
       </datalist>
     </label>
   );
+}
+
+function addClock(value: string, addMinutes: number): string | null {
+  const mins = toMinutes(value);
+  if (!Number.isFinite(mins)) return null;
+  const next = mins + addMinutes;
+  if (next < 0 || next >= 24 * 60) return null;
+  const h = Math.floor(next / 60);
+  const m = next % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function subtractClock(value: string, subMinutes: number): string | null {
+  return addClock(value, -subMinutes);
 }
 
 function toClassOptions(data: unknown): SelectOpt[] {

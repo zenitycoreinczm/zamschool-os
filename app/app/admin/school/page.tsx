@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { SchoolDayHoursPanel } from "@/components/admin/SchoolDayHoursPanel";
 import { Surface } from "@/components/workspace/Surface";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { normalizeRole } from "@/lib/roles";
@@ -449,6 +450,11 @@ export default function AdminSchoolPage() {
           </div>
         ) : null}
       </Surface>
+
+      <SchoolDayHoursPanel
+        canEdit={canEditSchoolProfile}
+        schoolReady={Boolean(schoolId)}
+      />
 
       <Surface variant="default" className="p-5" as="div">
         <p className="font-semibold text-slate-800">School identity</p>

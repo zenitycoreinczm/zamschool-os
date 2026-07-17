@@ -7,6 +7,8 @@ import { safeErrorMessage } from "@/lib/server-guards";
 import { requireStudentContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveLessonDayOfWeek } from "@/lib/lesson-day";
+import { toSchoolDayHoursClientPayload } from "@/lib/school-day-hours";
+import { loadSchoolDayHours } from "@/lib/school-day-hours-server";
 
 const EMPTY_ATTENDANCE_SUMMARY = {
   PRESENT: 0,
@@ -72,7 +74,11 @@ export async function GET(req: Request) {
             : parseDashboardClassNumber(profile?.student_number) ??
               parseDashboardClassNumber(profile?.admission_number) ??
               parseDashboardClassNumber(legacyStudent?.studentNumber);
-        const { classRow, gradeLabel } = await loadClassContext(classId, profile?.grade_id ?? null);
+        const [{ classRow, gradeLabel }, schoolDayHoursRaw] = await Promise.all([
+          loadClassContext(classId, profile?.grade_id ?? null),
+          loadSchoolDayHours(schoolId),
+        ]);
+        const schoolDayHours = toSchoolDayHoursClientPayload(schoolDayHoursRaw);
 
         const baseProfile = {
           id: userId,
@@ -88,6 +94,7 @@ export async function GET(req: Request) {
         if (!classId) {
           return {
             profile: baseProfile,
+            schoolDayHours,
             todayLessons: [],
             attendance: {
               summary: EMPTY_ATTENDANCE_SUMMARY,
@@ -286,6 +293,7 @@ export async function GET(req: Request) {
 
         return {
           profile: baseProfile,
+          schoolDayHours,
           todayLessons,
           attendance: {
             summary: attendanceSummary,

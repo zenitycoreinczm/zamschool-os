@@ -58,8 +58,26 @@ export type StudentResultRow = {
   published_at: string | null;
 };
 
+export type StudentSchoolDayHours = {
+  timezone?: string;
+  schoolOpensAt?: string;
+  classesStartAt?: string;
+  classesEndAt?: string;
+  schoolClosesAt?: string;
+  morningReminderOffsetsMinutes?: number[];
+  morningReminders?: Array<{
+    fireAt: string;
+    label?: string;
+    title?: string;
+    body?: string;
+  }>;
+  classWindowLabel?: string;
+  schoolOpenLabel?: string;
+};
+
 export type StudentDashboardPayload = {
   profile: StudentProfile;
+  schoolDayHours?: StudentSchoolDayHours | null;
   todayLessons: StudentLesson[];
   attendance: { summary: StudentAttendanceSummary };
   assignments: {

@@ -63,6 +63,34 @@ export default function StudentDashboard() {
         urgentCount={dashboard?.assignments.urgent}
       />
 
+      {dashboard?.schoolDayHours?.classesStartAt ? (
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-sm text-slate-700">
+          <p className="font-semibold text-violet-900">School day</p>
+          <p className="mt-1 text-slate-600">
+            Classes run{" "}
+            <span className="font-semibold tabular-nums text-slate-900">
+              {String(dashboard.schoolDayHours.classesStartAt).slice(0, 5)} –{" "}
+              {String(dashboard.schoolDayHours.classesEndAt || "").slice(0, 5)}
+            </span>
+            {dashboard.schoolDayHours.schoolOpensAt ? (
+              <>
+                {" "}
+                · campus open{" "}
+                <span className="tabular-nums">
+                  {String(dashboard.schoolDayHours.schoolOpensAt).slice(0, 5)} –{" "}
+                  {String(
+                    dashboard.schoolDayHours.schoolClosesAt ||
+                      dashboard.schoolDayHours.classesEndAt ||
+                      "",
+                  ).slice(0, 5)}
+                </span>
+              </>
+            ) : null}
+            . Morning reminders on the mobile app use these times.
+          </p>
+        </section>
+      ) : null}
+
       <StudentAttendanceStats summary={summary} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">

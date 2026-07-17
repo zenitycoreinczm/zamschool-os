@@ -31,6 +31,19 @@ const DEFAULT_SETTINGS = [
   { key: "grading_system", value: { type: "percentage", pass_mark: 50 } },
   { key: "attendance_tracking", value: { per_lesson: true, per_day: false } },
   {
+    // Shared school day: Head Teacher can override via /api/admin/school-hours.
+    // Mobile morning reminders + timetable bounds use this.
+    key: "school_day",
+    value: {
+      timezone: "Africa/Lusaka",
+      schoolOpensAt: "07:00",
+      classesStartAt: "08:00",
+      classesEndAt: "16:00",
+      schoolClosesAt: "16:30",
+      morningReminderOffsetsMinutes: [120, 90, 60, 30],
+    },
+  },
+  {
     key: "parent_portal",
     value: {
       enabled: true,
