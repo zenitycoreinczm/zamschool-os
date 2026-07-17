@@ -34,33 +34,12 @@ type FetchOptions = {
   force?: boolean;
 };
 
-async function teacherApiJson<T = unknown>(
-  input: string,
-  init: RequestInit = {},
-) {
-  const headers = new Headers(init.headers || {});
-  if (!headers.has("Content-Type") && init.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  const response = await fetch(input, {
-    ...init,
-    headers,
-    cache: "no-store",
-    credentials: "same-origin",
-  });
-  const parsedBody = await response.json().catch(() => null);
-  const body =
-    typeof parsedBody === "object" && parsedBody !== null ? parsedBody : {};
-
-  if (!response.ok) {
-    throw new Error(
-      (body as { error?: string }).error ||
-        response.statusText ||
-        `Request failed with status ${response.status}`,
-    );
-  }
-
-  return body as T;
+/**
+ * Teacher portal mutations must send CSRF like account/admin clients.
+ * A bare fetch() was returning 403 Invalid CSRF on PUT mark-as-read.
+ */
+function teacherApiJson<T = unknown>(input: string, init?: RequestInit) {
+  return accountApiJson<T>(input, init);
 }
 
 function apiJson<T>(mode: InboxApiMode, input: string, init?: RequestInit) {
@@ -303,12 +282,13 @@ export async function markNotificationRead(
   notificationId: string,
 ) {
   // Admin and account both use the shared account notifications route.
-  // Teacher has its own notifications route.
+  // Teacher has its own notifications route (same CSRF-aware client).
   if (mode === "teacher") {
     await teacherApiJson(
       `/api/teacher/notifications?id=${encodeURIComponent(notificationId)}`,
       {
         method: "PUT",
+        body: JSON.stringify({}),
       },
     );
   } else {
@@ -316,6 +296,7 @@ export async function markNotificationRead(
       `/api/account/notifications?id=${encodeURIComponent(notificationId)}`,
       {
         method: "PUT",
+        body: JSON.stringify({}),
       },
     );
   }

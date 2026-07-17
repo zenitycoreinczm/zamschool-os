@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { adminApiJson } from "@/lib/admin-browser-api";
+import { accountApiJson } from "@/lib/account-portal-api";
 import { dispatchInboxRefresh } from "@/lib/inbox/events";
 import { formatDate, cn } from "@/lib/utils";
 
@@ -46,9 +46,9 @@ export default function TeacherNotificationsPage() {
 
   const loadNotifications = useCallback(async () => {
     try {
-      const body = await adminApiJson<{
-        success: boolean;
-        data: unknown[];
+      const body = await accountApiJson<{
+        success?: boolean;
+        data?: unknown[];
       }>("/api/teacher/notifications");
       setNotifications(
         Array.isArray(body.data)
@@ -80,7 +80,7 @@ export default function TeacherNotificationsPage() {
       ),
     );
     try {
-      await adminApiJson(
+      await accountApiJson(
         `/api/teacher/notifications?id=${encodeURIComponent(notif.id)}`,
         { method: "PUT", body: JSON.stringify({}) },
       );
