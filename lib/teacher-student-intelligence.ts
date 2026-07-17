@@ -175,6 +175,7 @@ export async function loadTeacherStudentIntelligence(input: {
     if (!bucket) continue;
 
     bucket.total += 1;
+    // DB stores lowercase (present/absent/…); normalize before counting.
     switch (
       String(row.status || "")
         .trim()
@@ -190,6 +191,8 @@ export async function loadTeacherStudentIntelligence(input: {
         bucket.late += 1;
         break;
       case "EXCUSED":
+      case "SICK":
+        // Sick counts as an explained miss for rate (not a raw absence).
         bucket.excused += 1;
         break;
       default:
@@ -243,6 +246,8 @@ export async function loadTeacherStudentIntelligence(input: {
               allScoredPercentages.length,
           )
         : null;
+    // Rate = present-like / total. Present + late count toward attendance;
+    // excused/sick are explained and also not treated as raw absence here.
     const attendanceRate =
       attendance.total > 0
         ? Math.round(
@@ -394,44 +399,75 @@ async function loadAttendanceRows(
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - 90);
   const minDate = fromDate.toISOString().slice(0, 10);
+  const identitySet = new Set(studentIdentityKeys.map(String));
 
+  const normalizeRows = (rows: any[] | null | undefined) =>
+    (rows || [])
+      .map((row) => ({
+        student_id: row.student_id,
+        status: row.status,
+        class_id: row.class_id,
+        date: row.date || row.attendance_date || null,
+      }))
+      // Keep only roster students when the class-scoped query returns extras.
+      .filter((row) => identitySet.has(String(row.student_id || "").trim()));
+
+  // Prefer both date columns so rows written with only attendance_date still count.
   const modern = await supabaseAdmin
     .from("attendance")
-    .select("student_id, status, class_id, date")
+    .select("student_id, status, class_id, date, attendance_date")
     .eq("school_id", schoolId)
     .in("class_id", classIds)
-    .gte("date", minDate);
+    .or(`date.gte.${minDate},attendance_date.gte.${minDate}`);
 
   if (!modern.error) {
-    return modern.data || [];
+    const rows = normalizeRows(modern.data);
+    if (rows.length > 0) return rows;
   }
 
-  const fallback = await supabaseAdmin
+  const byStudentDate = await supabaseAdmin
     .from("attendance")
-    .select("student_id, status, date")
+    .select("student_id, status, class_id, date, attendance_date")
     .eq("school_id", schoolId)
     .in("student_id", studentIdentityKeys)
-    .gte("date", minDate);
+    .or(`date.gte.${minDate},attendance_date.gte.${minDate}`);
 
-  if (!fallback.error) {
-    return fallback.data || [];
+  if (!byStudentDate.error) {
+    return normalizeRows(byStudentDate.data);
   }
 
   const legacyDateFallback = await supabaseAdmin
     .from("attendance")
-    .select("student_id, status, attendance_date")
+    .select("student_id, status, class_id, attendance_date")
     .eq("school_id", schoolId)
     .in("student_id", studentIdentityKeys)
     .gte("attendance_date", minDate);
 
   if (!legacyDateFallback.error) {
-    return (legacyDateFallback.data || []).map((row: any) => ({
-      ...row,
-      date: row.attendance_date || null,
-    }));
+    return normalizeRows(legacyDateFallback.data);
   }
 
-  throw legacyDateFallback.error || fallback.error || modern.error;
+  // Last resort: class-scoped without date filter (still scoped to school).
+  const unfiltered = await supabaseAdmin
+    .from("attendance")
+    .select("student_id, status, class_id, date, attendance_date")
+    .eq("school_id", schoolId)
+    .in("class_id", classIds)
+    .limit(5000);
+
+  if (!unfiltered.error) {
+    return normalizeRows(unfiltered.data).filter((row) => {
+      const d = String(row.date || "").slice(0, 10);
+      return !d || d >= minDate;
+    });
+  }
+
+  throw (
+    unfiltered.error ||
+    legacyDateFallback.error ||
+    byStudentDate.error ||
+    modern.error
+  );
 }
 
 async function loadResultRows(schoolId: string, studentIdentityKeys: string[]) {

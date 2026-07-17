@@ -37,10 +37,17 @@ export function buildAttendanceWindow(
   endDateValue?: string | null
 ) {
   const range = normalizeAttendanceRange(rangeValue);
-  const endDate = parseDateInput(endDateValue) || startOfUtcDay(new Date());
+  // Prefer "today" in UTC, then extend +1 day so Africa/UTC+2 school local dates
+  // (e.g. Zambia) are never clipped as "tomorrow" for half the morning.
+  const endDate =
+    parseDateInput(endDateValue) || startOfUtcDay(new Date());
+  if (!endDateValue) {
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+  }
   const startDate = new Date(endDate);
-
-  startDate.setUTCDate(startDate.getUTCDate() - (ATTENDANCE_RANGE_DAYS[range] - 1));
+  startDate.setUTCDate(
+    startDate.getUTCDate() - (ATTENDANCE_RANGE_DAYS[range] - 1) - 1,
+  );
 
   return {
     range,

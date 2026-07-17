@@ -3,7 +3,11 @@ import type { AttendanceStatus } from "./status.ts";
 export type { AttendanceStatus };
 
 function normalizeAttendanceStatus(status: AttendanceStatus) {
-  return String(status || "").trim().toLowerCase();
+  // Schema check allows lowercase present/absent/late/excused.
+  // Map SICK → excused when the DB rejects sick (older check constraints).
+  const normalized = String(status || "").trim().toUpperCase();
+  if (normalized === "SICK") return "excused";
+  return normalized.toLowerCase();
 }
 
 export function buildAttendanceUpsertRows(input: {

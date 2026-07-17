@@ -41,13 +41,20 @@ export async function syncAttendanceNotifications(
   }
 
   const [
-    { data: teacherProfile, error: teacherError },
+    teacherById,
+    teacherByAuth,
     parentProfileIdsByStudentRowId,
   ] = await Promise.all([
     supabaseAdmin
       .from("profiles")
-      .select("first_name, last_name, email")
+      .select("id, first_name, last_name, email")
       .eq("id", input.teacherId)
+      .maybeSingle(),
+    // teacherId from the route is often the auth uid - profiles may use a different id.
+    supabaseAdmin
+      .from("profiles")
+      .select("id, first_name, last_name, email")
+      .eq("auth_user_id", input.teacherId)
       .maybeSingle(),
     loadParentProfileIdsByStudentRowId({
       schoolId: input.schoolId,
@@ -55,9 +62,10 @@ export async function syncAttendanceNotifications(
     }),
   ]);
 
-  if (teacherError) {
-    throw teacherError;
+  if (teacherById.error && teacherByAuth.error) {
+    throw teacherById.error || teacherByAuth.error;
   }
+  const teacherProfile = teacherById.data || teacherByAuth.data || null;
 
   const studentById = new Map(input.rosterRows.map((row) => [row.id, row]));
   const teacherName = buildDisplayName(teacherProfile || undefined, "Teacher");
@@ -175,10 +183,33 @@ async function fanOutAttendancePushes(
     if (row.auth_user_id) lookupIds.add(String(row.auth_user_id));
   }
 
-  const { data: devices, error: deviceError } = await supabaseAdmin
+  // Mobile registers as push_token; some installs used expo_push_token.
+  let devices: Array<{ user_id?: string | null; push_token?: string | null; expo_push_token?: string | null }> | null =
+    null;
+  let deviceError: { message?: string } | null = null;
+
+  const primary = await supabaseAdmin
     .from("user_devices")
-    .select("user_id, expo_push_token")
+    .select("user_id, push_token, expo_push_token")
     .in("user_id", Array.from(lookupIds));
+  if (!primary.error) {
+    devices = primary.data;
+  } else {
+    const fallback = await supabaseAdmin
+      .from("user_devices")
+      .select("user_id, push_token")
+      .in("user_id", Array.from(lookupIds));
+    if (!fallback.error) {
+      devices = fallback.data;
+    } else {
+      const legacy = await supabaseAdmin
+        .from("user_devices")
+        .select("user_id, expo_push_token")
+        .in("user_id", Array.from(lookupIds));
+      devices = legacy.data;
+      deviceError = legacy.error;
+    }
+  }
 
   if (deviceError) {
     // Table missing in some projects — log once-style soft fail.
@@ -191,7 +222,9 @@ async function fanOutAttendancePushes(
 
   const tokenByUser = new Map<string, string[]>();
   for (const device of devices || []) {
-    const token = String(device.expo_push_token || "").trim();
+    const token = String(
+      device.push_token || device.expo_push_token || "",
+    ).trim();
     const uid = String(device.user_id || "").trim();
     if (!token || !uid) continue;
     const list = tokenByUser.get(uid) || [];

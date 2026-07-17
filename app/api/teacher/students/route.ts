@@ -34,7 +34,9 @@ export async function GET(req: Request) {
       success: true,
       data: await loadTeacherStudentIntelligence({
         schoolId: access.context.schoolId,
-        actorProfileId: access.context.userId,
+        // Assignments / teachers table key off profile id, not auth uid.
+        actorProfileId:
+          access.context.profileId || access.context.userId,
       }),
     });
   } catch (error: unknown) {

@@ -214,8 +214,20 @@ export default function TeacherStudentsPage() {
                     Attendance
                   </p>
                   <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
-                    {student.attendance?.rate ?? "-"}%
+                    {student.attendance?.rate == null
+                      ? "—"
+                      : `${student.attendance.rate}%`}
                   </p>
+                  {student.attendance?.total ? (
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {student.attendance.total} session
+                      {student.attendance.total === 1 ? "" : "s"}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      No roll calls yet
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
                   <p className="text-xs font-medium text-workspace-muted">

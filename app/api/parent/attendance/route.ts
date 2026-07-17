@@ -11,10 +11,11 @@ export async function GET(req: Request) {
   try {
     const access = await requireParentContext(req);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
+    const parentIdentityId = profileId || userId;
     const { searchParams } = new URL(req.url);
     const selectedStudentId = searchParams.get("studentId");
     const { range, startDate, endDate } = buildAttendanceWindow(
@@ -22,7 +23,12 @@ export async function GET(req: Request) {
       searchParams.get("endDate")
     );
 
-    const parentRecord = await getParentRecord({ profileId: userId, schoolId });
+    // parents.profile_id is the profile row - try profile id then auth uid.
+    const parentRecord =
+      (await getParentRecord({ profileId: parentIdentityId, schoolId })) ||
+      (parentIdentityId !== userId
+        ? await getParentRecord({ profileId: userId, schoolId })
+        : null);
 
     if (!parentRecord) {
       return jsonResponse({
@@ -33,7 +39,7 @@ export async function GET(req: Request) {
 
     const linked = await getLinkedStudents({
       parentRecordId: parentRecord.id,
-      parentProfileId: userId,
+      parentProfileId: parentIdentityId,
       schoolId,
       fallbackRelationship: parentRecord.relation_type || null,
       includeRowMappings: true,
@@ -91,24 +97,49 @@ export async function GET(req: Request) {
 
     const classesById = await getClassesById(schoolId, classIds);
 
-    // Empty `.in()` filters error in PostgREST - skip attendance query when
-    // we only have profile ids and no students-row mappings.
+    // attendance.student_id is usually students.id; historically may be profile id.
+    // Query both keys so new roll calls always surface for the parent.
+    const attendanceStudentKeys = Array.from(
+      new Set([...scopedStudentRowIds, ...scopedProfileIds].filter(Boolean)),
+    );
+
     let attendanceRows: any[] = [];
-    if (scopedStudentRowIds.length > 0) {
-      const attendanceResult = await supabaseAdmin
+    if (attendanceStudentKeys.length > 0) {
+      // Prefer filtering by either date column so timezone / column drift cannot hide rows.
+      let attendanceResult = await supabaseAdmin
         .from("attendance")
         .select(
-          "id, student_id, class_id, date, attendance_date, status, remarks, notes, recorded_by, session_name, session_time, created_at"
+          "id, student_id, class_id, date, attendance_date, status, remarks, notes, recorded_by, session_name, session_time, created_at",
         )
         .eq("school_id", schoolId)
-        .in("student_id", scopedStudentRowIds)
-        .gte("date", startDate)
-        .lte("date", endDate)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
+        .in("student_id", attendanceStudentKeys)
+        .or(
+          `and(date.gte.${startDate},date.lte.${endDate}),and(attendance_date.gte.${startDate},attendance_date.lte.${endDate})`,
+        )
+        .order("created_at", { ascending: false })
+        .limit(2000);
 
-      if (attendanceResult.error) throw attendanceResult.error;
-      attendanceRows = attendanceResult.data || [];
+      if (attendanceResult.error) {
+        // Fallback for PostgREST or() quirks - broader fetch then filter in memory.
+        attendanceResult = await supabaseAdmin
+          .from("attendance")
+          .select(
+            "id, student_id, class_id, date, attendance_date, status, remarks, notes, recorded_by, session_name, session_time, created_at",
+          )
+          .eq("school_id", schoolId)
+          .in("student_id", attendanceStudentKeys)
+          .order("created_at", { ascending: false })
+          .limit(2000);
+
+        if (attendanceResult.error) throw attendanceResult.error;
+
+        attendanceRows = (attendanceResult.data || []).filter((row: any) => {
+          const d = String(row.date || row.attendance_date || "").slice(0, 10);
+          return d && d >= startDate && d <= endDate;
+        });
+      } else {
+        attendanceRows = attendanceResult.data || [];
+      }
     }
 
     const recordedByIds = Array.from(
@@ -118,8 +149,18 @@ export async function GET(req: Request) {
     const studentsById = new Map((studentRows || []).map((row: any) => [row.id, row]));
     const studentProfileIdByStudentRowId = linked.profileIdByStudentRowId;
 
+    const reverseProfileByStudentRowId = new Map(
+      Array.from(linked.studentRowIdByProfileId?.entries() || []).map(
+        ([profileId, rowId]) => [rowId, profileId],
+      ),
+    );
+
     const rows = attendanceRows.flatMap((row: any) => {
-      const studentProfileId = studentProfileIdByStudentRowId?.get(row.student_id);
+      const rawStudentId = String(row.student_id || "").trim();
+      const studentProfileId =
+        studentProfileIdByStudentRowId?.get(rawStudentId) ||
+        reverseProfileByStudentRowId.get(rawStudentId) ||
+        (scopedProfileIds.includes(rawStudentId) ? rawStudentId : null);
       if (!studentProfileId) return [];
 
       const student = studentsById.get(studentProfileId);
@@ -142,6 +183,7 @@ export async function GET(req: Request) {
         startTime: row.session_time || null,
         endTime: null,
         room: null,
+        createdAt: row.created_at || null,
       }];
     });
 
@@ -190,7 +232,7 @@ async function getProfilesById(schoolId: string, profileIds: string[]) {
 
 function normalizeAttendanceStatus(status: string | null | undefined) {
   const normalized = String(status || "").trim().toUpperCase();
-  if (["PRESENT", "ABSENT", "LATE", "EXCUSED"].includes(normalized)) {
+  if (["PRESENT", "ABSENT", "LATE", "EXCUSED", "SICK"].includes(normalized)) {
     return normalized;
   }
   return "ABSENT";
