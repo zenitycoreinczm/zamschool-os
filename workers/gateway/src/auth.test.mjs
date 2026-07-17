@@ -1,9 +1,11 @@
 import { importTsModule } from "../../../scripts/test-ts-module.mjs";
 
-const { verifyAuth, signTestJwt, resetJwksCacheForTests } = await importTsModule(
-  "./auth.ts",
-  import.meta.url,
-);
+const {
+  verifyAuth,
+  signTestJwt,
+  resetJwksCacheForTests,
+  resetAuthMemoryCacheForTests,
+} = await importTsModule("./auth.ts", import.meta.url);
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -11,9 +13,18 @@ const TEST_SECRET = "test-jwt-secret-for-unit-tests";
 
 function createKv() {
   const store = new Map();
+  let getCount = 0;
+  let putCount = 0;
   return {
     store,
+    get getCount() {
+      return getCount;
+    },
+    get putCount() {
+      return putCount;
+    },
     async get(key, options) {
+      getCount += 1;
       const value = store.get(key);
       if (!value) return null;
       if (options?.type === "json") {
@@ -22,12 +33,14 @@ function createKv() {
       return value;
     },
     async put(key, value, _options) {
+      putCount += 1;
       store.set(key, typeof value === "string" ? value : JSON.stringify(value));
     },
   };
 }
 
 function createEnv(overrides = {}) {
+  resetAuthMemoryCacheForTests();
   return {
     SESSION_CACHE: createKv(),
     SUPABASE_JWT_SECRET: TEST_SECRET,
@@ -60,6 +73,43 @@ test("verifyAuth accepts valid HS256 Supabase-style JWT", async () => {
   assert.equal(session.userId, "user-1");
   assert.equal(session.schoolId, "school-1");
   assert.equal(session.role, "authenticated");
+});
+
+test("verifyAuth L1 memory cache avoids repeated SESSION_CACHE GETs for same token", async () => {
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+  const token = await signTestJwt(TEST_SECRET, {
+    sub: "user-burst",
+    role: "authenticated",
+    aud: "authenticated",
+    exp,
+    user_metadata: { school_id: "school-1" },
+  });
+
+  const env = createEnv();
+  const req = () =>
+    new Request("https://gateway.test/api/admin/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+  // First request: JWT verify + KV put (+ optional KV get miss).
+  const first = await verifyAuth(req(), env);
+  assert.ok(first);
+  assert.equal(first.userId, "user-burst");
+  const getsAfterFirst = env.SESSION_CACHE.getCount;
+  assert.ok(getsAfterFirst >= 1, "first auth should consult SESSION_CACHE");
+
+  // Dashboard fan-out: many requests, same Bearer token, same isolate.
+  for (let i = 0; i < 19; i++) {
+    const session = await verifyAuth(req(), env);
+    assert.ok(session);
+    assert.equal(session.userId, "user-burst");
+  }
+
+  assert.equal(
+    env.SESSION_CACHE.getCount,
+    getsAfterFirst,
+    "subsequent verifyAuth calls must hit L1 memory, not extra KV GETs",
+  );
 });
 
 test("verifyAuth rejects tampered JWT signature", async () => {

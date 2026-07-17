@@ -8,8 +8,7 @@ const footerLinks = [
     links: [
       { label: "Features", href: "/#features" },
       { label: "How it works", href: "/#how-it-works" },
-      { label: "Pricing", href: "/#pricing" },
-      { label: "Start free trial", href: "/register" },
+      { label: "Register school", href: "/register" },
       { label: "Log in", href: "/login" },
     ],
   },
@@ -20,7 +19,7 @@ const footerLinks = [
       { label: "Terms of Service", href: "/terms" },
       { label: "Cookie Policy", href: "/cookies" },
       { label: "Security & trust", href: "/#trust" },
-      { label: "Contact", href: "mailto:zamschoolos@gmail.com" },
+      { label: "Contact", href: "mailto:zenitycoreinc@gmail.com" },
     ],
   },
 ];
@@ -55,11 +54,11 @@ export default function LandingFooter() {
           </p>
           <div className="flex flex-col gap-2.5 text-sm">
             <a
-              href="mailto:zamschoolos@gmail.com"
+              href="mailto:zenitycoreinc@gmail.com"
               className="group flex items-center gap-2.5 transition-colors hover:text-white"
             >
               <Mail className="h-4 w-4 shrink-0 text-slate-600 transition-colors group-hover:text-sky-400" />
-              zamschoolos@gmail.com
+              zenitycoreinc@gmail.com
             </a>
             <a
               href="tel:+260973385988"

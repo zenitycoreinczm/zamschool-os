@@ -163,6 +163,46 @@ describe("classifyClientBot", () => {
     });
     assert.equal(result.block, false);
   });
+
+  it("allows official ZamSchool mobile app user agents on private APIs", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const result = classifyClientBot({
+        userAgent:
+          "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 ZamSchoolOS-Mobile/1.0",
+        pathname: "/api/teacher/classes",
+      });
+      assert.equal(result.block, false);
+      assert.equal(result.suspicious, false);
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
+  it("allows React Native Android okhttp only when Bearer auth is present", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      assert.equal(
+        classifyClientBot({
+          userAgent: "okhttp/4.9.2",
+          pathname: "/api/teacher/results",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "okhttp/4.9.2",
+          pathname: "/api/teacher/results",
+          authorization: "Bearer eyJhbGciOi.test",
+        }).block,
+        false,
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
 });
 
 describe("isSensitiveAuthSurface", () => {

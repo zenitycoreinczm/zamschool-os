@@ -95,39 +95,91 @@ export default function DisciplineAdminPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filterStatus) params.set("status", filterStatus);
-      if (filterSeverity) params.set("severity", filterSeverity);
-      params.set("limit", "100");
+    const params = new URLSearchParams();
+    if (filterStatus) params.set("status", filterStatus);
+    if (filterSeverity) params.set("severity", filterSeverity);
+    params.set("limit", "100");
 
-      const [recordsRes, statsRes, categoriesRes, studentsRes] =
-        await Promise.all([
-          adminApiJson(`/api/discipline/records?${params}`),
-          adminApiJson("/api/discipline/stats"),
-          adminApiJson("/api/discipline/categories"),
-          adminApiJson("/api/admin/users?role=student&limit=500"),
-        ]);
+    // Load independently so one failing endpoint does not blank the whole page.
+    const [recordsSettled, statsSettled, categoriesSettled, studentsSettled] =
+      await Promise.allSettled([
+        adminApiJson(`/api/discipline/records?${params}`),
+        adminApiJson("/api/discipline/stats"),
+        adminApiJson("/api/discipline/categories"),
+        adminApiJson("/api/admin/users?role=student&limit=500"),
+      ]);
 
-      setRecords(recordsRes.data || []);
-      setStats(statsRes.data || null);
-      setCategories(categoriesRes.data || []);
-      setStudents(
-        (studentsRes.data || []).map((s: any) => ({
-          id: s.id,
-          student_number: s.student_number || s.studentNumber || null,
-          profile: s.profile || {
-            first_name: s.firstName,
-            last_name: s.lastName,
-          },
-          class: s.class || { name: s.className },
-        })),
-      );
-    } catch {
-      toast.error("Failed to load discipline data");
-    } finally {
-      setLoading(false);
+    let hadCoreFailure = false;
+    let failureMessage = "Failed to load discipline data";
+
+    if (recordsSettled.status === "fulfilled") {
+      setRecords(recordsSettled.value?.data || []);
+    } else {
+      hadCoreFailure = true;
+      setRecords([]);
+      if (recordsSettled.reason instanceof Error && recordsSettled.reason.message) {
+        failureMessage = recordsSettled.reason.message;
+      }
     }
+
+    if (statsSettled.status === "fulfilled") {
+      setStats(statsSettled.value?.data || null);
+    } else {
+      setStats(null);
+      // Stats are useful but not required to use the desk.
+    }
+
+    if (categoriesSettled.status === "fulfilled") {
+      setCategories(categoriesSettled.value?.data || []);
+    } else {
+      setCategories([]);
+    }
+
+    if (studentsSettled.status === "fulfilled") {
+      const raw = studentsSettled.value?.data;
+      const rows: any[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.students)
+          ? raw.students
+          : [];
+
+      setStudents(
+        rows
+          .map((s: any) => {
+            // discipline_records.student_id → public.students.id
+            // Directory rows: profile id as `id`, students.id as role_record_id.
+            const studentRowId =
+              s.role_record_id || s.student_id || s.roleRecordId || null;
+            if (!studentRowId) return null;
+            return {
+              id: String(studentRowId),
+              student_number:
+                s.student_number ||
+                s.studentNumber ||
+                s.admission_number ||
+                null,
+              profile: s.profile || {
+                first_name: s.first_name || s.firstName || null,
+                last_name: s.last_name || s.lastName || null,
+              },
+              class:
+                s.class ||
+                (s.class_name || s.className
+                  ? { name: s.class_name || s.className }
+                  : null),
+            } satisfies Student;
+          })
+          .filter(Boolean) as Student[],
+      );
+    } else {
+      setStudents([]);
+    }
+
+    if (hadCoreFailure) {
+      toast.error(failureMessage);
+    }
+
+    setLoading(false);
   }, [filterStatus, filterSeverity]);
 
   useEffect(() => {

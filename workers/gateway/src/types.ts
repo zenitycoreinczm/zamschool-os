@@ -33,8 +33,14 @@ export interface Env {
   JWT_VERIFY_MODE?: string;
   /** Must be "true" to allow decode mode - never enable in production. */
   ALLOW_INSECURE_JWT_DECODE?: string;
-  /** Set to "true" to enable KV rate limiting at the edge. */
+  /** Set to "true" to enable edge rate limiting (Upstash Redis or isolate memory). */
   RATE_LIMIT_ENABLED?: string;
+  /**
+   * Upstash REST credentials for gateway rate limits (preferred over KV).
+   * Set via: wrangler secret put UPSTASH_REDIS_REST_URL / TOKEN
+   */
+  UPSTASH_REDIS_REST_URL?: string;
+  UPSTASH_REDIS_REST_TOKEN?: string;
   /** Environment mode: "production" | "development" | "test" */
   NODE_ENV?: string;
   /** Vercel environment: "production" | "preview" | "development" */

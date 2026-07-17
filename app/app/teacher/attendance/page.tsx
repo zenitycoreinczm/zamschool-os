@@ -169,12 +169,15 @@ export default function TeacherAttendancePage() {
     setSaving(lesson.id);
     try {
       const body = await adminApiJson<{
-        success: boolean;
-        data: {
-          savedCount: number;
-          parentsNotified: number;
-          notificationsQueued: number;
-        };
+        success?: boolean;
+        status?: string;
+        queued?: boolean;
+        data?: {
+          savedCount?: number;
+          parentsNotified?: number;
+          notificationsQueued?: number;
+          offline?: boolean;
+        } | null;
       }>("/api/teacher/attendance", {
         method: "POST",
         body: JSON.stringify({
@@ -185,13 +188,38 @@ export default function TeacherAttendancePage() {
         }),
       });
 
-      const { savedCount, parentsNotified, notificationsQueued } = body.data;
-      toast.success(
-        `Roll call saved · ${savedCount} records · ${parentsNotified} parents notified`,
-      );
+      // Gateway offline queue returns { status: "queued" } without `data`.
+      // Never destructure body.data blindly.
+      const payload = body?.data && typeof body.data === "object" ? body.data : null;
+      const isQueued =
+        body?.status === "queued" ||
+        body?.queued === true ||
+        payload?.offline === true;
 
-      if (notificationsQueued > 0) {
-        toast.info(`${notificationsQueued} notifications queued`);
+      if (isQueued && !payload) {
+        toast.success(
+          `Roll call queued offline · ${statuses.length} records will sync when online`,
+        );
+      } else {
+        const savedCount =
+          typeof payload?.savedCount === "number"
+            ? payload.savedCount
+            : statuses.length;
+        const parentsNotified =
+          typeof payload?.parentsNotified === "number"
+            ? payload.parentsNotified
+            : 0;
+        const notificationsQueued =
+          typeof payload?.notificationsQueued === "number"
+            ? payload.notificationsQueued
+            : 0;
+
+        toast.success(
+          `Roll call saved · ${savedCount} records · ${parentsNotified} parents notified`,
+        );
+        if (notificationsQueued > 0) {
+          toast.info(`${notificationsQueued} notifications queued`);
+        }
       }
 
       // Refresh the roster so saved statuses are reflected in the UI

@@ -31,6 +31,7 @@ import {
   type TimetableLesson,
 } from "@/lib/timetable-workspace";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
+import { normalizeRole } from "@/lib/roles";
 
 export type TimetableViewMode = "class" | "teacher" | "self";
 
@@ -76,7 +77,9 @@ export function TimetableWorkspace({
   const { data: wsData, loading: workspaceLoading } = useWorkspaceContext();
   const currentUserId = wsData?.userId || null;
   const workspaceSchoolId = String(wsData?.schoolId || "").trim() || null;
-  const readOnly = viewMode === "self";
+  const role = normalizeRole(wsData?.role);
+  // Teachers (self view) and Deputy Head (review only) cannot create/edit lessons.
+  const readOnly = viewMode === "self" || role === "DEPUTY_HEAD";
   const canEdit = !readOnly;
 
   const [loading, setLoading] = useState(true);
@@ -404,6 +407,7 @@ export function TimetableWorkspace({
   }
 
   function openAddLesson() {
+    if (!canEdit) return;
     setForm((prev) => ({
       ...prev,
       class_id:
@@ -420,7 +424,7 @@ export function TimetableWorkspace({
   }
 
   async function createLesson() {
-    if (!schoolId) return;
+    if (!canEdit || !schoolId) return;
     if (!form.class_id || !form.subject_id || !form.teacher_id) {
       toast.error("Class, subject, and teacher are required");
       return;
@@ -490,7 +494,7 @@ export function TimetableWorkspace({
   }
 
   async function deleteLesson(id: string) {
-    if (!schoolId) return;
+    if (!canEdit || !schoolId) return;
     if (!confirm("Delete this lesson from the timetable?")) return;
     const toastId = toast.loading("Deleting lesson...");
 

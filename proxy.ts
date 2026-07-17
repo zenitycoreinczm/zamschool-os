@@ -120,10 +120,12 @@ export async function proxy(request: NextRequest) {
 
   // Bot / AI scraper / automation gate - site-wide (not only login).
   // Blocks curl/python/scrapers and AI training agents from harvesting UI/API.
+  // Official mobile (ZamSchoolOS-Mobile UA or authenticated okhttp) is allowed.
   const bot = classifyClientBot({
     userAgent: request.headers.get("user-agent"),
     pathname,
     method: request.method,
+    authorization: request.headers.get("authorization"),
   });
   if (bot.block) {
     void import("./lib/ip-reputation")
@@ -255,27 +257,43 @@ export async function proxy(request: NextRequest) {
     );
     const mutatingMethods = ["POST", "PUT", "PATCH", "DELETE"];
     if (mutatingMethods.includes(request.method) && !isPublicAuthEndpoint) {
-      const csrfTokenFromCookie =
-        request.cookies.get(CSRF_TOKEN_COOKIE)?.value || null;
-      const csrfTokenFromHeader = request.headers.get("x-csrf-token") || null;
-      if (!validateCsrfToken(csrfTokenFromHeader, csrfTokenFromCookie)) {
-        console.warn(
-          "[CSRF] Validation failed for",
-          request.method,
-          pathname,
-          "| cookie present:",
-          Boolean(csrfTokenFromCookie),
-          "| header present:",
-          Boolean(csrfTokenFromHeader),
-          "| tokens match:",
-          csrfTokenFromCookie === csrfTokenFromHeader,
-        );
-        const response = NextResponse.json(
-          { error: "Invalid CSRF token" },
-          { status: 403, headers: corsHeaders },
-        );
-        applySecurityHeaders(response, request);
-        return response;
+      // Cookie double-submit CSRF is for same-origin browser sessions.
+      // Gateway mutations use Authorization: Bearer only (credentials: omit),
+      // so the browser never sends the csrf-token cookie to the Worker and the
+      // Worker cannot forward it. JWT bearer already authenticates the caller;
+      // requiring CSRF here breaks all gateway POSTs (e.g. teacher roll call).
+      const authHeader =
+        request.headers.get("authorization") ||
+        request.headers.get("Authorization") ||
+        "";
+      const hasBearer =
+        /^Bearer\s+\S+/i.test(authHeader.trim()) &&
+        authHeader.trim().length > "Bearer ".length + 10;
+
+      if (!hasBearer) {
+        const csrfTokenFromCookie =
+          request.cookies.get(CSRF_TOKEN_COOKIE)?.value || null;
+        const csrfTokenFromHeader =
+          request.headers.get("x-csrf-token") || null;
+        if (!validateCsrfToken(csrfTokenFromHeader, csrfTokenFromCookie)) {
+          console.warn(
+            "[CSRF] Validation failed for",
+            request.method,
+            pathname,
+            "| cookie present:",
+            Boolean(csrfTokenFromCookie),
+            "| header present:",
+            Boolean(csrfTokenFromHeader),
+            "| tokens match:",
+            csrfTokenFromCookie === csrfTokenFromHeader,
+          );
+          const response = NextResponse.json(
+            { error: "Invalid CSRF token" },
+            { status: 403, headers: corsHeaders },
+          );
+          applySecurityHeaders(response, request);
+          return response;
+        }
       }
     }
 

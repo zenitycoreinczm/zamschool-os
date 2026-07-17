@@ -57,6 +57,35 @@ export async function GET(req: Request) {
         .gte("incident_date", thirtyDaysAgo),
     ]);
 
+    // Missing table / schema → empty stats instead of 500 for Guidance desk.
+    const firstError =
+      totalResult.error ||
+      openResult.error ||
+      recentResult.error ||
+      severityResult.error ||
+      statusResult.error ||
+      topStudentsResult.error;
+    if (firstError) {
+      if (
+        firstError.code === "42P01" ||
+        /does not exist|relation/i.test(firstError.message || "")
+      ) {
+        const empty = NextResponse.json({
+          success: true,
+          data: {
+            totalRecords: 0,
+            openCases: 0,
+            recentIncidents: 0,
+            severityBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            statusBreakdown: {},
+            topStudents: [],
+          },
+        });
+        return applyEdgeCacheHeaders(empty, "noStore");
+      }
+      throw firstError;
+    }
+
     // Compute severity breakdown
     const severityBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     for (const r of severityResult.data || []) {

@@ -214,7 +214,15 @@ export default function AppMessagesPage() {
 
   const markAsRead = async (message: MessageRow) => {
     if (message.is_read) return;
-    if (currentUserId && message.recipient_id !== currentUserId) return;
+    // Skip clearly outgoing messages. Do not require recipient_id === auth uid:
+    // older rows may store profile id, which left them stuck as "new" forever.
+    if (
+      currentUserId &&
+      message.sender_id === currentUserId &&
+      message.recipient_id !== currentUserId
+    ) {
+      return;
+    }
 
     setMessages((prev) => prev.map((item) => (item.id === message.id ? { ...item, is_read: true } : item)));
     try {
@@ -375,22 +383,30 @@ export default function AppMessagesPage() {
           ) : (
             <ul className={`${messageSurfaceClass} divide-y divide-slate-100 overflow-hidden`}>
               {filteredMessages.map((message) => {
-                const isIncoming =
-                  Boolean(currentUserId) && message.recipient_id === currentUserId;
+                // Treat as incoming unless we know we sent it (identity-safe).
+                const isOutgoing =
+                  Boolean(currentUserId) &&
+                  message.sender_id === currentUserId &&
+                  message.recipient_id !== currentUserId;
+                const isIncoming = !isOutgoing;
                 return (
                   <AdminMessageListRow
                     key={message.id}
                     subject={message.subject || "No subject"}
                     routeLabel={`${getParticipantLabel(message.sender)} → ${getParticipantLabel(message.recipient)}`}
                     preview={message.body || ""}
-                    isUnread={!message.is_read}
+                    isUnread={!message.is_read && isIncoming}
                     isIncoming={isIncoming}
                     onOpen={
                       !message.is_read && isIncoming
                         ? () => void markAsRead(message)
                         : undefined
                     }
-                    onMarkRead={() => void markAsRead(message)}
+                    onMarkRead={() => {
+                      if (!message.is_read && isIncoming) {
+                        void markAsRead(message);
+                      }
+                    }}
                     onDelete={() => void deleteMessage(message)}
                   />
                 );

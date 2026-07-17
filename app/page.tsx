@@ -6,7 +6,6 @@ import {
   Building2,
   CalendarCheck,
   CheckCircle2,
-  ClipboardList,
   FileBarChart2,
   GraduationCap,
   Lock,
@@ -25,44 +24,32 @@ const featureCards = [
   {
     icon: GraduationCap,
     title: "Students & enrolment",
-    description:
-      "Register learners, assign classes, keep admission numbers, and see academic history without a stack of spreadsheets.",
-    detail: "Registrar desk · class lists · parent links",
+    description: "Register learners, assign classes, and keep records in one place.",
   },
   {
     icon: Users,
-    title: "Teachers & staff roles",
-    description:
-      "Head Teacher, Registrar, Academic Admin, Bursar, and classroom teachers each get a workspace built for their job, not a shared admin dump.",
-    detail: "Role-based access · invites · staff recovery",
+    title: "Staff roles",
+    description: "Each role gets its own desk: leadership, registrar, bursar, teachers.",
   },
   {
     icon: CalendarCheck,
-    title: "Attendance that parents see",
-    description:
-      "Teachers mark roll by lesson or day. Trends surface for leadership. Parents can follow attendance without calling the office.",
-    detail: "Live roll call · absence patterns · parent portal",
+    title: "Attendance",
+    description: "Teachers mark roll. Parents and leadership can see it without chasing paper.",
   },
   {
     icon: MessageSquare,
-    title: "School-wide communication",
-    description:
-      "Announcements, inbox messages, and notifications stay inside the school, so staff stop relying on scattered WhatsApp groups for official updates.",
-    detail: "Announcements · messaging · notifications",
+    title: "Communication",
+    description: "Announcements, inbox, and notices stay inside the school system.",
   },
   {
     icon: BadgeDollarSign,
-    title: "Fees & finance clarity",
-    description:
-      "Track balances, payments, and collections in Zambian Kwacha with a bursar workspace that leadership can oversee without losing the paper trail.",
-    detail: "Balances · receipts · payment history",
+    title: "Fees & finance",
+    description: "Balances, payments, and history tracked in clear Kwacha language.",
   },
   {
     icon: FileBarChart2,
-    title: "Results & reporting",
-    description:
-      "Enter scores, publish results, and produce clearer term reporting so parents and leadership stop waiting on end-of-term chaos.",
-    detail: "Marks · publish · statements",
+    title: "Results",
+    description: "Enter marks, publish results, and share statements with parents.",
   },
 ];
 
@@ -84,18 +71,18 @@ const differentiators = [
 const howItWorks = [
   {
     step: "1",
-    title: "Register your school",
-    body: "Create the school account, set leadership access, and start the free trial in minutes.",
+    title: "Register",
+    body: "Create the school account and leadership access.",
   },
   {
     step: "2",
-    title: "Add people & classes",
-    body: "Registrar onboards students, parents, and teachers. Academic staff set subjects and the timetable.",
+    title: "Set up",
+    body: "Add people, classes, subjects, and the timetable.",
   },
   {
     step: "3",
-    title: "Run the school day",
-    body: "Mark attendance, message guardians, collect fees, and publish results from one signed-in system.",
+    title: "Operate",
+    body: "Run attendance, messaging, fees, and results daily.",
   },
 ];
 
@@ -130,18 +117,18 @@ const testimonials = [
 const trustItems = [
   {
     icon: Lock,
-    title: "School data stays scoped",
-    body: "Role-based access, tenant separation by school, and private workspaces that are not public web pages.",
+    title: "Private by design",
+    body: "Each school is separate. Access is role-based. Workspaces require sign-in.",
   },
   {
     icon: ShieldCheck,
-    title: "Policies you can read",
-    body: "Privacy Policy, Terms of Service, and Cookie Policy are published so procurement and boards can review them.",
+    title: "Clear policies",
+    body: "Privacy, Terms, and Cookies are published for boards and parents.",
   },
   {
     icon: Smartphone,
-    title: "Works on phones & desktops",
-    body: "Teachers and parents can use the same school system from a phone or office computer without a separate app install.",
+    title: "Any device",
+    body: "Works in the browser on phones, tablets, and desktops. No app install.",
   },
 ];
 
@@ -176,7 +163,6 @@ export default function HomePage() {
             {[
               ["#features", "Features"],
               ["#how-it-works", "How it works"],
-              ["#pricing", "Pricing"],
               ["#trust", "Trust"],
               ["#about", "About"],
             ].map(([href, label]) => (
@@ -201,7 +187,7 @@ export default function HomePage() {
               href="/register"
               className="inline-flex items-center justify-center rounded-full bg-sky-500 px-3.5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-sky-400 sm:px-5 sm:py-2.5 sm:text-sm"
             >
-              Start free trial
+              Register school
             </Link>
           </div>
         </div>
@@ -238,7 +224,7 @@ export default function HomePage() {
                   href="/register"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 sm:px-7 sm:py-4 sm:text-base"
                 >
-                  Start free 14-day trial
+                  Register your school
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
@@ -251,7 +237,7 @@ export default function HomePage() {
               </div>
 
               <p className="mt-4 text-xs text-slate-400 sm:text-sm">
-                No credit card required · Full platform during trial ·{" "}
+                Built for African schools ·{" "}
                 <Link href="/privacy" className="underline hover:text-slate-200">
                   Privacy
                 </Link>{" "}
@@ -408,38 +394,32 @@ export default function HomePage() {
         </section>
 
         {/* Features */}
-        <section id="features" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600 sm:text-sm">
+        <section id="features" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
               Features
             </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:mt-4 sm:text-4xl md:text-5xl">
-              Everything the school day needs, without the admin drag.
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              What the platform covers
             </h2>
-            <p className="mt-4 text-base leading-7 text-slate-600 sm:mt-5 sm:text-lg sm:leading-8">
-              Not a feature dump. ZamSchool OS covers the workflows that slow
-              offices down: people, attendance, messaging, fees, and results, with
-              clear ownership by role.
-            </p>
           </div>
 
-          <div className="mt-10 grid gap-4 sm:mt-12 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {featureCards.map(({ icon: Icon, title, description, detail }) => (
+          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {featureCards.map(({ icon: Icon, title, description }) => (
               <article
                 key={title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:rounded-3xl sm:p-6"
+                className="rounded-xl border border-slate-200 bg-white p-5"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-                  <Icon className="h-5 w-5" />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-700">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    {title}
+                  </h3>
                 </div>
-                <h3 className="mt-4 text-lg font-bold text-slate-900 sm:text-xl">
-                  {title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600 sm:leading-7">
+                <p className="mt-3 text-sm leading-6 text-slate-600">
                   {description}
-                </p>
-                <p className="mt-3 text-xs font-semibold text-sky-700">
-                  {detail}
                 </p>
               </article>
             ))}
@@ -479,33 +459,33 @@ export default function HomePage() {
         </section>
 
         {/* How it works */}
-        <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 sm:text-sm">
+        <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               How it works
             </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Live in days, not a multi-month IT project.
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Three steps to run your school
             </h2>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <ol className="mt-8 grid gap-3 md:grid-cols-3">
             {howItWorks.map((item) => (
-              <article
+              <li
                 key={item.step}
-                className="relative rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
+                className="rounded-xl border border-slate-200 bg-white p-5"
               >
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white">
-                  {item.step}
-                </span>
-                <h3 className="mt-3 text-lg font-bold text-slate-900">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Step {item.step}
+                </p>
+                <h3 className="mt-2 text-base font-semibold text-slate-900">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   {item.body}
                 </p>
-              </article>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
 
         {/* Solutions by role */}
@@ -552,145 +532,48 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Pricing */}
-        <section id="pricing" className="bg-slate-50 py-14 sm:py-20">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6">
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600 sm:text-sm">
-                Pricing
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl md:text-5xl">
-                Start free. Set up the school before you commit.
-              </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Transparent onboarding: full platform for 14 days. Paid plans
-                after trial are sized to your school. Contact us for a quote that
-                fits your budget.
-              </p>
-            </div>
-
-            <div className="mt-10 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="rounded-2xl border border-sky-200 bg-white p-6 shadow-xl shadow-sky-100/60 sm:rounded-[2rem] sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
-                  Starter trial
-                </p>
-                <h3 className="mt-2 text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                  Free for 14 days
-                </h3>
-                <p className="mt-1 text-sm font-medium text-slate-500">
-                  Then contact us for school-sized pricing
-                </p>
-                <p className="mt-4 text-sm leading-6 text-slate-600">
-                  Full access to enrolment, attendance, messaging, results, and
-                  finance workflows so you can evaluate with real school data.
-                </p>
-                <Link
-                  href="/register"
-                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-sky-400 sm:w-auto"
-                >
-                  Start free trial
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <div className="mt-6 grid gap-2 sm:grid-cols-2">
-                  {[
-                    "Unlimited students during trial",
-                    "Parent messaging & announcements",
-                    "Exam and results workflows",
-                    "Fee tracking & finance visibility",
-                    "Role-based staff access",
-                    "Mobile-friendly workspaces",
-                  ].map((line) => (
-                    <p
-                      key={line}
-                      className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-sm text-slate-700"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  After trial
-                </p>
-                <h3 className="mt-2 text-xl font-bold text-slate-900">
-                  School plans on request
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Pricing depends on school size and modules you need. We quote
-                  in clear terms, with no surprise enterprise lock-in language.
-                </p>
-                <ul className="mt-4 space-y-2 text-sm text-slate-700">
-                  <li className="flex gap-2">
-                    <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                    Primary & secondary school packages
-                  </li>
-                  <li className="flex gap-2">
-                    <BadgeDollarSign className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                    Local currency conversations (ZMW)
-                  </li>
-                  <li className="flex gap-2">
-                    <Users className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                    Onboarding support for your team
-                  </li>
-                </ul>
-                <a
-                  href="mailto:zamschoolos@gmail.com?subject=ZamSchool%20OS%20pricing%20quote"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-                >
-                  Request a demo / quote
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Trust & security */}
-        <section id="trust" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 sm:text-sm">
-              Trust & security
+        {/* Trust */}
+        <section id="trust" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Trust
             </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-              Built for school data, not a public free-for-all.
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Built for school data
             </h2>
-            <p className="mt-4 text-base leading-7 text-slate-600">
-              Workspaces require sign-in. Access is role-based. Legal policies
-              are published for boards and parents who ask hard questions.
-            </p>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
             {trustItems.map(({ icon: Icon, title, body }) => (
               <article
                 key={title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
+                className="rounded-xl border border-slate-200 bg-white p-5"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                  <Icon className="h-5 w-5" />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-700">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-900">{title}</h3>
                 </div>
-                <h3 className="mt-3 text-lg font-bold text-slate-900">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{body}</p>
               </article>
             ))}
           </div>
-          <div className="mt-6 flex flex-wrap gap-3 text-sm">
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
             <Link
               href="/privacy"
-              className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 font-semibold text-slate-800 hover:bg-white"
+              className="font-medium text-slate-700 underline-offset-2 hover:underline"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms"
-              className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 font-semibold text-slate-800 hover:bg-white"
+              className="font-medium text-slate-700 underline-offset-2 hover:underline"
             >
               Terms of Service
             </Link>
             <Link
               href="/cookies"
-              className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 font-semibold text-slate-800 hover:bg-white"
+              className="font-medium text-slate-700 underline-offset-2 hover:underline"
             >
               Cookie Policy
             </Link>
@@ -746,14 +629,14 @@ export default function HomePage() {
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-sky-400 sm:px-8 sm:py-4 sm:text-base"
               >
-                Start free trial
+                Register your school
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a
-                href="mailto:zamschoolos@gmail.com?subject=ZamSchool%20OS%20demo%20request"
+                href="mailto:zenitycoreinc@gmail.com?subject=ZamSchool%20OS%20enquiry"
                 className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/15 sm:px-8 sm:py-4 sm:text-base"
               >
-                Request a demo
+                Contact us
               </a>
               <Link
                 href="/login"
@@ -763,7 +646,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-6 text-xs text-slate-500">
-              Contact: zamschoolos@gmail.com · +260 973 385 988 · Mungu, Zambia
+              Contact: zenitycoreinc@gmail.com · +260 973 385 988 · Mungu, Zambia
             </p>
           </div>
         </section>

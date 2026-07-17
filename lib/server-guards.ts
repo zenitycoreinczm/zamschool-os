@@ -194,6 +194,7 @@ export function validateRequestSecurity(req: Request) {
     userAgent: req.headers.get("user-agent"),
     pathname,
     method: req.method,
+    authorization: req.headers.get("authorization"),
   });
 
   if (bot.block) {
@@ -204,6 +205,7 @@ export function validateRequestSecurity(req: Request) {
   }
 
   const userAgent = req.headers.get("user-agent") || "";
+  // Trusted mobile okhttp may be short ("okhttp/4.9.2") — already allowed above when Bearer is set.
   if (!userAgent || userAgent.length < 8) {
     return { valid: false as const, error: "Invalid User-Agent" };
   }

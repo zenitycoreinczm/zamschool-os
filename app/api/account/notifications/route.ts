@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { authenticateAccountPortalRequest } from "@/lib/account-portal-auth";
-import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
+import { invalidateUnreadRelatedCaches } from "@/lib/inbox/read-cache";
 import {
   loadNotificationsForUser,
   markAllNotificationsReadForUser,
@@ -66,7 +66,34 @@ export async function PUT(req: Request) {
         schoolId: actor.schoolId,
         identityIds,
       });
-      invalidateInboxHotReads(actor.userId, actor.schoolId);
+      await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
+      return NextResponse.json({ success: true, data: { updatedCount } });
+    }
+
+    // Bulk mark by ids (mobile + shared clients). Accepts `ids` or `notificationIds`.
+    const bulkIds = Array.from(
+      new Set(
+        [
+          ...(Array.isArray(body?.ids) ? body.ids : []),
+          ...(Array.isArray(body?.notificationIds) ? body.notificationIds : []),
+        ]
+          .map((value: unknown) => String(value || "").trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (bulkIds.length > 0) {
+      let updatedCount = 0;
+      for (const notificationId of bulkIds) {
+        const updated = await markNotificationReadForUser({
+          id: notificationId,
+          userId: actor.userId,
+          schoolId: actor.schoolId,
+          identityIds,
+        });
+        if (updated) updatedCount += 1;
+      }
+      await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
       return NextResponse.json({ success: true, data: { updatedCount } });
     }
 
@@ -84,12 +111,80 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
 
-    invalidateInboxHotReads(actor.userId, actor.schoolId);
+    await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to mark account notification as read") },
       { status: 500 }
+    );
+  }
+}
+
+/**
+ * Mobile-friendly mark-read endpoint: POST { ids: string[] } | { markAll: true }.
+ * Mirrors PUT so older clients that hit /read still persist read state.
+ */
+export async function POST(req: Request) {
+  try {
+    const actor = await authenticateAccountPortalRequest(req);
+    if ("response" in actor) return actor.response;
+
+    const body = await req.json().catch(() => ({}));
+    const identityIds = await actorIdentityIds(actor);
+
+    if (body?.markAll === true) {
+      const updatedCount = await markAllNotificationsReadForUser({
+        userId: actor.userId,
+        schoolId: actor.schoolId,
+        identityIds,
+      });
+      await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
+      return NextResponse.json({ success: true, data: { updatedCount } });
+    }
+
+    const bulkIds = Array.from(
+      new Set(
+        [
+          ...(Array.isArray(body?.ids) ? body.ids : []),
+          ...(Array.isArray(body?.notificationIds) ? body.notificationIds : []),
+          body?.id ? [body.id] : [],
+        ]
+          .flat()
+          .map((value: unknown) => String(value || "").trim())
+          .filter(Boolean),
+      ),
+    );
+
+    if (bulkIds.length === 0) {
+      return NextResponse.json(
+        { error: "Notification id(s) required" },
+        { status: 400 },
+      );
+    }
+
+    let updatedCount = 0;
+    for (const notificationId of bulkIds) {
+      const updated = await markNotificationReadForUser({
+        id: notificationId,
+        userId: actor.userId,
+        schoolId: actor.schoolId,
+        identityIds,
+      });
+      if (updated) updatedCount += 1;
+    }
+
+    await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
+    return NextResponse.json({ success: true, data: { updatedCount } });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        error: safeErrorMessage(
+          error,
+          "Failed to mark account notification as read",
+        ),
+      },
+      { status: 500 },
     );
   }
 }

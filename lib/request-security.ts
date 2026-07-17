@@ -42,6 +42,10 @@ const ATTACK_PATH_PATTERNS: RegExp[] = [
 /**
  * Known malicious / non-browser automation UAs.
  * These are hard-blocked site-wide (except health probes) - not only on login.
+ *
+ * Note: `okhttp` is listed because scanners use it, but React Native Android also
+ * defaults to okhttp. Official mobile traffic is allowed via TRUSTED_MOBILE_APP_UA
+ * or via authenticated okhttp (Bearer) — see classifyClientBot.
  */
 const BLOCKED_AUTOMATION_UA_PATTERNS: RegExp[] = [
   /sqlmap/i,
@@ -79,6 +83,14 @@ const BLOCKED_AUTOMATION_UA_PATTERNS: RegExp[] = [
   /okhttp/i,
   /aiohttp/i,
   /mechanize/i,
+];
+
+/**
+ * Official ZamSchool mobile clients (set by zamschool-os-mobile apiClientIdentity).
+ * Still require route-level Bearer/session auth — this only bypasses scraper UA gates.
+ */
+const TRUSTED_MOBILE_APP_UA_PATTERNS: RegExp[] = [
+  /ZamSchoolOS-Mobile\//i,
 ];
 
 /**
@@ -238,6 +250,8 @@ function matchesAny(ua: string, patterns: RegExp[]): boolean {
  *
  * Policy:
  * - Health probes: always allowed (empty UA OK).
+ * - Official mobile app UA (ZamSchoolOS-Mobile/): allowed (auth still required).
+ * - React Native Android default okhttp + Bearer: allowed (auth still required).
  * - AI training / agent scrapers: blocked everywhere.
  * - curl/python/scrapy/headless: blocked everywhere (except health; allowed in dev).
  * - SEO bots (Googlebot etc.): only public marketing paths - never /app or /api.
@@ -247,14 +261,27 @@ export function classifyClientBot(params: {
   userAgent: string | null | undefined;
   pathname: string;
   method?: string;
+  authorization?: string | null | undefined;
 }): BotClassification {
   const ua = String(params.userAgent || "").trim();
   const path = params.pathname.split("?")[0] || params.pathname;
   const sensitive = isSensitiveAuthSurface(path);
   const privateProduct = isPrivateProductSurface(path);
   const isHealth = HEALTH_PATHS.has(path);
+  const hasBearer = /^Bearer\s+\S+/i.test(String(params.authorization || "").trim());
 
   if (isHealth) {
+    return { block: false, suspicious: false, reason: null, score: 0 };
+  }
+
+  // Official mobile builds identify themselves explicitly.
+  if (ua && matchesAny(ua, TRUSTED_MOBILE_APP_UA_PATTERNS)) {
+    return { block: false, suspicious: false, reason: null, score: 0 };
+  }
+
+  // RN Android often cannot override User-Agent and ships as okhttp/*.
+  // Require a Bearer session so bare okhttp scrapers stay blocked.
+  if (hasBearer && ua && /^okhttp\//i.test(ua)) {
     return { block: false, suspicious: false, reason: null, score: 0 };
   }
 

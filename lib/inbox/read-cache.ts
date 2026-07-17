@@ -5,6 +5,7 @@ import {
   withHotReadCache,
 } from "@/lib/hot-read-cache";
 import { expandMessagingIdentityIds } from "@/lib/messages/participants";
+import { shellCacheKey, workspaceCacheKey } from "@/lib/redis/keys";
 import { countUnreadNotificationsForUser } from "./queries";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -48,7 +49,12 @@ async function fetchUnreadCountsFromDb(input: {
   };
 }
 
-/** Short TTL cache - safe for header badges; invalidated on read/mark actions. */
+/**
+ * Unread badge counts.
+ * Keep process-local TTL very short: serverless instances do not share memory,
+ * so a longer cache after mark-as-read on another instance resurrects "new"
+ * badges for messages/notifications the user already cleared.
+ */
 export async function getUnreadCountsForUser(input: {
   userId: string;
   schoolId: string;
@@ -59,9 +65,38 @@ export async function getUnreadCountsForUser(input: {
     `user:${input.userId}`,
   ]);
 
-  return withHotReadCache(key, HOT_READ_TTL.unreadCounts, () =>
-    fetchUnreadCountsFromDb(input)
+  // 2s is only stampede protection for concurrent badge polls - not a real cache.
+  const stampedeTtlSec = Math.min(HOT_READ_TTL.unreadCounts, 2);
+  return withHotReadCache(key, stampedeTtlSec, () =>
+    fetchUnreadCountsFromDb(input),
   );
+}
+
+/**
+ * Call after mark-as-read so shell/bootstrap Redis cannot resurrect old
+ * unread badges when the user navigates away and back.
+ */
+export async function invalidateUnreadRelatedCaches(
+  userId: string,
+  schoolId?: string | null,
+): Promise<void> {
+  const id = String(userId || "").trim();
+  if (!id) return;
+  const school = String(schoolId || "").trim() || null;
+
+  invalidateInboxHotReads(id, school);
+
+  try {
+    const { isRedisConfigured, redisDel } = await import("@/lib/redis/client");
+    if (!isRedisConfigured()) return;
+    const keys = [shellCacheKey(id, null), workspaceCacheKey(id, null)];
+    if (school) {
+      keys.push(shellCacheKey(id, school), workspaceCacheKey(id, school));
+    }
+    await Promise.all(keys.map((key) => redisDel(key)));
+  } catch {
+    // Never block mark-read on cache errors.
+  }
 }
 
 export { invalidateInboxHotReads };

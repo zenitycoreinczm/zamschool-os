@@ -1,4 +1,4 @@
-Contact: mailto:zamschoolos@gmail.com
+Contact: mailto:zenitycoreinc@gmail.com
 Preferred-Languages: en
 Canonical: https://www.zamschoolos.site/.well-known/security.txt
 Policy: https://www.zamschoolos.site/privacy

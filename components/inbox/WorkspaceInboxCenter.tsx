@@ -65,6 +65,10 @@ export function WorkspaceInboxCenter({
   const [loadingPreview, setLoadingPreview] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  // Drop late responses after mark-as-read / newer polls so old counts never
+  // resurrect "new" badges for messages or notifications already cleared.
+  const countsRequestId = useRef(0);
+  const previewRequestId = useRef(0);
 
   const publishUnread = useCallback(
     (next: { messages: number; notifications: number }) => {
@@ -77,8 +81,10 @@ export function WorkspaceInboxCenter({
   const refreshCounts = useCallback(
     async (force = false) => {
       if (!enabled) return;
+      const requestId = ++countsRequestId.current;
       try {
         const summary = await fetchUnreadSummary(apiMode, { force });
+        if (requestId !== countsRequestId.current) return;
         publishUnread(summary);
       } catch {
         // Keep last known counts on transient failures.
@@ -90,16 +96,21 @@ export function WorkspaceInboxCenter({
   const refreshPreview = useCallback(
     async (force = false) => {
       if (!enabled) return;
+      const requestId = ++previewRequestId.current;
       setLoadingPreview(true);
       try {
         const preview = await fetchInboxPreview(apiMode, 8, { force });
+        if (requestId !== previewRequestId.current) return;
         setPreviewMessages(preview.messages);
         setPreviewNotifications(preview.notifications);
       } catch {
+        if (requestId !== previewRequestId.current) return;
         setPreviewMessages([]);
         setPreviewNotifications([]);
       } finally {
-        setLoadingPreview(false);
+        if (requestId === previewRequestId.current) {
+          setLoadingPreview(false);
+        }
       }
     },
     [apiMode, enabled],
@@ -115,10 +126,9 @@ export function WorkspaceInboxCenter({
   useEffect(() => {
     if (!enabled) return;
 
-    // Seed from shell summary when available; otherwise fetch once.
-    if (!initialUnread) {
-      void refreshCounts(true);
-    }
+    // Always reconcile with the server on mount so session/shell seeds cannot
+    // keep already-read messages or notifications looking "new".
+    void refreshCounts(true);
 
     const handleFocus = () => void refreshCounts(true);
     const handleVisibility = () => {
@@ -144,13 +154,10 @@ export function WorkspaceInboxCenter({
       window.removeEventListener(INBOX_REFRESH_EVENT, handleInboxRefresh);
       window.clearInterval(pollId);
     };
-  }, [enabled, initialUnread, refreshAll, refreshCounts]);
+  }, [enabled, refreshAll, refreshCounts]);
 
-  useEffect(() => {
-    if (initialUnread) {
-      publishUnread(initialUnread);
-    }
-  }, [initialUnread?.messages, initialUnread?.notifications, publishUnread]); // eslint-disable-line react-hooks/exhaustive-deps
+  // initialUnread is first-paint only (useState). Live counts come from
+  // refreshCounts / mark-as-read so a stale shell seed cannot resurrect badges.
 
   // Click outside closes the dropdown panel (not the detail modal - that has its own backdrop).
   useEffect(() => {
@@ -187,6 +194,7 @@ export function WorkspaceInboxCenter({
 
   const openMessageDetail = (message: InboxMessagePreview) => {
     // Open immediately - don't wait on mark-read network.
+    // Messages only affect the messages badge - never the notifications bell.
     setPanel(null);
     setDetailKind("message");
     setActiveMessage(message);
@@ -194,18 +202,23 @@ export function WorkspaceInboxCenter({
     setReplyBody("");
 
     setPreviewMessages((prev) => prev.filter((row) => row.id !== message.id));
+    // Invalidate in-flight polls so a late response cannot restore the badge.
+    countsRequestId.current += 1;
+    previewRequestId.current += 1;
+    let optimisticUnread = unread;
     setUnread((prev) => {
       const next = {
         messages: Math.max(0, prev.messages - (message.is_read ? 0 : 1)),
         notifications: prev.notifications,
       };
+      optimisticUnread = next;
       onUnreadChangeAction?.(next);
       return next;
     });
 
     void markMessageRead(apiMode, message.id)
       .then(() => {
-        dispatchInboxRefresh();
+        dispatchInboxRefresh(optimisticUnread);
       })
       .catch(() => {
         // Detail still open; counts reconcile on next poll.
@@ -213,6 +226,7 @@ export function WorkspaceInboxCenter({
   };
 
   const openNotificationDetail = (notification: InboxNotificationPreview) => {
+    // Notifications are independent of direct messages.
     setPanel(null);
     setDetailKind("notification");
     setActiveNotification(notification);
@@ -221,18 +235,22 @@ export function WorkspaceInboxCenter({
     setPreviewNotifications((prev) =>
       prev.filter((row) => row.id !== notification.id),
     );
+    countsRequestId.current += 1;
+    previewRequestId.current += 1;
+    let optimisticUnread = unread;
     setUnread((prev) => {
       const next = {
         messages: prev.messages,
         notifications: Math.max(0, prev.notifications - 1),
       };
+      optimisticUnread = next;
       onUnreadChangeAction?.(next);
       return next;
     });
 
     void markNotificationRead(apiMode, notification.id)
       .then(() => {
-        dispatchInboxRefresh();
+        dispatchInboxRefresh(optimisticUnread);
       })
       .catch(() => {
         // Non-blocking

@@ -6,7 +6,7 @@ import { ProfileAvatarImage } from "@/components/ProfileAvatarImage";
 import { getDisplayInitials } from "@/lib/display-initials";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Menu, MessageSquare, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { performWorkspaceSignOut } from "@/lib/workspace/sign-out";
@@ -14,6 +14,7 @@ import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { fetchShell } from "@/lib/shell-client";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
+import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import { MobileDock } from "@/components/workspace/MobileDock";
 import { useNavBadges } from "@/components/workspace/useNavBadges";
 import { navItemsToWorkspacePages } from "@/lib/workspace/search";
@@ -22,7 +23,6 @@ import {
   flattenNavSections,
   parentPortalSections,
 } from "@/lib/workspace/nav";
-import { formatNavBadgeCount } from "@/lib/workspace/nav-badges";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { ws } from "@/lib/workspace/design";
 import { cn } from "@/lib/utils";
@@ -102,7 +102,6 @@ export default function ParentShell({
     hrefs: navHrefs,
     trackFeedSections: true,
   });
-  const unreadMessages = navBadgeCounts.messages;
   const childrenLabel =
     childrenCount == null
       ? "Linked children"
@@ -272,23 +271,15 @@ export default function ParentShell({
           />
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/app/parent/messages"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
-              aria-label={
-                unreadMessages > 0
-                  ? `Messages, ${unreadMessages} unread`
-                  : "Messages"
-              }
-            >
-              <MessageSquare className="h-4.5 w-4.5" />
-              {unreadMessages > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] font-bold text-white">
-                  {formatNavBadgeCount(unreadMessages) ||
-                    (unreadMessages > 9 ? "9+" : String(unreadMessages))}
-                </span>
-              ) : null}
-            </Link>
+            <WorkspaceInboxCenter
+              apiMode="account"
+              messagesHref="/app/parent/messages"
+              notificationsHref="/app/parent/notifications"
+              initialUnread={{
+                messages: navBadgeCounts.messages,
+                notifications: navBadgeCounts.notifications,
+              }}
+            />
             <Link
               href="/app/parent/profile"
               className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-800 shadow-sm"

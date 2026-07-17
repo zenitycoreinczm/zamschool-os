@@ -5,7 +5,7 @@ import {
   markAllNotificationsReadForUser,
   markNotificationReadForUser,
 } from "@/lib/inbox/queries";
-import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
+import { invalidateUnreadRelatedCaches } from "@/lib/inbox/read-cache";
 import { requireTeacherContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 
@@ -53,7 +53,7 @@ export async function PUT(req: Request) {
 
     if (body?.markAll) {
       const updatedCount = await markAllNotificationsReadForUser({ userId, schoolId });
-      invalidateInboxHotReads(userId, schoolId);
+      await invalidateUnreadRelatedCaches(userId, schoolId);
       return NextResponse.json({ success: true, data: { updatedCount, markAll: true } });
     }
 
@@ -66,7 +66,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
 
-    invalidateInboxHotReads(userId, schoolId);
+    await invalidateUnreadRelatedCaches(userId, schoolId);
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return NextResponse.json(

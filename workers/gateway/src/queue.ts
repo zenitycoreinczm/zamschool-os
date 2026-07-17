@@ -104,55 +104,92 @@ export async function handleMutation(req: Request, env: Env, url: URL, userId: s
 
   try {
     // Try online mutation
-    const response = await fetchImpl(new Request(upstreamUrl.toString(), {
-      method: req.method,
-      headers: req.headers,
-      body: bodyText || undefined
-    }));
+    const response = await fetchImpl(
+      new Request(upstreamUrl.toString(), {
+        method: req.method,
+        headers: req.headers,
+        body: bodyText || undefined,
+      }),
+    );
 
     if (response.ok) {
-       // Online mutation succeeded, maybe trigger a flush of any existing queue
-       // In a real system you'd want to be careful with ordering here.
-       return response;
+      return response;
     }
-    
-    // Upstream returned an error (e.g. 502 Bad Gateway), assume offline and fall through
+
+    // 4xx are real client/auth/validation errors — pass through, never queue.
+    if (response.status < 500) {
+      return response;
+    }
+
+    // 5xx: treat as upstream down for queueable paths.
     throw new Error(`Upstream error: ${response.status}`);
   } catch (err) {
-    // We are offline. Can we queue this?
-    if (isQueuableMutationPath(url.pathname)) {
-        
-        // Convert request into a queue item
-        const payload: QueuedMutation = {
-           id: crypto.randomUUID(),
-           schoolId,
-           userId,
-           method: req.method,
-           path: url.pathname + url.search,
-           body: bodyText ? JSON.parse(bodyText) : null,
-           timestamp: Date.now(),
-           // Store the original auth token so flushQueue() can replay it
-           authHeader: req.headers.get("Authorization") || undefined
-        };
+    // Network / 5xx. Can we queue this?
+    if (isQueuableMutationPath(url.pathname) && schoolId) {
+      let parsedBody: unknown = null;
+      try {
+        parsedBody = bodyText ? JSON.parse(bodyText) : null;
+      } catch {
+        parsedBody = null;
+      }
 
-        // Get DO instance for this school
-        const id = env.SYNC_QUEUE.idFromName(schoolId);
-        const obj = env.SYNC_QUEUE.get(id);
+      const payload: QueuedMutation = {
+        id: crypto.randomUUID(),
+        schoolId,
+        userId,
+        method: req.method,
+        path: url.pathname + url.search,
+        body: parsedBody,
+        timestamp: Date.now(),
+        authHeader: req.headers.get("Authorization") || undefined,
+      };
 
-        // Enqueue
-        const queueRes = await obj.fetch(new Request("http://do/enqueue", {
-            method: "POST",
-            body: JSON.stringify(payload),
-            headers: { "Content-Type": "application/json" }
-        }));
+      const id = env.SYNC_QUEUE.idFromName(schoolId);
+      const obj = env.SYNC_QUEUE.get(id);
 
-        return queueRes;
+      await obj.fetch(
+        new Request("http://do/enqueue", {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+
+      // Stable shape for clients (attendance expects data.savedCount).
+      const statusCount = Array.isArray(
+        (parsedBody as { statuses?: unknown[] } | null)?.statuses,
+      )
+        ? (parsedBody as { statuses: unknown[] }).statuses.length
+        : 0;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          queued: true,
+          status: "queued",
+          data: {
+            savedCount: statusCount,
+            parentsNotified: 0,
+            notificationsQueued: 0,
+            offline: true,
+          },
+        }),
+        {
+          status: 202,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Served-From": "offline-queue",
+          },
+        },
+      );
     }
-    
-    // Cannot queue
-    return new Response(JSON.stringify({ error: "Offline: changes can't be saved yet." }), {
-       status: 503,
-       headers: { "Content-Type": "application/json" }
-    });
+
+    return new Response(
+      JSON.stringify({ error: "Offline: changes can't be saved yet." }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 }

@@ -43,8 +43,11 @@ export async function enqueueNotifications(
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
     const chunk = rows.slice(offset, offset + BATCH_SIZE);
+    // ignoreDuplicates: same attendance/message event must not re-upsert is_read
+    // back to false — that made already-read alerts show as "new" again.
     const { error } = await supabaseAdmin.from("notifications").upsert(chunk, {
       onConflict: "school_id,dedupe_key",
+      ignoreDuplicates: true,
     });
     if (error) {
       throw error;

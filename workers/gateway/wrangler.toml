@@ -25,6 +25,8 @@ bucket_name = "zamschool-uploads"
 binding = "SESSION_CACHE"
 id = "61a36e9b580640dd95de1924bcb9ef3d"
 
+# RATE_LIMITS KV is unused by rate-limit.ts (Upstash / isolate memory instead).
+# Binding kept so existing deploys do not break; safe to remove after cutover.
 [[kv_namespaces]]
 binding = "RATE_LIMITS"
 id = "4dcb6b91d420436b8d6df323ba46553a"
@@ -53,5 +55,10 @@ SUPABASE_JWT_AUDIENCE = "authenticated"
 RATE_LIMIT_ENABLED = "true"
 NODE_ENV = "production"
 
+# Rate limits use Upstash Redis (INCR), not KV. Set secrets:
+#   node --env-file=.env.local scripts/run-wrangler-with-env.mjs -- secret put UPSTASH_REDIS_REST_URL
+#   node --env-file=.env.local scripts/run-wrangler-with-env.mjs -- secret put UPSTASH_REDIS_REST_TOKEN
+# Without secrets, the Worker falls back to per-isolate memory (0 KV ops).
+#
 # Optional HS256 legacy secret (your project uses ES256 JWKS by default):
 #   echo "<secret>" | npx wrangler secret put SUPABASE_JWT_SECRET

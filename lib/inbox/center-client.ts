@@ -74,12 +74,17 @@ function apiJson<T>(mode: InboxApiMode, input: string, init?: RequestInit) {
 }
 
 // Mode-keyed caches so admin/teacher/account never share stale data.
+// generation bumps on invalidate so late inflight responses cannot repopulate
+// the cache after the user has marked items read.
+let inboxCacheGeneration = 0;
+
 const unreadSummaryInFlight = new Map<string, Promise<UnreadSummary>>();
 const unreadSummaryCache = new Map<
   string,
-  { expiresAt: number; data: UnreadSummary }
+  { expiresAt: number; data: UnreadSummary; generation: number }
 >();
-const UNREAD_SUMMARY_TTL_MS = 15_000;
+// Short client TTL: long caches made already-read items reappear as "new".
+const UNREAD_SUMMARY_TTL_MS = 2_500;
 
 const inboxPreviewInFlight = new Map<
   string,
@@ -92,20 +97,23 @@ const inboxPreviewCache = new Map<
   string,
   {
     expiresAt: number;
+    generation: number;
     data: {
       messages: InboxMessagePreview[];
       notifications: InboxNotificationPreview[];
     };
   }
 >();
-const INBOX_PREVIEW_TTL_MS = 10_000;
+const INBOX_PREVIEW_TTL_MS = 2_500;
 
 export function invalidateUnreadSummaryCache() {
+  inboxCacheGeneration += 1;
   unreadSummaryCache.clear();
   unreadSummaryInFlight.clear();
 }
 
 export function invalidateInboxPreviewCache() {
+  inboxCacheGeneration += 1;
   inboxPreviewCache.clear();
   inboxPreviewInFlight.clear();
 }
@@ -113,6 +121,63 @@ export function invalidateInboxPreviewCache() {
 export function invalidateInboxCaches() {
   invalidateUnreadSummaryCache();
   invalidateInboxPreviewCache();
+}
+
+type InboxPreviewData = {
+  messages: InboxMessagePreview[];
+  notifications: InboxNotificationPreview[];
+};
+
+async function loadUnreadSummaryFromApi(
+  mode: InboxApiMode,
+): Promise<UnreadSummary> {
+  try {
+    const payload = await apiJson<{
+      data?: { messages?: number; notifications?: number };
+    }>(mode, "/api/account/unread-summary");
+    return {
+      messages: Number(payload?.data?.messages || 0),
+      notifications: Number(payload?.data?.notifications || 0),
+    };
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      /401|Unauthorized|Forbidden/i.test(err.message)
+    ) {
+      return { messages: 0, notifications: 0 };
+    }
+    return { messages: 0, notifications: 0 };
+  }
+}
+
+async function loadInboxPreviewFromApi(
+  mode: InboxApiMode,
+  limit: number,
+): Promise<InboxPreviewData> {
+  try {
+    const payload = await apiJson<{
+      data?: {
+        messages?: InboxMessagePreview[];
+        notifications?: InboxNotificationPreview[];
+      };
+    }>(mode, `/api/account/inbox-preview?limit=${limit}`);
+    return {
+      messages: Array.isArray(payload?.data?.messages)
+        ? payload.data.messages
+        : [],
+      notifications: Array.isArray(payload?.data?.notifications)
+        ? payload.data.notifications
+        : [],
+    };
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      /401|Unauthorized|Forbidden/i.test(err.message)
+    ) {
+      return { messages: [], notifications: [] };
+    }
+    return { messages: [], notifications: [] };
+  }
 }
 
 export async function fetchUnreadSummary(
@@ -126,39 +191,37 @@ export async function fetchUnreadSummary(
   }
 
   const cached = unreadSummaryCache.get(cacheKey);
-  if (cached && Date.now() < cached.expiresAt) {
+  if (
+    cached &&
+    Date.now() < cached.expiresAt &&
+    cached.generation === inboxCacheGeneration
+  ) {
     return cached.data;
   }
 
   const inflight = unreadSummaryInFlight.get(cacheKey);
-  if (inflight) return inflight;
+  if (inflight && !options.force) return inflight;
 
-  const request = apiJson<{
-    data?: { messages?: number; notifications?: number };
-  }>(mode, "/api/account/unread-summary")
-    .then((payload) => ({
-      messages: Number(payload?.data?.messages || 0),
-      notifications: Number(payload?.data?.notifications || 0),
-    }))
-    .then((data) => {
+  const generationAtStart = inboxCacheGeneration;
+  const request: Promise<UnreadSummary> = (async () => {
+    let data = await loadUnreadSummaryFromApi(mode);
+    // Mark-as-read invalidated caches while this request was in flight.
+    // Re-fetch once so we never publish pre-read counts as if they were new.
+    if (generationAtStart !== inboxCacheGeneration) {
+      data = await loadUnreadSummaryFromApi(mode);
+    } else {
       unreadSummaryCache.set(cacheKey, {
         expiresAt: Date.now() + UNREAD_SUMMARY_TTL_MS,
         data,
+        generation: inboxCacheGeneration,
       });
-      return data;
-    })
-    .catch((err: unknown) => {
-      if (
-        err instanceof Error &&
-        /401|Unauthorized|Forbidden/i.test(err.message)
-      ) {
-        return { messages: 0, notifications: 0 };
-      }
-      return { messages: 0, notifications: 0 };
-    })
-    .finally(() => {
+    }
+    return data;
+  })().finally(() => {
+    if (unreadSummaryInFlight.get(cacheKey) === request) {
       unreadSummaryInFlight.delete(cacheKey);
-    });
+    }
+  });
 
   unreadSummaryInFlight.set(cacheKey, request);
   return request;
@@ -168,7 +231,7 @@ export async function fetchInboxPreview(
   mode: InboxApiMode = "account",
   limit = 8,
   options: FetchOptions = {},
-) {
+): Promise<InboxPreviewData> {
   const cacheKey = `${mode}:${limit}`;
   if (options.force) {
     inboxPreviewCache.delete(cacheKey);
@@ -176,46 +239,35 @@ export async function fetchInboxPreview(
   }
 
   const cached = inboxPreviewCache.get(cacheKey);
-  if (cached && Date.now() < cached.expiresAt) {
+  if (
+    cached &&
+    Date.now() < cached.expiresAt &&
+    cached.generation === inboxCacheGeneration
+  ) {
     return cached.data;
   }
 
   const inflight = inboxPreviewInFlight.get(cacheKey);
-  if (inflight) return inflight;
+  if (inflight && !options.force) return inflight;
 
-  const request = apiJson<{
-    data?: {
-      messages?: InboxMessagePreview[];
-      notifications?: InboxNotificationPreview[];
-    };
-  }>(mode, `/api/account/inbox-preview?limit=${limit}`)
-    .then((payload) => ({
-      messages: Array.isArray(payload?.data?.messages)
-        ? payload.data.messages
-        : [],
-      notifications: Array.isArray(payload?.data?.notifications)
-        ? payload.data.notifications
-        : [],
-    }))
-    .then((data) => {
+  const generationAtStart = inboxCacheGeneration;
+  const request: Promise<InboxPreviewData> = (async () => {
+    let data = await loadInboxPreviewFromApi(mode, limit);
+    if (generationAtStart !== inboxCacheGeneration) {
+      data = await loadInboxPreviewFromApi(mode, limit);
+    } else {
       inboxPreviewCache.set(cacheKey, {
         expiresAt: Date.now() + INBOX_PREVIEW_TTL_MS,
+        generation: inboxCacheGeneration,
         data,
       });
-      return data;
-    })
-    .catch((err: unknown) => {
-      if (
-        err instanceof Error &&
-        /401|Unauthorized|Forbidden/i.test(err.message)
-      ) {
-        return { messages: [], notifications: [] };
-      }
-      return { messages: [], notifications: [] };
-    })
-    .finally(() => {
+    }
+    return data;
+  })().finally(() => {
+    if (inboxPreviewInFlight.get(cacheKey) === request) {
       inboxPreviewInFlight.delete(cacheKey);
-    });
+    }
+  });
 
   inboxPreviewInFlight.set(cacheKey, request);
   return request;

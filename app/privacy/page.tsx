@@ -1,316 +1,305 @@
 import type { Metadata } from "next";
 
-import LegalPageLayout from "@/components/landing/LegalPageLayout";
+import LegalPageLayout, {
+  LegalLink,
+  LegalMail,
+} from "@/components/landing/LegalPageLayout";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | ZamSchool OS",
   description:
-    "How ZenityCore handles personal information and school data in ZamSchool OS.",
+    "How ZenityCore collects, uses, and protects school and personal data in ZamSchool OS.",
 };
 
 export default function PrivacyPage() {
   return (
     <LegalPageLayout
+      current="privacy"
       title="Privacy Policy"
-      summary="This Privacy Policy explains how ZenityCore collects, uses, stores, shares, and protects information when schools, staff, parents, students, and authorized users use ZamSchool OS. ZamSchool OS is built to manage sensitive school operations, so privacy, security, and responsible data handling are central to how the platform works."
-      lastUpdated="May 10, 2026"
+      summary="This policy explains what information ZamSchool OS handles, why we handle it, who can see it, and how you can ask questions or request changes. We wrote it in plain language so schools, staff, and families can understand it."
+      lastUpdated="16 July 2026"
       sections={[
         {
+          id: "who-we-are",
           title: "Who we are",
           body: (
             <>
               <p>
-                ZamSchool OS is a school management software platform provided by ZenityCore. In
-                this policy, &quot;ZenityCore,&quot; &quot;we,&quot; &quot;us,&quot; and
-                &quot;our&quot; refer to the company that provides and supports ZamSchool OS.
-                &quot;You&quot; refers to the school, staff member, parent, guardian, student,
-                administrator, or other authorized user accessing the platform.
+                ZamSchool OS is a school management platform provided by{" "}
+                <strong className="font-semibold text-slate-800">ZenityCore</strong>
+                . In this policy, “we,” “us,” and “our” mean ZenityCore. “You”
+                means a school, staff member, parent, guardian, student, or any
+                other authorized person using the platform.
               </p>
               <p>
-                ZamSchool OS helps schools manage administration, student records, teaching
-                workflows, attendance, results, communication, payments where enabled, and related
-                school operations.
+                Contact: <LegalMail>zenitycoreinc@gmail.com</LegalMail>
               </p>
             </>
           ),
         },
         {
-          title: "Our privacy commitment",
+          id: "our-commitment",
+          title: "Our commitment",
           body: (
             <>
               <p>
-                Schools trust ZamSchool OS with information that matters: student profiles, family
-                contact details, staff accounts, attendance, academic results, billing information,
-                messages, announcements, documents, and operational records. We treat that
-                information as confidential school data.
+                Schools use ZamSchool OS for sensitive work: student records,
+                family contacts, attendance, results, messages, fees, and staff
+                accounts. We treat that as confidential school data.
               </p>
-              <p>
-                We use information to provide and improve ZamSchool OS, protect accounts, support
-                schools, maintain reliable service, and comply with applicable obligations. We do
-                not sell school data or use student records for unrelated advertising.
-              </p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>We do not sell school or student data.</li>
+                <li>
+                  We do not use student records for advertising or marketing
+                  profiles.
+                </li>
+                <li>
+                  We use data to run the product, keep it secure, support
+                  schools, and meet legal duties.
+                </li>
+              </ul>
             </>
           ),
         },
         {
-          title: "Information we collect",
+          id: "what-we-collect",
+          title: "What we collect",
           body: (
             <>
               <p>
-                Depending on the features a school uses, ZamSchool OS may process names, email
-                addresses, phone numbers, account credentials, school roles, class assignments,
-                subject assignments, staff profiles, student profiles, parent or guardian
-                relationships, attendance records, academic results, assessment records, messages,
-                announcements, fee records, payment status, uploaded files, and other information
-                entered by authorized users.
+                What appears in ZamSchool OS depends on what each school enters
+                and which features it uses. That can include:
               </p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>
+                  Account details: name, email, phone, role, password (stored
+                  securely), and school affiliation
+                </li>
+                <li>
+                  School records: classes, subjects, student profiles, parent
+                  links, staff profiles, attendance, results, announcements,
+                  messages, fee records, and uploaded files
+                </li>
+                <li>
+                  Technical data: device and browser type, IP address, login
+                  sessions, error logs, security events, and basic usage needed
+                  to keep the service reliable
+                </li>
+              </ul>
               <p>
-                We also collect limited technical information such as device type, browser type,
-                IP address, session activity, error logs, security events, and usage patterns. This
-                helps us keep the service secure, diagnose issues, prevent misuse, and improve
-                performance for schools.
+                We do not ask for more personal data than the product needs to
+                work. Schools decide most of what is stored about their
+                community.
               </p>
             </>
           ),
         },
         {
-          title: "How information is used",
+          id: "how-we-use-it",
+          title: "How we use information",
+          body: (
+            <>
+              <p>We use information to:</p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>Create accounts, verify users, and apply role permissions</li>
+                <li>
+                  Power school workflows (enrolment, attendance, results,
+                  messaging, fees where enabled)
+                </li>
+                <li>Provide support and fix problems</li>
+                <li>
+                  Protect the platform (security monitoring, audit logs, abuse
+                  prevention)
+                </li>
+                <li>Maintain backups and improve reliability and performance</li>
+                <li>Meet legal or regulatory requirements when they apply</li>
+              </ul>
+            </>
+          ),
+        },
+        {
+          id: "who-controls-records",
+          title: "Who controls school records",
           body: (
             <>
               <p>
-                We use information to create and manage accounts, verify users, assign roles,
-                organize classes, record attendance, publish results, support teacher workflows,
-                send school communications, manage parent and student access, support billing
-                workflows where enabled, provide dashboards, and help schools operate more
-                efficiently.
+                <strong className="font-semibold text-slate-800">
+                  Your school controls most day-to-day records.
+                </strong>{" "}
+                School administrators invite users, assign roles, enter student
+                and staff data, and decide what stays in the system.
               </p>
               <p>
-                We may also use information to provide support, audit important actions, detect
-                suspicious behavior, maintain backups, improve product quality, and comply with
-                applicable legal or regulatory requirements.
+                Access is role-based. For example, teachers see teaching
+                information they are allowed to see; parents see information
+                linked to their children; students see their own school
+                information.
+              </p>
+              <p>
+                If a parent or student believes a record is wrong or should not
+                be there, they should contact the school first. ZenityCore can
+                help the school with technical support, export, correction, or
+                deletion requests when appropriate.
               </p>
             </>
           ),
         },
         {
-          title: "Location and device information",
+          id: "sharing",
+          title: "When we share information",
           body: (
             <>
+              <p>We share information only when needed to:</p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>Operate ZamSchool OS (hosting, database, authentication, storage, email)</li>
+                <li>Provide support at a school’s request</li>
+                <li>Comply with law, court order, or lawful request</li>
+                <li>
+                  Protect the safety, security, or rights of users, schools, or
+                  ZenityCore
+                </li>
+              </ul>
               <p>
-                ZamSchool OS may collect device and technical information automatically when users
-                access the platform. If a future feature requires location access, we will use it
-                only where it is needed for a clear platform function and where the device or
-                browser allows the user to grant or deny permission.
+                Trusted service providers process data only to provide services
+                to us. They are not permitted to use school data for their own
+                marketing.
               </p>
               <p>
-                Users can control device permissions through their browser, phone, tablet, or
-                computer settings. Disabling certain permissions may limit features that depend on
-                them.
-              </p>
-            </>
-          ),
-        },
-        {
-          title: "School control and user access",
-          body: (
-            <>
-              <p>
-                ZamSchool OS uses role-based access so users only see the information their school
-                has authorized them to access. For example, administrators manage school operations,
-                teachers access assigned teaching information, parents or guardians view information
-                connected to their children, and students access their own school information.
-              </p>
-              <p>
-                Each school is responsible for choosing the users it invites, assigning the correct
-                roles, keeping school records accurate, and removing access when it is no longer
-                appropriate.
+                If ZenityCore is involved in a merger, acquisition, or sale of
+                assets, school data may transfer as part of that deal. We will
+                take reasonable steps so it remains protected under this policy
+                or an equivalent one.
               </p>
             </>
           ),
         },
         {
-          title: "When information may be shared",
-          body: (
-            <>
-              <p>
-                We share information only when needed to operate ZamSchool OS, provide support,
-                process authorized school workflows, comply with the law, protect the platform, or
-                work with trusted service providers such as hosting, database, authentication,
-                storage, email, analytics, or payment infrastructure providers.
-              </p>
-              <p>
-                Service providers are expected to handle information securely and only for the
-                purpose of providing services to ZamSchool OS. We do not permit them to use school
-                data for their own unrelated marketing.
-              </p>
-              <p>
-                We may also disclose information if required by law, court order, lawful government
-                request, school instruction, or where disclosure is necessary to protect the rights,
-                safety, security, or property of ZenityCore, ZamSchool OS, schools, users, or the
-                public.
-              </p>
-            </>
-          ),
-        },
-        {
-          title: "Business transfers",
-          body: (
-            <>
-              <p>
-                If ZenityCore is involved in a merger, acquisition, restructuring, financing, or
-                sale of some or all of its business or assets, information related to ZamSchool OS
-                may be transferred as part of that transaction.
-              </p>
-              <p>
-                Where this happens, we will take reasonable steps to ensure the information remains
-                protected and continues to be handled in line with this policy or a policy that
-                provides appropriate protection.
-              </p>
-            </>
-          ),
-        },
-        {
+          id: "security",
           title: "Security",
           body: (
             <>
               <p>
-                We use administrative, technical, and operational safeguards intended to protect
-                information against unauthorized access, loss, misuse, or alteration. These may
-                include account authentication, session protection, access controls, audit logging,
-                secure infrastructure, and regular review of platform behavior.
+                We use technical and operational safeguards such as
+                authentication, access controls, session protection, secure
+                hosting, and logging. No online service is perfectly secure.
               </p>
               <p>
-                No online service can guarantee absolute security. Schools and users should use
-                strong credentials, keep login details private, and report suspected unauthorized
-                access promptly.
+                Schools and users should use strong passwords, keep credentials
+                private, and report suspected unauthorized access quickly to the
+                school and to us at{" "}
+                <LegalMail>zenitycoreinc@gmail.com</LegalMail>.
               </p>
             </>
           ),
         },
         {
-          title: "Retention of information",
+          id: "retention",
+          title: "How long we keep data",
           body: (
             <>
               <p>
-                We keep information for as long as needed to provide ZamSchool OS, support legitimate
-                school recordkeeping, maintain backups, resolve disputes, prevent fraud, comply with
-                legal obligations, and enforce our agreements.
+                We keep information while a school uses ZamSchool OS and for a
+                reasonable period afterward for backups, support, security,
+                dispute resolution, and legal obligations.
               </p>
               <p>
-                When information is no longer required, we take reasonable steps to delete,
-                anonymize, or securely retain it according to operational and legal needs. Schools
-                may contact us for help with account closure, export, correction, or deletion
-                requests.
-              </p>
-              <p>
-                Some information may remain for a limited period in backups, logs, audit records, or
-                archived systems where deletion is not immediate, especially when needed for
-                security, disaster recovery, legal compliance, fraud prevention, or dispute
-                resolution.
+                When data is no longer needed, we delete or anonymize it where
+                practical. Some copies may remain for a limited time in backups
+                or audit logs. Schools can contact us about closure, export, or
+                deletion.
               </p>
             </>
           ),
         },
         {
-          title: "International processing",
+          id: "international",
+          title: "Where data is processed",
           body: (
             <>
               <p>
-                ZamSchool OS may use technology providers whose systems operate in different
-                countries. This means information may be processed or stored outside the country
-                where a school or user is located.
-              </p>
-              <p>
-                When information is transferred or processed internationally, we take reasonable
-                steps to protect it through appropriate technical, contractual, and operational
-                safeguards.
+                We use infrastructure providers that may store or process data
+                outside the country where a school is based. When that happens,
+                we rely on reasonable technical and contractual protections.
               </p>
             </>
           ),
         },
         {
-          title: "Children and student information",
+          id: "children",
+          title: "Children and student data",
           body: (
             <>
               <p>
-                ZamSchool OS is designed for schools and may contain information about students,
-                including children. Student information should be entered and managed by schools,
-                staff, parents, guardians, or authorized users for legitimate educational and school
-                administration purposes.
+                ZamSchool OS is built for schools and often includes information
+                about students, including children. That information should only
+                be entered for legitimate educational and school administration
+                purposes by authorized users.
               </p>
               <p>
-                If a parent, guardian, or student believes information in ZamSchool OS is incorrect
-                or should not be available, they should contact the school first because the school
-                controls most student records. ZenityCore can assist schools with appropriate
-                requests.
+                We do not knowingly use student data for advertising. Student
+                records are for school operations inside the platform.
               </p>
             </>
           ),
         },
         {
+          id: "your-choices",
           title: "Your choices and requests",
           body: (
             <>
               <p>
-                Users may be able to update some account information directly in the platform.
-                Requests involving student records, parent relationships, academic results, or
-                school-managed information should usually be directed first to the school because
-                the school controls those records.
+                You can update some profile details in the app. Requests about
+                student records, results, or parent links usually go through the
+                school first.
               </p>
               <p>
-                We will review privacy requests carefully and may need to verify the requester,
-                confirm school authorization, or preserve information where required by law or
-                legitimate recordkeeping obligations.
+                You can also email us at{" "}
+                <LegalMail>zenitycoreinc@gmail.com</LegalMail> with privacy
+                questions or requests. We may need to verify who you are and
+                confirm school authorization before making changes.
               </p>
             </>
           ),
         },
         {
-          title: "Links and third-party services",
+          id: "cookies",
+          title: "Cookies and similar tools",
           body: (
             <>
               <p>
-                ZamSchool OS may include links to third-party websites or may connect to third-party
-                services used for infrastructure, authentication, analytics, communications, file
-                storage, or payments where enabled. Those third parties may have their own privacy
-                policies and terms.
-              </p>
-              <p>
-                ZenityCore is not responsible for privacy practices on websites or services that we
-                do not operate. Users should review third-party policies when leaving ZamSchool OS
-                or using connected services.
+                We use cookies and browser storage mainly so you can sign in,
+                stay signed in securely, and use the product. Details are in our{" "}
+                <LegalLink href="/cookies">Cookie Policy</LegalLink>.
               </p>
             </>
           ),
         },
         {
+          id: "changes",
           title: "Changes to this policy",
           body: (
             <>
               <p>
-                We may update this Privacy Policy from time to time as ZamSchool OS, our operations,
-                or applicable requirements change. The updated version will be posted on this page
-                with a new &quot;Last updated&quot; date.
-              </p>
-              <p>
-                Continued use of ZamSchool OS after an update means the revised policy applies from
-                the updated date shown on this page.
+                We may update this page when the product or the law changes. The
+                “Last updated” date at the top will change when we do. Continued
+                use of ZamSchool OS after an update means the revised policy
+                applies.
               </p>
             </>
           ),
         },
         {
+          id: "contact",
           title: "Contact",
           body: (
             <>
               <p>
-                Privacy questions, security concerns, or data requests about ZamSchool OS can be
-                sent to ZenityCore at{" "}
-                <a className="font-medium text-slate-900 hover:underline" href="mailto:zenitycoreinc@gmail.com">
-                  zenitycoreinc@gmail.com
-                </a>
-                . Please include the school name, your role, and enough detail for us to understand
-                and respond to the request.
+                Privacy or data questions:{" "}
+                <LegalMail>zenitycoreinc@gmail.com</LegalMail>
+              </p>
+              <p>
+                Please include your school name, your role, and a clear
+                description of the request so we can respond properly.
               </p>
             </>
           ),

@@ -12,14 +12,22 @@ test("staffTodayItems builds a consistent school feed strip", () => {
     homeLabel: "Quality Hub",
   });
   const hrefs = items.map((i) => i.href);
+  // Notifications live in the header bell (not the sidebar) by default.
   assert.deepEqual(hrefs, [
     "/app/deputy-head",
     "/app/messages",
-    "/app/notifications",
     "/app/announcements",
     "/app/events",
   ]);
   assert.equal(items[0].label, "Quality Hub");
+});
+
+test("staffTodayItems can still opt into sidebar notifications", () => {
+  const items = staffTodayItems({
+    homeHref: "/app/principal",
+    includeNotifications: true,
+  });
+  assert.ok(items.some((i) => i.href === "/app/notifications"));
 });
 
 test("deputy and guidance nav include Today feed + role tools", () => {
@@ -28,6 +36,7 @@ test("deputy and guidance nav include Today feed + role tools", () => {
 
   assert.ok(deputy.some((i) => i.href === "/app/events"));
   assert.ok(deputy.some((i) => i.href === "/app/admin/timetable"));
+  assert.ok(!deputy.some((i) => i.href === "/app/admin/assignments"));
   assert.ok(guidance.some((i) => i.href === "/app/discipline-admin"));
   assert.ok(guidance.some((i) => i.href === "/app/announcements"));
 });

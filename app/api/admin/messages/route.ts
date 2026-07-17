@@ -11,7 +11,7 @@ import {
   parseJsonWithSchema,
   safeErrorMessage,
 } from "@/lib/server-guards";
-import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
+import { invalidateUnreadRelatedCaches } from "@/lib/inbox/read-cache";
 import { requireAdminContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { auditDomainWrite } from "@/lib/audit-domain";
@@ -228,7 +228,7 @@ export async function PUT(req: Request) {
 
     if (error) throw error;
 
-    invalidateInboxHotReads(access.context.userId, schoolId);
+    await invalidateUnreadRelatedCaches(access.context.userId, schoolId);
 
     await auditDomainWrite({
       schoolId,

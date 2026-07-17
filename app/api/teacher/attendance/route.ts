@@ -26,7 +26,14 @@ import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createAuditLog } from "@/lib/audit-log";
 
-const attendanceStatusSchema = z.enum(["PRESENT", "ABSENT", "LATE", "EXCUSED"]);
+// Keep in sync with lib/attendance/status.ts ATTENDANCE_STATUSES (mobile sends SICK too).
+const attendanceStatusSchema = z.enum([
+  "PRESENT",
+  "ABSENT",
+  "LATE",
+  "EXCUSED",
+  "SICK",
+]);
 
 const createAttendanceSchema = z.object({
   lessonId: z.string().min(1),

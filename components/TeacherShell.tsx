@@ -6,7 +6,7 @@ import { ProfileAvatarImage } from "@/components/ProfileAvatarImage";
 import { getDisplayInitials } from "@/lib/display-initials";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { LogOut, Menu, MessageSquare, X } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 
 import {
   TeacherWorkspaceProvider,
@@ -14,6 +14,7 @@ import {
 } from "@/components/TeacherWorkspaceProvider";
 import { WorkspaceNavMenu } from "@/components/workspace/WorkspaceNavMenu";
 import { WorkspaceGlobalSearch } from "@/components/workspace/WorkspaceGlobalSearch";
+import { WorkspaceInboxCenter } from "@/components/inbox/WorkspaceInboxCenter";
 import { MobileDock } from "@/components/workspace/MobileDock";
 import { useNavBadges } from "@/components/workspace/useNavBadges";
 import { navItemsToWorkspacePages } from "@/lib/workspace/search";
@@ -22,7 +23,6 @@ import {
   flattenNavSections,
   teacherPortalSections,
 } from "@/lib/workspace/nav";
-import { formatNavBadgeCount } from "@/lib/workspace/nav-badges";
 
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { supabase } from "@/lib/supabase";
@@ -115,7 +115,6 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
     initialMessages: workload.unreadMessages ?? 0,
     initialNotifications: workload.unreadNotifications ?? 0,
   });
-  const unreadMessages = navBadgeCounts.messages;
 
   const logout = async () => {
     if (signingOut) return;
@@ -302,23 +301,15 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
           />
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/app/teacher/inbox"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
-              aria-label={
-                unreadMessages > 0
-                  ? `Messages, ${unreadMessages} unread`
-                  : "Messages"
-              }
-            >
-              <MessageSquare className="h-4.5 w-4.5" />
-              {unreadMessages > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] font-bold text-white">
-                  {formatNavBadgeCount(unreadMessages) ||
-                    (unreadMessages > 9 ? "9+" : String(unreadMessages))}
-                </span>
-              ) : null}
-            </Link>
+            <WorkspaceInboxCenter
+              apiMode="teacher"
+              messagesHref="/app/teacher/inbox"
+              notificationsHref="/app/teacher/notifications"
+              initialUnread={{
+                messages: navBadgeCounts.messages,
+                notifications: navBadgeCounts.notifications,
+              }}
+            />
             <Link
               href="/app/teacher/profile"
               className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-slate-300 bg-slate-800 text-sm font-semibold text-white shadow-sm"

@@ -87,6 +87,13 @@ export async function GET(req: Request) {
       getClassesById(supabaseAdmin, schoolId, classIds),
     ]);
 
+    // Parent profile ids for mobile lock-screen / in-app attendance alerts.
+    const parentProfileIdsByStudentId = await loadParentProfileIdsByStudentRows(
+      supabaseAdmin,
+      schoolId,
+      studentRows,
+    );
+
     const allowedLessons = lessons.filter((lesson: any) =>
       assignmentScope.actorTeacherIds.some((actorTeacherId) =>
         canTeacherAccessLesson({
@@ -150,6 +157,7 @@ export async function GET(req: Request) {
             }),
           );
 
+          const parentIds = parentProfileIdsByStudentId.get(row.id) || [];
           return {
             id: row.id,
             profileId: row.profile_id || null,
@@ -158,6 +166,8 @@ export async function GET(req: Request) {
             email: row.profile?.email || null,
             status: normalizeAttendanceStatus(saved?.status),
             remarks: saved?.remarks || saved?.notes || null,
+            parentId: parentIds[0] || null,
+            parentIds,
           };
         });
 
@@ -288,6 +298,71 @@ function dedupeLessonsById(lessons: any[]) {
     seen.add(lessonId);
     return true;
   });
+}
+
+/**
+ * Map students-row id → up to 2 parent profile ids (for push + inbox).
+ */
+async function loadParentProfileIdsByStudentRows(
+  supabaseAdmin: any,
+  schoolId: string,
+  studentRows: Array<{ id: string; profile_id?: string | null }>,
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (!studentRows.length) return result;
+
+  const studentIds = studentRows.map((row) => row.id).filter(Boolean);
+  const profileIds = studentRows
+    .map((row) => row.profile_id)
+    .filter(Boolean) as string[];
+  const linkKeys = Array.from(new Set([...studentIds, ...profileIds]));
+  if (!linkKeys.length) return result;
+
+  const { data: links, error: linksError } = await supabaseAdmin
+    .from("parent_students")
+    .select("parent_id, student_id")
+    .in("student_id", linkKeys);
+
+  if (linksError || !links?.length) return result;
+
+  const parentIds = Array.from(
+    new Set(links.map((row: any) => row.parent_id).filter(Boolean)),
+  );
+  if (!parentIds.length) return result;
+
+  const { data: parents, error: parentsError } = await supabaseAdmin
+    .from("parents")
+    .select("id, profile_id")
+    .eq("school_id", schoolId)
+    .in("id", parentIds);
+
+  if (parentsError || !parents?.length) return result;
+
+  const profileByParentId = new Map<string, string>();
+  for (const row of parents) {
+    if (row.id && row.profile_id) {
+      profileByParentId.set(String(row.id), String(row.profile_id));
+    }
+  }
+
+  const studentRowByKey = new Map<string, string>();
+  for (const row of studentRows) {
+    studentRowByKey.set(String(row.id), String(row.id));
+    if (row.profile_id) {
+      studentRowByKey.set(String(row.profile_id), String(row.id));
+    }
+  }
+
+  for (const link of links) {
+    const studentRowId = studentRowByKey.get(String(link.student_id));
+    const parentProfileId = profileByParentId.get(String(link.parent_id));
+    if (!studentRowId || !parentProfileId) continue;
+    const existing = result.get(studentRowId) || [];
+    if (!existing.includes(parentProfileId)) existing.push(parentProfileId);
+    result.set(studentRowId, existing.slice(0, 2));
+  }
+
+  return result;
 }
 
 async function getStudentsByClassIds(

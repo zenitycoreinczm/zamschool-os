@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireActorContext } from "@/lib/server-auth";
 import { loadNotificationsForUser } from "@/lib/inbox/queries";
 import {
+  expandMessagingIdentityIds,
   loadProfilesByIdentityIds,
   summarizeParticipant,
 } from "@/lib/messages/participants";
@@ -39,6 +40,14 @@ export async function GET(req: Request) {
       );
     }
 
+    // Match mark-as-read: messages/notifications may use auth uid OR profile id.
+    const identityIds = await expandMessagingIdentityIds(
+      [access.context.userId, access.context.profileId].filter(Boolean) as string[],
+      access.context.schoolId,
+    );
+    const recipientIds =
+      identityIds.length > 0 ? identityIds : [access.context.userId];
+
     const [messagesResult, notificationRows] = await Promise.all([
       supabaseAdmin
         .from("messages")
@@ -46,7 +55,7 @@ export async function GET(req: Request) {
           "id, sender_id, recipient_id, body, subject, created_at, is_read",
         )
         .eq("school_id", access.context.schoolId)
-        .eq("recipient_id", access.context.userId)
+        .in("recipient_id", recipientIds)
         .eq("is_read", false)
         .order("created_at", { ascending: false })
         .limit(limit),
@@ -54,6 +63,7 @@ export async function GET(req: Request) {
         userId: access.context.userId,
         schoolId: access.context.schoolId,
         limit,
+        identityIds: recipientIds,
       }),
     ]);
 

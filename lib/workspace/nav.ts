@@ -124,15 +124,18 @@ export function getRoleSettingsPath(role: WorkspaceRoleKey): string {
 
 /**
  * Shared "Today" strip for staff / leadership sidebars.
- * Home + school feed so messages, notifications, announcements, and events
- * are always discoverable without memorizing URLs.
+ * Home + school feed (messages, announcements, events).
+ * Notifications live in the header bell next to messages, not the sidebar.
  */
 export function staffTodayItems(options: {
   homeHref: string;
   homeLabel?: string;
   /** When false, omit Events (rare). Default true. */
   includeEvents?: boolean;
-  /** When false, omit Notifications. Default true. */
+  /**
+   * Notifications are header-only by default (bell next to messages).
+   * Pass true only for rare roles that still need a sidebar entry.
+   */
   includeNotifications?: boolean;
   /** When false, omit Announcements. Default true. */
   includeAnnouncements?: boolean;
@@ -141,7 +144,7 @@ export function staffTodayItems(options: {
     homeHref,
     homeLabel = "Dashboard",
     includeEvents = true,
-    includeNotifications = true,
+    includeNotifications = false,
     includeAnnouncements = true,
   } = options;
 
@@ -228,7 +231,6 @@ const deputyHeadSections: WorkspaceNavSection[] = [
         label: "Attendance trends",
         icon: ClipboardList,
       },
-      { href: "/app/admin/assignments", label: "Assignments", icon: FileText },
     ],
   },
   {
@@ -446,7 +448,6 @@ const appTeacherSections: WorkspaceNavSection[] = [
       { href: "/app/messages", label: "Messages", icon: MessageSquare },
       { href: "/app/teacher/teaching", label: "Schedule", icon: CalendarClock },
       { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
       { href: "/app/events", label: "Events", icon: Calendar },
     ],
   },
@@ -466,7 +467,6 @@ const appStudentSections: WorkspaceNavSection[] = [
       { href: "/app/student", label: "Dashboard", icon: LayoutDashboard },
       { href: "/app/messages", label: "Messages", icon: MessageSquare },
       { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/app/notifications", label: "Notifications", icon: Bell },
       { href: "/app/events", label: "Events", icon: Calendar },
     ],
   },
@@ -550,11 +550,6 @@ export const teacherPortalSections: WorkspaceNavSection[] = [
         icon: Megaphone,
       },
       { href: "/app/teacher/events", label: "Events", icon: Calendar },
-      {
-        href: "/app/teacher/notifications",
-        label: "Notifications",
-        icon: Bell,
-      },
     ],
   },
   {

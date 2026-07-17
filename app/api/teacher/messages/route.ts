@@ -16,7 +16,7 @@ import {
   resolveMessagingIdentityId,
   serializeTeacherInboxMessages,
 } from "@/lib/messages/participants";
-import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
+import { invalidateUnreadRelatedCaches } from "@/lib/inbox/read-cache";
 import { getMessageSendQuota } from "@/lib/messages/send-quota";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -159,7 +159,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
     const updatedCount = await markMessagesAsRead(access.context.userId, schoolId, payload);
-    invalidateInboxHotReads(access.context.userId, schoolId);
+    await invalidateUnreadRelatedCaches(access.context.userId, schoolId);
 
     return NextResponse.json({
       success: true,

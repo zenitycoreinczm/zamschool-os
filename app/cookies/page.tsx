@@ -1,226 +1,198 @@
 import type { Metadata } from "next";
 
-import LegalPageLayout from "@/components/landing/LegalPageLayout";
+import LegalPageLayout, {
+  LegalLink,
+  LegalMail,
+} from "@/components/landing/LegalPageLayout";
 
 export const metadata: Metadata = {
   title: "Cookie Policy | ZamSchool OS",
   description:
-    "How ZenityCore uses cookies and browser storage in ZamSchool OS.",
+    "How ZamSchool OS uses cookies and browser storage for login, security, and basic product function.",
 };
 
 export default function CookiesPage() {
   return (
     <LegalPageLayout
+      current="cookies"
       title="Cookie Policy"
-      summary="This Cookie Policy explains how ZenityCore uses cookies, local storage, session storage, and similar technologies in ZamSchool OS. These tools help keep school accounts secure, support login sessions, remember useful settings, and improve platform reliability."
-      lastUpdated="May 10, 2026"
+      summary="This page explains how ZamSchool OS uses cookies and similar browser storage. We keep this simple: these tools mainly keep you signed in securely and make the product work. We do not use them to sell school data or build advertising profiles."
+      lastUpdated="16 July 2026"
       sections={[
         {
-          title: "Who this policy applies to",
+          id: "scope",
+          title: "Who this applies to",
           body: (
             <>
               <p>
-                This policy applies to schools, administrators, teachers, staff, parents, guardians,
-                students, and other authorized users who access ZamSchool OS through a browser or
-                supported device.
+                This policy applies to anyone who uses ZamSchool OS in a browser
+                or supported device: school staff, parents, guardians, students,
+                and administrators.
               </p>
               <p>
-                In this policy, &quot;ZenityCore,&quot; &quot;we,&quot; &quot;us,&quot;
-                and &quot;our&quot; refer to the company providing ZamSchool OS.
+                “We” means ZenityCore, the company that provides ZamSchool OS.
               </p>
             </>
           ),
         },
         {
-          title: "What cookies are",
+          id: "what-are-cookies",
+          title: "What cookies and storage are",
           body: (
             <>
               <p>
-                Cookies are small files stored by a browser when a person visits a website. Similar
-                technologies, such as local storage and session storage, can also remember limited
-                information in the browser so the application works properly.
+                Cookies are small pieces of data a browser stores for a website.
+                Similar tools (local storage and session storage) can also hold
+                limited information so the app works between page loads.
               </p>
               <p>
-                ZamSchool OS uses these technologies carefully and primarily for secure access,
-                platform functionality, reliability, and user experience.
+                In ZamSchool OS, we use these mainly for security and core
+                function, not for advertising.
               </p>
             </>
           ),
         },
         {
-          title: "Essential cookies",
+          id: "what-we-use",
+          title: "What we use them for",
           body: (
             <>
               <p>
-                Essential cookies and storage are required for core features such as signing in,
-                keeping a session active, protecting accounts, routing users to the right area of
-                the platform, remembering basic preferences, and supporting secure navigation.
+                <strong className="font-semibold text-slate-800">
+                  Essential (required for the product)
+                </strong>
               </p>
-              <p>
-                Without essential cookies, users may not be able to log in, remain signed in, or use
-                important school management features reliably.
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>Signing in and staying signed in</li>
+                <li>Protecting sessions and reducing unauthorized access</li>
+                <li>Routing you to the correct school workspace and role</li>
+                <li>Basic security and abuse prevention</li>
+              </ul>
+              <p className="mt-3">
+                Without these, login and many school features will not work
+                reliably.
               </p>
-              <p>
-                Essential cookies may also help prevent unauthorized access, verify session status,
-                support role-based navigation, and keep users connected to the correct school
-                workspace.
+              <p className="mt-4">
+                <strong className="font-semibold text-slate-800">
+                  Preferences and product function
+                </strong>
+              </p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>Remembering simple UI or workspace settings</li>
+                <li>
+                  Supporting offline-ready or continuity features where enabled
+                </li>
+              </ul>
+              <p className="mt-4">
+                <strong className="font-semibold text-slate-800">
+                  Performance and diagnostics
+                </strong>
+              </p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>
+                  Limited technical signals (errors, performance, uptime) so we
+                  can fix issues and keep the service stable
+                </li>
+              </ul>
+              <p className="mt-3">
+                Diagnostic use is for running and improving ZamSchool OS, not for
+                selling data or unrelated ads. More on data handling is in our{" "}
+                <LegalLink href="/privacy">Privacy Policy</LegalLink>.
               </p>
             </>
           ),
         },
         {
-          title: "Account and preference storage",
+          id: "what-we-dont",
+          title: "What we do not use them for",
           body: (
             <>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>Selling school or student data</li>
+                <li>
+                  Building advertising profiles from student or family records
+                </li>
+                <li>
+                  Letting third parties use confidential school information for
+                  their own marketing
+                </li>
+              </ul>
               <p>
-                ZamSchool OS may use browser storage to remember practical preferences such as
-                interface choices, workspace state, offline readiness, or other settings that make
-                the platform easier to use across visits.
-              </p>
-              <p>
-                Preference storage is intended to improve convenience and does not give users access
-                to information outside their assigned school role.
-              </p>
-              <p>
-                Examples may include remembering selected views, interface settings, dashboard state,
-                recently used school tools, or offline-readiness information needed to make the
-                application feel consistent between visits.
+                ZamSchool OS is a school operations product, not an advertising
+                network.
               </p>
             </>
           ),
         },
         {
-          title: "Security and fraud prevention",
+          id: "third-parties",
+          title: "Third-party technology",
           body: (
             <>
               <p>
-                Cookies and browser storage may be used to detect unusual session behavior, protect
-                account access, reduce repeated verification steps, prevent unauthorized use, and
-                support audit and security monitoring.
-              </p>
-              <p>
-                These technologies help protect sensitive school information such as student
-                records, staff accounts, parent access, results, attendance, messages, and payment
-                workflows where enabled.
+                Some cookies or storage may come from trusted providers that
+                support hosting, authentication, security, analytics, email, or
+                payments (where enabled). They process only what is needed for
+                those services and have their own policies.
               </p>
             </>
           ),
         },
         {
-          title: "Performance and diagnostics",
+          id: "manage",
+          title: "How to manage cookies",
           body: (
             <>
               <p>
-                We may use limited diagnostic tools to understand uptime, page performance, errors,
-                security events, and feature reliability. This helps us find problems quickly and
-                improve the service for schools, teachers, parents, and students.
+                You can usually block, delete, or review cookies in your browser
+                settings, and clear site data when you want.
               </p>
               <p>
-                Diagnostic information is used to operate and improve ZamSchool OS. It is not used
-                to sell school data or target unrelated advertising.
-              </p>
-              <p>
-                Diagnostic data may include page load information, error reports, browser type,
-                device type, general usage patterns, and technical events that help ZenityCore
-                understand whether the platform is working as expected.
+                If you block essential cookies, you may be signed out often, lose
+                preferences, or be unable to use important parts of ZamSchool OS.
               </p>
             </>
           ),
         },
         {
-          title: "Third-party services",
-          body: (
-            <>
-              <p>
-                Some cookies or browser storage may be connected to trusted service providers that
-                support hosting, authentication, database services, security, analytics, email, file
-                storage, or payment workflows where enabled.
-              </p>
-              <p>
-                These providers may process limited technical information needed to deliver their
-                services. Their use of cookies or storage may also be governed by their own policies.
-              </p>
-            </>
-          ),
-        },
-        {
-          title: "What we do not use cookies for",
-          body: (
-            <>
-              <p>
-                ZamSchool OS is a school operations platform, not an advertising network. We do not
-                use cookies to sell school data, build unrelated advertising profiles from student
-                records, or allow third parties to use confidential school information for their own
-                unrelated marketing.
-              </p>
-              <p>
-                If we introduce optional analytics, communication, or product improvement tools, we
-                will use them to support ZamSchool OS and the schools using it.
-              </p>
-            </>
-          ),
-        },
-        {
-          title: "Managing cookies",
-          body: (
-            <>
-              <p>
-                Most browsers allow users to review, block, or delete cookies through browser
-                settings. Users can also clear local storage or site data from their browser when
-                needed.
-              </p>
-              <p>
-                Blocking or deleting essential cookies may sign users out, remove preferences, or
-                prevent important parts of ZamSchool OS from working correctly.
-              </p>
-              <p>
-                If a school-managed device blocks cookies or clears site data automatically, users
-                may need to sign in again more often or reconfigure certain preferences.
-              </p>
-            </>
-          ),
-        },
-        {
+          id: "school-devices",
           title: "School-managed devices",
           body: (
             <>
               <p>
-                Schools may control browser settings, device policies, firewalls, extensions, or
-                security tools on school-managed devices. Those settings can affect how cookies and
-                browser storage work in ZamSchool OS.
-              </p>
-              <p>
-                If ZamSchool OS does not load, does not keep users signed in, or repeatedly loses
-                preferences on a school-managed device, the school&apos;s IT administrator may need to
-                allow the platform&apos;s required cookies and storage.
+                School IT policies, firewalls, or locked-down browsers can affect
+                cookies and storage. If login does not stick or the app behaves
+                oddly on a school device, the school’s IT administrator may need
+                to allow required cookies for ZamSchool OS.
               </p>
             </>
           ),
         },
         {
-          title: "Updates to this policy",
+          id: "changes",
+          title: "Changes to this policy",
           body: (
             <>
               <p>
-                We may update this Cookie Policy when we change how ZamSchool OS uses cookies,
-                browser storage, diagnostics, or supporting technology. The latest version will be
-                shown on this page with the updated date.
+                We may update this page if how we use cookies or storage changes.
+                The “Last updated” date at the top will reflect the latest
+                version.
               </p>
             </>
           ),
         },
         {
+          id: "contact",
           title: "Contact",
           body: (
             <>
               <p>
-                Questions about cookies, browser storage, or ZamSchool OS can be sent to ZenityCore
-                at{" "}
-                <a className="font-medium text-slate-900 hover:underline" href="mailto:zenitycoreinc@gmail.com">
-                  zenitycoreinc@gmail.com
-                </a>
-                . Please include the school name, browser you are using, and a short description of
-                the question or issue.
+                Cookie or browser-storage questions:{" "}
+                <LegalMail>zenitycoreinc@gmail.com</LegalMail>
+              </p>
+              <p>
+                Include your school name, browser, and a short description of the
+                issue.
               </p>
             </>
           ),

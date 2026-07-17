@@ -6,7 +6,6 @@ import {
   ArrowRight,
   CalendarClock,
   ClipboardList,
-  FileText,
   Loader2,
   Megaphone,
   MessageSquare,
@@ -37,12 +36,6 @@ const MODULES = [
     statKey: "absent" as const,
   },
   {
-    href: "/app/admin/assignments",
-    title: "Assignments",
-    description: "School-wide assignment overview before term reporting.",
-    statKey: "assignments" as const,
-  },
-  {
     href: "/app/messages",
     title: "Messages",
     description: "Coordinate with academic leads and department heads.",
@@ -59,7 +52,6 @@ const MODULES = [
 const WORKFLOW = [
   "Review published timetables for conflicts and coverage gaps.",
   "Check attendance trends for classes with unusual absence patterns.",
-  "Validate assignment completion before term reporting.",
   "Use Messages to coordinate follow-up with academic and department leads.",
 ];
 
@@ -109,7 +101,6 @@ export default function DeputyHeadDashboard() {
       : [
           "Review timetables for coverage gaps",
           "Monitor attendance trends",
-          "Check assignment completion",
           "Follow up via Messages",
         ];
 
@@ -117,7 +108,6 @@ export default function DeputyHeadDashboard() {
     classes: `${formatSchoolStatValue(classes, { loading: summaryLoading })} classes`,
     absent: `${formatSchoolStatValue(absent, { loading: summaryLoading })} absent (7d)`,
     students: `${formatSchoolStatValue(students, { loading: summaryLoading })} students`,
-    assignments: summaryLoading ? "…" : "School-wide",
     inbox: summaryLoading ? "…" : "Open inbox",
   };
 
@@ -135,7 +125,7 @@ export default function DeputyHeadDashboard() {
       <AdminPageHero
         eyebrow="Quality hub"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Oversee academic quality for ${yearTerm} - timetables, attendance, assignments, and people.`}
+        description={`Welcome back, ${displayName}. Oversee academic quality for ${yearTerm} - timetables, attendance, and coordination.`}
         accent="slate"
         stats={heroStats}
         actions={
@@ -238,7 +228,6 @@ export default function DeputyHeadDashboard() {
 function iconForModule(href: string) {
   if (href.includes("timetable")) return CalendarClock;
   if (href.includes("attendance")) return ClipboardList;
-  if (href.includes("assignments")) return FileText;
   if (href.includes("users")) return Users;
   if (href.includes("messages")) return MessageSquare;
   if (href.includes("announcements")) return Megaphone;

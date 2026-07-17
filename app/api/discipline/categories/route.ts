@@ -44,7 +44,16 @@ export async function GET(req: Request) {
       .order("severity", { ascending: true })
       .order("name", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      if (
+        error.code === "42P01" ||
+        /does not exist|relation/i.test(error.message || "")
+      ) {
+        const empty = NextResponse.json({ success: true, data: [] });
+        return applyEdgeCacheHeaders(empty, "eventsRead");
+      }
+      throw error;
+    }
 
     const response = NextResponse.json({ success: true, data: data || [] });
     return applyEdgeCacheHeaders(response, "eventsRead");

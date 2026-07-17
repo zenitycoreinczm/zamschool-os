@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireActorContext } from "@/lib/server-auth";
+import {
+  requireAdminContext,
+  requireTeacherContext,
+} from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
-
-const ADMIN_ROLES = [
-  "SUPER_ADMIN",
-  "PRINCIPAL",
-  "DEPUTY_HEAD",
-  "ICT_ADMIN",
-  "ACADEMIC_ADMIN",
-  "DISCIPLINE_ADMIN",
-  "REGISTRAR",
-  "TEACHER",
-] as const;
 
 type AttendanceRow = {
   date: string;
@@ -22,10 +14,12 @@ type AttendanceRow = {
 
 export async function GET(req: Request) {
   try {
-    const access = await requireActorContext(
-      { allowedRoles: [...ADMIN_ROLES], requireSchool: true },
-      req,
-    );
+    // School office roles (Guidance, Deputy Head, Discipline, etc.) + teachers.
+    // Previously a hard-coded role list omitted GUIDANCE_OFFICE → Forbidden.
+    let access = await requireAdminContext(req);
+    if (!access.ok) {
+      access = await requireTeacherContext(req);
+    }
     if (!access.ok) return access.response;
 
     const { schoolId } = access.context;

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { authenticateAccountPortalRequest } from "@/lib/account-portal-auth";
-import { invalidateInboxHotReads } from "@/lib/inbox/read-cache";
+import { invalidateUnreadRelatedCaches } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   enforceDailyMessageSendLimit,
@@ -156,8 +156,8 @@ export async function PUT(req: Request) {
       actor.schoolId,
       payload,
     );
-    // Always invalidate - mark may have hit expanded identity ids.
-    invalidateInboxHotReads(actor.userId, actor.schoolId);
+    // Drop process hot-read + shell Redis so badges cannot show old "new" counts.
+    await invalidateUnreadRelatedCaches(actor.userId, actor.schoolId);
 
     return NextResponse.json({
       success: true,

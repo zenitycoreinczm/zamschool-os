@@ -68,18 +68,11 @@ export async function GET(req: Request) {
     );
     const offset = parseInt(searchParams.get("offset") || "0", 10);
 
+    // Avoid PostgREST embed/FK-name failures (common cause of 500s for office
+    // desks). Load rows plain, then enrich related data in parallel.
     let query = supabaseAdmin
       .from("discipline_records")
-      .select(
-        `
-        *,
-        student:students(id, student_number, profile_id),
-        category:discipline_categories(id, name, severity),
-        reporter:profiles!discipline_records_reported_by_fkey(id, first_name, last_name),
-        resolver:profiles!discipline_records_resolved_by_fkey(id, first_name, last_name),
-        actions:discipline_actions(*)
-      `,
-      )
+      .select("*", { count: "exact" })
       .eq("school_id", schoolId)
       .order("incident_date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -91,41 +84,139 @@ export async function GET(req: Request) {
     if (severity) query = query.eq("severity", parseInt(severity, 10));
 
     const { data, error, count } = await query;
-    if (error) throw error;
+    if (error) {
+      // Missing table → empty list instead of hard failure for Guidance/Discipline desks.
+      if (error.code === "42P01" || /does not exist|relation/i.test(error.message || "")) {
+        const empty = NextResponse.json({
+          success: true,
+          data: [],
+          pagination: { limit, offset, total: 0 },
+        });
+        return applyEdgeCacheHeaders(empty, "noStore");
+      }
+      throw error;
+    }
 
-    // Enrich with student profile names
-    const profileIds = Array.from(
+    const rows = data || [];
+    const studentIds = Array.from(
+      new Set(rows.map((r: any) => r.student_id).filter(Boolean)),
+    );
+    const categoryIds = Array.from(
+      new Set(rows.map((r: any) => r.category_id).filter(Boolean)),
+    );
+    const recordIds = rows.map((r: any) => r.id).filter(Boolean);
+    const reporterIds = Array.from(
       new Set(
-        (data || []).map((r: any) => r.student?.profile_id).filter(Boolean),
+        rows
+          .flatMap((r: any) => [r.reported_by, r.resolved_by])
+          .filter(Boolean),
       ),
     );
 
-    let profilesById: Record<
+    const [studentsRes, categoriesRes, actionsRes, reportersRes] =
+      await Promise.all([
+        studentIds.length
+          ? supabaseAdmin
+              .from("students")
+              .select("id, student_number, profile_id")
+              .in("id", studentIds)
+          : Promise.resolve({ data: [] as any[] }),
+        categoryIds.length
+          ? supabaseAdmin
+              .from("discipline_categories")
+              .select("id, name, severity")
+              .in("id", categoryIds)
+          : Promise.resolve({ data: [] as any[] }),
+        recordIds.length
+          ? supabaseAdmin
+              .from("discipline_actions")
+              .select(
+                "id, record_id, action_type, description, action_date, duration_days",
+              )
+              .in("record_id", recordIds)
+          : Promise.resolve({ data: [] as any[] }),
+        reporterIds.length
+          ? supabaseAdmin
+              .from("profiles")
+              .select("id, first_name, last_name")
+              .in("id", reporterIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+    const studentsById = new Map(
+      (studentsRes.data || []).map((s: any) => [s.id, s]),
+    );
+    const categoriesById = new Map(
+      (categoriesRes.data || []).map((c: any) => [c.id, c]),
+    );
+    const actionsByRecord = new Map<string, any[]>();
+    for (const action of actionsRes.data || []) {
+      const key = String(action.record_id || "");
+      if (!key) continue;
+      const list = actionsByRecord.get(key) || [];
+      list.push(action);
+      actionsByRecord.set(key, list);
+    }
+    const profilesById = new Map(
+      (reportersRes.data || []).map((p: any) => [p.id, p]),
+    );
+
+    // Student display names from profiles
+    const studentProfileIds = Array.from(
+      new Set(
+        (studentsRes.data || [])
+          .map((s: any) => s.profile_id)
+          .filter(Boolean),
+      ),
+    );
+    let studentProfilesById = new Map<
       string,
       { first_name: string | null; last_name: string | null }
-    > = {};
-    if (profileIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+    >();
+    if (studentProfileIds.length > 0) {
+      const { data: studentProfiles } = await supabaseAdmin
         .from("profiles")
         .select("id, first_name, last_name")
-        .in("id", profileIds);
-      profilesById = Object.fromEntries(
-        (profiles || []).map((p: any) => [p.id, p]),
+        .in("id", studentProfileIds);
+      studentProfilesById = new Map(
+        (studentProfiles || []).map((p: any) => [p.id, p]),
       );
     }
 
-    const enriched = (data || []).map((record: any) => ({
-      ...record,
-      student: record.student
-        ? {
-            ...record.student,
-            first_name:
-              profilesById[record.student.profile_id]?.first_name || null,
-            last_name:
-              profilesById[record.student.profile_id]?.last_name || null,
-          }
-        : null,
-    }));
+    const enriched = rows.map((record: any) => {
+      const student = record.student_id
+        ? studentsById.get(record.student_id)
+        : null;
+      const studentProfile = student?.profile_id
+        ? studentProfilesById.get(student.profile_id)
+        : null;
+      const category = record.category_id
+        ? categoriesById.get(record.category_id)
+        : null;
+      const reporter = record.reported_by
+        ? profilesById.get(record.reported_by)
+        : null;
+      const resolver = record.resolved_by
+        ? profilesById.get(record.resolved_by)
+        : null;
+
+      return {
+        ...record,
+        student: student
+          ? {
+              id: student.id,
+              student_number: student.student_number,
+              profile_id: student.profile_id,
+              first_name: studentProfile?.first_name || null,
+              last_name: studentProfile?.last_name || null,
+            }
+          : null,
+        category: category || null,
+        reporter: reporter || null,
+        resolver: resolver || null,
+        actions: actionsByRecord.get(String(record.id)) || [],
+      };
+    });
 
     const response = NextResponse.json({
       success: true,

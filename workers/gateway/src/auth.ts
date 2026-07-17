@@ -24,10 +24,58 @@ const JWKS_TTL_MS = 60 * 60 * 1000; // 1 hour
 let jwksCache: JwksCache | null = null;
 
 /**
+ * Per-isolate auth memory cache (L1).
+ *
+ * KV is shared and durable but every SESSION_CACHE.get() is a billed op.
+ * Parallel dashboard loads fire many gateway requests with the same Bearer
+ * token; without L1 that becomes N KV GETs for one user session burst.
+ *
+ * Worker isolates are short-lived; 45s is long enough to collapse a page load
+ * (8–20 API calls) to ~1 KV GET, short enough that logout / role changes
+ * still re-resolve within a minute on this isolate.
+ */
+const AUTH_MEMORY_TTL_MS = 45_000;
+const AUTH_MEMORY_MAX_ENTRIES = 2_000;
+
+type AuthMemoryEntry = {
+  session: SessionSnapshot;
+  expiresAt: number;
+};
+
+const authMemoryCache = new Map<string, AuthMemoryEntry>();
+
+function readAuthMemory(tokenHash: string): SessionSnapshot | null {
+  const entry = authMemoryCache.get(tokenHash);
+  if (!entry) return null;
+  const now = Date.now();
+  if (entry.expiresAt <= now || entry.session.exp * 1000 <= now) {
+    authMemoryCache.delete(tokenHash);
+    return null;
+  }
+  return entry.session;
+}
+
+function writeAuthMemory(tokenHash: string, session: SessionSnapshot): void {
+  // Bound growth in long-lived isolates (dev / high traffic).
+  if (authMemoryCache.size >= AUTH_MEMORY_MAX_ENTRIES) {
+    const firstKey = authMemoryCache.keys().next().value;
+    if (firstKey !== undefined) authMemoryCache.delete(firstKey);
+  }
+  const jwtMs = Math.max(0, session.exp * 1000 - Date.now());
+  const ttlMs = Math.min(AUTH_MEMORY_TTL_MS, jwtMs || AUTH_MEMORY_TTL_MS);
+  authMemoryCache.set(tokenHash, {
+    session,
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+/**
  * Validates the Authorization header.
- * - Production: verifies JWT via HS256 secret and/or ES256 JWKS (Supabase signing keys).
- * - Offline: serves cached session snapshots from SESSION_CACHE KV.
- * - Local dev only: JWT_VERIFY_MODE=decode with ALLOW_INSECURE_JWT_DECODE=true skips signature check.
+ * Lookup order (hot path first):
+ *   1. Worker isolate memory (45s) — no KV
+ *   2. SESSION_CACHE KV — shared across isolates
+ *   3. JWT verify (HS256 secret / ES256 JWKS), then write KV + memory
+ * Local dev only: JWT_VERIFY_MODE=decode with ALLOW_INSECURE_JWT_DECODE=true skips signature check.
  */
 export async function verifyAuth(req: Request, env: Env): Promise<SessionSnapshot | null> {
   const authHeader = req.headers.get("Authorization");
@@ -42,8 +90,18 @@ export async function verifyAuth(req: Request, env: Env): Promise<SessionSnapsho
 
   const tokenHash = await sha256(token);
 
-  const cached = await env.SESSION_CACHE?.get<SessionSnapshot>(tokenHash, { type: "json" });
+  // L1: same isolate, same token (dashboard fan-out).
+  const fromMemory = readAuthMemory(tokenHash);
+  if (fromMemory) {
+    return fromMemory;
+  }
+
+  // L2: Cloudflare KV (shared; still costs a GET on miss of L1).
+  const cached = await env.SESSION_CACHE?.get<SessionSnapshot>(tokenHash, {
+    type: "json",
+  });
   if (cached && cached.exp > Date.now() / 1000) {
+    writeAuthMemory(tokenHash, cached);
     return cached;
   }
 
@@ -58,7 +116,12 @@ export async function verifyAuth(req: Request, env: Env): Promise<SessionSnapsho
   }
 
   const ttlSec = Math.max(Math.floor(session.exp - Date.now() / 1000), 60);
-  await env.SESSION_CACHE?.put(tokenHash, JSON.stringify(session), { expirationTtl: ttlSec });
+  writeAuthMemory(tokenHash, session);
+  // Fire-and-forget KV write would risk lost puts on isolate teardown; await
+  // so the next isolate can hit KV without re-verifying crypto.
+  await env.SESSION_CACHE?.put(tokenHash, JSON.stringify(session), {
+    expirationTtl: ttlSec,
+  });
 
   return session;
 }
@@ -326,6 +389,11 @@ export async function signTestJwt(
 /** Test helper: reset JWKS in-memory cache between tests. */
 export function resetJwksCacheForTests() {
   jwksCache = null;
+}
+
+/** Test helper: clear isolate auth memory between tests. */
+export function resetAuthMemoryCacheForTests() {
+  authMemoryCache.clear();
 }
 
 function bytesToBase64Url(bytes: Uint8Array): string {
