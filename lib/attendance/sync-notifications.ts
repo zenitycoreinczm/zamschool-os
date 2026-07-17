@@ -4,8 +4,18 @@ import type { AttendanceStatus } from "./status";
 import { enqueueNotifications } from "@/lib/notification-enqueue";
 import { supabaseAdmin } from "@/lib/supabase";
 
-/** Parent-facing alerts: present is not useful noise for families. */
-const PARENT_ALERT_STATUSES = new Set(["ABSENT", "LATE", "SICK", "EXCUSED"]);
+/**
+ * Parent-facing roll-call alerts.
+ * Include PRESENT so parents get a confirmation when the teacher submits
+ * roll call (not only concern marks).
+ */
+const PARENT_ALERT_STATUSES = new Set([
+  "PRESENT",
+  "ABSENT",
+  "LATE",
+  "SICK",
+  "EXCUSED",
+]);
 
 type SyncAttendanceNotificationsInput = {
   schoolId: string;
@@ -76,9 +86,6 @@ export async function syncAttendanceNotifications(
     "Lesson";
   const timeLabel = input.lesson.start_time || null;
 
-  const concernStatuses = input.statuses.filter((row) =>
-    PARENT_ALERT_STATUSES.has(String(row.status || "").toUpperCase()),
-  );
   const linkedParentCount = Array.from(
     parentProfileIdsByStudentRowId.values(),
   ).reduce((sum, ids) => sum + ids.length, 0);
@@ -97,21 +104,18 @@ export async function syncAttendanceNotifications(
     const student = studentById.get(row.studentId);
     const studentProfileId = student?.profile_id || null;
 
-    // Parents only get concern marks (late/absent/sick/excused).
-    // Students still get a session note when they have a profile.
+    // Notify linked parents for every roll-call status, including present.
     const parentsForAlert = PARENT_ALERT_STATUSES.has(status)
       ? parentProfileIds.map((id) => ({ id }))
       : [];
 
-    // Previously: no student.profile_id ⇒ zero payloads (parents skipped too).
-    // That was the main "parents got nothing" bug when links existed.
-    if (!studentProfileId && parentsForAlert.length === 0) {
+    // No parents linked and no student profile → nothing to send.
+    if (parentsForAlert.length === 0 && !studentProfileId) {
       return [];
     }
 
-    // Skip pure present student-only notes when there are no parents to alert —
-    // avoids counting student self-notes as "parents notified".
-    if (!PARENT_ALERT_STATUSES.has(status) && parentsForAlert.length === 0) {
+    // Prefer parent alerts; do not count student-only self-notes as parent notify.
+    if (parentsForAlert.length === 0) {
       return [];
     }
 
@@ -128,30 +132,22 @@ export async function syncAttendanceNotifications(
       date: input.date,
       timeLabel,
       status: status as AttendanceStatus,
-      // When no student profile, only fan out to parents (see notifications.ts).
-      parentOnly: !studentProfileId || parentsForAlert.length > 0,
+      // Parent-first: roll call alerts go to families.
+      parentOnly: true,
     });
   });
 
   if (payloads.length === 0) {
-    let reason =
-      "No parent alerts built — students may be unmarked as late/absent, unlinked from parents, or missing profile links.";
-    if (concernStatuses.length === 0) {
-      reason =
-        "All students marked present — parent alerts are only sent for late, absent, sick, or excused.";
-    } else if (linkedParentCount === 0) {
-      reason =
-        "No linked parents found for this class. Link parents to students in admin first.";
-    } else {
-      reason =
-        "Concern marks were set but no parent link matched those students.";
-    }
+    const reason =
+      linkedParentCount === 0
+        ? "No linked parents found for this class. Link parents to students in admin first."
+        : "Roll call saved, but no parent links matched the students in this roster.";
     return {
       parentCount: 0,
       notificationCount: 0,
       pushAttempted: false,
       reason,
-      concernMarks: concernStatuses.length,
+      concernMarks: input.statuses.length,
       linkedParents: linkedParentCount,
     };
   }

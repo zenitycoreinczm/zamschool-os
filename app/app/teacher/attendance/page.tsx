@@ -216,22 +216,14 @@ export default function TeacherAttendancePage() {
           typeof payload?.notificationsQueued === "number"
             ? payload.notificationsQueued
             : 0;
-        const concernMarks = statuses.filter((row) =>
-          ["ABSENT", "LATE", "SICK", "EXCUSED"].includes(
-            String(row.status || "").toUpperCase(),
-          ),
-        ).length;
-
         toast.success(
           `Roll call saved · ${savedCount} records · ${parentsNotified} parents notified`,
         );
         if (parentsNotified === 0) {
-          const reason =
+          toast.message(
             payload?.notifyReason ||
-            (concernMarks === 0
-              ? "Parents are only notified for late, absent, sick, or excused marks — not present."
-              : "No linked parents found for those students. Link parents in admin first.");
-          toast.message(reason);
+              "No linked parents found for those students. Link parents in admin first.",
+          );
         } else if (notificationsQueued > 0) {
           toast.info(`${notificationsQueued} notifications queued`);
         }
