@@ -14,6 +14,11 @@ import { requireTeacherContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { resolveLessonDayOfWeek } from "@/lib/lesson-day";
+import {
+  evaluateRollCallWindow,
+  shouldAlertHeadTeacherForLateRollCall,
+} from "@/lib/attendance/window";
+import { notifyHeadTeacherOfLateRollCall } from "@/lib/attendance/late-teacher-alert";
 
 const READ_MOSTLY_PRIVATE_CACHE =
   "private, max-age=30, stale-while-revalidate=120";
@@ -46,7 +51,7 @@ export async function GET(req: Request) {
 
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: access.context.profileId || userId,
     });
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -131,6 +136,8 @@ export async function GET(req: Request) {
       );
     }
 
+    const lateAlerts: Array<Promise<unknown>> = [];
+
     const data = allowedLessons.map((lesson: any) => {
       const rosterRows = rosterByClass.get(lesson.class_id) || [];
       const rosterStudentIds = buildStudentRosterScope({
@@ -145,6 +152,7 @@ export async function GET(req: Request) {
         lesson.title || getSubjectField(lesson.subjects, "name") || "Lesson";
       const sessionType = detectSessionType(lesson.start_time);
       const sessionName = `${sessionType} - ${baseSessionName}`;
+      let submittedCount = 0;
       const roster = rosterRows
         .filter((row) => rosterStudentIds.includes(row.id))
         .map((row) => {
@@ -156,6 +164,16 @@ export async function GET(req: Request) {
               sessionTime: lesson.start_time,
             }),
           );
+          // Day-slot fallback: any attendance today for this student/class
+          const daySaved =
+            saved ||
+            attendanceRows.find(
+              (a: any) =>
+                String(a.class_id) === String(lesson.class_id) &&
+                String(a.student_id) === String(row.id),
+            );
+
+          if (daySaved) submittedCount += 1;
 
           const parentIds = parentProfileIdsByStudentId.get(row.id) || [];
           return {
@@ -164,12 +182,52 @@ export async function GET(req: Request) {
             admissionNumber: row.student_number || null,
             displayName: buildDisplayName(row.profile),
             email: row.profile?.email || null,
-            status: normalizeAttendanceStatus(saved?.status),
-            remarks: saved?.remarks || saved?.notes || null,
+            status: normalizeAttendanceStatus(
+              daySaved?.status || saved?.status,
+            ),
+            remarks:
+              daySaved?.remarks ||
+              daySaved?.notes ||
+              saved?.remarks ||
+              saved?.notes ||
+              null,
             parentId: parentIds[0] || null,
             parentIds,
           };
         });
+
+      const hasSubmission = submittedCount > 0;
+      const window = evaluateRollCallWindow({
+        lessonDate: date,
+        startTime: lesson.start_time,
+        endTime: lesson.end_time,
+        hasSubmission,
+      });
+
+      if (
+        shouldAlertHeadTeacherForLateRollCall({
+          window,
+          hasSubmission,
+        })
+      ) {
+        lateAlerts.push(
+          notifyHeadTeacherOfLateRollCall({
+            schoolId,
+            lessonId: String(lesson.id),
+            date,
+            teacherName: "Teacher",
+            className: buildClassLabel(classesById.get(lesson.class_id || "")),
+            subjectName:
+              getSubjectField(lesson.subjects, "name") ||
+              lesson.title ||
+              "Lesson",
+            startTime: String(lesson.start_time || ""),
+            minutesLate: window.minutesLate || 0,
+          }).catch((err) =>
+            console.warn("[late-rollcall] class load notify failed:", err),
+          ),
+        );
+      }
 
       return {
         id: lesson.id,
@@ -186,8 +244,16 @@ export async function GET(req: Request) {
         room: null,
         rosterCount: roster.length,
         roster,
+        hasSubmission,
+        submittedCount,
+        window,
       };
     });
+
+    // Fire late alerts without blocking the response body.
+    if (lateAlerts.length > 0) {
+      void Promise.all(lateAlerts);
+    }
 
     return jsonWithPrivateCache({ success: true, data });
   } catch (error: unknown) {

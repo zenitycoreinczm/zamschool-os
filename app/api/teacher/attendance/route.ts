@@ -25,6 +25,8 @@ import {
 import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createAuditLog } from "@/lib/audit-log";
+import { evaluateRollCallWindow } from "@/lib/attendance/window";
+import { notifyHeadTeacherOfLateRollCall } from "@/lib/attendance/late-teacher-alert";
 
 // Keep in sync with lib/attendance/status.ts ATTENDANCE_STATUSES (mobile sends SICK too).
 const attendanceStatusSchema = z.enum([
@@ -80,7 +82,7 @@ export async function GET(req: Request) {
 
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: access.context.profileId || userId,
     });
 
     const allowedClassIds = requestedClassId
@@ -224,7 +226,7 @@ export async function POST(req: Request) {
 
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: access.context.profileId || userId,
     });
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -253,6 +255,25 @@ export async function POST(req: Request) {
     if (lessonError) throw lessonError;
     if (!lesson) {
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+    }
+
+    // Enforce school-local time window before any writes.
+    const window = evaluateRollCallWindow({
+      lessonDate: body.date,
+      startTime: lesson.start_time,
+      endTime: lesson.end_time,
+    });
+    if (!window.canMark) {
+      return NextResponse.json(
+        {
+          error: window.message,
+          data: {
+            window,
+            canMark: false,
+          },
+        },
+        { status: 403 },
+      );
     }
 
     const baseSessionName =
@@ -483,6 +504,24 @@ export async function POST(req: Request) {
     // Await so the toast can report accurate parent notify counts.
     const notificationDelivery = await notificationPromise;
 
+    // If the teacher submitted after the 10-minute late threshold, still alert HT
+    // once (dedupe key covers repeats) so leadership sees chronic lateness.
+    if (window.isLate && (window.minutesLate || 0) > 0) {
+      const teacherProfile = await loadTeacherDisplayName(userId, schoolId);
+      void notifyHeadTeacherOfLateRollCall({
+        schoolId,
+        lessonId: lesson.id,
+        date: body.date,
+        teacherName: teacherProfile,
+        className: buildClassLabel(classRow),
+        subjectName: baseSessionName,
+        startTime: String(lesson.start_time || ""),
+        minutesLate: window.minutesLate || 0,
+      }).catch((err) =>
+        console.warn("[late-rollcall] notify on submit failed:", err),
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -500,6 +539,8 @@ export async function POST(req: Request) {
         linkedParents:
           (notificationDelivery as { linkedParents?: number }).linkedParents ??
           null,
+        window,
+        submittedLate: window.isLate,
         conflicts: conflicts.length > 0 ? conflicts : undefined,
       },
     });
@@ -935,6 +976,39 @@ function isWithinEditableWindow(createdAt: string | null | undefined): boolean {
   const now = Date.now();
   const elapsed = (now - created) / 1000 / 60;
   return elapsed <= EDITABLE_WINDOW_MINUTES;
+}
+
+async function loadTeacherDisplayName(userId: string, schoolId: string) {
+  const supabaseAdmin = getSupabaseAdmin();
+  const byId = await supabaseAdmin
+    .from("profiles")
+    .select("first_name, last_name, email")
+    .eq("id", userId)
+    .maybeSingle();
+  if (byId.data) {
+    return (
+      [byId.data.first_name, byId.data.last_name].filter(Boolean).join(" ").trim() ||
+      byId.data.email ||
+      "Teacher"
+    );
+  }
+  const byAuth = await supabaseAdmin
+    .from("profiles")
+    .select("first_name, last_name, email")
+    .eq("school_id", schoolId)
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+  if (byAuth.data) {
+    return (
+      [byAuth.data.first_name, byAuth.data.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      byAuth.data.email ||
+      "Teacher"
+    );
+  }
+  return "Teacher";
 }
 
 function detectSessionType(startTime: string | null | undefined): string {
