@@ -175,7 +175,7 @@ export async function syncAttendanceNotifications(
     parentCount: notifiedParentIds.size,
     notificationCount: payloads.length,
     pushAttempted,
-    concernMarks: concernStatuses.length,
+    concernMarks: input.statuses.length,
     linkedParents: linkedParentCount,
   };
 }
