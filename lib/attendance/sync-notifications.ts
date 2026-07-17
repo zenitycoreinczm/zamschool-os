@@ -76,10 +76,24 @@ export async function syncAttendanceNotifications(
     "Lesson";
   const timeLabel = input.lesson.start_time || null;
 
+  const concernStatuses = input.statuses.filter((row) =>
+    PARENT_ALERT_STATUSES.has(String(row.status || "").toUpperCase()),
+  );
+  const linkedParentCount = Array.from(
+    parentProfileIdsByStudentRowId.values(),
+  ).reduce((sum, ids) => sum + ids.length, 0);
+
   const payloads = input.statuses.flatMap((row) => {
     const status = String(row.status || "").toUpperCase();
+    // Lookup by students-row id; also try profile id if the client sent that.
     const parentProfileIds =
-      parentProfileIdsByStudentRowId.get(row.studentId) || [];
+      parentProfileIdsByStudentRowId.get(row.studentId) ||
+      (studentById.get(row.studentId)?.profile_id
+        ? parentProfileIdsByStudentRowId.get(
+            String(studentById.get(row.studentId)?.profile_id),
+          )
+        : undefined) ||
+      [];
     const student = studentById.get(row.studentId);
     const studentProfileId = student?.profile_id || null;
 
@@ -92,6 +106,12 @@ export async function syncAttendanceNotifications(
     // Previously: no student.profile_id ⇒ zero payloads (parents skipped too).
     // That was the main "parents got nothing" bug when links existed.
     if (!studentProfileId && parentsForAlert.length === 0) {
+      return [];
+    }
+
+    // Skip pure present student-only notes when there are no parents to alert —
+    // avoids counting student self-notes as "parents notified".
+    if (!PARENT_ALERT_STATUSES.has(status) && parentsForAlert.length === 0) {
       return [];
     }
 
@@ -109,32 +129,42 @@ export async function syncAttendanceNotifications(
       timeLabel,
       status: status as AttendanceStatus,
       // When no student profile, only fan out to parents (see notifications.ts).
-      parentOnly: !studentProfileId,
+      parentOnly: !studentProfileId || parentsForAlert.length > 0,
     });
   });
 
   if (payloads.length === 0) {
+    let reason =
+      "No parent alerts built — students may be unmarked as late/absent, unlinked from parents, or missing profile links.";
+    if (concernStatuses.length === 0) {
+      reason =
+        "All students marked present — parent alerts are only sent for late, absent, sick, or excused.";
+    } else if (linkedParentCount === 0) {
+      reason =
+        "No linked parents found for this class. Link parents to students in admin first.";
+    } else {
+      reason =
+        "Concern marks were set but no parent link matched those students.";
+    }
     return {
       parentCount: 0,
       notificationCount: 0,
       pushAttempted: false,
-      reason:
-        "No parent alerts built — students may be unmarked as late/absent, unlinked from parents, or missing profile links.",
+      reason,
+      concernMarks: concernStatuses.length,
+      linkedParents: linkedParentCount,
     };
   }
 
   await enqueueNotifications(input.schoolId, payloads);
 
+  const studentProfiles = new Set(
+    input.rosterRows.map((r) => r.profile_id).filter(Boolean) as string[],
+  );
   const notifiedParentIds = new Set(
     payloads
       .map((p) => p.user_id)
-      .filter((id) => {
-        // Parent recipients are those not equal to a student profile on the roster.
-        const studentProfiles = new Set(
-          input.rosterRows.map((r) => r.profile_id).filter(Boolean),
-        );
-        return !studentProfiles.has(id);
-      }),
+      .filter((id) => id && !studentProfiles.has(id)),
   );
 
   // Best-effort Expo lock-screen push (does not block save if push infra missing).
@@ -149,6 +179,8 @@ export async function syncAttendanceNotifications(
     parentCount: notifiedParentIds.size,
     notificationCount: payloads.length,
     pushAttempted,
+    concernMarks: concernStatuses.length,
+    linkedParents: linkedParentCount,
   };
 }
 

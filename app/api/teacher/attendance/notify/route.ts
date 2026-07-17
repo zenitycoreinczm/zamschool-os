@@ -196,11 +196,19 @@ async function loadParentProfileIds(
     new Set(links.map((row: { parent_id: string }) => row.parent_id).filter(Boolean)),
   );
 
-  const { data: parents, error: parentsError } = await supabaseAdmin
-    .from("parents")
-    .select("id, profile_id")
-    .eq("school_id", schoolId)
-    .in("id", parentIds);
+  const [{ data: parents, error: parentsError }, { data: parentProfiles }] =
+    await Promise.all([
+      supabaseAdmin
+        .from("parents")
+        .select("id, profile_id")
+        .eq("school_id", schoolId)
+        .in("id", parentIds),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, role")
+        .eq("school_id", schoolId)
+        .in("id", parentIds),
+    ]);
 
   if (parentsError) throw parentsError;
 
@@ -208,6 +216,12 @@ async function loadParentProfileIds(
   for (const row of parents || []) {
     if (row.id && row.profile_id) {
       profileByParentId.set(String(row.id), String(row.profile_id));
+    }
+  }
+  // parent_students.parent_id may already be a parent profile id.
+  for (const row of parentProfiles || []) {
+    if (row?.id) {
+      profileByParentId.set(String(row.id), String(row.id));
     }
   }
 

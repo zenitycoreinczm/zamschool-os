@@ -1,18 +1,17 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { normalizeRole } from "@/lib/roles";
 
 type RosterStudentRow = {
   id: string;
   profile_id?: string | null;
 };
 
-const PARENT_ROLES = ["parent", "guardian"] as const;
-
 /**
  * Resolve parent profile IDs for each students-row id.
  *
  * Historical link shapes we must support:
  * - parent_students.student_id → students.id OR profiles.id
- * - parent_students.parent_id  → parents.id OR profiles.id (parent role)
+ * - parent_students.parent_id  → parents.id OR profiles.id (PARENT role)
  */
 export async function loadParentProfileIdsByStudentRowId(input: {
   schoolId: string;
@@ -54,7 +53,7 @@ export async function loadParentProfileIdsByStudentRowId(input: {
   }
 
   // Shape A: parent_id is parents.id → resolve parents.profile_id
-  // Shape B: parent_id is already a parent profile id
+  // Shape B: parent_id is already a parent profile id (any case of PARENT/GUARDIAN)
   const [parentRowsResult, directParentProfilesResult] = await Promise.all([
     supabaseAdmin
       .from("parents")
@@ -65,8 +64,7 @@ export async function loadParentProfileIdsByStudentRowId(input: {
       .from("profiles")
       .select("id, school_id, role")
       .eq("school_id", input.schoolId)
-      .in("id", parentIds)
-      .in("role", [...PARENT_ROLES]),
+      .in("id", parentIds),
   ]);
 
   if (parentRowsResult.error) {
@@ -83,13 +81,18 @@ export async function loadParentProfileIdsByStudentRowId(input: {
     }
   }
   for (const row of directParentProfilesResult.data || []) {
-    if (row.id) {
+    if (!row?.id) continue;
+    const role = normalizeRole(row.role);
+    // Accept parent / guardian; if role missing but id was linked as parent_id, still accept.
+    if (!role || role === "PARENT") {
       parentProfileIdByParentId.set(String(row.id), String(row.id));
     }
   }
 
   // Fallback: parents table without school filter (mis-scoped rows) still linked.
-  const unresolved = parentIds.filter((id) => !parentProfileIdByParentId.has(String(id)));
+  const unresolved = parentIds.filter(
+    (id) => !parentProfileIdByParentId.has(String(id)),
+  );
   if (unresolved.length > 0) {
     const { data: looseParents, error: looseError } = await supabaseAdmin
       .from("parents")
@@ -102,13 +105,34 @@ export async function loadParentProfileIdsByStudentRowId(input: {
         }
       }
     }
+
+    // Last resort: treat remaining parent_ids as profile ids if a profile exists.
+    const stillMissing = unresolved.filter(
+      (id) => !parentProfileIdByParentId.has(String(id)),
+    );
+    if (stillMissing.length > 0) {
+      const { data: looseProfiles, error: looseProfilesError } =
+        await supabaseAdmin
+          .from("profiles")
+          .select("id, role")
+          .in("id", stillMissing);
+      if (!looseProfilesError) {
+        for (const row of looseProfiles || []) {
+          if (!row?.id) continue;
+          const role = normalizeRole(row.role);
+          if (!role || role === "PARENT") {
+            parentProfileIdByParentId.set(String(row.id), String(row.id));
+          }
+        }
+      }
+    }
   }
 
   const studentRowIdByLinkKey = new Map<string, string>();
   for (const row of input.rosterRows) {
-    studentRowIdByLinkKey.set(row.id, row.id);
+    studentRowIdByLinkKey.set(String(row.id), String(row.id));
     if (row.profile_id) {
-      studentRowIdByLinkKey.set(row.profile_id, row.id);
+      studentRowIdByLinkKey.set(String(row.profile_id), String(row.id));
     }
   }
 

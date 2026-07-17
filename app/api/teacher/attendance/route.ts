@@ -437,10 +437,14 @@ export async function POST(req: Request) {
       date: body.date,
     }).catch((err) => {
       console.error("[attendance] notification fan-out failed:", err);
-      return { parentCount: 0, notificationCount: 0 };
+      return {
+        parentCount: 0,
+        notificationCount: 0,
+        reason: "Notification fan-out failed",
+      };
     });
 
-    // Don't await - let it run in the background
+    // Await so the toast can report accurate parent notify counts.
     const notificationDelivery = await notificationPromise;
 
     return NextResponse.json({
@@ -452,6 +456,14 @@ export async function POST(req: Request) {
         date: body.date,
         parentsNotified: notificationDelivery.parentCount,
         notificationsQueued: notificationDelivery.notificationCount,
+        notifyReason:
+          (notificationDelivery as { reason?: string }).reason || null,
+        concernMarks:
+          (notificationDelivery as { concernMarks?: number }).concernMarks ??
+          null,
+        linkedParents:
+          (notificationDelivery as { linkedParents?: number }).linkedParents ??
+          null,
         conflicts: conflicts.length > 0 ? conflicts : undefined,
       },
     });
