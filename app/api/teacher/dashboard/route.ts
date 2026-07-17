@@ -9,7 +9,7 @@ import {
 import { loadTeacherAccountDetail } from "@/lib/teacher-account-detail";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { requireTeacherContext } from "@/lib/server-auth";
-import { countUnreadNotificationsForUser } from "@/lib/inbox/queries";
+import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,
@@ -86,7 +86,10 @@ export async function GET(req: Request) {
               updatedAt: profile.updated_at || profile.created_at || null,
             },
           }),
-          loadUnreadSummary(access.context.userId, schoolId),
+          getUnreadCountsForUser({
+            userId: access.context.userId,
+            schoolId,
+          }),
           loadResultsInScope(schoolId, assignmentScope, assignments),
           loadUpcomingEvents(schoolId, access.context.role),
         ]);
@@ -143,25 +146,6 @@ export async function GET(req: Request) {
       { status: 500 },
     );
   }
-}
-
-async function loadUnreadSummary(userId: string, schoolId: string) {
-  const [messagesResult, notifications] = await Promise.all([
-    supabaseAdmin
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .eq("recipient_id", userId)
-      .eq("is_read", false),
-    countUnreadNotificationsForUser({ userId, schoolId }),
-  ]);
-
-  if (messagesResult.error) throw messagesResult.error;
-
-  return {
-    messages: messagesResult.count || 0,
-    notifications,
-  };
 }
 
 async function loadAssignmentsInScope(

@@ -17,6 +17,10 @@ import {
   warmCsrfToken,
   type WorkspaceContextData,
 } from "@/lib/workspace/context-client";
+import {
+  INBOX_REFRESH_EVENT,
+  type InboxRefreshDetail,
+} from "@/lib/inbox/events";
 import { schoolLinkUserMessage } from "@/lib/school-access-error";
 import { normalizeAppWorkspaceRole } from "@/lib/workspace/role";
 import {
@@ -81,6 +85,38 @@ export function WorkspaceContextProvider({
       // load() already sets error state; guard against unhandled rejections.
     });
   }, [load]);
+
+  // Keep dashboard "Needs your attention" chips in sync after mark-as-read.
+  useEffect(() => {
+    const onRefresh = (event: Event) => {
+      const detail = (event as CustomEvent<InboxRefreshDetail>).detail;
+      if (
+        !detail ||
+        (typeof detail.messages !== "number" &&
+          typeof detail.notifications !== "number")
+      ) {
+        return;
+      }
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          unread: {
+            messages:
+              typeof detail.messages === "number"
+                ? Math.max(0, detail.messages)
+                : prev.unread.messages,
+            notifications:
+              typeof detail.notifications === "number"
+                ? Math.max(0, detail.notifications)
+                : prev.unread.notifications,
+          },
+        };
+      });
+    };
+    window.addEventListener(INBOX_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(INBOX_REFRESH_EVENT, onRefresh);
+  }, []);
 
   const refresh = useCallback(
     async (options: { force?: boolean } = {}) => {

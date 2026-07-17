@@ -86,6 +86,19 @@ export async function invalidateUnreadRelatedCaches(
 
   invalidateInboxHotReads(id, school);
 
+  // Drop process-local teacher bootstrap/dashboard caches that embed unread counts.
+  // Without this, "Needs your attention: 1 notification" can stick for ~90s.
+  try {
+    const { invalidateCache } = await import("@/lib/enhanced-cache");
+    // Keys used by /api/teacher/bootstrap and /api/teacher/dashboard withCache.
+    await Promise.all([
+      invalidateCache(`teacher-bootstrap:${id}`),
+      invalidateCache(`teacher:${id}`),
+    ]);
+  } catch {
+    // non-blocking
+  }
+
   try {
     const { isRedisConfigured, redisDel } = await import("@/lib/redis/client");
     if (!isRedisConfigured()) return;

@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   fetchTeacherBootstrap,
@@ -9,6 +16,11 @@ import {
   readCachedTeacherBootstrap,
 } from "@/lib/teacher-bootstrap-client";
 import { fetchShell, readCachedShell, invalidateShell } from "@/lib/shell-client";
+import { fetchUnreadSummary } from "@/lib/inbox/center-client";
+import {
+  INBOX_REFRESH_EVENT,
+  type InboxRefreshDetail,
+} from "@/lib/inbox/events";
 import type {
   TeacherBootstrapData,
   TeacherWorkloadSummary,
@@ -167,6 +179,62 @@ export function TeacherWorkspaceProvider({ children }: { children: React.ReactNo
     preloadTeacherBootstrap();
     void loadWorkspace();
   }, [loadWorkspace]);
+
+  // Keep "Needs your attention" and workload cards in sync with the header
+  // inbox after mark-as-read (do not wait for bootstrap cache TTL).
+  useEffect(() => {
+    const applyUnread = (detail?: InboxRefreshDetail | null) => {
+      if (
+        detail &&
+        (typeof detail.messages === "number" ||
+          typeof detail.notifications === "number")
+      ) {
+        setWorkload((prev) => ({
+          ...prev,
+          unreadMessages:
+            typeof detail.messages === "number"
+              ? Math.max(0, detail.messages)
+              : prev.unreadMessages,
+          unreadNotifications:
+            typeof detail.notifications === "number"
+              ? Math.max(0, detail.notifications)
+              : prev.unreadNotifications,
+        }));
+      }
+    };
+
+    const onRefresh = (event: Event) => {
+      const detail = (event as CustomEvent<InboxRefreshDetail>).detail;
+      applyUnread(detail);
+      void fetchUnreadSummary("account", { force: true })
+        .then((summary) => {
+          setWorkload((prev) => ({
+            ...prev,
+            unreadMessages: summary.messages,
+            unreadNotifications: summary.notifications,
+          }));
+        })
+        .catch(() => {
+          // keep optimistic / last known
+        });
+    };
+
+    window.addEventListener(INBOX_REFRESH_EVENT, onRefresh);
+    // Live reconcile once on mount in case bootstrap carried a stale badge.
+    void fetchUnreadSummary("account", { force: true })
+      .then((summary) => {
+        setWorkload((prev) => ({
+          ...prev,
+          unreadMessages: summary.messages,
+          unreadNotifications: summary.notifications,
+        }));
+      })
+      .catch(() => {});
+
+    return () => {
+      window.removeEventListener(INBOX_REFRESH_EVENT, onRefresh);
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     invalidateTeacherBootstrap();

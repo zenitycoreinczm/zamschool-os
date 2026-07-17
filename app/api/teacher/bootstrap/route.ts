@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { formatLocalDateInputValue } from "@/lib/local-date";
 import { buildAttendanceSessionKey } from "@/lib/live-schema-adapters";
 import { requireTeacherContext } from "@/lib/server-auth";
-import { countUnreadNotificationsForUser } from "@/lib/inbox/queries";
+import { getUnreadCountsForUser } from "@/lib/inbox/read-cache";
 import {
   applyPlatformRateLimit,
   platformRateLimitResponse,
@@ -148,7 +148,11 @@ export async function GET(req: Request) {
             dayOfWeek: lessonDayOfWeek,
             classIds: assignmentScope.supervisedClassIds,
           }),
-          loadUnreadSummary(profileId, schoolId),
+          // Auth user id + identity expansion - same path as header unread badges.
+          getUnreadCountsForUser({
+            userId: access.context.userId,
+            schoolId,
+          }),
           loadPendingGrades(schoolId, assignmentScope),
           loadDraftResults(schoolId, assignmentScope),
           loadUpcomingEvents(schoolId, access.context.role),
@@ -636,25 +640,6 @@ async function loadSubjectMap(
   }
 
   return new Map(data.map((row: any) => [String(row.id), row]));
-}
-
-async function loadUnreadSummary(userId: string, schoolId: string) {
-  const [messagesResult, notifications] = await Promise.all([
-    supabaseAdmin
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("school_id", schoolId)
-      .eq("recipient_id", userId)
-      .eq("is_read", false),
-    countUnreadNotificationsForUser({ userId, schoolId }),
-  ]);
-
-  if (messagesResult.error) throw messagesResult.error;
-
-  return {
-    messages: messagesResult.count || 0,
-    notifications,
-  };
 }
 
 async function loadPendingGrades(
