@@ -79,7 +79,15 @@ async function buildGatewayUrl(path: string): Promise<string | null> {
 }
 
 function shouldFallback(status: number) {
-  return status === 404 || status >= 500;
+  // Fall back for hard failures AND gateway auth/ban edges so admin pages
+  // (e.g. super-admin access codes) still work via same-origin cookies.
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === 404 ||
+    status === 429 ||
+    status >= 500
+  );
 }
 
 function shouldAddAuthorization(init: RequestInit): boolean {

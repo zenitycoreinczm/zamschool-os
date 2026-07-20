@@ -8,6 +8,7 @@ import {
   freeTierPublicRateLimits,
   freeTierPlatformRatePresets,
   freeTierIpAbusePolicy,
+  isIpBanWorthyAbuseReason,
   isProductionInvocationBlockedPath,
 } from "../../lib/free-tier-guard.ts";
 
@@ -86,13 +87,23 @@ describe("free-tier-guard", () => {
     assert.ok(free.messagesWrite.limit <= paid.messagesWrite.limit);
   });
 
-  it("ip abuse bans sooner on free tier", () => {
+  it("ip abuse policy stays reasonable on free tier", () => {
     process.env.ZAMSCHOOL_FREE_TIER = "true";
     const free = freeTierIpAbusePolicy();
     process.env.ZAMSCHOOL_FREE_TIER = "false";
     const paid = freeTierIpAbusePolicy();
-    assert.ok(free.banThreshold < paid.banThreshold);
-    assert.ok(free.banTtlSec >= paid.banTtlSec);
+    assert.ok(free.banThreshold >= 15);
+    assert.ok(free.banThreshold <= paid.banThreshold);
+    assert.ok(free.banTtlSec <= 2 * 60 * 60);
+  });
+
+  it("only scanner/bot reasons are ban-worthy (not floods)", () => {
+    assert.equal(isIpBanWorthyAbuseReason("attack_path"), true);
+    assert.equal(isIpBanWorthyAbuseReason("bot_block"), true);
+    assert.equal(isIpBanWorthyAbuseReason("auth_flood"), false);
+    assert.equal(isIpBanWorthyAbuseReason("api_flood"), false);
+    assert.equal(isIpBanWorthyAbuseReason("page_flood"), false);
+    assert.equal(isIpBanWorthyAbuseReason("api_daily_cap"), false);
   });
 
   it("blocks production invocation of debug and load-test paths", () => {

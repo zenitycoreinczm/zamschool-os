@@ -19,6 +19,7 @@ import {
   ipBanRedisKey,
   isIpOnStaticBlocklist,
 } from "@/lib/server-security-policy";
+import { isIpBanWorthyAbuseReason } from "@/lib/free-tier-guard";
 import { clampRedisTtl } from "@/lib/redis/ttl";
 import { hashRedisIdentifier } from "@/lib/redis/keys";
 
@@ -97,7 +98,9 @@ export async function banIp(
 }
 
 /**
- * Record an abuse event (scanner path, bot block, flood). Auto-bans after threshold.
+ * Record an abuse event. Only scanner / hard bot reasons count toward auto-ban.
+ * Flood and rate-limit 429s are ignored here so school NATs and login retries
+ * never lock an entire campus IP for 1–2 hours.
  */
 export async function recordIpAbuse(
   ip: string,
@@ -105,6 +108,11 @@ export async function recordIpAbuse(
 ): Promise<{ banned: boolean; count: number }> {
   const normalized = String(ip || "").trim();
   if (!normalized || normalized === "unknown") {
+    return { banned: false, count: 0 };
+  }
+
+  // Soft signals (auth_flood, api_flood, page_flood, daily caps): do not ban.
+  if (!isIpBanWorthyAbuseReason(reason)) {
     return { banned: false, count: 0 };
   }
 

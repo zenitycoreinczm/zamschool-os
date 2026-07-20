@@ -177,18 +177,38 @@ export function freeTierGatewayRateLimits(): {
   };
 }
 
-/** IP reputation: ban sooner / longer on free tier so scrapers cannot re-hammer. */
+/**
+ * IP reputation: temporary bans after *scanner/bot* abuse only.
+ * Rate-limit 429s must NOT count toward bans — school NATs and login retries
+ * would lock out real principals (seen as super-admin 403).
+ */
 export function freeTierIpAbusePolicy(): {
   banThreshold: number;
   banTtlSec: number;
   windowSec: number;
 } {
   if (!isFreeTierMode()) {
-    return { banThreshold: 25, banTtlSec: 60 * 60, windowSec: 15 * 60 };
+    return { banThreshold: 30, banTtlSec: 60 * 60, windowSec: 15 * 60 };
   }
   return {
-    banThreshold: 10,
-    banTtlSec: 2 * 60 * 60,
+    // Only attack_path + hard bot blocks feed this counter (see proxy.ts).
+    banThreshold: 20,
+    banTtlSec: 60 * 60,
     windowSec: 15 * 60,
   };
+}
+
+/**
+ * Reasons that may auto-ban an IP. Flood / rate-limit 429s are excluded —
+ * those already stop the request without locking the whole school out.
+ */
+export function isIpBanWorthyAbuseReason(reason: string): boolean {
+  const r = String(reason || "").toLowerCase();
+  return (
+    r === "attack_path" ||
+    r === "bot_block" ||
+    r.startsWith("bot_") ||
+    r.includes("scanner") ||
+    r.includes("exploit")
+  );
 }
