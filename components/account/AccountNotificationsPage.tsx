@@ -82,12 +82,17 @@ export function AccountNotificationsPage({
     if (item.status === "read") return;
     const previous = rows;
     setItemRead(item.id);
+    const remaining = Math.max(
+      0,
+      previous.filter((r) => !r.is_read && r.id !== item.id).length,
+    );
     try {
       await accountApiJson(`${apiBase}?id=${encodeURIComponent(item.id)}`, {
         method: "PUT",
         body: JSON.stringify({}),
       });
-      dispatchInboxRefresh();
+      // Optimistic badge clear so already-read items never reappear as "new".
+      dispatchInboxRefresh({ notifications: remaining });
     } catch (err: unknown) {
       setRows(previous);
       toast.error(err instanceof Error ? err.message : "Failed to update notification");
@@ -102,7 +107,7 @@ export function AccountNotificationsPage({
         method: "PUT",
         body: JSON.stringify({ markAll: true }),
       });
-      dispatchInboxRefresh();
+      dispatchInboxRefresh({ notifications: 0 });
     } catch (err: unknown) {
       setRows(previous);
       toast.error(err instanceof Error ? err.message : "Failed to mark all as read");
@@ -111,6 +116,10 @@ export function AccountNotificationsPage({
 
   const loadingAccent =
     accent === "teal" || accent === "indigo" ? accent : "sky";
+
+  // Compute before any early return so future hooks stay legal here.
+  const heroAccent =
+    accent === "teal" || accent === "indigo" || accent === "sky" ? accent : "sky";
 
   if (loading) {
     return (
@@ -122,8 +131,6 @@ export function AccountNotificationsPage({
       />
     );
   }
-
-  const heroAccent = accent === "teal" || accent === "indigo" || accent === "sky" ? accent : "sky";
 
   return (
     <NotificationsInboxView

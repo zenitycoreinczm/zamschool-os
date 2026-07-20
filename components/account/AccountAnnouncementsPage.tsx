@@ -44,25 +44,26 @@ export function AccountAnnouncementsPage({
       );
       const data = body.data || [];
       setRows(data);
-      // Opening the announcements page marks every loaded item as read so the
-      // sidebar badge stays clear after logout/login on this browser.
-      if (userId && data.length > 0) {
-        markFeedItemsRead(
-          userId,
-          "announcements",
-          data.map((row) => String(row.id || "")),
-        );
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load announcements");
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Persist "seen" once workspace userId is available (may load after first fetch).
+  useEffect(() => {
+    if (!userId || rows.length === 0) return;
+    markFeedItemsRead(
+      userId,
+      "announcements",
+      rows.map((row) => String(row.id || "")),
+    );
+  }, [userId, rows]);
 
   if (loading) {
     return (

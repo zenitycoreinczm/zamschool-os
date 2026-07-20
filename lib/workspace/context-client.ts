@@ -130,25 +130,30 @@ export function patchCachedWorkspaceUnread(unread: {
   messages?: number;
   notifications?: number;
 }) {
-  if (cachedContext?.data) {
-    cachedContext = {
-      ...cachedContext,
-      data: {
-        ...cachedContext.data,
-        unread: {
-          messages:
-            typeof unread.messages === "number"
-              ? Math.max(0, unread.messages)
-              : cachedContext.data.unread.messages,
-          notifications:
-            typeof unread.notifications === "number"
-              ? Math.max(0, unread.notifications)
-              : cachedContext.data.unread.notifications,
-        },
-      },
-    };
-    writeSessionStorageContext(cachedContext.data);
-  }
+  // Prefer live memory cache; fall back to sessionStorage so mark-as-read still
+  // clears badges even when the in-memory entry expired or never hydrated.
+  const current = cachedContext?.data || readSessionStorageContext();
+  if (!current) return;
+
+  const next: WorkspaceContextData = {
+    ...current,
+    unread: {
+      messages:
+        typeof unread.messages === "number"
+          ? Math.max(0, unread.messages)
+          : current.unread?.messages ?? 0,
+      notifications:
+        typeof unread.notifications === "number"
+          ? Math.max(0, unread.notifications)
+          : current.unread?.notifications ?? 0,
+    },
+  };
+
+  cachedContext = {
+    expiresAt: Date.now() + WORKSPACE_CONTEXT_TTL_MS,
+    data: next,
+  };
+  writeSessionStorageContext(next);
 }
 
 function isUsableWorkspaceContext(

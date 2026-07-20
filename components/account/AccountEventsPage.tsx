@@ -40,25 +40,28 @@ export function AccountEventsPage({
     try {
       const data = await fetchAccountEventsList();
       setRows(data);
-      // Visiting the list marks all currently loaded events as seen so badges
-      // do not reappear after logout/login on this browser.
-      if (userId && data.length > 0) {
-        markFeedItemsRead(
-          userId,
-          "events",
-          data.map((row) => String(row.id || "")),
-        );
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load events");
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Mark feed items read once we know who the user is (workspace may load later).
+  // Without this, first paint with empty userId never persisted "seen" and badges
+  // resurrected every visit as "new".
+  useEffect(() => {
+    if (!userId || rows.length === 0) return;
+    markFeedItemsRead(
+      userId,
+      "events",
+      rows.map((row) => String(row.id || "")),
+    );
+  }, [userId, rows]);
 
   useEffect(() => {
     setPortalReady(true);

@@ -73,8 +73,9 @@ export function invalidateWorkspaceHotRead(userId: string): void {
 }
 
 export const HOT_READ_TTL = {
-  // Keep unread badges snappy after mark-as-read (was 45s - felt "stuck").
-  unreadCounts: Math.min(SUPABASE_PROTECTION.unreadCountsTtlSec, 15),
+  // Keep unread badges snappy after mark-as-read (was 15s - still felt "stuck").
+  // 3s only collapses concurrent polls; mark-as-read must never reappear as new.
+  unreadCounts: Math.min(SUPABASE_PROTECTION.unreadCountsTtlSec, 3),
   workspaceStable: SUPABASE_PROTECTION.workspaceStableTtlSec,
   authMeta: SUPABASE_PROTECTION.authMetaTtlSec,
   /** Payments shell / billing summary-style hot reads */

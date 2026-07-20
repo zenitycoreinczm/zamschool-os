@@ -86,7 +86,8 @@ export async function GET(req: Request) {
       return jsonResponse({ success: true, data: groupByExam ? { exams: [] } : [] });
     }
 
-    const cacheKey = `parent:${schoolId}:${userId}:${selectedStudentId || "all"}:${groupByExam ? "cert" : "flat"}`;
+    // v2: certificate subjects use name/code/performance for StatementOfResults.
+    const cacheKey = `parent:v2:${schoolId}:${userId}:${selectedStudentId || "all"}:${groupByExam ? "cert" : "flat"}`;
     const data = await withPublishedResultsCache(cacheKey, () =>
       (groupByExam
         ? loadCertificateResults({ schoolId, scopedStudentRowIds, scopedProfileIds })
@@ -232,7 +233,17 @@ async function loadCertificateResults(input: {
     const classId = student?.class_id;
     const classInfo = classesMap.get(classId || "");
 
-    const subjects = Array.from(group.subjects.values()).sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+    const subjects = Array.from(group.subjects.values())
+      .sort((a, b) => a.subjectName.localeCompare(b.subjectName))
+      // Shape expected by StatementOfResults (name/code/performance).
+      .map((s) => ({
+        name: s.subjectName,
+        code: s.subjectCode,
+        score: s.score,
+        grade: s.grade,
+        totalMarks: s.totalMarks,
+        performance: getPerformance(s.grade),
+      }));
     const totalScore = subjects.reduce((sum, s) => sum + s.score, 0);
     const totalPossible = subjects.reduce((sum, s) => sum + s.totalMarks, 0);
     const average = totalPossible > 0 ? (totalScore / totalPossible) * 100 : 0;
@@ -258,7 +269,7 @@ async function loadCertificateResults(input: {
     examResults.push({
       examTitle: group.examTitle,
       studentName: buildDisplayName(studentProfile?.profile || {}),
-      examNumber: student?.student_number || "-",
+      examNumber: student?.student_number || student?.admission_number || "-",
       className: classInfo?.name || "Class",
       schoolName,
       year: new Date().getFullYear(),
