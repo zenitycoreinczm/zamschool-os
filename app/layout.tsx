@@ -5,10 +5,22 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import SupabaseGuardBootstrap from "@/components/SupabaseGuardBootstrap";
 import { ClientEnvValidator } from "@/components/ClientEnvValidator";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  // Expose as CSS var so globals.css can fall back to system fonts on phones.
+  variable: "--font-inter",
+  fallback: [
+    "system-ui",
+    "-apple-system",
+    "Segoe UI",
+    "Roboto",
+    "Helvetica Neue",
+    "Arial",
+    "sans-serif",
+  ],
 });
 
 const siteUrl =
@@ -122,7 +134,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body
-        className={inter.className}
+        className={`${inter.className} ${inter.variable}`}
         // `next/font/google` injects a hashed className that can differ
         // between SSR + first client render in dev mode (font fallback
         // resolution). Production builds are stable, but the suppression
@@ -138,6 +150,8 @@ export default function RootLayout({
         />
         <SupabaseGuardBootstrap />
         <ClientEnvValidator />
+        {/* Register SW on landing + public pages so mobile visitors get offline/CSS warm. */}
+        <ServiceWorkerRegister />
         {children}
         <Toaster position="top-right" richColors closeButton />
         <Analytics />

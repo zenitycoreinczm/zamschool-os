@@ -97,7 +97,21 @@ const parentHighlights = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="landing-critical-fallback min-h-screen bg-white text-slate-900">
+      {/*
+        Critical CSS fallback: if the main Tailwind chunk is delayed/blocked on
+        mobile networks, the hero still reads as a real product page (not raw text).
+      */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .landing-critical-fallback{min-height:100vh;background:#fff;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+            .landing-critical-fallback header{position:sticky;top:0;z-index:40;border-bottom:1px solid #e2e8f0;background:rgba(255,255,255,.96)}
+            .landing-critical-fallback a{color:inherit;text-decoration:none}
+            .landing-critical-fallback .btn-primary,.landing-critical-fallback a[href="/register"]{border-radius:999px}
+          `,
+        }}
+      />
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">

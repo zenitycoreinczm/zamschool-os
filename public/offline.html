@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="color-scheme" content="dark" />
+    <title>ZamSchool OS — You're offline</title>
+    <link rel="icon" href="/icon.png" />
+    <style>
+      /* Fully self-contained — no /_next CSS dependency */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
+        background: linear-gradient(145deg, #0f172a 0%, #111827 55%, #172554 100%);
+        color: #f8fafc;
+        line-height: 1.5;
+      }
+      .wrap {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.25rem;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        max-width: 40rem;
+        margin: 0 auto;
+        width: 100%;
+        padding: 0.5rem 0 1.5rem;
+      }
+      header img {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        object-fit: cover;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      }
+      header strong {
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+      header span {
+        display: block;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 500;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        width: 100%;
+        max-width: 28rem;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 1.5rem;
+        padding: 1.75rem 1.5rem;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(8px);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #7dd3fc;
+        background: rgba(14, 165, 233, 0.12);
+        border: 1px solid rgba(125, 211, 252, 0.25);
+        border-radius: 999px;
+        padding: 0.35rem 0.7rem;
+      }
+      .dot {
+        width: 0.45rem;
+        height: 0.45rem;
+        border-radius: 999px;
+        background: #fbbf24;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
+      }
+      h1 {
+        margin: 1rem 0 0.75rem;
+        font-size: clamp(1.5rem, 5vw, 1.85rem);
+        line-height: 1.2;
+        letter-spacing: -0.03em;
+      }
+      p {
+        margin: 0;
+        color: #cbd5e1;
+        font-size: 0.95rem;
+      }
+      ul {
+        margin: 1.25rem 0 0;
+        padding: 0 0 0 1.1rem;
+        color: #e2e8f0;
+        font-size: 0.9rem;
+      }
+      li {
+        margin: 0.4rem 0;
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        margin-top: 1.5rem;
+      }
+      a.btn,
+      button.btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 0.85rem 1.15rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .btn-primary {
+        background: #0ea5e9;
+        color: #fff;
+        box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
+      }
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .note {
+        margin-top: 1.25rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.85rem;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+      footer {
+        max-width: 40rem;
+        margin: 1.5rem auto 0;
+        width: 100%;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="/icon.png" width="40" height="40" alt="ZamSchool OS" />
+        <div>
+          <strong>ZamSchool OS</strong>
+          <span>School management, simplified</span>
+        </div>
+      </header>
+      <main>
+        <div class="card">
+          <div class="pill"><span class="dot" aria-hidden="true"></span> Site is live · offline view</div>
+          <h1>You're offline — the site is still here</h1>
+          <p>
+            ZamSchool OS is online for schools across Zambia. Your phone just
+            lost connectivity for a moment. Reconnect and refresh to open the
+            full app.
+          </p>
+          <ul>
+            <li>Turn on mobile data or school Wi‑Fi</li>
+            <li>Open Log in or Start free once you're back online</li>
+            <li>Saved work in the app may still sync after reconnect</li>
+          </ul>
+          <div class="actions">
+            <button class="btn btn-primary" type="button" onclick="location.reload()">
+              Try again
+            </button>
+            <a class="btn btn-secondary" href="/">Go to home</a>
+            <a class="btn btn-secondary" href="/login">Log in</a>
+          </div>
+          <div class="note">
+            Tip: Add ZamSchool OS to your home screen after one successful visit
+            so the branded offline page is always available.
+          </div>
+        </div>
+      </main>
+      <footer>© ZamSchool OS · Built for Zambian schools</footer>
+    </div>
+    <script>
+      // Auto-retry when the network returns.
+      window.addEventListener("online", function () {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

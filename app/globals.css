@@ -69,12 +69,25 @@ html {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    /* Prevent iOS text inflation that can look “broken” on marketing pages */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body {
     background: var(--color-workspace-canvas);
     color: var(--color-workspace-foreground);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+    /* Readable even if Inter fails to load on restricted mobile networks */
+    font-family:
+        var(--font-inter, ui-sans-serif),
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
 }
 
 ::selection {
