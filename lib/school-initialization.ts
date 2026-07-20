@@ -31,8 +31,10 @@ const DEFAULT_SETTINGS = [
   { key: "grading_system", value: { type: "percentage", pass_mark: 50 } },
   { key: "attendance_tracking", value: { per_lesson: true, per_day: false } },
   {
-    // Shared school day: Head Teacher can override via /api/admin/school-hours.
+    // Shared school day: Head Teacher sets classesStartAt at registration
+    // (and can override later via /api/admin/school-hours).
     // Mobile morning reminders + timetable bounds use this.
+    // Default offsets: 90 then 60 minutes before class start.
     key: "school_day",
     value: {
       timezone: "Africa/Lusaka",
@@ -40,7 +42,7 @@ const DEFAULT_SETTINGS = [
       classesStartAt: "08:00",
       classesEndAt: "16:00",
       schoolClosesAt: "16:30",
-      morningReminderOffsetsMinutes: [120, 90, 60, 30],
+      morningReminderOffsetsMinutes: [90, 60],
     },
   },
   {

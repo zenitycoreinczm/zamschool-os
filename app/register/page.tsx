@@ -203,6 +203,21 @@ const schoolSchema = z.object({
   district: z.string().min(1, "District is required"),
   schoolType: z.string().min(1, "School type is required"),
   ownershipType: z.string().min(1, "Ownership type is required"),
+  /** When first classes begin — powers student/parent late reminders. */
+  classesStartAt: z
+    .string()
+    .regex(
+      /^([01]?\d|2[0-3]):[0-5]\d$/,
+      "Enter class start time as HH:MM (e.g. 07:30)",
+    ),
+  schoolOpensAt: z
+    .string()
+    .regex(
+      /^([01]?\d|2[0-3]):[0-5]\d$/,
+      "Enter school open time as HH:MM (e.g. 07:00)",
+    )
+    .optional()
+    .or(z.literal("")),
 });
 
 type CodeFormValues = z.infer<typeof codeSchema>;
@@ -452,6 +467,18 @@ function RegisterContent() {
   // ── Step 3 form ──
   const schoolForm = useForm<SchoolFormValues>({
     resolver: zodResolver(schoolSchema),
+    defaultValues: {
+      schoolName: "",
+      schoolCode: "",
+      address: "",
+      emisCode: "",
+      province: "",
+      district: "",
+      schoolType: "",
+      ownershipType: "",
+      classesStartAt: "08:00",
+      schoolOpensAt: "07:00",
+    },
   });
 
   useEffect(() => {
@@ -647,6 +674,8 @@ function RegisterContent() {
           district: data.district,
           schoolType: data.schoolType,
           ownershipType: data.ownershipType,
+          classesStartAt: data.classesStartAt || "08:00",
+          schoolOpensAt: data.schoolOpensAt || "",
           accessCode: verifiedCode,
         }),
       });
@@ -1169,6 +1198,36 @@ function RegisterContent() {
                       <option value="Faith-Based">Faith-Based</option>
                     </select>
                   )}
+                </Field>
+
+                <Field
+                  label="Classes start at"
+                  error={schoolForm.formState.errors.classesStartAt?.message}
+                  hint="Students & parents get “don’t be late” alerts 1h30 and 1h before this time"
+                >
+                  <input
+                    type="time"
+                    {...schoolForm.register("classesStartAt")}
+                    className={inputClass(
+                      schoolForm.formState.errors.classesStartAt?.message,
+                    )}
+                    id="classesStartAt"
+                  />
+                </Field>
+
+                <Field
+                  label="School opens at"
+                  error={schoolForm.formState.errors.schoolOpensAt?.message}
+                  hint="Optional — gates open (defaults to 1 hour before classes)"
+                >
+                  <input
+                    type="time"
+                    {...schoolForm.register("schoolOpensAt")}
+                    className={inputClass(
+                      schoolForm.formState.errors.schoolOpensAt?.message,
+                    )}
+                    id="schoolOpensAt"
+                  />
                 </Field>
               </div>
 

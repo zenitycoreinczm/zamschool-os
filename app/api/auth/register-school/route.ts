@@ -58,6 +58,12 @@ async function resolveRegistrationUser(req: Request) {
   return { user, error };
 }
 
+const clockTimeSchema = z
+  .string()
+  .regex(/^([01]?\d|2[0-3]):[0-5]\d$/, "Use HH:MM time format")
+  .optional()
+  .or(z.literal(""));
+
 const registerSchoolSchema = z
   .object({
     email: z.string().email(),
@@ -74,6 +80,14 @@ const registerSchoolSchema = z
     district: z.string().max(120).optional().default(""),
     schoolType: z.string().max(120).optional().default(""),
     ownershipType: z.string().max(120).optional().default(""),
+    /**
+     * When classes begin (HH:MM). Drives morning late-reminders and
+     * timetable bounds. Defaults to 08:00 if omitted.
+     */
+    classesStartAt: clockTimeSchema,
+    schoolOpensAt: clockTimeSchema,
+    classesEndAt: clockTimeSchema,
+    schoolClosesAt: clockTimeSchema,
     /** The 6-digit access code that was pre-verified on the frontend */
     accessCode: z
       .string()
@@ -122,6 +136,10 @@ export async function POST(req: Request) {
       schoolType,
       ownershipType,
       accessCode,
+      classesStartAt,
+      schoolOpensAt,
+      classesEndAt,
+      schoolClosesAt,
     } = body;
     const headTeacherName = String(
       body.headTeacherName || body.adminName || "",
@@ -339,6 +357,50 @@ export async function POST(req: Request) {
 
     const initialization = await initializeSchoolDefaults(school.id);
 
+    // ── 6b. Persist Head Teacher school-day hours (drives mobile reminders) ──
+    // Defaults: open 1h before class start; end 16:00 / close 16:30.
+    let schoolDayHours: Awaited<
+      ReturnType<typeof import("@/lib/school-day-hours-server").saveSchoolDayHours>
+    > | null = null;
+    try {
+      const { saveSchoolDayHours } = await import(
+        "@/lib/school-day-hours-server"
+      );
+      const { DEFAULT_SCHOOL_DAY_HOURS, parseClockToMinutes, formatMinutesAsClock } =
+        await import("@/lib/school-day-hours");
+
+      const start =
+        String(classesStartAt || "").trim() ||
+        DEFAULT_SCHOOL_DAY_HOURS.classesStartAt;
+      const startMins =
+        parseClockToMinutes(start) ??
+        parseClockToMinutes(DEFAULT_SCHOOL_DAY_HOURS.classesStartAt)!;
+      const defaultOpen = formatMinutesAsClock(Math.max(0, startMins - 60));
+      const end =
+        String(classesEndAt || "").trim() ||
+        DEFAULT_SCHOOL_DAY_HOURS.classesEndAt;
+      const close =
+        String(schoolClosesAt || "").trim() ||
+        DEFAULT_SCHOOL_DAY_HOURS.schoolClosesAt;
+      const open =
+        String(schoolOpensAt || "").trim() || defaultOpen;
+
+      schoolDayHours = await saveSchoolDayHours(school.id, {
+        timezone: DEFAULT_SCHOOL_DAY_HOURS.timezone,
+        schoolOpensAt: open,
+        classesStartAt: start,
+        classesEndAt: end,
+        schoolClosesAt: close,
+        morningReminderOffsetsMinutes:
+          DEFAULT_SCHOOL_DAY_HOURS.morningReminderOffsetsMinutes,
+      });
+    } catch (hoursErr) {
+      console.warn(
+        "[register-school] school day hours save failed (non-fatal):",
+        safeErrorMessage(hoursErr, "unknown"),
+      );
+    }
+
     // ── 7. Mark access code as used ──────────────────────────────────────────
     await consumeSchoolAccessCode(accessCode, email);
 
@@ -352,6 +414,7 @@ export async function POST(req: Request) {
         code: finalCode,
         name: schoolName,
         access_code: accessCode,
+        classesStartAt: schoolDayHours?.classesStartAt || classesStartAt || null,
         initialization,
       },
       ipAddress: ip,
