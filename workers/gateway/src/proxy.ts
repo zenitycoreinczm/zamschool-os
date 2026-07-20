@@ -60,7 +60,7 @@ export async function handleCachedProxy(
         "";
 
       // Cache only safe-to-cache paths. Authenticated private responses are safe
-      // because the cache key varies by Authorization; no-store always wins.
+      // because the cache key varies by a SHA-256 of Authorization; no-store always wins.
       const upstreamSaysNoStore = /no-store/i.test(cdnCacheControl);
       const cacheable =
         allowedByPrefix && Boolean(cacheKey) && !upstreamSaysNoStore;
@@ -109,7 +109,7 @@ export async function handleCachedProxy(
     throw new Error(`Upstream error: ${response.status}`);
   } catch (_error) {
     // Network failure or upstream error: try the cache. We never bleed data -
-    // the cache key already locks this to the same Authorization header.
+    // the cache key already locks this to the same Authorization digest.
     const cached =
       allowedByPrefix && cacheKey ? await cache.match(cacheKey) : null;
     if (cached) {

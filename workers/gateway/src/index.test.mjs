@@ -246,8 +246,10 @@ test("cached proxy does not leak bearer token into upstream URL", async () => {
       },
       async put(req) {
         const cacheUrl = new URL(req.url);
-        assert.equal(cacheUrl.searchParams.has("__zamschool_auth"), true);
-        assert.doesNotMatch(req.url, /Bearer|valid-token|test-secret/);
+        const authDigest = cacheUrl.searchParams.get("__zamschool_auth") || "";
+        assert.match(authDigest, /^[a-f0-9]{64}$/);
+        assert.equal(req.headers.get("Authorization"), null);
+        assert.doesNotMatch(req.url, /Bearer|eyJ|test-secret/);
       },
     },
   };
