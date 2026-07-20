@@ -21,6 +21,8 @@ export type TeacherStudentIntelligenceRow = {
   classId: string;
   className: string;
   admissionNumber: string | null;
+  /** Register number within the class (unique per class when set). */
+  classNumber: number | null;
   displayName: string;
   email: string | null;
   attendance: {
@@ -67,6 +69,7 @@ type NormalizedStudentRow = {
   profileId: string | null;
   classId: string;
   admissionNumber: string | null;
+  classNumber: number | null;
   displayName: string;
   email: string | null;
 };
@@ -275,6 +278,7 @@ export async function loadTeacherStudentIntelligence(input: {
       classId: student.classId,
       className: classMap.get(student.classId) || "Class",
       admissionNumber: student.admissionNumber,
+      classNumber: student.classNumber,
       displayName: student.displayName,
       email: student.email,
       attendance: {
@@ -310,13 +314,38 @@ export async function loadTeacherStudentIntelligence(input: {
   };
 }
 
+function coerceClassNumber(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = typeof value === "number" ? value : Number(String(value).trim());
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.trunc(n);
+}
+
 async function loadStudentsByClassIds(schoolId: string, classIds: string[]) {
-  const { data: studentRows, error: studentError } = await supabaseAdmin
+  const withClassNumber = await supabaseAdmin
     .from("students")
-    .select("id, profile_id, class_id, school_id, student_number")
+    .select("id, profile_id, class_id, school_id, student_number, class_number")
     .eq("school_id", schoolId)
     .in("class_id", classIds)
     .order("student_number", { ascending: true });
+
+  let studentRows = withClassNumber.data;
+  let studentError = withClassNumber.error;
+
+  // Older schemas may not have class_number yet.
+  if (studentError && isSchemaCompatibilityError(studentError)) {
+    const legacy = await supabaseAdmin
+      .from("students")
+      .select("id, profile_id, class_id, school_id, student_number")
+      .eq("school_id", schoolId)
+      .in("class_id", classIds)
+      .order("student_number", { ascending: true });
+    studentRows = (legacy.data || []).map((row) => ({
+      ...row,
+      class_number: null as null,
+    }));
+    studentError = legacy.error;
+  }
 
   if (!studentError) {
     const profileIds = uniqueValues(
@@ -331,11 +360,16 @@ async function loadStudentsByClassIds(schoolId: string, classIds: string[]) {
       .map((row: any) => {
         const profile =
           profileMap.get(String(row.profile_id || "").trim()) || null;
+        const profileClassNumber = coerceClassNumber(
+          (profile as { class_number?: unknown } | null)?.class_number,
+        );
         return {
           id: String(row.id),
           profileId: row.profile_id || null,
           classId: String(row.class_id),
           admissionNumber: row.student_number || null,
+          classNumber:
+            coerceClassNumber(row.class_number) ?? profileClassNumber,
           displayName: buildDisplayName(profile, "Student"),
           email: profile?.email || null,
         } satisfies NormalizedStudentRow;
@@ -349,14 +383,37 @@ async function loadStudentsByClassIds(schoolId: string, classIds: string[]) {
   const { data: profileRows, error: profileError } = await supabaseAdmin
     .from("profiles")
     .select(
-      "id, class_id, first_name, last_name, email, role, admission_number",
+      "id, class_id, first_name, last_name, email, role, admission_number, class_number",
     )
     .eq("school_id", schoolId)
     .in("role", ["STUDENT", "student"])
     .in("class_id", classIds)
     .order("first_name", { ascending: true });
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    // Retry without class_number if column missing
+    const legacyProfiles = await supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, class_id, first_name, last_name, email, role, admission_number",
+      )
+      .eq("school_id", schoolId)
+      .in("role", ["STUDENT", "student"])
+      .in("class_id", classIds)
+      .order("first_name", { ascending: true });
+    if (legacyProfiles.error) throw legacyProfiles.error;
+    return (legacyProfiles.data || [])
+      .filter((row: any) => isNonEmptyString(row.class_id))
+      .map((row: any) => ({
+        id: String(row.id),
+        profileId: row.id || null,
+        classId: String(row.class_id),
+        admissionNumber: row.admission_number || null,
+        classNumber: null,
+        displayName: buildDisplayName(row, "Student"),
+        email: row.email || null,
+      }));
+  }
 
   return (profileRows || [])
     .filter((row: any) => isNonEmptyString(row.class_id))
@@ -365,6 +422,7 @@ async function loadStudentsByClassIds(schoolId: string, classIds: string[]) {
       profileId: row.id || null,
       classId: String(row.class_id),
       admissionNumber: row.admission_number || null,
+      classNumber: coerceClassNumber(row.class_number),
       displayName: buildDisplayName(row, "Student"),
       email: row.email || null,
     }));
@@ -376,6 +434,17 @@ async function loadProfilesByIds(profileIds: string[]) {
       string,
       { id: string; email: string | null } & Record<string, unknown>
     >();
+  }
+
+  const withClassNumber = await supabaseAdmin
+    .from("profiles")
+    .select("id, first_name, last_name, email, class_number")
+    .in("id", profileIds);
+
+  if (!withClassNumber.error) {
+    return new Map(
+      (withClassNumber.data || []).map((row: any) => [row.id, row]),
+    );
   }
 
   const { data, error } = await supabaseAdmin
