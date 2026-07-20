@@ -16,10 +16,21 @@ export default function WorkspaceError({
     /Failed to fetch dynamically imported module/i.test(error?.message || "") ||
     /Invalid or unexpected token/i.test(error?.message || "");
 
+  const isHooksError =
+    /Rendered more hooks than during the previous render/i.test(
+      error?.message || "",
+    ) ||
+    /Rendered fewer hooks than expected/i.test(error?.message || "") ||
+    /change in the order of Hooks/i.test(error?.message || "");
+
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      console.error("Workspace error caught:", error?.digest || error?.name);
-    }
+    // Always log in production so support can see digests in browser console.
+    console.error(
+      "[WorkspaceError]",
+      error?.digest || "no-digest",
+      error?.name,
+      error?.message,
+    );
 
     if (typeof window === "undefined" || !isChunkLoadError) return;
     const key = "zamschool:chunk-reload";
@@ -32,6 +43,7 @@ export default function WorkspaceError({
     }
   }, [error, isChunkLoadError]);
 
+  // Show a short safe message in production for known recoverable cases.
   const showDevDetail =
     process.env.NODE_ENV !== "production" && Boolean(error?.message);
 
@@ -39,13 +51,19 @@ export default function WorkspaceError({
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">
         <h1 className="mb-2 text-2xl font-bold text-slate-900">
-          {isChunkLoadError ? "App update needed" : "Something went wrong"}
+          {isChunkLoadError
+            ? "App update needed"
+            : isHooksError
+              ? "Page needs a refresh"
+              : "Something went wrong"}
         </h1>
 
         <p className="mb-6 text-sm leading-relaxed text-slate-600">
           {isChunkLoadError
             ? "The page script is out of date after a rebuild. Reload to continue."
-            : "This school page failed to load. Try again. If it keeps happening on school Wi-Fi, check your connection or open the page on another device."}
+            : isHooksError
+              ? "The app hit a temporary UI glitch after an update. Reload this page once to continue."
+              : "This school page failed to load. Try again. If it keeps happening on school Wi-Fi, check your connection or open the page on another device."}
         </p>
 
         {showDevDetail ? (

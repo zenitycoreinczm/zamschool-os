@@ -32,6 +32,26 @@ export default function StudentDashboard() {
 
   const [selectedAssignment, setSelectedAssignment] =
     useState<StudentAssignmentRow | null>(null);
+  const [guideDismissed, setGuideDismissed] = useState(true);
+
+  const summary = dashboard?.attendance.summary || getEmptyAttendanceSummary();
+  const className = dashboard?.profile.className || "Class pending";
+  const classNumber = dashboard?.profile.classNumber ?? null;
+
+  useEffect(() => {
+    setGuideDismissed(readGuideDismissed("zamschool.guide.student.dismissed"));
+  }, []);
+  const guide = useMemo(
+    () =>
+      buildStudentGuide({
+        hasResults: (results?.length ?? 0) > 0,
+        hasAbsences: Number(summary?.ABSENT ?? 0) > 0,
+      }),
+    [results, summary],
+  );
+  const showGuide =
+    !guideDismissed &&
+    ((results?.length ?? 0) === 0 || Number(summary?.ABSENT ?? 0) > 0);
 
   const openSubmissionDialog = (assignment: StudentAssignmentRow) => {
     setSelectedAssignment(assignment);
@@ -51,25 +71,6 @@ export default function StudentDashboard() {
       </div>
     );
   }
-
-  const summary = dashboard?.attendance.summary || getEmptyAttendanceSummary();
-  const className = dashboard?.profile.className || "Class pending";
-  const classNumber = dashboard?.profile.classNumber ?? null;
-  const [guideDismissed, setGuideDismissed] = useState(true);
-  useEffect(() => {
-    setGuideDismissed(readGuideDismissed("zamschool.guide.student.dismissed"));
-  }, []);
-  const guide = useMemo(
-    () =>
-      buildStudentGuide({
-        hasResults: (results?.length ?? 0) > 0,
-        hasAbsences: Number(summary?.ABSENT ?? 0) > 0,
-      }),
-    [results, summary],
-  );
-  const showGuide =
-    !guideDismissed &&
-    ((results?.length ?? 0) === 0 || Number(summary?.ABSENT ?? 0) > 0);
 
   return (
     <div className="flex-1 space-y-5 p-4 md:space-y-6 md:p-6">

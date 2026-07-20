@@ -42,6 +42,28 @@ export default function TeacherDashboard() {
     refresh,
   } = useTeacherDashboardData(!workspaceLoading);
 
+  // Hooks before any early return — otherwise React crashes the workspace shell.
+  const [guideDismissed, setGuideDismissed] = useState(true);
+  useEffect(() => {
+    setGuideDismissed(readGuideDismissed("zamschool.guide.teacher.dismissed"));
+  }, []);
+
+  const guide = useMemo(() => {
+    return buildTeacherGuide({
+      hasClasses: todayLessons.length > 0 || stats.lessons > 0,
+      hasRollCallToday: stats.completed > 0,
+      hasPublishedResults: (workload?.pendingGrades ?? 1) === 0,
+    });
+  }, [todayLessons, stats, workload]);
+
+  const showGuide =
+    !guideDismissed && (stats.lessons === 0 || stats.completed === 0);
+
+  const onRefresh = () => {
+    void refreshWorkspace();
+    void refresh();
+  };
+
   if (workspaceLoading) {
     return (
       <div
@@ -79,29 +101,6 @@ export default function TeacherDashboard() {
       </div>
     );
   }
-
-  const onRefresh = () => {
-    void refreshWorkspace();
-    void refresh();
-  };
-
-  const [guideDismissed, setGuideDismissed] = useState(true);
-  useEffect(() => {
-    setGuideDismissed(readGuideDismissed("zamschool.guide.teacher.dismissed"));
-  }, []);
-
-  const guide = useMemo(() => {
-    return buildTeacherGuide({
-      hasClasses: todayLessons.length > 0 || stats.lessons > 0,
-      // completed lessons / attendance progress from shell stats
-      hasRollCallToday: stats.completed > 0,
-      hasPublishedResults: (workload?.pendingGrades ?? 1) === 0,
-    });
-  }, [todayLessons, stats, workload]);
-
-  const showGuide =
-    !guideDismissed &&
-    (stats.lessons === 0 || stats.completed === 0);
 
   return (
     <div className="flex flex-col gap-5 p-4 md:gap-6 md:p-6">

@@ -39,21 +39,7 @@ export default function ParentDashboard() {
     error,
   } = useParentDashboard();
 
-  if (loading) {
-    return (
-      <div
-        className="flex-1 space-y-6 p-4 md:p-6"
-        role="status"
-        aria-live="polite"
-      >
-        <section className="grid place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-sm text-slate-500 shadow-sm">
-          <Loader2 className="mb-3 h-5 w-5 animate-spin text-slate-500" />
-          Loading family dashboard…
-        </section>
-      </div>
-    );
-  }
-
+  // Hooks must run before any early return (loading gate).
   const absentCount =
     Number(summary?.ABSENT ?? 0) + Number(summary?.LATE ?? 0);
   const [guideDismissed, setGuideDismissed] = useState(true);
@@ -70,6 +56,21 @@ export default function ParentDashboard() {
     [children.length, results, absentCount],
   );
   const showGuide = !guideDismissed && (children.length === 0 || absentCount > 0);
+
+  if (loading) {
+    return (
+      <div
+        className="flex-1 space-y-6 p-4 md:p-6"
+        role="status"
+        aria-live="polite"
+      >
+        <section className="grid place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-sm text-slate-500 shadow-sm">
+          <Loader2 className="mb-3 h-5 w-5 animate-spin text-slate-500" />
+          Loading family dashboard…
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-5 p-4 md:space-y-6 md:p-6">
