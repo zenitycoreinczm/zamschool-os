@@ -25,6 +25,12 @@ import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiFetch, adminApiJson } from "@/lib/admin-browser-api";
 import { getECZGrade } from "@/lib/zambia-localization";
+import {
+  buildNoDataMessage,
+  detectCsvDelimiter,
+  parseResultsGrid,
+  RESULTS_CSV_TEMPLATE,
+} from "@/lib/results/sheet-parse";
 
 type Subject = { id: string; name: string; code: string | null };
 type ClassItem = { id: string; name: string };
@@ -85,29 +91,6 @@ type StudentLookup = {
   admissionNumber: string | null;
   displayName: string;
 };
-
-const STUDENT_ID_COL_KEYS = [
-  "exam_number",
-  "exam_no",
-  "examno",
-  "admission_number",
-  "admission_no",
-  "student_number",
-  "student_no",
-  "student_id",
-  "id",
-  "registration",
-  "reg_no",
-];
-const MARKS_COL_KEYS = [
-  "marks",
-  "mark",
-  "score",
-  "points",
-  "total",
-  "raw_marks",
-];
-const GRADE_COL_KEYS = ["grade", "letter", "grade_letter", "letter_grade"];
 
 export default function TeacherResultsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -172,67 +155,79 @@ export default function TeacherResultsPage() {
   const studentLookup = useMemo(() => {
     const map = new Map<string, StudentLookup>();
     for (const s of students) {
-      if (s.admissionNumber) map.set(s.admissionNumber.toLowerCase(), s);
+      if (s.admissionNumber) {
+        map.set(s.admissionNumber.toLowerCase().trim(), s);
+        // Also index without spaces/dashes for EX-001 vs EX001
+        map.set(s.admissionNumber.toLowerCase().replace(/[\s_-]/g, ""), s);
+      }
       map.set(s.id.toLowerCase(), s);
+      if (s.displayName) {
+        map.set(s.displayName.toLowerCase().trim(), s);
+      }
     }
     return map;
   }, [students]);
+
+  const [parseDiagnostics, setParseDiagnostics] = useState<string | null>(null);
+  const [rawSample, setRawSample] = useState<string[][] | null>(null);
 
   const parseFile = useCallback(
     async (f: File) => {
       setPreviewLoading(true);
       setParsedRows(null);
       setShowPreview(false);
+      setParseDiagnostics(null);
+      setRawSample(null);
 
       try {
         const name = f.name.toLowerCase();
-        let rows: Record<string, string>[];
+        let grid: string[][] = [];
 
-        if (name.endsWith(".csv")) {
+        if (name.endsWith(".csv") || name.endsWith(".txt")) {
           const text = await f.text();
-          const result = Papa.parse<Record<string, string>>(text, {
-            header: true,
-            skipEmptyLines: true,
-            transformHeader: (h) =>
-              h
-                .toLowerCase()
-                .replace(/[^a-z0-9_]+/g, "_")
-                .replace(/^_|_$/g, "")
-                .trim(),
+          const delimiter = detectCsvDelimiter(text);
+          const gridResult = Papa.parse<string[]>(text, {
+            header: false,
+            skipEmptyLines: "greedy",
+            delimiter,
           });
-          if (result.errors.length > 0) {
-            const e = result.errors[0];
+          if (
+            gridResult.errors.length > 0 &&
+            (!gridResult.data || gridResult.data.length === 0)
+          ) {
+            const e = gridResult.errors[0];
             throw new Error(`CSV error at row ${e.row}: ${e.message}`);
           }
-          rows = result.data;
+          grid = (gridResult.data || []).map((line) =>
+            (Array.isArray(line) ? line : [String(line ?? "")]).map((c) =>
+              String(c ?? "").trim(),
+            ),
+          );
         } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
           const XLSX = await import("xlsx");
           const buffer = await f.arrayBuffer();
-          const wb = XLSX.read(buffer, { type: "array" });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          if (!ws) throw new Error("Excel file has no sheets");
-          const data = XLSX.utils.sheet_to_json<string[]>(ws, {
-            header: 1,
-            defval: "",
-          }) as string[][];
-          if (data.length < 2)
-            throw new Error(
-              "Excel file must have a header row and at least one data row",
+          const wb = XLSX.read(buffer, { type: "array", cellDates: false });
+          // Prefer the sheet with the most non-empty rows
+          let bestGrid: string[][] = [];
+          for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            if (!ws) continue;
+            const data = XLSX.utils.sheet_to_json<string[]>(ws, {
+              header: 1,
+              defval: "",
+              raw: false,
+              blankrows: false,
+            }) as string[][];
+            const candidate = data.map((line) =>
+              (line || []).map((c) => String(c ?? "").trim()),
             );
-          const headers = (data[0] || []).map((h) =>
-            h
-              .toLowerCase()
-              .replace(/[^a-z0-9_]+/g, "_")
-              .replace(/^_|_$/g, "")
-              .trim(),
-          );
-          rows = [];
-          for (let i = 1; i < data.length; i++) {
-            const row: Record<string, string> = {};
-            for (let j = 0; j < headers.length; j++) {
-              row[headers[j]] = (data[i]?.[j] || "").toString().trim();
-            }
-            if (Object.values(row).some((v) => v)) rows.push(row);
+            const filled = candidate.filter((r) => r.some(Boolean)).length;
+            const bestFilled = bestGrid.filter((r) => r.some(Boolean)).length;
+            if (filled > bestFilled) bestGrid = candidate;
+          }
+          grid = bestGrid;
+          if (grid.filter((r) => r.some(Boolean)).length < 1) {
+            throw new Error("Excel file has no data rows on any sheet");
           }
         } else {
           throw new Error(
@@ -240,58 +235,90 @@ export default function TeacherResultsPage() {
           );
         }
 
-        if (rows.length === 0) {
-          throw new Error("No data rows found in file");
+        const total = Number(totalMarks) || 100;
+        const sheet = parseResultsGrid(grid, { totalMarks: total });
+        setRawSample(sheet.sampleRows || grid.slice(0, 5));
+
+        if (sheet.rows.length === 0) {
+          const msg = buildNoDataMessage(sheet);
+          setParseDiagnostics(msg);
+          setParsedRows([]);
+          setShowPreview(true);
+          toast.error("Could not read rows from this file — see details below");
+          return;
         }
 
-        const parsed: ParsedRow[] = [];
-        for (const row of rows) {
-          const identifier = pickFirst(row, STUDENT_ID_COL_KEYS);
-          if (!identifier.trim()) continue;
-
-          const rawMarks = pickFirst(row, MARKS_COL_KEYS);
-          let marks: number | null = null;
-          if (rawMarks.trim()) {
-            marks = Number(rawMarks);
-            if (isNaN(marks)) continue;
-          }
-          let grade = pickFirst(row, GRADE_COL_KEYS) || null;
-          if (!grade && marks !== null) {
+        const parsed: ParsedRow[] = sheet.rows.map((row) => {
+          let grade = row.grade;
+          if (!grade && row.marks !== null) {
             try {
-              const scale = getECZGrade(marks);
+              const scale = getECZGrade(row.marks);
               grade = `${scale.grade} (${scale.label})`;
-            } catch {}
+            } catch {
+              /* ignore */
+            }
           }
-          const matched = studentLookup.get(identifier.trim().toLowerCase());
 
-          parsed.push({
-            identifier: identifier.trim(),
-            marks,
+          const key = row.identifier.trim().toLowerCase();
+          const keyCompact = key.replace(/[\s_-]/g, "");
+          const matched =
+            studentLookup.get(key) || studentLookup.get(keyCompact) || null;
+
+          return {
+            identifier: row.identifier.trim(),
+            marks: row.marks,
             grade,
             matchedStudent: matched?.displayName || null,
-          });
-        }
+          };
+        });
 
         setParsedRows(parsed);
         setShowPreview(true);
+        setParseDiagnostics(
+          `Read ${parsed.length} row(s). Columns: ${[
+            sheet.foundStudentIdColumn || sheet.foundNameColumn || "id/name",
+            sheet.foundMarksColumn || "marks",
+            sheet.foundGradeColumn,
+          ]
+            .filter(Boolean)
+            .join(", ")}`,
+        );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to parse file";
         toast.error(msg);
+        setParseDiagnostics(msg);
+        setParsedRows([]);
+        setShowPreview(true);
       } finally {
         setPreviewLoading(false);
       }
     },
-    [studentLookup],
+    [studentLookup, totalMarks],
   );
 
   useEffect(() => {
-    if (file && selectedClass) {
-      parseFile(file);
+    // Parse as soon as a file is chosen (class only needed for name matching).
+    if (file) {
+      void parseFile(file);
     } else {
       setParsedRows(null);
       setShowPreview(false);
+      setParseDiagnostics(null);
+      setRawSample(null);
     }
-  }, [file, selectedClass, parseFile]);
+  }, [file, parseFile]);
+
+  const downloadTemplate = () => {
+    const blob = new Blob([RESULTS_CSV_TEMPLATE], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "results-template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const matchedCount = useMemo(
     () => parsedRows?.filter((r) => r.matchedStudent).length ?? 0,
@@ -535,9 +562,19 @@ export default function TeacherResultsPage() {
             </div>
 
             <div className="mt-5">
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Result Sheet (CSV or Excel)
-              </label>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Result Sheet (CSV or Excel)
+                </label>
+                <button
+                  type="button"
+                  onClick={downloadTemplate}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-700"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download template
+                </button>
+              </div>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -565,7 +602,7 @@ export default function TeacherResultsPage() {
                       <span className="font-medium text-sky-600">browse</span>
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      CSV or Excel - columns: ExamNumber, Marks, Grade
+                      CSV or Excel — e.g. Admission No / Name + Marks (or Score)
                     </p>
                   </>
                 )}
@@ -690,19 +727,60 @@ export default function TeacherResultsPage() {
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold text-amber-800">
-                    No valid data found
+                    Could not read this file
                   </p>
                   <p className="mt-1 text-sm text-amber-700">
-                    Could not find any rows with a student identifier
-                    (ExamNumber, AdmissionNo, etc.) and valid marks. Check your
-                    file format and try again.
+                    {parseDiagnostics ||
+                      "No student rows found. Use Admission No (or Name) and Marks columns."}
+                  </p>
+                  {rawSample && rawSample.length > 0 && (
+                    <div className="mt-3 overflow-x-auto rounded-lg border border-amber-200 bg-white/80 p-2">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800/80">
+                        What we saw in your file
+                      </p>
+                      <table className="w-full text-left text-xs text-slate-700">
+                        <tbody>
+                          {rawSample.slice(0, 5).map((row, i) => (
+                            <tr key={i} className="border-t border-slate-100 first:border-0">
+                              <td className="py-1 pr-2 font-mono text-slate-400">
+                                {i + 1}
+                              </td>
+                              <td className="py-1 font-mono">
+                                {row.filter(Boolean).slice(0, 6).join(" · ") ||
+                                  "(empty row)"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={downloadTemplate}
+                      className={secondaryButton("text-xs")}
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download CSV template
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-amber-700/90">
+                    Hard-refresh the page (Ctrl+Shift+R) if this message still
+                    looks outdated, then re-upload.
                   </p>
                 </div>
               </div>
             </div>
           )}
+
+          {showPreview &&
+            parsedRows &&
+            parsedRows.length > 0 &&
+            parseDiagnostics && (
+              <p className="text-xs text-slate-500">{parseDiagnostics}</p>
+            )}
 
           {!showPreview && !previewLoading && (
             <button
@@ -924,7 +1002,7 @@ export default function TeacherResultsPage() {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
                   3
                 </span>
-                Upload CSV/Excel with columns: ExamNumber, Marks, Grade
+                Upload CSV/Excel with Admission No (or Name) and Marks/Score
               </li>
               <li className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
@@ -986,9 +1064,4 @@ export default function TeacherResultsPage() {
   );
 }
 
-function pickFirst(row: Record<string, string>, keys: string[]): string {
-  for (const key of keys) {
-    if (row[key] !== undefined && row[key] !== "") return row[key];
-  }
-  return "";
-}
+

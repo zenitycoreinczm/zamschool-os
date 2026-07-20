@@ -28,13 +28,12 @@ import { createAuditLog } from "@/lib/audit-log";
 import { evaluateRollCallWindow } from "@/lib/attendance/window";
 import { notifyHeadTeacherOfLateRollCall } from "@/lib/attendance/late-teacher-alert";
 
-// Keep in sync with lib/attendance/status.ts ATTENDANCE_STATUSES (mobile sends SICK too).
+// Keep in sync with the DB CHECK constraint: present/absent/late/excused.
 const attendanceStatusSchema = z.enum([
   "PRESENT",
   "ABSENT",
   "LATE",
   "EXCUSED",
-  "SICK",
 ]);
 
 const createAttendanceSchema = z.object({

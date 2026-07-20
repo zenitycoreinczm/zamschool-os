@@ -550,15 +550,16 @@ function PickerField({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const id = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(id);
   }, []);
 
   // Portal + fixed placement so the calendar is never clipped by workspace
   // shells (overflow-x: hidden on main scroll) or right-edge form columns.
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) {
-      setPanelStyle(null);
-      return;
+      const raf = window.requestAnimationFrame(() => setPanelStyle(null));
+      return () => window.cancelAnimationFrame(raf);
     }
 
     function place() {

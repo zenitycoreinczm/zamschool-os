@@ -7,18 +7,13 @@ import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { getECZGrade } from "@/lib/zambia-localization";
+import {
+  buildNoDataMessage,
+  detectCsvDelimiter,
+  parseResultsGrid,
+} from "@/lib/results/sheet-parse";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-
-const STUDENT_ID_COL_KEYS = [
-  "exam_number", "exam no", "examno",
-  "admission_number", "admission no",
-  "student_number",
-  "student_id", "id",
-  "registration", "reg_no",
-];
-const MARKS_COL_KEYS = ["marks", "mark", "score", "points", "total", "raw_marks"];
-const GRADE_COL_KEYS = ["grade", "letter", "grade_letter", "letter_grade", "grade_letter"];
 
 export async function POST(req: NextRequest) {
   try {
@@ -96,52 +91,40 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileName = file.name.toLowerCase();
 
-    let rows: Record<string, string>[];
-    if (fileName.endsWith(".csv")) {
-      rows = await parseCsv(buffer);
-    } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-      rows = parseExcel(buffer);
-    } else {
+    let grid: string[][];
+    try {
+      if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
+        grid = await parseCsvGrid(buffer);
+      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        grid = parseExcelGrid(buffer);
+      } else {
+        return NextResponse.json(
+          { error: "Unsupported format. Upload CSV or Excel (.xlsx/.xls) files." },
+          { status: 400 }
+        );
+      }
+    } catch (parseError: unknown) {
       return NextResponse.json(
-        { error: "Unsupported format. Upload CSV or Excel (.xlsx/.xls) files." },
-        { status: 400 }
+        {
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : "Failed to parse file",
+        },
+        { status: 400 },
       );
     }
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "No data rows found in file" }, { status: 400 });
-    }
-
-    // ── COLUMN VALIDATION ─────────────────────────────────────────────────────
-    const headers = Object.keys(rows[0] || {});
-    const normalizedHeaders = headers.map(normalizeHeader);
-    const hasStudentIdCol = STUDENT_ID_COL_KEYS.some((key) =>
-      normalizedHeaders.includes(key)
-    );
-    const hasMarksCol = MARKS_COL_KEYS.some((key) =>
-      normalizedHeaders.includes(key)
-    );
-    const hasGradeCol = GRADE_COL_KEYS.some((key) =>
-      normalizedHeaders.includes(key)
-    );
-
-    if (!hasStudentIdCol) {
+    const sheet = parseResultsGrid(grid, { totalMarks });
+    if (sheet.rows.length === 0) {
       return NextResponse.json(
         {
-          error: `Missing student identifier column. Expected one of: ${STUDENT_ID_COL_KEYS.slice(0, 5).join(", ")}, etc.`,
-          foundColumns: headers.slice(0, 20),
+          error: buildNoDataMessage(sheet),
+          foundColumns: sheet.headers.slice(0, 20),
+          sampleRows: sheet.sampleRows?.slice(0, 5),
+          warnings: sheet.warnings.slice(0, 20),
         },
-        { status: 400 }
-      );
-    }
-
-    if (!hasMarksCol && !hasGradeCol) {
-      return NextResponse.json(
-        {
-          error: `Missing marks/grade columns. Expected at least one of: ${MARKS_COL_KEYS.slice(0, 5).join(", ")} or ${GRADE_COL_KEYS.slice(0, 3).join(", ")}`,
-          foundColumns: headers.slice(0, 20),
-        },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -157,45 +140,12 @@ export async function POST(req: NextRequest) {
       grade: string | null;
     }
 
-    const parsed: ParsedRow[] = [];
-    const warnings: string[] = [];
-
-    for (const [index, row] of rows.entries()) {
-      const identifier = pickFirst(row, STUDENT_ID_COL_KEYS);
-      if (!identifier.trim()) {
-        warnings.push(`Row ${index + 1}: No student identifier found - skipped. Required columns: ${STUDENT_ID_COL_KEYS.slice(0, 5).join(", ")}, etc.`);
-        continue;
-      }
-
-      const rawMarks = pickFirst(row, MARKS_COL_KEYS);
-      let marks: number | null = null;
-      if (rawMarks.trim()) {
-        marks = Number(rawMarks);
-        if (isNaN(marks)) {
-          warnings.push(`Row ${index + 1}: "${rawMarks}" is not a valid number - skipped`);
-          continue;
-        }
-        if (marks < 0 || marks > totalMarks) {
-          warnings.push(`Row ${index + 1}: marks ${marks} out of range 0–${totalMarks} - clamped`);
-          marks = Math.max(0, Math.min(totalMarks, marks));
-        }
-      }
-
-      const grade = pickFirst(row, GRADE_COL_KEYS) || computeGrade(marks, gradingScales || []);
-
-      parsed.push({
-        identifier: identifier.trim(),
-        marks,
-        grade: grade || null,
-      });
-    }
-
-    if (parsed.length === 0) {
-      return NextResponse.json({
-        error: "No valid student rows found. Every row was missing a student identifier or had invalid marks.",
-        warnings: warnings.slice(0, 20),
-      }, { status: 400 });
-    }
+    const warnings: string[] = [...sheet.warnings];
+    const parsed: ParsedRow[] = sheet.rows.map((row) => ({
+      identifier: row.identifier.trim(),
+      marks: row.marks,
+      grade: row.grade || computeGrade(row.marks, gradingScales || []),
+    }));
 
     const studentIdByIdentifier = await resolveStudentIds(schoolId, classId, parsed);
 
@@ -210,7 +160,10 @@ export async function POST(req: NextRequest) {
     }[] = [];
 
     for (const row of parsed) {
-      const studentId = studentIdByIdentifier.get(row.identifier.toLowerCase());
+      const key = row.identifier.toLowerCase().trim();
+      const studentId =
+        studentIdByIdentifier.get(key) ||
+        studentIdByIdentifier.get(key.replace(/[\s_-]/g, ""));
       if (!studentId) {
         unmatched.push(row.identifier);
         continue;
@@ -526,17 +479,6 @@ async function fallbackUpsertResults(
   return { created, updated };
 }
 
-function pickFirst(row: Record<string, string>, keys: string[]): string {
-  for (const key of keys) {
-    if (row[key] !== undefined && row[key] !== "") return row[key];
-  }
-  return "";
-}
-
-function normalizeHeader(h: string): string {
-  return h.toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_|_$/g, "").trim();
-}
-
 function computeGrade(
   marks: number | null,
   scales: Array<{ min_score: number; max_score: number; grade: string }>,
@@ -560,45 +502,55 @@ function isMissingTableError(error: { code?: string; message?: string } | null |
   return error?.code === "42P01" || message.includes("does not exist") || message.includes("schema cache");
 }
 
-async function parseCsv(buffer: Buffer): Promise<Record<string, string>[]> {
+async function parseCsvGrid(buffer: Buffer): Promise<string[][]> {
   const Papa = await import("papaparse");
-  const result = Papa.parse<Record<string, string>>(buffer.toString("utf-8"), {
-    header: true, skipEmptyLines: true, transformHeader: normalizeHeader,
+  const text = buffer.toString("utf-8");
+  const delimiter = detectCsvDelimiter(text);
+  const result = Papa.parse<string[]>(text, {
+    header: false,
+    skipEmptyLines: "greedy",
+    delimiter,
   });
-  if (result.errors.length > 0) {
+  if (result.errors.length > 0 && (!result.data || result.data.length === 0)) {
     const e = result.errors[0];
     throw new Error(`CSV error at row ${e.row}: ${e.message}`);
   }
-  return result.data;
+  return (result.data || []).map((line) =>
+    (Array.isArray(line) ? line : [line]).map((c) => String(c ?? "").trim()),
+  );
 }
 
-function parseExcel(buffer: Buffer): Record<string, string>[] {
+function parseExcelGrid(buffer: Buffer): string[][] {
   const XLSX = require("xlsx") as typeof import("xlsx");
-  const wb = XLSX.read(buffer, { type: "buffer" });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  if (!ws) throw new Error("Excel file has no sheets");
-
-  const data = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
-  if (data.length < 2) throw new Error("Excel file must have a header row and at least one data row");
-
-  const headers = (data[0] || []).map(normalizeHeader);
-  const rows: Record<string, string>[] = [];
-
-  for (let i = 1; i < data.length; i++) {
-    const row: Record<string, string> = {};
-    for (let j = 0; j < headers.length; j++) {
-      row[headers[j]] = (data[i]?.[j] || "").toString().trim();
+  const wb = XLSX.read(buffer, { type: "buffer", cellDates: false });
+  let best: string[][] = [];
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    if (!ws) continue;
+    const data = XLSX.utils.sheet_to_json<string[]>(ws, {
+      header: 1,
+      defval: "",
+      raw: false,
+      blankrows: false,
+    }) as string[][];
+    const grid = data.map((line) =>
+      (line || []).map((c) => String(c ?? "").trim()),
+    );
+    const filled = grid.filter((r) => r.some(Boolean)).length;
+    if (filled > best.filter((r) => r.some(Boolean)).length) {
+      best = grid;
     }
-    if (Object.values(row).some((v) => v)) rows.push(row);
   }
-
-  return rows;
+  if (best.filter((r) => r.some(Boolean)).length < 1) {
+    throw new Error("Excel file has no data rows on any sheet");
+  }
+  return best;
 }
 
 async function resolveStudentIds(
   schoolId: string,
   classId: string,
-  rows: { identifier: string }[],
+  _rows: { identifier: string }[],
 ): Promise<Map<string, string>> {
   const supabaseAdmin = getSupabaseAdmin();
   const { data: students, error } = await supabaseAdmin
@@ -611,35 +563,47 @@ async function resolveStudentIds(
 
   const result = new Map<string, string>();
 
+  const indexKey = (value: string, studentId: string) => {
+    const key = String(value || "")
+      .toLowerCase()
+      .trim();
+    if (!key) return;
+    result.set(key, studentId);
+    result.set(key.replace(/[\s_-]/g, ""), studentId);
+  };
+
   for (const s of students || []) {
-    if (s.student_number) {
-      result.set(s.student_number.toLowerCase(), s.id);
-    }
-    if (s.profile_id) {
-      result.set(s.profile_id.toLowerCase(), s.id);
-    }
-    result.set(s.id.toLowerCase(), s.id);
+    if (s.student_number) indexKey(s.student_number, s.id);
+    if (s.profile_id) indexKey(s.profile_id, s.id);
+    indexKey(s.id, s.id);
   }
 
-  const missingIdentifiers = rows
-    .map((r) => r.identifier.toLowerCase())
-    .filter((id) => !result.has(id));
-
-  if (missingIdentifiers.length > 0 && students && students.length > 0) {
+  if (students && students.length > 0) {
     const profileIds = Array.from(
-      new Set(students.map((s: any) => s.profile_id).filter(Boolean))
+      new Set(students.map((s: any) => s.profile_id).filter(Boolean)),
     );
     if (profileIds.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
-        .select("id, email")
+        .select("id, email, first_name, last_name")
         .eq("school_id", schoolId)
         .in("id", profileIds);
 
+      const studentIdByProfile = new Map(
+        (students || [])
+          .filter((s: any) => s.profile_id)
+          .map((s: any) => [String(s.profile_id), String(s.id)]),
+      );
+
       for (const p of profiles || []) {
-        if (p.email) {
-          result.set(p.email.toLowerCase(), result.get(p.id.toLowerCase()) || p.id);
-        }
+        const studentId = studentIdByProfile.get(String(p.id));
+        if (!studentId) continue;
+        if (p.email) indexKey(p.email, studentId);
+        const fullName = [p.first_name, p.last_name]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+        if (fullName) indexKey(fullName, studentId);
       }
     }
   }

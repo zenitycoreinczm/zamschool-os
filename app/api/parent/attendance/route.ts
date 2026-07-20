@@ -100,7 +100,10 @@ export async function GET(req: Request) {
     // attendance.student_id is usually students.id; historically may be profile id.
     // Query both keys so new roll calls always surface for the parent.
     const attendanceStudentKeys = Array.from(
-      new Set([...scopedStudentRowIds, ...scopedProfileIds].filter(Boolean)),
+      new Set([
+        ...(scopedStudentRowIds.length > 0 ? scopedStudentRowIds : []),
+        ...scopedProfileIds,
+      ].filter(Boolean)),
     );
 
     let attendanceRows: any[] = [];

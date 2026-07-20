@@ -58,6 +58,7 @@ const DAY_OPTIONS = [
   { value: "5", label: "Friday" },
 ];
 
+const DEFAULT_TIMETABLE_START = "07:00";
 const FALLBACK_TIME_CHOICES = buildTimeChoices("06:00", "20:00", 5);
 
 const EMPTY_FORM: LessonForm = {

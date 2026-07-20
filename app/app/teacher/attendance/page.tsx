@@ -63,6 +63,8 @@ type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
 
 const EXCEPTION_OPTIONS: AttendanceStatus[] = ["ABSENT", "LATE", "EXCUSED"];
 
+const SESSION_TYPES = ["Morning", "Midday", "Afternoon", "Evening"] as const;
+
 const STATUS_COLORS: Record<string, string> = {
   PRESENT: "bg-emerald-500 text-white shadow-sm",
   ABSENT: "bg-rose-500 text-white shadow-sm",
