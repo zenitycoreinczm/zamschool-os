@@ -309,49 +309,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Optional exam link (exam_date is NOT NULL; soft-fail if schema differs) ─
-    let examId: string | null = null;
-    try {
-      const examDateIso = new Date().toISOString().slice(0, 10);
-      const { data: existingExam } = await supabaseAdmin
-        .from("exams")
-        .select("id")
-        .eq("school_id", schoolId)
-        .eq("class_id", classId)
-        .eq("subject_id", subjectId)
-        .eq("title", examTitle.trim())
-        .maybeSingle();
-      if (existingExam?.id) {
-        examId = existingExam.id;
-      } else {
-        const { data: exam, error: examError } = await supabaseAdmin
-          .from("exams")
-          .insert({
-            school_id: schoolId,
-            class_id: classId,
-            subject_id: subjectId,
-            title: examTitle.trim(),
-            exam_date: examDateIso,
-            total_marks: totalMarks,
-            status: "draft",
-          })
-          .select("id")
-          .maybeSingle();
-
-        if (examError && !isMissingTableError(examError)) {
-          console.warn("[results-upload] exam create skipped:", examError.message);
-        }
-        examId = exam?.id || null;
-      }
-    } catch (examErr) {
-      console.warn("[results-upload] exam link skipped:", examErr);
-      examId = null;
-    }
-
-    // ── ATOMIC results upsert ─────────────────────────────────────────────────
+    // results_exactly_one_source: either exam_id XOR assignment_id — never both.
+    // Result-sheet uploads are assignment-backed; keep exam_id null.
     for (const row of resultsPayload) {
       row.assignment_id = assignmentId;
-      row.exam_id = examId;
+      row.exam_id = null;
     }
 
     // ── ANOMALY DETECTION: fetch existing marks before upsert ────────────────
@@ -382,8 +344,14 @@ export async function POST(req: NextRequest) {
 
     try {
       const schoolScopedResultsPayload = resultsPayload.map((row) => ({
-        ...row,
         school_id: schoolId,
+        student_id: row.student_id,
+        assignment_id: assignmentId,
+        exam_id: null,
+        score: row.score,
+        grade: row.grade,
+        assessment_name: examTitle.trim(),
+        grading_status: "draft",
       }));
       const { data: upserted, error: upsertError } = await supabaseAdmin
         .from("results")
@@ -502,6 +470,9 @@ export async function POST(req: NextRequest) {
       } else if (/student_id must belong|foreign key.*student/i.test(raw)) {
         friendly =
           "One or more students could not be saved. Check class numbers match the class list.";
+      } else if (/exactly_one_source|exam_id|assignment_id/i.test(raw)) {
+        friendly =
+          "Could not save results (exam/assignment link conflict). Please try again.";
       } else if (/unique|duplicate key/i.test(raw)) {
         friendly =
           "A conflicting results row already exists. Refresh and try again, or unpublish first.";
@@ -582,9 +553,15 @@ async function fallbackUpsertResults(
       if (error) throw error;
       updated++;
     } else {
-      const { error } = await supabaseAdmin
-        .from("results")
-        .insert(row);
+      const { error } = await supabaseAdmin.from("results").insert({
+        school_id: schoolId,
+        student_id: row.student_id,
+        assignment_id: row.assignment_id,
+        exam_id: null,
+        score: row.score,
+        grade: row.grade,
+        grading_status: "draft",
+      });
       if (error) {
         // Unique violation - row was inserted concurrently, treat as update
         if (error.code === "23505" || error.message?.includes("unique")) {

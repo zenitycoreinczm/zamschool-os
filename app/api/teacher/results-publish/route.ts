@@ -169,6 +169,9 @@ export async function POST(req: Request) {
       (row: any) => row.id,
     );
 
+    // published_by → profiles.id (not auth.users id)
+    const publisherProfileId = access.context.profileId || userId;
+
     // Teacher direct publish (roll-call style): parents can see results immediately.
     // Full multi-stage moderation remains available on the admin results desk.
     const { error: publishError } = await supabaseAdmin
@@ -176,7 +179,7 @@ export async function POST(req: Request) {
       .update({
         grading_status: "published",
         published_at: publishedAt,
-        published_by: userId,
+        published_by: publisherProfileId,
         submitted_at: publishedAt,
         submitted_by: userId,
       })
@@ -190,7 +193,7 @@ export async function POST(req: Request) {
           .from("results")
           .update({
             published_at: publishedAt,
-            published_by: userId,
+            published_by: publisherProfileId,
           })
           .in("id", publishIds)
           .eq("school_id", schoolId);
