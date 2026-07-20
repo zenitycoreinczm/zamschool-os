@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { useTeacherWorkspace } from "@/components/TeacherWorkspaceProvider";
@@ -11,6 +12,11 @@ import { TeacherTeachingProfile } from "@/components/teacher/dashboard/TeacherTe
 import { TeacherTodaySchedule } from "@/components/teacher/dashboard/TeacherTodaySchedule";
 import { TeacherWorkload } from "@/components/teacher/dashboard/TeacherWorkload";
 import { useTeacherDashboardData } from "@/components/teacher/dashboard/useTeacherDashboardData";
+import RoleSetupGuide, {
+  persistGuideDismissed,
+  readGuideDismissed,
+} from "@/components/workspace/RoleSetupGuide";
+import { buildTeacherGuide } from "@/lib/workspace/role-onboarding";
 
 export default function TeacherDashboard() {
   const workspace = useTeacherWorkspace();
@@ -79,6 +85,24 @@ export default function TeacherDashboard() {
     void refresh();
   };
 
+  const [guideDismissed, setGuideDismissed] = useState(true);
+  useEffect(() => {
+    setGuideDismissed(readGuideDismissed("zamschool.guide.teacher.dismissed"));
+  }, []);
+
+  const guide = useMemo(() => {
+    return buildTeacherGuide({
+      hasClasses: todayLessons.length > 0 || stats.lessons > 0,
+      // completed lessons / attendance progress from shell stats
+      hasRollCallToday: stats.completed > 0,
+      hasPublishedResults: (workload?.pendingGrades ?? 1) === 0,
+    });
+  }, [todayLessons, stats, workload]);
+
+  const showGuide =
+    !guideDismissed &&
+    (stats.lessons === 0 || stats.completed === 0);
+
   return (
     <div className="flex flex-col gap-5 p-4 md:gap-6 md:p-6">
       <TeacherDashboardHero
@@ -96,6 +120,16 @@ export default function TeacherDashboard() {
       />
 
       <TeacherAttentionBanner workload={workload} />
+
+      {showGuide ? (
+        <RoleSetupGuide
+          guide={guide}
+          onDismiss={() => {
+            persistGuideDismissed(guide.storageKey);
+            setGuideDismissed(true);
+          }}
+        />
+      ) : null}
 
       <TeacherQuickActions />
 

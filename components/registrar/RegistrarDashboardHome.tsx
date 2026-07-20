@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { FocusPills } from "@/components/workspace/FocusPills";
+import RoleSetupGuide, {
+  persistGuideDismissed,
+  readGuideDismissed,
+} from "@/components/workspace/RoleSetupGuide";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
 import { useWorkspaceData } from "@/components/workspace/workspace-context";
+import { buildRegistrarGuide } from "@/lib/workspace/role-onboarding";
 import { schoolHeroStatsFromSummary } from "@/lib/workspace/metric-display";
 
 const FALLBACK_LABELS = [
@@ -33,6 +39,13 @@ const SIMPLE_STEPS = [
 export default function RegistrarDashboardHome() {
   const workspace = useWorkspaceData();
   const { metrics, highlights, loading } = useWorkspaceSummary();
+  const [guideDismissed, setGuideDismissed] = useState(true);
+
+  useEffect(() => {
+    setGuideDismissed(
+      readGuideDismissed("zamschool.guide.registrar.dismissed"),
+    );
+  }, []);
 
   const schoolName = workspace?.schoolName || "Your school";
   const yearTerm = workspace?.yearTerm || "the current term";
@@ -46,6 +59,27 @@ export default function RegistrarDashboardHome() {
   );
 
   const focusItems = highlights.length > 0 ? highlights : DEFAULT_FOCUS;
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const m of metrics) {
+      const n = Number(String(m.value).replace(/,/g, ""));
+      if (Number.isFinite(n)) map[String(m.label || "").toLowerCase()] = n;
+    }
+    return {
+      classCount: map.classes ?? 0,
+      studentCount: map.students ?? 0,
+      teacherCount: map.teachers ?? 0,
+      parentCount: map.parents ?? 0,
+    };
+  }, [metrics]);
+
+  const guide = useMemo(() => buildRegistrarGuide(counts), [counts]);
+  const showGuide =
+    !guideDismissed &&
+    (counts.classCount < 1 ||
+      counts.studentCount < 5 ||
+      counts.teacherCount < 1);
 
   return (
     <div className="space-y-5 p-4 pb-8 md:p-6">
@@ -74,6 +108,16 @@ export default function RegistrarDashboardHome() {
       />
 
       <FocusPills items={focusItems} accent="slate" />
+
+      {showGuide ? (
+        <RoleSetupGuide
+          guide={guide}
+          onDismiss={() => {
+            persistGuideDismissed(guide.storageKey);
+            setGuideDismissed(true);
+          }}
+        />
+      ) : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -121,15 +165,15 @@ export default function RegistrarDashboardHome() {
               <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
             </Link>
             <Link
-              href="/app/registrar/people"
+              href="/app/registrar/people?bulk=1"
               className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
             >
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-slate-800">
-                  Bulk learner import
+                  Bulk learner / teacher import
                 </span>
                 <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
-                  Import new students from CSV/Excel admission files.
+                  CSV bulk upload on People — students, teachers, or parents.
                 </span>
               </span>
               <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />

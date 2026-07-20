@@ -1,4 +1,5 @@
-import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Download, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import type { ParentResultRow } from "@/components/parent/dashboard/types";
@@ -17,16 +18,27 @@ export function ParentPublishedResults({
       aria-labelledby="parent-published-results-heading"
       className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
-          Published Results
-        </p>
-        <h2
-          id="parent-published-results-heading"
-          className="mt-1 text-2xl font-semibold text-slate-900"
-        >
-          Academic updates for linked children
-        </h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-400">
+            Published Results
+          </p>
+          <h2
+            id="parent-published-results-heading"
+            className="mt-1 text-2xl font-semibold text-slate-900"
+          >
+            Academic updates for linked children
+          </h2>
+        </div>
+        {results.length > 0 ? (
+          <Link
+            href="/app/parent/results"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-sky-700"
+          >
+            <Download className="h-4 w-4" />
+            Download certificate
+          </Link>
+        ) : null}
       </div>
 
       {loading ? (

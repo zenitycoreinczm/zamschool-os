@@ -44,7 +44,7 @@ export default function ParentResultsPage() {
   const [children, setChildren] = useState<
     Array<{ id: string; displayName: string }>
   >([]);
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
   const [downloading, setDownloading] = useState<number | null>(null);
   const certRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const loadKey = useRef(0);
@@ -96,22 +96,30 @@ export default function ParentResultsPage() {
   }, []);
 
   const handleDownload = async (idx: number) => {
+    if (expandedIdx !== idx) {
+      setExpandedIdx(idx);
+      await new Promise((r) => setTimeout(r, 80));
+    }
     const el = certRefs.current.get(idx);
-    if (!el) return;
+    if (!el) {
+      window.print();
+      return;
+    }
     setDownloading(idx);
     try {
       const dataUrl = await toPng(el, {
         quality: 0.95,
         pixelRatio: 2,
         width: 794,
+        backgroundColor: "#ffffff",
         style: { transform: "scale(1)", transformOrigin: "top left" },
       });
+      const exam = exams[idx];
       const link = document.createElement("a");
-      link.download = `Statement_of_Results_${exams[idx].studentName.replace(/\s+/g, "_")}_${exams[idx].examTitle.replace(/\s+/g, "_")}.png`;
+      link.download = `Certificate_${exam.studentName.replace(/\s+/g, "_")}_${exam.className.replace(/\s+/g, "_")}_${exam.examTitle.replace(/\s+/g, "_")}.png`;
       link.href = dataUrl;
       link.click();
     } catch {
-      // fallback: open print dialog
       window.print();
     } finally {
       setDownloading(null);
@@ -164,23 +172,24 @@ export default function ParentResultsPage() {
                 key={`${exam.examTitle}-${exam.studentName}-${idx}`}
                 className="rounded-xl border border-slate-200 bg-white shadow-sm"
               >
-                <button
-                  onClick={() => toggleExpand(idx)}
-                  className="flex w-full items-center justify-between p-4 text-left"
-                >
-                  <div className="min-w-0">
-                    <div className="font-semibold text-slate-900">
-                      {exam.examTitle}
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(idx)}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-900">
+                        {exam.examTitle}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {exam.studentName} · {exam.schoolName} · {exam.className}{" "}
+                        · {exam.subjects.length} subjects
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-500">
-                      {exam.studentName} · {exam.className} ·{" "}
-                      {exam.subjects.length} subjects
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
                         exam.overallGrade === "DISTINCTION"
                           ? "bg-emerald-100 text-emerald-700"
                           : exam.overallGrade === "CREDIT"
@@ -193,53 +202,70 @@ export default function ParentResultsPage() {
                       {exam.overallGrade}
                     </span>
                     {isExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-slate-400" />
+                      <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-slate-400" />
+                      <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
                     )}
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownload(idx)}
+                    disabled={downloading === idx}
+                    className={primaryButton("disabled:opacity-50 shrink-0")}
+                  >
+                    {downloading === idx ? (
+                      <>Downloading…</>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Download certificate
+                      </>
+                    )}
+                  </button>
+                </div>
 
-                {isExpanded && (
-                  <div className="border-t border-slate-100 px-4 pb-4">
-                    <div className="mt-4 overflow-x-auto">
-                      <StatementOfResults
-                        ref={(el) => setCertRef(idx, el)}
-                        studentName={exam.studentName}
-                        examNumber={exam.examNumber}
-                        schoolName={exam.schoolName}
-                        examYear={exam.year}
-                        examTitle={exam.examTitle}
-                        subjects={exam.subjects}
-                        overallGrade={exam.overallGrade}
-                        totalScore={exam.totalScore}
-                        totalPossible={exam.totalPossible}
-                        average={exam.average}
-                        position={exam.position}
-                        classSize={exam.classSize}
-                        verificationCode={exam.verificationCode}
-                        publishedAt={exam.publishedAt}
-                        teacherName={exam.teacherName}
-                      />
-                    </div>
+                <div
+                  className={cn(
+                    "border-t border-slate-100 px-4 pb-4",
+                    !isExpanded && "sr-only",
+                  )}
+                  aria-hidden={!isExpanded}
+                >
+                  <div className="mt-4 overflow-x-auto">
+                    <StatementOfResults
+                      ref={(el) => setCertRef(idx, el)}
+                      studentName={exam.studentName}
+                      examNumber={exam.examNumber}
+                      schoolName={exam.schoolName}
+                      className={exam.className}
+                      examYear={exam.year}
+                      examTitle={exam.examTitle}
+                      subjects={exam.subjects}
+                      overallGrade={exam.overallGrade}
+                      totalScore={exam.totalScore}
+                      totalPossible={exam.totalPossible}
+                      average={exam.average}
+                      position={exam.position}
+                      classSize={exam.classSize}
+                      verificationCode={exam.verificationCode}
+                      publishedAt={exam.publishedAt}
+                      teacherName={exam.teacherName}
+                    />
+                  </div>
+                  {isExpanded ? (
                     <div className="mt-4 flex justify-end">
                       <button
-                        onClick={() => handleDownload(idx)}
+                        type="button"
+                        onClick={() => void handleDownload(idx)}
                         disabled={downloading === idx}
                         className={secondaryButton("disabled:opacity-50")}
                       >
-                        {downloading === idx ? (
-                          <>Downloading...</>
-                        ) : (
-                          <>
-                            <Download className="h-4 w-4" />
-                            Download Certificate
-                          </>
-                        )}
+                        <Download className="h-4 w-4" />
+                        Download certificate
                       </button>
                     </div>
-                  </div>
-                )}
+                  ) : null}
+                </div>
               </div>
             );
           })}

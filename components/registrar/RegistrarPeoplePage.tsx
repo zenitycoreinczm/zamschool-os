@@ -26,6 +26,7 @@ import {
   fetchRelationships,
 } from "./registrar-api";
 import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
+import BulkImport from "@/components/BulkImport";
 import { getDisplayName } from "@/lib/profile-utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -166,6 +167,8 @@ export default function RegistrarPeoplePage() {
   const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
   const [subjectOptions, setSubjectOptions] = useState<SubjectOption[]>([]);
 
+  const [bulkOpen, setBulkOpen] = useState(false);
+
   // Form state
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ProfileRow | null>(null);
@@ -190,6 +193,10 @@ export default function RegistrarPeoplePage() {
 
   useEffect(() => {
     void init();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("bulk") === "1") setBulkOpen(true);
+    }
   }, []);
 
   async function init() {
@@ -441,10 +448,9 @@ export default function RegistrarPeoplePage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Registrar workspace</p>
         <h1 className="mt-2 text-2xl font-semibold">People</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Add students, parents, and teachers with the Add button and tabs below.
-          Invite Deputy Head, Bursar, Registrar, and other office staff in Staff
-          invitations (Head Teacher) - not through Add student/teacher/parent.
-          Link parents to their children from the Parents tab.
+          Add students, parents, and teachers one-by-one or bulk CSV. Office staff
+          (Deputy Head, Bursar, etc.) are invited by the Head Teacher — not here.
+          Link parents to children from the Parents tab.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <div className="relative">
@@ -463,8 +469,40 @@ export default function RegistrarPeoplePage() {
             <Plus className="h-4 w-4" />
             Add {activeTab === "students" ? "student" : activeTab === "teachers" ? "teacher" : "parent"}
           </button>
+          <button
+            type="button"
+            onClick={() => setBulkOpen((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
+          >
+            {bulkOpen ? "Hide bulk upload" : "Bulk CSV upload"}
+          </button>
         </div>
       </div>
+
+      {bulkOpen ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm">
+          <p className="mb-3 text-sm font-semibold text-slate-900">
+            Bulk import {activeTab}
+          </p>
+          <p className="mb-3 text-xs text-slate-600">
+            Download the template, fill rows, then upload. Temporary passwords are
+            issued for each new account — save the credentials CSV.
+          </p>
+          <BulkImport
+            role={
+              activeTab === "students"
+                ? "STUDENT"
+                : activeTab === "teachers"
+                  ? "TEACHER"
+                  : "PARENT"
+            }
+            onComplete={() => {
+              void reload();
+              toast.success("Directory refreshed after bulk import");
+            }}
+          />
+        </div>
+      ) : null}
 
       {/* Tabs */}
       <div className="rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">

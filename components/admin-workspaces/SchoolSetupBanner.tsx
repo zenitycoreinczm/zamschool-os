@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronDown, ChevronUp, Loader2, X } from "lucide-react";
+import {
+  buildPrincipalGuide,
+  countCoreProgress,
+} from "@/lib/workspace/role-onboarding";
 
 const DISMISS_KEY = "zamschool.principal.setup.dismissed";
 
@@ -13,10 +17,16 @@ export type SchoolSetupStatus = {
   settings: number;
 };
 
+/** Live counts / signals for Head Teacher guidance (not enrolment work). */
 export type OnboardingProgress = {
-  classCount: number;
-  studentCount: number;
-  teacherCount: number;
+  classCount?: number;
+  studentCount?: number;
+  teacherCount?: number;
+  /** Office staff invited or present (registrar, ICT, etc.) */
+  hasOfficeStaff?: boolean;
+  hasAnnouncement?: boolean;
+  hasEvent?: boolean;
+  lateRollCalls?: number;
 };
 
 type SchoolSetupBannerProps = {
@@ -26,7 +36,6 @@ type SchoolSetupBannerProps = {
   lastResults: Record<string, { status: string; count?: number; error?: string }> | null;
   onInitialize: () => void;
   onDismiss: () => void;
-  /** Optional live counts for guided "next steps" */
   onboarding?: OnboardingProgress | null;
 };
 
@@ -50,61 +59,46 @@ export default function SchoolSetupBanner({
 }: SchoolSetupBannerProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const classCount = onboarding?.classCount ?? 0;
-  const studentCount = onboarding?.studentCount ?? 0;
-  const teacherCount = onboarding?.teacherCount ?? 0;
-
-  const nextSteps = [
-    {
-      id: "class",
-      label: "Add first class",
-      done: classCount > 0,
-      href: "/app/admin/classes",
-      hint:
-        classCount > 0
-          ? `${classCount} class${classCount === 1 ? "" : "es"}`
-          : "Create one class to start",
-    },
-    {
-      id: "students",
-      label: "Add 5 students",
-      done: studentCount >= 5,
-      href: "/app/registrar/people",
-      hint:
-        studentCount >= 5
-          ? `${studentCount} learners on roll`
-          : studentCount > 0
-            ? `${studentCount} so far — aim for 5`
-            : "Enrol your first learners",
-    },
-    {
-      id: "teacher",
-      label: "Add a teacher",
-      done: teacherCount > 0,
-      href: "/app/principal/staff",
-      hint:
-        teacherCount > 0
-          ? `${teacherCount} teacher${teacherCount === 1 ? "" : "s"}`
-          : "Invite one teacher",
-    },
-    {
-      id: "attendance",
-      label: "Mark first attendance",
-      done: false,
-      href: "/app/admin/attendance",
-      hint: "Show the school is live",
-    },
-  ];
-
-  const completedCore = nextSteps
-    .filter((s) => s.id !== "attendance")
-    .filter((s) => s.done).length;
-  const coreTotal = 3;
-  const baselineReady =
+  const systemDefaultsReady =
     Boolean(status?.initialized) &&
     (status?.departments ?? 0) > 0 &&
     (status?.permissionGroups ?? 0) > 0;
-  const needsAttention = !baselineReady || completedCore < coreTotal;
+
+  const guide = useMemo(() => {
+    const base = buildPrincipalGuide({
+      systemDefaultsReady,
+      hasAnnouncement: onboarding?.hasAnnouncement,
+      hasEvent: onboarding?.hasEvent,
+      lateRollCalls: onboarding?.lateRollCalls ?? 0,
+    });
+    // Mark invite step done when school already has teachers/office capacity
+    // (proxy: teachers enrolled by registrar OR HT has been through staff).
+    const steps = base.steps.map((step) => {
+      if (step.id === "invite-registrar") {
+        return {
+          ...step,
+          done: Boolean(
+            onboarding?.hasOfficeStaff ||
+              (onboarding?.teacherCount ?? 0) > 0,
+          ),
+          hint:
+            (onboarding?.teacherCount ?? 0) > 0 || onboarding?.hasOfficeStaff
+              ? "Staff path is open — keep inviting as needed"
+              : step.hint,
+        };
+      }
+      if (step.id === "defaults") {
+        return { ...step, done: systemDefaultsReady };
+      }
+      return step;
+    });
+    return { ...base, steps };
+  }, [systemDefaultsReady, onboarding]);
+
+  const { done: completedCore, total: coreTotal } = countCoreProgress(
+    guide.steps,
+  );
+  const needsAttention = !systemDefaultsReady || completedCore < coreTotal;
 
   return (
     <div
@@ -117,16 +111,15 @@ export default function SchoolSetupBanner({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">
-            Next steps
+            {guide.eyebrow}
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-900">
             {completedCore >= coreTotal
-              ? "Core setup looks good — keep going"
-              : "Get your school running in 3 simple steps"}
+              ? "Leadership desk looks good — keep going"
+              : guide.title}
           </p>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            Create school is done. Next: class → students → teacher. Advanced
-            roles (HR, ICT) can wait.
+            {guide.description}
           </p>
           <p className="mt-2 text-xs font-medium text-slate-500">
             {completedCore}/{coreTotal} core steps complete
@@ -149,7 +142,7 @@ export default function SchoolSetupBanner({
               </>
             )}
           </button>
-          {!baselineReady ? (
+          {!systemDefaultsReady ? (
             <button
               type="button"
               onClick={onInitialize}
@@ -174,7 +167,7 @@ export default function SchoolSetupBanner({
       </div>
 
       <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-        {nextSteps.map((step) => (
+        {guide.steps.map((step) => (
           <li key={step.id}>
             <Link
               href={step.href}

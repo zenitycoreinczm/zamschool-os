@@ -6,7 +6,7 @@ import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { Download, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { secondaryButton } from "@/lib/workspace/design";
+import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import {
   StatementOfResults,
   type SubjectResult,
@@ -35,7 +35,7 @@ export default function StudentResultsPage() {
   const [exams, setExams] = useState<ExamCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
   const [downloading, setDownloading] = useState<number | null>(null);
   const certRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
@@ -60,21 +60,32 @@ export default function StudentResultsPage() {
 
   const setCertRef = useCallback((idx: number, el: HTMLDivElement | null) => {
     if (el) certRefs.current.set(idx, el);
+    else certRefs.current.delete(idx);
   }, []);
 
   const handleDownload = async (idx: number) => {
+    // Ensure certificate is mounted (expand if needed)
+    if (expandedIdx !== idx) {
+      setExpandedIdx(idx);
+      await new Promise((r) => setTimeout(r, 80));
+    }
     const el = certRefs.current.get(idx);
-    if (!el) return;
+    if (!el) {
+      window.print();
+      return;
+    }
     setDownloading(idx);
     try {
       const dataUrl = await toPng(el, {
         quality: 0.95,
         pixelRatio: 2,
         width: 794,
+        backgroundColor: "#ffffff",
         style: { transform: "scale(1)", transformOrigin: "top left" },
       });
+      const exam = exams[idx];
       const link = document.createElement("a");
-      link.download = `Statement_of_Results_${exams[idx].examTitle.replace(/\s+/g, "_")}.png`;
+      link.download = `Certificate_${exam.schoolName.replace(/\s+/g, "_")}_${exam.className.replace(/\s+/g, "_")}_${exam.examTitle.replace(/\s+/g, "_")}.png`;
       link.href = dataUrl;
       link.click();
     } catch {
@@ -91,7 +102,8 @@ export default function StudentResultsPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-900">My Results</h1>
         <p className="text-sm text-slate-500">
-          View and download your academic result certificates
+          View published marks and download an official multi-subject Statement
+          of Results (school, class, subjects, grades).
         </p>
       </div>
 
@@ -102,7 +114,8 @@ export default function StudentResultsPage() {
       ) : exams.length === 0 ? (
         <Surface variant="elevated" className="p-8 text-center">
           <p className="text-sm text-slate-500">
-            No published results yet.
+            No published results yet. Certificates appear when your teachers
+            publish marks for an exam.
           </p>
         </Surface>
       ) : (
@@ -114,81 +127,87 @@ export default function StudentResultsPage() {
                 key={`${exam.examTitle}-${idx}`}
                 className="rounded-xl border border-slate-200 bg-white shadow-sm"
               >
-                <button
-                  onClick={() => toggleExpand(idx)}
-                  className="flex w-full items-center justify-between p-4 text-left"
-                >
-                  <div className="min-w-0">
-                    <div className="font-semibold text-slate-900">
-                      {exam.examTitle}
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(idx)}
+                    className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-900">
+                        {exam.examTitle}
+                      </div>
+                      <div className="text-sm text-slate-500">
+                        {exam.schoolName} · {exam.className} ·{" "}
+                        {exam.subjects.length} subjects · {exam.overallGrade}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-500">
-                      {exam.className} · {exam.subjects.length} subjects
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                        exam.overallGrade === "DISTINCTION"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : exam.overallGrade === "CREDIT"
-                            ? "bg-blue-100 text-blue-700"
-                            : exam.overallGrade === "PASS"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-rose-100 text-rose-700",
-                      )}
-                    >
-                      {exam.overallGrade}
-                    </span>
                     {isExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-slate-400" />
+                      <ChevronUp className="h-5 w-5 shrink-0 text-slate-400" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-slate-400" />
+                      <ChevronDown className="h-5 w-5 shrink-0 text-slate-400" />
                     )}
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownload(idx)}
+                    disabled={downloading === idx}
+                    className={primaryButton("disabled:opacity-50 shrink-0")}
+                  >
+                    {downloading === idx ? (
+                      <>Downloading…</>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Download certificate
+                      </>
+                    )}
+                  </button>
+                </div>
 
-                {isExpanded && (
-                  <div className="border-t border-slate-100 px-4 pb-4">
-                    <div className="mt-4 overflow-x-auto">
-                      <StatementOfResults
-                        ref={(el) => setCertRef(idx, el)}
-                        studentName={exam.studentName}
-                        examNumber={exam.examNumber}
-                        schoolName={exam.schoolName}
-                        examYear={exam.year}
-                        examTitle={exam.examTitle}
-                        subjects={exam.subjects}
-                        overallGrade={exam.overallGrade}
-                        totalScore={exam.totalScore}
-                        totalPossible={exam.totalPossible}
-                        average={exam.average}
-                        position={exam.position}
-                        classSize={exam.classSize}
-                        verificationCode={exam.verificationCode}
-                        publishedAt={exam.publishedAt}
-                        teacherName={exam.teacherName}
-                      />
-                    </div>
+                {/* Always keep cert in DOM for download (hidden when collapsed) */}
+                <div
+                  className={cn(
+                    "border-t border-slate-100 px-4 pb-4",
+                    !isExpanded && "sr-only",
+                  )}
+                  aria-hidden={!isExpanded}
+                >
+                  <div className="mt-4 overflow-x-auto">
+                    <StatementOfResults
+                      ref={(el) => setCertRef(idx, el)}
+                      studentName={exam.studentName}
+                      examNumber={exam.examNumber}
+                      schoolName={exam.schoolName}
+                      className={exam.className}
+                      examYear={exam.year}
+                      examTitle={exam.examTitle}
+                      subjects={exam.subjects}
+                      overallGrade={exam.overallGrade}
+                      totalScore={exam.totalScore}
+                      totalPossible={exam.totalPossible}
+                      average={exam.average}
+                      position={exam.position}
+                      classSize={exam.classSize}
+                      verificationCode={exam.verificationCode}
+                      publishedAt={exam.publishedAt}
+                      teacherName={exam.teacherName}
+                    />
+                  </div>
+                  {isExpanded ? (
                     <div className="mt-4 flex justify-end">
                       <button
-                        onClick={() => handleDownload(idx)}
+                        type="button"
+                        onClick={() => void handleDownload(idx)}
                         disabled={downloading === idx}
                         className={secondaryButton("disabled:opacity-50")}
                       >
-                        {downloading === idx ? (
-                          <>Downloading...</>
-                        ) : (
-                          <>
-                            <Download className="h-4 w-4" />
-                            Download Certificate
-                          </>
-                        )}
+                        <Download className="h-4 w-4" />
+                        Download certificate
                       </button>
                     </div>
-                  </div>
-                )}
+                  ) : null}
+                </div>
               </div>
             );
           })}

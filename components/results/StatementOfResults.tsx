@@ -15,6 +15,8 @@ export type StatementOfResultsProps = {
   studentName: string;
   examNumber: string;
   schoolName: string;
+  /** Class / grade stream e.g. Grade 9A */
+  className?: string;
   examYear: number;
   examTitle: string;
   subjects: SubjectResult[];
@@ -54,6 +56,7 @@ export const StatementOfResults = forwardRef<HTMLDivElement, StatementOfResultsP
       studentName,
       examNumber,
       schoolName,
+      className,
       examYear,
       examTitle,
       subjects,
@@ -132,7 +135,17 @@ export const StatementOfResults = forwardRef<HTMLDivElement, StatementOfResultsP
               STATEMENT OF RESULTS
             </div>
             <div style={{ fontSize: "12px", color: "#6b7280" }}>
-              Examination Board Document
+              Official school examination certificate · Zambia
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#0f2a43",
+                marginTop: "4px",
+              }}
+            >
+              {schoolName}
             </div>
           </div>
           <div
@@ -154,14 +167,19 @@ export const StatementOfResults = forwardRef<HTMLDivElement, StatementOfResultsP
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
             marginTop: "25px",
-            gap: "15px",
+            gap: "12px",
           }}
         >
           {[
             { label: "Candidate Name", value: studentName },
-            { label: "Exam Number", value: examNumber },
+            { label: "Exam / Candidate No.", value: examNumber },
             { label: "School", value: schoolName },
+            { label: "Class / Stream", value: className || "—" },
             { label: "Examination Year", value: String(examYear) },
+            {
+              label: "Class Position",
+              value: position || "—",
+            },
           ].map((item) => (
             <div
               key={item.label}

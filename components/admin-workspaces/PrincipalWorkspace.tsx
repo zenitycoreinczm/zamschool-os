@@ -30,10 +30,10 @@ const FALLBACK_METRIC_LABELS = [
 ];
 
 const HEAD_TEACHER_FOCUS = [
-  "School health",
-  "Staff & structure",
-  "Finance oversight",
-  "Risk & audit",
+  "Invite office staff",
+  "Announcements & events",
+  "Late roll-call alerts",
+  "Finance & audit oversight",
 ];
 
 export default function PrincipalWorkspace() {
@@ -51,6 +51,9 @@ export default function PrincipalWorkspace() {
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [liveMetrics, setLiveMetrics] = useState<WorkspaceMetric[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
+  const [lateRollCalls, setLateRollCalls] = useState(0);
+  const [hasAnnouncement, setHasAnnouncement] = useState(false);
+  const [hasEvent, setHasEvent] = useState(false);
 
   useEffect(() => {
     setSetupDismissed(readSetupBannerDismissed());
@@ -106,10 +109,46 @@ export default function PrincipalWorkspace() {
     }
   }, []);
 
+  const loadLeadershipSignals = useCallback(async () => {
+    try {
+      const [notifBody, annBody, evtBody] = await Promise.all([
+        adminApiJson<{ data?: Array<{ title?: string; message?: string; read?: boolean }> }>(
+          "/api/account/notifications",
+        ).catch(() => null),
+        adminApiJson<{ data?: unknown[] }>("/api/account/announcements").catch(
+          () => null,
+        ),
+        adminApiJson<{ data?: unknown[] }>("/api/account/events").catch(
+          () => null,
+        ),
+      ]);
+      const notifs = Array.isArray(notifBody?.data) ? notifBody!.data! : [];
+      const late = notifs.filter((n) => {
+        const t = String(n?.title || "").toLowerCase();
+        const m = String(n?.message || "").toLowerCase();
+        return (
+          t.includes("late roll") ||
+          t.includes("roll call") ||
+          m.includes("has not submitted roll call")
+        );
+      });
+      setLateRollCalls(late.filter((n) => !n.read).length || late.length);
+      setHasAnnouncement(
+        Array.isArray(annBody?.data) && (annBody!.data as unknown[]).length > 0,
+      );
+      setHasEvent(
+        Array.isArray(evtBody?.data) && (evtBody!.data as unknown[]).length > 0,
+      );
+    } catch {
+      // Soft-fail — guide still works without live signals.
+    }
+  }, []);
+
   useEffect(() => {
     void loadSetupStatus();
     void loadSummary();
-  }, [loadSetupStatus, loadSummary]);
+    void loadLeadershipSignals();
+  }, [loadSetupStatus, loadSummary, loadLeadershipSignals]);
 
   const runInitialization = async () => {
     setInitializing(true);
@@ -135,16 +174,6 @@ export default function PrincipalWorkspace() {
       setInitializing(false);
     }
   };
-
-  const showSetupBanner = useMemo(() => {
-    if (setupDismissed || setupLoading) return false;
-    if (!setupStatus) return false;
-    return (
-      !setupStatus.initialized ||
-      setupStatus.departments < 1 ||
-      setupStatus.permissionGroups < 1
-    );
-  }, [setupDismissed, setupLoading, setupStatus]);
 
   // Students/Teachers belong in School pulse cards, not the overview header.
   const headerMetrics = liveMetrics.filter(
@@ -182,15 +211,15 @@ export default function PrincipalWorkspace() {
       classCount: map.classes ?? 0,
       studentCount: map.students ?? 0,
       teacherCount: map.teachers ?? 0,
+      hasOfficeStaff: (map["pending invites"] ?? map.invites ?? 0) >= 0,
+      hasAnnouncement,
+      hasEvent,
+      lateRollCalls,
     };
-  }, [liveMetrics]);
+  }, [liveMetrics, hasAnnouncement, hasEvent, lateRollCalls]);
 
-  const needsOnboardingGuide =
-    !setupDismissed &&
-    (showSetupBanner ||
-      onboarding.classCount < 1 ||
-      onboarding.studentCount < 5 ||
-      onboarding.teacherCount < 1);
+  // Always show until HT dismisses — steps are leadership work, not enrolment.
+  const needsOnboardingGuide = !setupDismissed && !setupLoading;
 
   const liveNotices = useMemo(() => {
     const items: { href: string; label: string }[] = [];
@@ -237,35 +266,43 @@ export default function PrincipalWorkspace() {
           <>
             <HeroAction href="/app/announcements" label="Send announcement" />
             <HeroAction
-              href="/app/admin/attendance"
-              label="Mark attendance"
+              href="/app/principal/staff"
+              label="Invite staff"
               variant="secondary"
             />
           </>
         }
       />
 
-      {/* Quick actions — one tap */}
+      {/* Quick actions — Head Teacher leadership desk */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
           Quick actions
         </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              href: "/app/admin/attendance",
-              label: "Mark attendance",
-              hint: "Take today’s roll",
-            },
-            {
-              href: "/app/admin/academic",
-              label: "Submit results",
-              hint: "Enter or publish marks",
+              href: "/app/principal/staff",
+              label: "Invite staff",
+              hint: "Registrar, ICT, office roles",
             },
             {
               href: "/app/announcements",
-              label: "Send announcement",
+              label: "Announcement",
               hint: "Notify parents & staff",
+            },
+            {
+              href: "/app/events",
+              label: "School event",
+              hint: "Calendar for the term",
+            },
+            {
+              href: "/app/notifications",
+              label: "Late roll-call alerts",
+              hint:
+                lateRollCalls > 0
+                  ? `${lateRollCalls} pending`
+                  : "Teachers 10+ min late",
             },
           ].map((action) => (
             <Link
@@ -281,6 +318,24 @@ export default function PrincipalWorkspace() {
           ))}
         </div>
       </section>
+
+      {lateRollCalls > 0 ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+          <p className="font-semibold">Teachers late on roll call</p>
+          <p className="mt-1 text-xs leading-5 text-amber-900/80">
+            {lateRollCalls} alert
+            {lateRollCalls === 1 ? "" : "s"} — a period started more than 10
+            minutes ago without roll call. Parents only get absence alerts after
+            a teacher submits.
+          </p>
+          <Link
+            href="/app/notifications"
+            className="mt-2 inline-flex text-xs font-semibold text-amber-900 underline underline-offset-2"
+          >
+            Open alerts
+          </Link>
+        </div>
+      ) : null}
 
       {liveNotices.length > 0 || hasInbox ? (
         <div className="flex flex-col gap-2 rounded-workspace-xl border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-sky-950">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import Announcements from "@/components/Announcements";
@@ -10,8 +10,13 @@ import { StudentDashboardHero } from "@/components/student/dashboard/StudentDash
 import { StudentPublishedResults } from "@/components/student/dashboard/StudentPublishedResults";
 import { StudentTodayLessons } from "@/components/student/dashboard/StudentTodayLessons";
 import { StudentUpcomingAssignments } from "@/components/student/dashboard/StudentUpcomingAssignments";
+import RoleSetupGuide, {
+  persistGuideDismissed,
+  readGuideDismissed,
+} from "@/components/workspace/RoleSetupGuide";
 import { getEmptyAttendanceSummary } from "@/components/student/dashboard/format";
 import type { StudentAssignmentRow } from "@/components/student/dashboard/types";
+import { buildStudentGuide } from "@/lib/workspace/role-onboarding";
 import { useStudentDashboard } from "@/components/student/dashboard/useStudentDashboard";
 
 export default function StudentDashboard() {
@@ -50,6 +55,21 @@ export default function StudentDashboard() {
   const summary = dashboard?.attendance.summary || getEmptyAttendanceSummary();
   const className = dashboard?.profile.className || "Class pending";
   const classNumber = dashboard?.profile.classNumber ?? null;
+  const [guideDismissed, setGuideDismissed] = useState(true);
+  useEffect(() => {
+    setGuideDismissed(readGuideDismissed("zamschool.guide.student.dismissed"));
+  }, []);
+  const guide = useMemo(
+    () =>
+      buildStudentGuide({
+        hasResults: (results?.length ?? 0) > 0,
+        hasAbsences: Number(summary?.ABSENT ?? 0) > 0,
+      }),
+    [results, summary],
+  );
+  const showGuide =
+    !guideDismissed &&
+    ((results?.length ?? 0) === 0 || Number(summary?.ABSENT ?? 0) > 0);
 
   return (
     <div className="flex-1 space-y-5 p-4 md:space-y-6 md:p-6">
@@ -62,6 +82,16 @@ export default function StudentDashboard() {
         assignmentCount={dashboard?.assignments.total}
         urgentCount={dashboard?.assignments.urgent}
       />
+
+      {showGuide ? (
+        <RoleSetupGuide
+          guide={guide}
+          onDismiss={() => {
+            persistGuideDismissed(guide.storageKey);
+            setGuideDismissed(true);
+          }}
+        />
+      ) : null}
 
       {dashboard?.schoolDayHours?.classesStartAt ? (
         <section className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-sm text-slate-700">
