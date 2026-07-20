@@ -20,13 +20,20 @@ export default function ServiceWorkerRegister() {
     };
 
     // Defer so first paint / CSS are not competing with SW install on 2G/3G.
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(register, { timeout: 4000 });
-      return () => window.cancelIdleCallback(id);
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number },
+      ) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const id = idleWindow.requestIdleCallback(register, { timeout: 4000 });
+      return () => idleWindow.cancelIdleCallback?.(id);
     }
 
-    const timer = window.setTimeout(register, 1500);
-    return () => window.clearTimeout(timer);
+    const timer = globalThis.setTimeout(register, 1500);
+    return () => globalThis.clearTimeout(timer);
   }, []);
 
   return null;
