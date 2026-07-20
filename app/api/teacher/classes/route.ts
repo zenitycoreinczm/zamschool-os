@@ -86,11 +86,17 @@ export async function GET(req: Request) {
       ),
     );
 
-    const [studentRows, attendanceRows, classesById] = await Promise.all([
-      getStudentsByClassIds(supabaseAdmin, { schoolId, classIds }),
-      getAttendanceRows(supabaseAdmin, { schoolId, classIds, date }),
-      getClassesById(supabaseAdmin, schoolId, classIds),
-    ]);
+    const [studentRows, attendanceRows, classesById, teacherDisplayName] =
+      await Promise.all([
+        getStudentsByClassIds(supabaseAdmin, { schoolId, classIds }),
+        getAttendanceRows(supabaseAdmin, { schoolId, classIds, date }),
+        getClassesById(supabaseAdmin, schoolId, classIds),
+        loadActorDisplayName(supabaseAdmin, {
+          userId,
+          profileId: access.context.profileId || null,
+          schoolId,
+        }),
+      ]);
 
     // Parent profile ids for mobile lock-screen / in-app attendance alerts.
     const parentProfileIdsByStudentId = await loadParentProfileIdsByStudentRows(
@@ -156,7 +162,7 @@ export async function GET(req: Request) {
       const roster = rosterRows
         .filter((row) => rosterStudentIds.includes(row.id))
         .map((row) => {
-          const saved = attendanceByLessonStudent.get(
+          const sessionSaved = attendanceByLessonStudent.get(
             buildAttendanceSessionKey({
               classId: lesson.class_id,
               studentId: row.id,
@@ -164,17 +170,24 @@ export async function GET(req: Request) {
               sessionTime: lesson.start_time,
             }),
           );
-          // Day-slot fallback: any attendance today for this student/class
-          const daySaved =
-            saved ||
-            attendanceRows.find(
-              (a: any) =>
-                String(a.class_id) === String(lesson.class_id) &&
-                String(a.student_id) === String(row.id),
-            );
+          // Day row may exist from another period (one mark/student/class/day on
+          // some schemas). Prefill status from it, but only count as *this*
+          // period saved when session_name matches.
+          const daySaved = attendanceRows.find(
+            (a: any) =>
+              String(a.class_id) === String(lesson.class_id) &&
+              String(a.student_id) === String(row.id),
+          );
+          const dayMatchesThisPeriod =
+            daySaved &&
+            String(daySaved.session_name || "")
+              .trim()
+              .toLowerCase() === sessionName.trim().toLowerCase();
 
-          if (daySaved) submittedCount += 1;
+          const periodSaved = sessionSaved || (dayMatchesThisPeriod ? daySaved : null);
+          if (periodSaved) submittedCount += 1;
 
+          const displayRow = periodSaved || daySaved;
           const parentIds = parentProfileIdsByStudentId.get(row.id) || [];
           return {
             id: row.id,
@@ -182,14 +195,10 @@ export async function GET(req: Request) {
             admissionNumber: row.student_number || null,
             displayName: buildDisplayName(row.profile),
             email: row.profile?.email || null,
-            status: normalizeAttendanceStatus(
-              daySaved?.status || saved?.status,
-            ),
+            status: normalizeAttendanceStatus(displayRow?.status),
             remarks:
-              daySaved?.remarks ||
-              daySaved?.notes ||
-              saved?.remarks ||
-              saved?.notes ||
+              displayRow?.remarks ||
+              displayRow?.notes ||
               null,
             parentId: parentIds[0] || null,
             parentIds,
@@ -215,7 +224,7 @@ export async function GET(req: Request) {
             schoolId,
             lessonId: String(lesson.id),
             date,
-            teacherName: "Teacher",
+            teacherName: teacherDisplayName,
             className: buildClassLabel(classesById.get(lesson.class_id || "")),
             subjectName:
               getSubjectField(lesson.subjects, "name") ||
@@ -484,17 +493,82 @@ async function getAttendanceRows(
     return [];
   }
 
-  const { data, error } = await supabaseAdmin
+  const selectCols =
+    "student_id, class_id, date, attendance_date, status, remarks, notes, session_name, session_time";
+
+  // Prefer attendance_date (canonical); fall back to legacy date column.
+  const byAttendanceDate = await supabaseAdmin
     .from("attendance")
-    .select(
-      "student_id, class_id, date, attendance_date, status, remarks, notes, session_name, session_time",
-    )
+    .select(selectCols)
+    .eq("school_id", input.schoolId)
+    .eq("attendance_date", input.date)
+    .in("class_id", input.classIds);
+
+  if (!byAttendanceDate.error) {
+    return byAttendanceDate.data || [];
+  }
+
+  const byDate = await supabaseAdmin
+    .from("attendance")
+    .select(selectCols)
     .eq("school_id", input.schoolId)
     .eq("date", input.date)
     .in("class_id", input.classIds);
 
-  if (error) throw error;
-  return data || [];
+  if (byDate.error) throw byDate.error;
+  return byDate.data || [];
+}
+
+async function loadActorDisplayName(
+  supabaseAdmin: any,
+  input: {
+    userId: string;
+    profileId?: string | null;
+    schoolId: string;
+  },
+): Promise<string> {
+  const ids = Array.from(
+    new Set(
+      [input.profileId, input.userId]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    ),
+  );
+  if (ids.length === 0) return "Teacher";
+
+  const byId = await supabaseAdmin
+    .from("profiles")
+    .select("id, first_name, last_name, email")
+    .in("id", ids);
+
+  const profile = (byId.data || [])[0];
+  if (profile) {
+    return (
+      [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim() ||
+      profile.email ||
+      "Teacher"
+    );
+  }
+
+  const byAuth = await supabaseAdmin
+    .from("profiles")
+    .select("first_name, last_name, email")
+    .eq("school_id", input.schoolId)
+    .eq("auth_user_id", input.userId)
+    .maybeSingle();
+
+  if (byAuth.data) {
+    return (
+      [byAuth.data.first_name, byAuth.data.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      byAuth.data.email ||
+      "Teacher"
+    );
+  }
+
+  return "Teacher";
 }
 
 async function getClassesById(

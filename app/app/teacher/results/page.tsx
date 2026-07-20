@@ -37,6 +37,7 @@ type ParsedRow = {
 };
 
 type UploadResult = {
+  assignmentId?: string;
   subjectName: string;
   subjectCode: string | null;
   className: string;
@@ -368,20 +369,58 @@ export default function TeacherResultsPage() {
     }
   };
 
-  const handlePublish = async () => {
-    if (!selectedClass || !examTitle.trim()) return;
+  const handlePublish = async (opts?: { assignmentId?: string; subjectOnly?: boolean }) => {
+    if (!selectedClass || !examTitle.trim()) {
+      if (!opts?.assignmentId) {
+        toast.error("Select a class and enter an exam title first");
+        return;
+      }
+    }
     setPublishing(true);
     try {
-      const body = await adminApiJson("/api/teacher/results-publish", {
+      const payload = opts?.assignmentId
+        ? {
+            assignmentId: opts.assignmentId,
+            subjectOnly: true as const,
+          }
+        : {
+            examTitle: examTitle.trim(),
+            classId: selectedClass,
+            subjectOnly: opts?.subjectOnly ?? false,
+          };
+
+      const body = await adminApiJson<{
+        success?: boolean;
+        data?: {
+          publishedCount?: number;
+          parentsNotified?: number;
+          notificationsQueued?: number;
+          notifyReason?: string | null;
+          message?: string;
+        };
+      }>("/api/teacher/results-publish", {
         method: "POST",
-        body: JSON.stringify({
-          examTitle: examTitle.trim(),
-          classId: selectedClass,
-        }),
+        body: JSON.stringify(payload),
       });
-      toast.success(`Published ${body.data?.publishedCount || 0} results`);
-    } catch {
-      toast.error("Publish failed");
+
+      const publishedCount = body.data?.publishedCount ?? 0;
+      const parentsNotified = body.data?.parentsNotified ?? 0;
+      toast.success(
+        `Results published · ${publishedCount} records · ${parentsNotified} parents notified`,
+      );
+      if (parentsNotified === 0) {
+        toast.message(
+          body.data?.notifyReason ||
+            "No linked parents found for those students. Link parents in admin first.",
+        );
+      } else if ((body.data?.notificationsQueued || 0) > 0) {
+        toast.info(`${body.data?.notificationsQueued} notifications queued`);
+      }
+      void checkCompleteness();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Publish failed";
+      toast.error(message);
     } finally {
       setPublishing(false);
     }
@@ -400,13 +439,27 @@ export default function TeacherResultsPage() {
     subjects.find((s) => s.id === selectedSubject)?.name || "";
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Exam Results</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Upload subject results and generate certificates
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 px-5 py-6 text-white shadow-lg md:px-7 md:py-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200/90">
+              Classroom
+            </p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight">Exam Results</h1>
+            <p className="mt-1.5 max-w-xl text-sm text-slate-300">
+              Upload subject marks, preview matches, then publish — parents are
+              notified automatically, same flow as roll call.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-100/80">
+              Workflow
+            </p>
+            <p className="mt-1 font-medium text-white">Upload → Preview → Publish</p>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
@@ -728,6 +781,32 @@ export default function TeacherResultsPage() {
                   ))}
                 </div>
               )}
+              {uploadResult.assignmentId ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handlePublish({
+                      assignmentId: uploadResult.assignmentId,
+                      subjectOnly: true,
+                    })
+                  }
+                  disabled={publishing}
+                  className={cn(
+                    primaryButton("mt-4 w-full"),
+                    "disabled:opacity-50",
+                  )}
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" /> Publish this subject to parents
+                    </>
+                  )}
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -798,7 +877,8 @@ export default function TeacherResultsPage() {
                 ))}
               </div>
               <button
-                onClick={handlePublish}
+                type="button"
+                onClick={() => void handlePublish()}
                 disabled={publishing}
                 className={cn(
                   primaryButton("mt-4 w-full"),
@@ -807,14 +887,19 @@ export default function TeacherResultsPage() {
               >
                 {publishing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Publishing...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Publishing…
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4" /> Publish Results to Parents
+                    <Send className="h-4 w-4" /> Publish to parents
                   </>
                 )}
               </button>
+              <p className="mt-2 text-center text-[11px] text-slate-500">
+                Releases your uploaded marks for this exam/class. Parents and
+                students can view them immediately, and parents get a
+                notification (like roll call).
+              </p>
             </div>
           )}
         </div>
@@ -864,7 +949,7 @@ export default function TeacherResultsPage() {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
                   7
                 </span>
-                Publish to send certificates to parents
+                Publish — parents are notified automatically (same as roll call)
               </li>
             </ol>
           </div>

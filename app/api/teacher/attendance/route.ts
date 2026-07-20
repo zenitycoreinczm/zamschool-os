@@ -935,15 +935,35 @@ async function loadExistingAttendance(input: {
   // (attendance_roll_call_unique) doesn't include it, and NULL ≠ "" in
   // Postgres would silently break the lookup. Session name is the
   // distinguishing key (e.g. "Morning - Math" vs "Afternoon - Math").
-  const { data, error } = await supabaseAdmin
+  const selectCols = "student_id, created_at, recorded_by, status, session_name";
+
+  let data: Array<{
+    student_id: string;
+    created_at: string | null;
+    recorded_by: string | null;
+    status: string | null;
+    session_name?: string | null;
+  }> | null = null;
+
+  const byAttendanceDate = await supabaseAdmin
     .from("attendance")
-    .select("student_id, created_at, recorded_by, status")
+    .select(selectCols)
     .eq("school_id", input.schoolId)
     .eq("class_id", input.classId)
-    .eq("attendance_date", input.date)
-    .eq("session_name", input.sessionName);
+    .eq("attendance_date", input.date);
 
-  if (error) throw error;
+  if (!byAttendanceDate.error) {
+    data = byAttendanceDate.data || [];
+  } else {
+    const byDate = await supabaseAdmin
+      .from("attendance")
+      .select(selectCols)
+      .eq("school_id", input.schoolId)
+      .eq("class_id", input.classId)
+      .eq("date", input.date);
+    if (byDate.error) throw byDate.error;
+    data = byDate.data || [];
+  }
 
   const map = new Map<
     string,
@@ -953,13 +973,34 @@ async function loadExistingAttendance(input: {
       status: string | null;
     }
   >();
+
+  const sessionKey = input.sessionName.trim().toLowerCase();
   for (const row of data || []) {
+    const rowSession = String(row.session_name || "")
+      .trim()
+      .toLowerCase();
+    // Prefer exact session match; if schema only stores one day row, still
+    // include it so edit-lock and conflict detection keep working.
+    if (rowSession && rowSession !== sessionKey) continue;
     map.set(row.student_id, {
       created_at: row.created_at,
       recorded_by: row.recorded_by,
       status: row.status,
     });
   }
+
+  // If nothing matched this session but day rows exist (day-slot unique only),
+  // use those for lock/conflict so teachers can safely re-submit.
+  if (map.size === 0) {
+    for (const row of data || []) {
+      map.set(row.student_id, {
+        created_at: row.created_at,
+        recorded_by: row.recorded_by,
+        status: row.status,
+      });
+    }
+  }
+
   return map;
 }
 

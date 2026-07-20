@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
     }
 
     const assignmentScope = await loadTeacherAssignmentScope({
-      schoolId, actorProfileId: userId,
+      schoolId,
+      actorProfileId: access.context.profileId || userId,
     });
     if (assignmentScope.actorTeacherIds.length === 0 || assignmentScope.allowedClassIds.length === 0) {
       return NextResponse.json({ error: "No assigned teaching scope found" }, { status: 403 });
@@ -312,6 +313,7 @@ export async function POST(req: NextRequest) {
     const { data: existingResults } = await supabaseAdmin
       .from("results")
       .select("student_id, score")
+      .eq("school_id", schoolId)
       .eq("assignment_id", assignmentId)
       .in("student_id", existingStudentIds);
 
@@ -324,11 +326,22 @@ export async function POST(req: NextRequest) {
 
     let resultsCreated = 0;
     let resultsUpdated = 0;
+    const previouslyExistingStudentIds = new Set(existingScoreByStudent.keys());
+    // Also treat any pre-existing row (even score null) as update if we know it.
+    if (existingResults) {
+      for (const r of existingResults) {
+        if (r.student_id) previouslyExistingStudentIds.add(r.student_id);
+      }
+    }
 
     try {
+      const schoolScopedResultsPayload = resultsPayload.map((row) => ({
+        ...row,
+        school_id: schoolId,
+      }));
       const { data: upserted, error: upsertError } = await supabaseAdmin
         .from("results")
-        .upsert(resultsPayload, {
+        .upsert(schoolScopedResultsPayload, {
           onConflict: "student_id,assignment_id",
           ignoreDuplicates: false,
         })
@@ -336,20 +349,26 @@ export async function POST(req: NextRequest) {
 
       if (upsertError) throw upsertError;
 
-      const existingIds = new Set(
-        (resultsPayload).map((r) => r.student_id)
-      );
-
       for (const row of upserted || []) {
-        if (existingIds.has(row.student_id)) {
+        if (previouslyExistingStudentIds.has(row.student_id)) {
           resultsUpdated++;
         } else {
           resultsCreated++;
         }
       }
+      // If select returns fewer rows than payload (some drivers), derive counts.
+      if ((upserted || []).length === 0 && resultsPayload.length > 0) {
+        for (const row of resultsPayload) {
+          if (previouslyExistingStudentIds.has(row.student_id)) {
+            resultsUpdated++;
+          } else {
+            resultsCreated++;
+          }
+        }
+      }
     } catch (resultError: unknown) {
       // If the unique constraint doesn't exist, fall back to individual upserts
-      const result = await fallbackUpsertResults(resultsPayload);
+      const result = await fallbackUpsertResults(schoolId, resultsPayload);
       resultsCreated = result.created;
       resultsUpdated = result.updated;
     }
@@ -398,6 +417,9 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       success: true,
       data: {
+        assignmentId,
+        subjectId,
+        classId,
         subjectName: subject.name,
         subjectCode: subject.code,
         className: classRow.name,
@@ -461,6 +483,7 @@ async function fallbackCreateAssignment(
 }
 
 async function fallbackUpsertResults(
+  schoolId: string,
   rows: { student_id: string; assignment_id: string; exam_id: string | null; score: number | null; grade: string | null; school_id: string }[],
 ): Promise<{ created: number; updated: number }> {
   const supabaseAdmin = getSupabaseAdmin();
@@ -471,6 +494,7 @@ async function fallbackUpsertResults(
     const { data: existing } = await supabaseAdmin
       .from("results")
       .select("id")
+      .eq("school_id", schoolId)
       .eq("student_id", row.student_id)
       .eq("assignment_id", row.assignment_id)
       .maybeSingle();
@@ -479,6 +503,7 @@ async function fallbackUpsertResults(
       const { error } = await supabaseAdmin
         .from("results")
         .update({ score: row.score, grade: row.grade, exam_id: row.exam_id })
+        .eq("school_id", schoolId)
         .eq("id", existing.id);
       if (error) throw error;
       updated++;
@@ -608,6 +633,7 @@ async function resolveStudentIds(
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
         .select("id, email")
+        .eq("school_id", schoolId)
         .in("id", profileIds);
 
       for (const p of profiles || []) {

@@ -65,8 +65,10 @@ const TRANSITIONS: Record<WorkflowDomain, Record<string, string[]>> = {
     rejected: [],
   },
   grading: {
-    draft: ["submitted"],
-    submitted: ["moderated", "draft"],
+    // Teachers may publish subject results directly (roll-call style release).
+    // Leadership still owns moderated → approved → published for multi-stage desks.
+    draft: ["submitted", "published"],
+    submitted: ["moderated", "draft", "published"],
     moderated: ["approved", "submitted"],
     approved: ["published"],
     published: [],
@@ -100,8 +102,10 @@ const TRANSITION_ROLES: Record<WorkflowDomain, Record<string, string[]>> = {
   },
   grading: {
     "draft→submitted": ["TEACHER"],
+    "draft→published": ["TEACHER", "ACADEMIC_ADMIN", "PRINCIPAL"],
     "submitted→moderated": ["ACADEMIC_ADMIN", "DEPUTY_HEAD", "PRINCIPAL"],
     "submitted→draft": ["TEACHER", "ACADEMIC_ADMIN"],
+    "submitted→published": ["TEACHER", "ACADEMIC_ADMIN", "PRINCIPAL"],
     "moderated→approved": ["DEPUTY_HEAD", "PRINCIPAL"],
     "moderated→submitted": ["ACADEMIC_ADMIN", "DEPUTY_HEAD"],
     "approved→published": ["PRINCIPAL"],
