@@ -1,10 +1,11 @@
 # ZamSchool Gateway Worker — production config
-# Deploy: node --env-file=.env.local scripts/run-wrangler-with-env.mjs -- deploy
+# Auth (OAuth, preferred):
+#   cd workers/gateway && npx wrangler login
+# Deploy:
+#   node --env-file=.env.local scripts/run-wrangler-with-env.mjs -- deploy
 #
-# Requires CLOUDFLARE_API_TOKEN with:
-#   Account.Workers Scripts:Edit, Account.Workers KV Storage:Edit,
-#   Account.Workers R2 Storage:Edit, Account.Account Settings:Read
-# And NO IP allowlist (or allow your current IP).
+# run-wrangler-with-env.mjs strips CLOUDFLARE_API_TOKEN so OAuth is used.
+# Optional: set CF_ACCOUNT_ID if you belong to multiple accounts.
 
 name = "zamschool-gateway"
 main = "src/index.ts"
