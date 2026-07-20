@@ -90,25 +90,50 @@ export class SchoolSyncQueue {
 
 /**
  * Handle POST/PUT/DELETE requests.
- * Tries upstream first. If upstream fails (offline), enqueues it.
+ * Tries upstream first. If upstream fails (offline), enqueues JSON mutations.
+ *
+ * IMPORTANT: multipart/form-data and binary bodies must be forwarded as
+ * ArrayBuffer (never req.text()) — UTF-8 decoding corrupts Excel/CSV uploads
+ * and was returning 500 upstream then 503 from the gateway.
  */
 export async function handleMutation(req: Request, env: Env, url: URL, userId: string, schoolId: string): Promise<Response> {
   const fetchImpl = env.fetch || fetch;
   const upstreamUrl = new URL(url.pathname + url.search, env.UPSTREAM_API);
+  const contentType = req.headers.get("Content-Type") || "";
+  const isMultipart = /multipart\/form-data/i.test(contentType);
+  const isBinary =
+    isMultipart ||
+    /application\/octet-stream|application\/vnd\.|application\/pdf/i.test(
+      contentType,
+    );
 
-  // We need the body for both upstream and queueing
+  // Buffer body once for replay. Use bytes for multipart/binary; text for JSON.
+  let bodyBytes: ArrayBuffer | null = null;
   let bodyText = "";
   try {
-     bodyText = await req.text();
-  } catch (e) {}
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      if (isBinary) {
+        bodyBytes = await req.arrayBuffer();
+      } else {
+        bodyText = await req.text();
+      }
+    }
+  } catch {
+    // empty body is fine
+  }
+
+  const forwardBody = (): BodyInit | undefined => {
+    if (bodyBytes && bodyBytes.byteLength > 0) return bodyBytes;
+    if (bodyText) return bodyText;
+    return undefined;
+  };
 
   try {
-    // Try online mutation
     const response = await fetchImpl(
       new Request(upstreamUrl.toString(), {
         method: req.method,
         headers: req.headers,
-        body: bodyText || undefined,
+        body: forwardBody(),
       }),
     );
 
@@ -121,11 +146,17 @@ export async function handleMutation(req: Request, env: Env, url: URL, userId: s
       return response;
     }
 
-    // 5xx: treat as upstream down for queueable paths.
+    // For multipart uploads, never queue (can't store binary in DO JSON queue).
+    // Pass the upstream 5xx through so the client sees the real failure.
+    if (isMultipart || isBinary) {
+      return response;
+    }
+
+    // 5xx JSON mutations: treat as upstream down for queueable paths.
     throw new Error(`Upstream error: ${response.status}`);
   } catch (err) {
     // Network / 5xx. Can we queue this?
-    if (isQueuableMutationPath(url.pathname) && schoolId) {
+    if (!isMultipart && !isBinary && isQueuableMutationPath(url.pathname) && schoolId) {
       let parsedBody: unknown = null;
       try {
         parsedBody = bodyText ? JSON.parse(bodyText) : null;
@@ -180,6 +211,20 @@ export async function handleMutation(req: Request, env: Env, url: URL, userId: s
             "Content-Type": "application/json",
             "X-Served-From": "offline-queue",
           },
+        },
+      );
+    }
+
+    // Multipart / non-queueable: prefer honest failure over fake offline queue.
+    if (isMultipart || isBinary) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Upload failed to reach the app server. Try again, or use a smaller file.",
+        }),
+        {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
         },
       );
     }

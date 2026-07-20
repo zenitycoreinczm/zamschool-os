@@ -484,10 +484,30 @@ export async function POST(req: NextRequest) {
     return applyEdgeCacheHeaders(response, "noStore");
   } catch (error: unknown) {
     console.error("[results-upload] failed:", error);
-    return NextResponse.json(
-      { error: safeErrorMessage(error, "Failed to upload results") },
-      { status: 500 }
-    );
+    // Map common DB messages to actionable Public-style copy (safeErrorMessage
+    // strips raw Postgres text which left users with only "Failed to upload results").
+    const raw =
+      error instanceof Error
+        ? error.message
+        : error && typeof error === "object" && "message" in error
+          ? String((error as { message?: unknown }).message || "")
+          : "";
+    let friendly = safeErrorMessage(error, "Failed to upload results");
+    if (friendly === "Failed to upload results" && raw) {
+      if (/teacher_id must belong/i.test(raw)) {
+        friendly =
+          "Teacher profile is not linked correctly for this school. Ask the registrar to fix your staff record.";
+      } else if (/due_date|null value in column/i.test(raw)) {
+        friendly = "Could not create the exam assignment record. Please try again.";
+      } else if (/student_id must belong|foreign key.*student/i.test(raw)) {
+        friendly =
+          "One or more students could not be saved. Check class numbers match the class list.";
+      } else if (/unique|duplicate key/i.test(raw)) {
+        friendly =
+          "A conflicting results row already exists. Refresh and try again, or unpublish first.";
+      }
+    }
+    return NextResponse.json({ error: friendly }, { status: 500 });
   }
 }
 

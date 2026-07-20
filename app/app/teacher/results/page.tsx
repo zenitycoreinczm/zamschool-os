@@ -421,6 +421,8 @@ export default function TeacherResultsPage() {
       formData.append("totalMarks", totalMarks);
       formData.append("classId", selectedClass);
 
+      // Prefer same-origin /api for multipart (gateway must forward binary as-is).
+      // adminApiFetch still works; gateway now streams ArrayBuffer for form-data.
       const res = await adminApiFetch("/api/teacher/results-upload", {
         method: "POST",
         body: formData,
@@ -428,7 +430,12 @@ export default function TeacherResultsPage() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        toast.error(body?.error || "Upload failed");
+        const msg =
+          body?.error ||
+          (res.status === 503
+            ? "Server temporarily unavailable for uploads. Try again in a moment."
+            : `Upload failed (${res.status})`);
+        toast.error(msg);
         return;
       }
 
