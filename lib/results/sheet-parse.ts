@@ -162,11 +162,10 @@ function pickBestHeader(
 }
 
 export function pickFirst(row: Record<string, string>, keys: string[]): string {
-  const entries = Object.entries(row).map(([k, v]) => [
-    normalizeHeader(k),
-    String(v ?? "").trim(),
-  ]);
-  const map = new Map(entries);
+  const entries: Array<[string, string]> = Object.entries(row).map(
+    ([k, v]) => [normalizeHeader(k), String(v ?? "").trim()] as [string, string],
+  );
+  const map = new Map<string, string>(entries);
 
   for (const key of keys) {
     const hit = map.get(normalizeHeader(key));
