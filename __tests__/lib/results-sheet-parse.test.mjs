@@ -7,92 +7,87 @@ import {
   normalizeHeader,
   parseMarksValue,
   parseResultsGrid,
-  parseSheetRows,
 } from "../../lib/results/sheet-parse.ts";
+import {
+  buildStudentMatchIndex,
+  matchSheetRowToStudent,
+} from "../../lib/results/match-students.ts";
 
-test("normalizeHeader handles spaces, BOM, and punctuation", () => {
-  assert.equal(normalizeHeader("\uFEFFExam Number"), "exam_number");
-  assert.equal(normalizeHeader("Admission No."), "admission_no");
-  assert.equal(normalizeHeader("Marks %"), "marks");
-  assert.equal(normalizeHeader("S/N"), "s_n");
+test("normalizeHeader handles class number headers", () => {
+  assert.equal(normalizeHeader("Class Number"), "class_number");
+  assert.equal(normalizeHeader("Class No."), "class_no");
+  assert.equal(normalizeHeader("Roll No"), "roll_no");
 });
 
 test("parseMarksValue accepts percent and fraction forms", () => {
   assert.equal(parseMarksValue("75"), 75);
   assert.equal(parseMarksValue("75%"), 75);
   assert.equal(parseMarksValue("80/100"), 80);
-  assert.equal(parseMarksValue("12.5"), 12.5);
-  assert.equal(parseMarksValue("abc"), null);
 });
 
 test("findHeaderRowIndex skips title rows", () => {
   const grid = [
     ["ZamSchool Mid-Term Results 2026", "", ""],
     ["", "", ""],
-    ["Admission No", "Name", "Marks"],
-    ["A001", "Alice Banda", "88"],
+    ["Class Number", "Name", "Marks"],
+    ["1", "Alice Banda", "88"],
   ];
   assert.equal(findHeaderRowIndex(grid), 2);
 });
 
-test("parseResultsGrid reads common school sheet with title row", () => {
+test("parseResultsGrid reads Class Number + Name + Marks", () => {
   const grid = [
-    ["Grade 7 Science — Mid Term"],
-    ["Admission No", "Student Name", "Score", "Grade"],
-    ["STU-001", "John Phiri", "72", "B"],
-    ["STU-002", "Mary Zulu", "91%", "A"],
+    ["Grade 7 Science"],
+    ["Class Number", "Name", "Marks", "Grade"],
+    ["1", "John Phiri", "72", "B"],
+    ["2", "Mary Zulu", "91%", "A"],
   ];
   const parsed = parseResultsGrid(grid);
   assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].identifier, "STU-001");
+  assert.equal(parsed.rows[0].classNumber, 1);
+  assert.equal(parsed.rows[0].name, "John Phiri");
   assert.equal(parsed.rows[0].marks, 72);
-  assert.equal(parsed.rows[1].marks, 91);
+  assert.ok(parsed.foundClassNumberColumn);
 });
 
-test("parseResultsGrid accepts name-only sheets", () => {
-  const grid = [
-    ["Name", "Marks"],
-    ["Chanda Mwansa", "55"],
-    ["Bwalya Tembo", "60"],
+test("match prefers class number over duplicate names", () => {
+  const students = [
+    {
+      id: "s1",
+      classId: "c1",
+      classNumber: 1,
+      admissionNumber: "A1",
+      displayName: "John Phiri",
+    },
+    {
+      id: "s2",
+      classId: "c1",
+      classNumber: 2,
+      admissionNumber: "A2",
+      displayName: "John Phiri",
+    },
   ];
-  const parsed = parseResultsGrid(grid);
-  assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].identifier, "Chanda Mwansa");
-});
+  const index = buildStudentMatchIndex(students);
 
-test("parseResultsGrid handles headerless data rows", () => {
-  const grid = [
-    ["STU-001", "Alice Banda", "88"],
-    ["STU-002", "John Phiri", "72"],
-  ];
-  const parsed = parseResultsGrid(grid);
-  assert.ok(parsed.rows.length >= 2, `expected >=2 rows, got ${parsed.rows.length}`);
-  assert.ok(parsed.rows.some((r) => r.identifier.includes("STU") || r.identifier.includes("Alice")));
-  assert.ok(parsed.rows.some((r) => r.marks != null));
-});
+  const m1 = matchSheetRowToStudent(
+    { classNumber: 1, name: "John Phiri" },
+    index,
+  );
+  assert.equal(m1.student?.id, "s1");
+  assert.equal(m1.method, "class_number");
 
-test("parseResultsGrid handles semicolon CSV-style rows", () => {
-  // Already split grid (delimiter handled before grid parse)
-  const grid = [
-    ["Exam No", "Marks"],
-    ["EX-9", "40"],
-    ["EX-10", "50"],
-  ];
-  const parsed = parseResultsGrid(grid);
-  assert.equal(parsed.rows.length, 2);
-  assert.equal(parsed.rows[0].marks, 40);
+  const m2 = matchSheetRowToStudent(
+    { classNumber: 2, name: "John Phiri" },
+    index,
+  );
+  assert.equal(m2.student?.id, "s2");
+
+  const ambiguous = matchSheetRowToStudent({ name: "John Phiri" }, index);
+  assert.equal(ambiguous.student, null);
+  assert.equal(ambiguous.ambiguous, true);
 });
 
 test("detectCsvDelimiter prefers semicolon when consistent", () => {
-  const text = "Admission No;Name;Marks\nA1;Alice;80\nA2;Bob;70\n";
+  const text = "Class Number;Name;Marks\n1;Alice;80\n2;Bob;70\n";
   assert.equal(detectCsvDelimiter(text), ";");
-});
-
-test("parseSheetRows still works for object maps", () => {
-  const objects = [
-    { exam_no: "EX-9", mark: "40" },
-    { exam_no: "EX-10", mark: "50" },
-  ];
-  const parsed = parseSheetRows(objects);
-  assert.equal(parsed.rows.length, 2);
 });

@@ -188,7 +188,9 @@ export default function RegistrarPeoplePage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  useEffect(() => { void init(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void init();
+  }, []);
 
   async function init() {
     setLoading(true);

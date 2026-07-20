@@ -1,6 +1,6 @@
-const STATIC_CACHE = "zamschool-static-v2";
-const ROUTE_CACHE = "zamschool-routes-v3";
-const API_CACHE = "zamschool-api-v3";
+const STATIC_CACHE = "zamschool-static-v3";
+const ROUTE_CACHE = "zamschool-routes-v4";
+const API_CACHE = "zamschool-api-v4";
 const OFFLINE_FALLBACK_URL = "/offline";
 
 self.addEventListener("install", (event) => {

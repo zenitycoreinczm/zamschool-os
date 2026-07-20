@@ -71,7 +71,6 @@ function VerifyEmailContent() {
     };
 
     void loadSession();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + query only
   }, [router, searchParams]);
 
   const sendOtp = async (targetEmail: string, targetUserId: string) => {

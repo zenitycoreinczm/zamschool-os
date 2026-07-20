@@ -47,8 +47,8 @@ function MfaQrCode({ qrCodeUrl }: { qrCodeUrl: string }) {
   }
 
   // Ephemeral enroll QR - plain img avoids next/image src validation on data: URIs
-  // eslint-disable-next-line @next/next/no-img-element
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- TOTP QR is a data: URL
     <img
       src={src}
       alt="Authenticator QR code"

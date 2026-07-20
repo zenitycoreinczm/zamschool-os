@@ -110,7 +110,6 @@ function splitCsvLine(line: string): string[] {
 
 function parseExcel(buffer: Buffer): Record<string, string>[] {
   // Lazy require so cold starts without xlsx path still work for CSV.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const XLSX = require("xlsx") as typeof import("xlsx");
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];

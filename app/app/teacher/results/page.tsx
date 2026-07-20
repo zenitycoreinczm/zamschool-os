@@ -31,15 +31,26 @@ import {
   parseResultsGrid,
   RESULTS_CSV_TEMPLATE,
 } from "@/lib/results/sheet-parse";
+import {
+  buildStudentMatchIndex,
+  matchSheetRowToStudent,
+  type MatchableStudent,
+} from "@/lib/results/match-students";
 
 type Subject = { id: string; name: string; code: string | null };
 type ClassItem = { id: string; name: string };
 
 type ParsedRow = {
   identifier: string;
+  classNumber: number | null;
+  admissionNumber: string | null;
+  name: string | null;
   marks: number | null;
   grade: string | null;
   matchedStudent: string | null;
+  matchMethod: string | null;
+  matchWarning: string | null;
+  studentId: string | null;
 };
 
 type UploadResult = {
@@ -86,11 +97,7 @@ type CompletenessData = {
   examTitle: string;
 };
 
-type StudentLookup = {
-  id: string;
-  admissionNumber: string | null;
-  displayName: string;
-};
+type StudentLookup = MatchableStudent;
 
 export default function TeacherResultsPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -116,17 +123,59 @@ export default function TeacherResultsPage() {
 
   const loadData = useCallback(async () => {
     try {
-      const [subjRes, classRes] = await Promise.all([
+      // Subjects + students (class list comes from classHealth — not today's lessons)
+      const [subjRes, studentsRes] = await Promise.all([
         adminApiJson("/api/teacher/subjects"),
-        adminApiJson("/api/teacher/classes"),
+        adminApiJson("/api/teacher/students"),
       ]);
       setSubjects(subjRes.data || []);
-      const classList = (classRes.data || []).map((c: any) => ({
-        id: c.classId || c.id,
-        name: c.className || c.name || "Class",
+
+      const classHealth = (studentsRes.data?.classHealth || []) as Array<{
+        id: string;
+        name: string;
+      }>;
+      const fromHealth = classHealth.map((c) => ({
+        id: c.id,
+        name: c.name || "Class",
       }));
+
+      // Fallback: derive classes from student rows
+      const studentRows = (studentsRes.data?.students || []) as Array<{
+        classId?: string;
+        className?: string;
+      }>;
+      const fromStudents = new Map<string, string>();
+      for (const s of studentRows) {
+        if (s.classId && !fromStudents.has(s.classId)) {
+          fromStudents.set(s.classId, s.className || "Class");
+        }
+      }
+      const classList =
+        fromHealth.length > 0
+          ? fromHealth
+          : Array.from(fromStudents.entries()).map(([id, name]) => ({
+              id,
+              name,
+            }));
+
       setClasses(classList);
       if (classList.length === 1) setSelectedClass(classList[0].id);
+
+      // Cache all students for matching once a class is chosen
+      const allStudents: StudentLookup[] = studentRows.map((s: any) => ({
+        id: s.id,
+        classId: s.classId,
+        classNumber:
+          typeof s.classNumber === "number"
+            ? s.classNumber
+            : s.classNumber != null
+              ? Number(s.classNumber)
+              : null,
+        admissionNumber: s.admissionNumber || null,
+        displayName: s.displayName || "Student",
+      }));
+      // Store unfiltered; filter by selected class in useMemo
+      setStudents(allStudents);
     } catch {
       toast.error("Failed to load data");
     }
@@ -136,37 +185,18 @@ export default function TeacherResultsPage() {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (!selectedClass) return;
-    adminApiJson("/api/teacher/students")
-      .then((body) => {
-        const allStudents: StudentLookup[] = (body.data?.students || [])
-          .filter((s: any) => s.classId === selectedClass)
-          .map((s: any) => ({
-            id: s.id,
-            admissionNumber: s.admissionNumber || null,
-            displayName: s.displayName,
-          }));
-        setStudents(allStudents);
-      })
-      .catch(() => {});
-  }, [selectedClass]);
+  const studentsInClass = useMemo(
+    () =>
+      selectedClass
+        ? students.filter((s) => s.classId === selectedClass)
+        : [],
+    [students, selectedClass],
+  );
 
-  const studentLookup = useMemo(() => {
-    const map = new Map<string, StudentLookup>();
-    for (const s of students) {
-      if (s.admissionNumber) {
-        map.set(s.admissionNumber.toLowerCase().trim(), s);
-        // Also index without spaces/dashes for EX-001 vs EX001
-        map.set(s.admissionNumber.toLowerCase().replace(/[\s_-]/g, ""), s);
-      }
-      map.set(s.id.toLowerCase(), s);
-      if (s.displayName) {
-        map.set(s.displayName.toLowerCase().trim(), s);
-      }
-    }
-    return map;
-  }, [students]);
+  const matchIndex = useMemo(
+    () => buildStudentMatchIndex(studentsInClass),
+    [studentsInClass],
+  );
 
   const [parseDiagnostics, setParseDiagnostics] = useState<string | null>(null);
   const [rawSample, setRawSample] = useState<string[][] | null>(null);
@@ -259,29 +289,52 @@ export default function TeacherResultsPage() {
             }
           }
 
-          const key = row.identifier.trim().toLowerCase();
-          const keyCompact = key.replace(/[\s_-]/g, "");
-          const matched =
-            studentLookup.get(key) || studentLookup.get(keyCompact) || null;
+          const match = selectedClass
+            ? matchSheetRowToStudent(
+                {
+                  classNumber: row.classNumber,
+                  admissionNumber: row.admissionNumber,
+                  name: row.name,
+                  identifier: row.identifier,
+                },
+                matchIndex,
+              )
+            : {
+                student: null,
+                method: "none" as const,
+                ambiguous: false,
+                reason: "Select a class to match students",
+              };
 
           return {
             identifier: row.identifier.trim(),
+            classNumber: row.classNumber,
+            admissionNumber: row.admissionNumber,
+            name: row.name,
             marks: row.marks,
             grade,
-            matchedStudent: matched?.displayName || null,
+            matchedStudent: match.student?.displayName || null,
+            matchMethod: match.method === "none" ? null : match.method,
+            matchWarning: match.reason || null,
+            studentId: match.student?.id || null,
           };
         });
 
         setParsedRows(parsed);
         setShowPreview(true);
+        const matchedN = parsed.filter((r) => r.studentId).length;
         setParseDiagnostics(
-          `Read ${parsed.length} row(s). Columns: ${[
-            sheet.foundStudentIdColumn || sheet.foundNameColumn || "id/name",
+          `Read ${parsed.length} row(s) · ${matchedN} matched in class. Columns: ${[
+            sheet.foundClassNumberColumn,
+            sheet.foundStudentIdColumn,
+            sheet.foundNameColumn,
             sheet.foundMarksColumn || "marks",
-            sheet.foundGradeColumn,
           ]
             .filter(Boolean)
-            .join(", ")}`,
+            .join(", ")}` +
+            (!selectedClass
+              ? " — select a class to match Class Number / Name."
+              : ""),
         );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Failed to parse file";
@@ -293,11 +346,11 @@ export default function TeacherResultsPage() {
         setPreviewLoading(false);
       }
     },
-    [studentLookup, totalMarks],
+    [matchIndex, selectedClass, totalMarks],
   );
 
   useEffect(() => {
-    // Parse as soon as a file is chosen (class only needed for name matching).
+    // Re-parse when file changes or class changes (class needed for matching).
     if (file) {
       void parseFile(file);
     } else {
@@ -306,7 +359,7 @@ export default function TeacherResultsPage() {
       setParseDiagnostics(null);
       setRawSample(null);
     }
-  }, [file, parseFile]);
+  }, [file, selectedClass, parseFile]);
 
   const downloadTemplate = () => {
     const blob = new Blob([RESULTS_CSV_TEMPLATE], {
@@ -321,11 +374,11 @@ export default function TeacherResultsPage() {
   };
 
   const matchedCount = useMemo(
-    () => parsedRows?.filter((r) => r.matchedStudent).length ?? 0,
+    () => parsedRows?.filter((r) => r.studentId).length ?? 0,
     [parsedRows],
   );
   const unmatchedCount = useMemo(
-    () => parsedRows?.filter((r) => !r.matchedStudent).length ?? 0,
+    () => parsedRows?.filter((r) => !r.studentId).length ?? 0,
     [parsedRows],
   );
 
@@ -602,7 +655,8 @@ export default function TeacherResultsPage() {
                       <span className="font-medium text-sky-600">browse</span>
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      CSV or Excel — e.g. Admission No / Name + Marks (or Score)
+                      Prefer: Class Number, Name, Marks — avoids duplicate-name
+                      mix-ups
                     </p>
                   </>
                 )}
@@ -654,17 +708,28 @@ export default function TeacherResultsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
                     <tr>
-                      <th className="px-5 py-2.5">Identifier</th>
+                      <th className="px-3 py-2.5">Class #</th>
+                      <th className="px-3 py-2.5">Name / Adm</th>
                       <th className="px-3 py-2.5">Marks</th>
                       <th className="px-3 py-2.5">Grade</th>
-                      <th className="px-5 py-2.5">Student</th>
+                      <th className="px-3 py-2.5">Matched student</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {parsedRows.slice(0, 100).map((row, i) => (
                       <tr key={i} className="hover:bg-slate-50/50">
-                        <td className="px-5 py-2 font-mono text-xs text-slate-800">
-                          {row.identifier}
+                        <td className="px-3 py-2 font-mono text-xs font-semibold text-slate-800">
+                          {row.classNumber ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-slate-700">
+                          <div className="font-medium">
+                            {row.name || row.identifier}
+                          </div>
+                          {row.admissionNumber ? (
+                            <div className="font-mono text-[11px] text-slate-400">
+                              {row.admissionNumber}
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 text-slate-700">
                           {row.marks ?? "-"}
@@ -672,16 +737,30 @@ export default function TeacherResultsPage() {
                         <td className="px-3 py-2 text-slate-700">
                           {row.grade ?? "-"}
                         </td>
-                        <td className="px-5 py-2">
+                        <td className="px-3 py-2">
                           {row.matchedStudent ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                              <UserCheck className="h-3 w-3" />
-                              {row.matchedStudent}
+                            <span className="inline-flex flex-col gap-0.5 text-xs text-emerald-700">
+                              <span className="inline-flex items-center gap-1">
+                                <UserCheck className="h-3 w-3" />
+                                {row.matchedStudent}
+                              </span>
+                              {row.matchMethod ? (
+                                <span className="text-[10px] uppercase tracking-wide text-emerald-600/80">
+                                  via {row.matchMethod.replace("_", " ")}
+                                </span>
+                              ) : null}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                              <UserX className="h-3 w-3" />
-                              No match
+                            <span className="inline-flex flex-col gap-0.5 text-xs text-amber-600">
+                              <span className="inline-flex items-center gap-1">
+                                <UserX className="h-3 w-3" />
+                                No match
+                              </span>
+                              {row.matchWarning ? (
+                                <span className="text-[10px] text-amber-700/80">
+                                  {row.matchWarning}
+                                </span>
+                              ) : null}
                             </span>
                           )}
                         </td>
@@ -697,7 +776,8 @@ export default function TeacherResultsPage() {
               </div>
               <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
                 <div className="text-xs text-slate-500">
-                  {students.length} students enrolled in {selectedClassName}
+                  {studentsInClass.length} students enrolled in{" "}
+                  {selectedClassName || "selected class"}
                 </div>
                 <button
                   onClick={handleUpload}
@@ -767,8 +847,8 @@ export default function TeacherResultsPage() {
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-amber-700/90">
-                    Hard-refresh the page (Ctrl+Shift+R) if this message still
-                    looks outdated, then re-upload.
+                    Hard-refresh (Ctrl+Shift+R) if the UI looks outdated, then
+                    use the template: Class Number, Name, Marks.
                   </p>
                 </div>
               </div>
@@ -1002,7 +1082,7 @@ export default function TeacherResultsPage() {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
                   3
                 </span>
-                Upload CSV/Excel with Admission No (or Name) and Marks/Score
+                Upload CSV/Excel with Class Number, Name, and Marks
               </li>
               <li className="flex gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
@@ -1053,7 +1133,7 @@ export default function TeacherResultsPage() {
                 )}
                 <div>
                   <span className="font-medium">Students:</span>{" "}
-                  {students.length} enrolled
+                  {studentsInClass.length} enrolled
                 </div>
               </div>
             </div>

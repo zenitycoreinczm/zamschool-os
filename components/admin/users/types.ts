@@ -35,7 +35,6 @@ export type ParentMeta = {
   profile_id?: string;
   relation_type?: string | null;
   occupation?: string | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 };
 
@@ -50,7 +49,6 @@ export type UserDetailData = DirectoryUser & {
   teachingAssignments?: Array<{ classId?: string; subjectId?: string }>;
   supervisedClassIds?: string[];
   // Nested role-specific payloads (attendance, fees, inbox, …).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 };
 
