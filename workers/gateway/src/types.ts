@@ -36,6 +36,11 @@ export interface Env {
   /** Set to "true" to enable edge rate limiting (Upstash Redis or isolate memory). */
   RATE_LIMIT_ENABLED?: string;
   /**
+   * Free-tier / Hobby protection. Default true (tighter gateway ceilings).
+   * Set "false" only after moving Vercel/Supabase to paid scale-out.
+   */
+  FREE_TIER?: string;
+  /**
    * Upstash REST credentials for gateway rate limits (preferred over KV).
    * Set via: wrangler secret put UPSTASH_REDIS_REST_URL / TOKEN
    */

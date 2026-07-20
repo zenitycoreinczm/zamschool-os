@@ -33,8 +33,10 @@ import {
 } from "./lib/server-security-edge";
 import {
   freeTierFloodLimits,
+  isFreeTierMode,
   isProductionInvocationBlockedPath,
 } from "./lib/free-tier-guard";
+import { checkEdgeDistributedLimit } from "./lib/edge-distributed-limit";
 
 const API_CORS_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
 const DEFAULT_ALLOWED_HEADERS = "Authorization, Content-Type";
@@ -140,73 +142,83 @@ export async function proxy(request: NextRequest) {
     return denied;
   }
 
-  // Edge flood guards (per-isolate; Redis still enforces distributed limits on routes).
-  // Free-tier / Hobby uses tighter ceilings so scrapers cannot burn Vercel quota.
+  // Edge flood guards:
+  //   L1 — per-isolate memory (cheap; stops single-instance scrapers)
+  //   L2 — Upstash fixed-window (free tier only; stops multi-isolate fan-out
+  //        that would burn Vercel Hobby + Supabase free quotas)
   {
     const floodLimits = freeTierFloodLimits();
-    if (isSensitiveAuthSurface(pathname)) {
-      const flood = checkMiddlewareFloodLimit({
-        key: `auth-edge:${ip}`,
-        limit: bot.suspicious
-          ? floodLimits.auth.suspicious
-          : floodLimits.auth.normal,
-        windowMs: floodLimits.windowMs,
+    const surface = isSensitiveAuthSurface(pathname)
+      ? "auth"
+      : pathname.startsWith("/api/")
+        ? "api"
+        : "page";
+    const surfaceLimit =
+      surface === "auth"
+        ? floodLimits.auth
+        : surface === "api"
+          ? floodLimits.api
+          : floodLimits.page;
+    const memLimit = bot.suspicious
+      ? surfaceLimit.suspicious
+      : surfaceLimit.normal;
+
+    const flood = checkMiddlewareFloodLimit({
+      key: `${surface}-edge:${ip}`,
+      limit: memLimit,
+      windowMs: floodLimits.windowMs,
+    });
+    if (!flood.allowed) {
+      void import("./lib/ip-reputation")
+        .then(({ recordIpAbuse }) =>
+          recordIpAbuse(ip, `${surface}_flood`),
+        )
+        .catch(() => {});
+      const limited = NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(flood.retryAfterSec) },
+        },
+      );
+      applySecurityHeaders(limited, request);
+      return limited;
+    }
+
+    // Distributed free-tier shield (Redis). Skip health probes — monitors poll often.
+    const isHealthProbe =
+      pathname === "/api/health" || pathname === "/api/health/ready";
+    if (isFreeTierMode() && !isHealthProbe) {
+      const distributed = await checkEdgeDistributedLimit({
+        ip,
+        surface,
+        suspicious: bot.suspicious,
       });
-      if (!flood.allowed) {
+      if (!distributed.allowed) {
         void import("./lib/ip-reputation")
-          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "auth_flood"))
+          .then(({ recordIpAbuse }) =>
+            recordIpAbuse(
+              ip,
+              distributed.reason === "daily"
+                ? "api_daily_cap"
+                : `${surface}_dist_flood`,
+            ),
+          )
           .catch(() => {});
         const limited = NextResponse.json(
-          { error: "Too many requests. Please try again shortly." },
           {
-            status: 429,
-            headers: { "Retry-After": String(flood.retryAfterSec) },
+            error:
+              distributed.reason === "daily"
+                ? "Daily request budget exceeded. Please try again tomorrow."
+                : "Too many requests. Please try again shortly.",
+            code:
+              distributed.reason === "daily"
+                ? "DAILY_EDGE_LIMIT"
+                : "EDGE_RATE_LIMIT",
           },
-        );
-        applySecurityHeaders(limited, request);
-        return limited;
-      }
-    } else if (pathname.startsWith("/api/")) {
-      // General API flood ceiling - stops scrapers before route handlers run.
-      const apiFlood = checkMiddlewareFloodLimit({
-        key: `api-edge:${ip}`,
-        limit: bot.suspicious
-          ? floodLimits.api.suspicious
-          : floodLimits.api.normal,
-        windowMs: floodLimits.windowMs,
-      });
-      if (!apiFlood.allowed) {
-        void import("./lib/ip-reputation")
-          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "api_flood"))
-          .catch(() => {});
-        const limited = NextResponse.json(
-          { error: "Too many requests. Please try again shortly." },
           {
             status: 429,
-            headers: { "Retry-After": String(apiFlood.retryAfterSec) },
-          },
-        );
-        applySecurityHeaders(limited, request);
-        return limited;
-      }
-    } else {
-      // HTML/page flood - blocks site scrapers on free Vercel bandwidth.
-      const pageFlood = checkMiddlewareFloodLimit({
-        key: `page-edge:${ip}`,
-        limit: bot.suspicious
-          ? floodLimits.page.suspicious
-          : floodLimits.page.normal,
-        windowMs: floodLimits.windowMs,
-      });
-      if (!pageFlood.allowed) {
-        void import("./lib/ip-reputation")
-          .then(({ recordIpAbuse }) => recordIpAbuse(ip, "page_flood"))
-          .catch(() => {});
-        const limited = NextResponse.json(
-          { error: "Too many requests. Please try again shortly." },
-          {
-            status: 429,
-            headers: { "Retry-After": String(pageFlood.retryAfterSec) },
+            headers: { "Retry-After": String(distributed.retryAfterSec) },
           },
         );
         applySecurityHeaders(limited, request);

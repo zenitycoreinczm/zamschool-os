@@ -6,11 +6,19 @@ type RateLimitConfig = {
   windowMs: number;
 };
 
+// Free-tier-aware secondary ceilings (KV is fallback after Redis).
+const freeKv =
+  process.env.ZAMSCHOOL_FREE_TIER !== "false" &&
+  (process.env.ZAMSCHOOL_FREE_TIER === "true" ||
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL === "1");
+
 const LIMITS: Record<string, RateLimitConfig> = {
-  api: { maxRequests: 100, windowMs: 60 * 1000 },
-  auth: { maxRequests: 10, windowMs: 60 * 1000 },
-  image_uploads: { maxRequests: 20, windowMs: 60 * 1000 },
-  file_upload: { maxRequests: 20, windowMs: 60 * 1000 },
+  api: { maxRequests: freeKv ? 60 : 100, windowMs: 60 * 1000 },
+  auth: { maxRequests: freeKv ? 8 : 10, windowMs: 60 * 1000 },
+  image_uploads: { maxRequests: freeKv ? 10 : 20, windowMs: 60 * 1000 },
+  file_upload: { maxRequests: freeKv ? 10 : 20, windowMs: 60 * 1000 },
 };
 
 /**

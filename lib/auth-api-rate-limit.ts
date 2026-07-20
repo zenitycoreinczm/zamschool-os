@@ -1,23 +1,27 @@
 import { NextResponse } from "next/server";
 import { applyRateLimit, getClientIp } from "./server-guards";
 
+import { isFreeTierMode } from "./free-tier-guard";
+
+const free = isFreeTierMode();
+
 /** Fail-closed limits for unauthenticated or credential-sensitive auth API routes. */
 export const AUTH_API_RATE_LIMITS = {
-  verifyAccessCode: { limit: 8, windowMs: 60_000 },
-  sendOtp: { limit: 5, windowMs: 60_000 },
-  verifyOtp: { limit: 10, windowMs: 60_000 },
-  registerSchool: { limit: 5, windowMs: 60_000 },
-  acceptInvitation: { limit: 8, windowMs: 60_000 },
-  completeFirstLogin: { limit: 15, windowMs: 60_000 },
-  forgotPassword: { limit: 3, windowMs: 60_000 },
-  resetPassword: { limit: 5, windowMs: 60_000 },
-  mfaEnroll: { limit: 8, windowMs: 60_000 },
-  mfaChallenge: { limit: 20, windowMs: 60_000 },
-  mfaVerify: { limit: 6, windowMs: 60_000 },
-  mfaFactorsRead: { limit: 30, windowMs: 60_000 },
-  mfaFactorsDelete: { limit: 8, windowMs: 60_000 },
+  verifyAccessCode: { limit: free ? 5 : 8, windowMs: 60_000 },
+  sendOtp: { limit: free ? 3 : 5, windowMs: 60_000 },
+  verifyOtp: { limit: free ? 6 : 10, windowMs: 60_000 },
+  registerSchool: { limit: free ? 3 : 5, windowMs: 60_000 },
+  acceptInvitation: { limit: free ? 5 : 8, windowMs: 60_000 },
+  completeFirstLogin: { limit: free ? 10 : 15, windowMs: 60_000 },
+  forgotPassword: { limit: free ? 2 : 3, windowMs: 60_000 },
+  resetPassword: { limit: free ? 3 : 5, windowMs: 60_000 },
+  mfaEnroll: { limit: free ? 5 : 8, windowMs: 60_000 },
+  mfaChallenge: { limit: free ? 12 : 20, windowMs: 60_000 },
+  mfaVerify: { limit: free ? 5 : 6, windowMs: 60_000 },
+  mfaFactorsRead: { limit: free ? 20 : 30, windowMs: 60_000 },
+  mfaFactorsDelete: { limit: free ? 5 : 8, windowMs: 60_000 },
   /** Login lockout check / record (server-side Redis). */
-  loginGuard: { limit: 20, windowMs: 60_000 },
+  loginGuard: { limit: free ? 12 : 20, windowMs: 60_000 },
 } as const;
 
 export type AuthApiRateLimitScope = keyof typeof AUTH_API_RATE_LIMITS;

@@ -5,9 +5,9 @@ import { handleMutation, SchoolSyncQueue } from "./queue.ts";
 import { matchGatewayRoute } from "./routes.ts";
 import {
   checkGatewayRateLimit,
-  GATEWAY_RATE_LIMITS,
   rateLimitExceededResponse,
   rateLimitHeaders,
+  resolveGatewayRateLimits,
   resolveRateLimitKey,
 } from "./rate-limit.ts";
 
@@ -58,15 +58,16 @@ const gatewayWorker = {
     try {
       const session = await verifyAuth(req, env);
       const limitKey = resolveRateLimitKey(req, session);
+      const gatewayLimits = resolveGatewayRateLimits(env);
 
       const limitConfig =
         route.kind === "upload"
-          ? GATEWAY_RATE_LIMITS.upload
+          ? gatewayLimits.upload
           : route.kind === "file_download" || route.kind === "cached_get_proxy" || route.kind === "get_proxy"
-            ? GATEWAY_RATE_LIMITS.read
+            ? gatewayLimits.read
             : session
-              ? GATEWAY_RATE_LIMITS.mutation
-              : GATEWAY_RATE_LIMITS.anonymous;
+              ? gatewayLimits.mutation
+              : gatewayLimits.anonymous;
 
       const limitResult = await checkGatewayRateLimit(env, limitKey, limitConfig);
       if (!limitResult.allowed) {

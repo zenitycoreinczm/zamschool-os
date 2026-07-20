@@ -54,6 +54,9 @@ SUPABASE_URL = "https://jnnroitaftfmclegbeac.supabase.co"
 SUPABASE_JWT_ISSUER = "https://jnnroitaftfmclegbeac.supabase.co/auth/v1"
 SUPABASE_JWT_AUDIENCE = "authenticated"
 RATE_LIMIT_ENABLED = "true"
+# Tighter gateway ceilings to protect Vercel Hobby + Supabase free.
+# Set FREE_TIER=false only after moving to paid scale-out.
+FREE_TIER = "true"
 NODE_ENV = "production"
 
 # Rate limits use Upstash Redis (INCR), not KV. Set secrets:

@@ -12,17 +12,21 @@ import {
   hashRedisIdentifier,
   rateLimitKey,
 } from "@/lib/redis/keys";
+import { freeTierIpAbusePolicy } from "@/lib/free-tier-guard";
 
 /** Max body size for general API mutations (bytes). Uploads use dedicated routes. */
 export const MAX_API_BODY_BYTES = 1_048_576; // 1 MiB
 /** Max body size for file authorize / multipart paths. */
 export const MAX_UPLOAD_BODY_BYTES = 25 * 1_048_576; // 25 MiB
-/** Temporary ban duration after repeated abuse. */
-export const IP_BAN_TTL_SEC = 60 * 60; // 1 hour
-/** Abuse events before temporary ban. */
-export const IP_ABUSE_BAN_THRESHOLD = 25;
+
+const freeAbuse = freeTierIpAbusePolicy();
+
+/** Temporary ban duration after repeated abuse (shorter/longer by free-tier mode). */
+export const IP_BAN_TTL_SEC = freeAbuse.banTtlSec;
+/** Abuse events before temporary ban (lower on free tier so scrapers die faster). */
+export const IP_ABUSE_BAN_THRESHOLD = freeAbuse.banThreshold;
 /** Window for counting abuse events. */
-export const IP_ABUSE_WINDOW_SEC = 15 * 60;
+export const IP_ABUSE_WINDOW_SEC = freeAbuse.windowSec;
 
 const DISALLOWED_METHODS = new Set(["TRACE", "TRACK"]);
 

@@ -1,27 +1,30 @@
 import { NextResponse } from "next/server";
 
 import { consumeDailyUsage, type DailyUsageResult } from "./daily-usage-limit";
+import { freeTierPlatformRatePresets } from "./free-tier-guard";
 import { applyRateLimit } from "./server-guards";
 import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
+const freePlatform = freeTierPlatformRatePresets();
+
 export const PLATFORM_RATE_PRESETS = {
-  messagesRead: { limit: 30, windowMs: 60_000 },
-  messagesWrite: { limit: 12, windowMs: 60_000 },
-  unreadSummary: { limit: 60, windowMs: 60_000 },
-  workspaceContext: { limit: IS_DEV ? 300 : 60, windowMs: 60_000 },
-  teacherBootstrap: { limit: 8, windowMs: 60_000 },
-  teacherDashboard: { limit: 20, windowMs: 60_000 },
-  teacherClasses: { limit: 120, windowMs: 60_000 },
-  teacherStudents: { limit: 60, windowMs: 60_000 },
-  teacherSubjects: { limit: 120, windowMs: 60_000 },
-  teacherResultsCompleteness: { limit: 60, windowMs: 60_000 },
-  teacherAttendanceWrite: { limit: 60, windowMs: 60_000 },
-  accountContacts: { limit: 20, windowMs: 60_000 },
-  heavyRead: { limit: 25, windowMs: 60_000 },
-  uploadAuthorize: { limit: 20, windowMs: 60_000 },
-  uploadValidate: { limit: 20, windowMs: 60_000 },
+  messagesRead: freePlatform.messagesRead!,
+  messagesWrite: freePlatform.messagesWrite!,
+  unreadSummary: freePlatform.unreadSummary!,
+  workspaceContext: freePlatform.workspaceContext!,
+  teacherBootstrap: freePlatform.teacherBootstrap!,
+  teacherDashboard: freePlatform.teacherDashboard!,
+  teacherClasses: freePlatform.teacherClasses!,
+  teacherStudents: freePlatform.teacherStudents!,
+  teacherSubjects: freePlatform.teacherSubjects!,
+  teacherResultsCompleteness: freePlatform.teacherResultsCompleteness!,
+  teacherAttendanceWrite: freePlatform.teacherAttendanceWrite!,
+  accountContacts: freePlatform.accountContacts!,
+  heavyRead: freePlatform.heavyRead!,
+  uploadAuthorize: freePlatform.uploadAuthorize!,
+  uploadValidate: freePlatform.uploadValidate!,
 } as const;
 
 const LOCAL_BYPASS_PRESETS = new Set<keyof typeof PLATFORM_RATE_PRESETS>([

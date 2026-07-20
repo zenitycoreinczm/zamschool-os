@@ -94,6 +94,25 @@ Origin (Next.js standalone / Vercel)
 | Production boot gates | `instrumentation.ts` + `lib/server-security-policy.ts` |
 | Safe client errors | `lib/safe-error.ts` |
 | Tenant RLS + route guards | Supabase migrations + `requireActorContext` |
+| Free-tier / Hobby ceilings | `lib/free-tier-guard.ts` (`ZAMSCHOOL_FREE_TIER`) |
+| L1 edge flood (per isolate) | `proxy.ts` + `checkMiddlewareFloodLimit` |
+| L2 distributed edge limits (Upstash) | `lib/edge-distributed-limit.ts` — minute + daily API cap |
+| Platform / auth route limits | `lib/platform-api-guard.ts`, `lib/auth-api-rate-limit.ts` |
+| Supabase 25 req/s budget | `lib/supabase-fetch-guard.ts` + `lib/supabase-request-budget.ts` |
+| Gateway free-tier rate limits | `workers/gateway` (`FREE_TIER=true`) |
+
+### Free-tier protection (Hobby / free Supabase)
+
+Production defaults to free-tier mode unless `ZAMSCHOOL_FREE_TIER=false`:
+
+1. **Cloudflare** — WAF / bot fight / optional gateway worker absorb scrapers before Vercel.
+2. **Edge L1 (memory)** — tight per-IP flood on auth / API / pages.
+3. **Edge L2 (Upstash)** — shared minute windows + **2,500 API req/day/IP** so multi-isolate fan-out cannot burn Hobby.
+4. **Route Redis limits** — auth + platform presets (tighter on free tier).
+5. **Supabase guard** — global fetch intercept caps at ~25 req/s per process/device.
+6. **R2** — files never hit Supabase Storage free quota.
+
+Opt out only after paid Vercel + Supabase: set `ZAMSCHOOL_FREE_TIER=false` and gateway `FREE_TIER=false`.
 
 ## Capacity notes for “all schools in Zambia”
 

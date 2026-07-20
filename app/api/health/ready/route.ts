@@ -42,11 +42,8 @@ export async function GET(req: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() &&
       process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
   );
-  const freeTierProtected =
-    process.env.ZAMSCHOOL_FREE_TIER !== "false" &&
-    (process.env.ZAMSCHOOL_FREE_TIER === "true" ||
-      process.env.VERCEL_ENV === "production" ||
-      process.env.NODE_ENV === "production");
+  const { isFreeTierMode } = await import("@/lib/free-tier-guard");
+  const freeTierProtected = isFreeTierMode();
   const supabaseGuardDisabled =
     process.env.NEXT_PUBLIC_DISABLE_SUPABASE_GUARD === "true";
 
@@ -79,6 +76,7 @@ export async function GET(req: Request) {
       },
       protection: {
         freeTier: freeTierProtected,
+        distributedEdgeLimits: freeTierProtected && redisConfigured,
       },
     },
   };

@@ -44,15 +44,15 @@ export function getDailyLimit(feature: string): number {
 
   const limits: Record<string, number> = {
     messages_send: resolveDailyMessageLimit(),
-    image_uploads: freeTier ? 30 : 50,
-    file_upload: freeTier ? 30 : 50,
-    exports: freeTier ? 5 : 10,
-    announcements: freeTier ? 15 : 20,
+    image_uploads: freeTier ? 20 : 50,
+    file_upload: freeTier ? 20 : 50,
+    exports: freeTier ? 3 : 10,
+    announcements: freeTier ? 10 : 20,
     // Soft ceiling per user/day for expensive platform paths (not every API).
-    api_calls: freeTier ? 5_000 : 10_000,
+    api_calls: freeTier ? 2_000 : 10_000,
   };
 
-  return limits[feature] ?? (freeTier ? 60 : 100);
+  return limits[feature] ?? (freeTier ? 40 : 100);
 }
 
 function memoryBucketKey(feature: string, userId: string, day: string) {

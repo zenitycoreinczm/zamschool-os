@@ -13,14 +13,45 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-/** Edge rate-limit presets (Redis / isolate memory — not KV). */
-export const GATEWAY_RATE_LIMITS = {
+/**
+ * Edge rate-limit presets (Redis / isolate memory — not KV).
+ *
+ * Defaults are free-tier / Hobby safe so gateway traffic cannot burn
+ * Vercel or Supabase quotas. Paid scale-out: set FREE_TIER=false in
+ * wrangler vars and use resolveGatewayRateLimits(env).
+ */
+const FREE_TIER_LIMITS = {
+  default: { windowSec: 60, maxRequests: 60, keyPrefix: "default" },
+  upload: { windowSec: 60, maxRequests: 10, keyPrefix: "upload" },
+  read: { windowSec: 60, maxRequests: 60, keyPrefix: "read" },
+  mutation: { windowSec: 60, maxRequests: 30, keyPrefix: "mutation" },
+  anonymous: { windowSec: 60, maxRequests: 12, keyPrefix: "anonymous" },
+} as const satisfies Record<string, RateLimitConfig>;
+
+const PAID_LIMITS = {
   default: { windowSec: 60, maxRequests: 120, keyPrefix: "default" },
   upload: { windowSec: 60, maxRequests: 20, keyPrefix: "upload" },
   read: { windowSec: 60, maxRequests: 120, keyPrefix: "read" },
   mutation: { windowSec: 60, maxRequests: 60, keyPrefix: "mutation" },
   anonymous: { windowSec: 60, maxRequests: 30, keyPrefix: "anonymous" },
 } as const satisfies Record<string, RateLimitConfig>;
+
+/** Default export used by tests and static imports — free-tier safe. */
+export const GATEWAY_RATE_LIMITS = FREE_TIER_LIMITS;
+
+export function isGatewayFreeTier(env?: Pick<Env, "FREE_TIER"> | null): boolean {
+  const flag = String(env?.FREE_TIER ?? "true")
+    .trim()
+    .toLowerCase();
+  if (flag === "false" || flag === "0") return false;
+  return true;
+}
+
+export function resolveGatewayRateLimits(
+  env?: Pick<Env, "FREE_TIER"> | null,
+): typeof FREE_TIER_LIMITS | typeof PAID_LIMITS {
+  return isGatewayFreeTier(env) ? FREE_TIER_LIMITS : PAID_LIMITS;
+}
 
 function isRateLimitEnabled(env: Env): boolean {
   return String(env.RATE_LIMIT_ENABLED || "").toLowerCase() === "true";
