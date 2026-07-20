@@ -267,3 +267,89 @@ test("cached proxy does not leak bearer token into upstream URL", async () => {
   assert.equal(res.status, 200);
   assert.equal(res.headers.get("X-Edge-Cache-Decision"), "stored");
 });
+
+test("cached proxy isolates hits between two users on the same route", async () => {
+  const tokenA = await signJwt({
+    sub: "user-a",
+    app_metadata: { school_id: "school-1", role: "teacher" },
+  });
+  const tokenB = await signJwt({
+    sub: "user-b",
+    app_metadata: { school_id: "school-1", role: "teacher" },
+  });
+
+  /** @type {Map<string, Response>} */
+  const store = new Map();
+  /** @type {string[]} */
+  const upstreamAuths = [];
+
+  const env = createSessionEnv(async (req) => {
+    const auth = req.headers.get("Authorization") || "";
+    upstreamAuths.push(auth);
+    const user =
+      auth === `Bearer ${tokenA}`
+        ? "user-a"
+        : auth === `Bearer ${tokenB}`
+          ? "user-b"
+          : "unknown";
+    return Response.json(
+      { success: true, data: { user } },
+      { headers: { "Cache-Control": "private, max-age=60" } },
+    );
+  });
+
+  globalThis.caches = {
+    default: {
+      async match(req) {
+        const key = typeof req === "string" ? req : req.url;
+        const cached = store.get(key);
+        return cached ? cached.clone() : null;
+      },
+      async put(req, res) {
+        const key = typeof req === "string" ? req : req.url;
+        const cacheUrl = new URL(key);
+        assert.match(cacheUrl.searchParams.get("__zamschool_auth") || "", /^[a-f0-9]{64}$/);
+        assert.doesNotMatch(key, /Bearer|eyJ/);
+        store.set(key, res.clone());
+      },
+    },
+  };
+
+  const routeUrl = "https://gateway.example.test/api/dashboard/summary?term=current";
+  const authHeaders = (token) => ({
+    Origin: "https://school.example.test",
+    Authorization: `Bearer ${token}`,
+  });
+
+  const firstA = await worker.fetch(
+    new Request(routeUrl, { headers: authHeaders(tokenA) }),
+    env,
+  );
+  assert.equal(firstA.status, 200);
+  assert.equal(firstA.headers.get("X-Cache"), "MISS");
+  assert.equal(firstA.headers.get("X-Edge-Cache-Decision"), "stored");
+  assert.deepEqual(await firstA.json(), { success: true, data: { user: "user-a" } });
+
+  const secondA = await worker.fetch(
+    new Request(routeUrl, { headers: authHeaders(tokenA) }),
+    env,
+  );
+  assert.equal(secondA.status, 200);
+  assert.equal(secondA.headers.get("X-Cache"), "HIT");
+  assert.equal(secondA.headers.get("X-Served-From"), "edge-cache");
+  assert.deepEqual(await secondA.json(), { success: true, data: { user: "user-a" } });
+
+  const firstB = await worker.fetch(
+    new Request(routeUrl, { headers: authHeaders(tokenB) }),
+    env,
+  );
+  assert.equal(firstB.status, 200);
+  assert.equal(firstB.headers.get("X-Cache"), "MISS");
+  assert.equal(firstB.headers.get("X-Edge-Cache-Decision"), "stored");
+  assert.deepEqual(await firstB.json(), { success: true, data: { user: "user-b" } });
+
+  // Same path, two auth digests → two cache slots; user B never sees user A.
+  assert.equal(store.size, 2);
+  assert.equal(upstreamAuths.filter((h) => h === `Bearer ${tokenA}`).length, 1);
+  assert.equal(upstreamAuths.filter((h) => h === `Bearer ${tokenB}`).length, 1);
+});
