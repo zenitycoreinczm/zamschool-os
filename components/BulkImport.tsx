@@ -414,13 +414,15 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
                   >
                     <td className="px-4 py-2 text-slate-400">{index + 1}</td>
                     <td className="px-4 py-2 font-medium text-slate-700">
-                      {row.name}
+                      {String(row.name ?? "")}
                     </td>
-                    <td className="px-4 py-2 text-slate-500">{row.email}</td>
+                    <td className="px-4 py-2 text-slate-500">
+                      {String(row.email ?? "")}
+                    </td>
                     {role === "STUDENT" ? (
                       <>
                         <td className="px-4 py-2 text-slate-500">
-                          {row.admission_number}
+                          {String(row.admission_number ?? "")}
                         </td>
                         <td className="px-4 py-2 text-slate-500">
                           {readClassField(row) || "—"}
@@ -429,7 +431,7 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
                     ) : null}
                     {role === "TEACHER" ? (
                       <td className="px-4 py-2 text-slate-500">
-                        {row.employee_id}
+                        {String(row.employee_id ?? "")}
                       </td>
                     ) : null}
                   </tr>

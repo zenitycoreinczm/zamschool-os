@@ -20,11 +20,16 @@ test("bulk import captures temporary passwords for imported managed accounts", a
   assert.match(source, /credentials/i);
 });
 
-test("bulk import maps student class column to class_id", async () => {
+test("bulk import maps student class column via helpers and loads classes", async () => {
   const source = await readFile(bulkImportPath, "utf8");
+  const helpers = await readFile(
+    resolve(process.cwd(), "lib", "bulk-import-helpers.ts"),
+    "utf8",
+  );
 
-  assert.match(source, /class_id/);
   assert.match(source, /resolveClassId/);
   assert.match(source, /Form 1/);
   assert.match(source, /\/api\/admin\/classes/);
+  assert.match(helpers, /class_id/);
+  assert.match(helpers, /buildManagedAccountPayload/);
 });
