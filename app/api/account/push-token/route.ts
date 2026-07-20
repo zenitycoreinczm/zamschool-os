@@ -23,6 +23,12 @@ export async function POST(req: Request) {
   try {
     const actor = await authenticateAccountPortalRequest(req);
     if ("response" in actor) return actor.response;
+    if (!actor.schoolId) {
+      return NextResponse.json(
+        { error: "No school linked to this account" },
+        { status: 403 },
+      );
+    }
 
     const body = await parseJsonWithSchema(req, upsertSchema);
     const token = body.token.trim();
@@ -40,6 +46,7 @@ export async function POST(req: Request) {
     for (const userId of userIds) {
       const row = {
         user_id: userId,
+        school_id: actor.schoolId,
         push_token: token,
         platform,
         provider,
@@ -55,6 +62,7 @@ export async function POST(req: Request) {
         const legacy = await supabaseAdmin.from("user_devices").upsert(
           {
             user_id: userId,
+            school_id: actor.schoolId,
             expo_push_token: token,
             platform,
             provider,
@@ -66,6 +74,7 @@ export async function POST(req: Request) {
           // Unique on user_id+token only — try plain insert
           await supabaseAdmin.from("user_devices").insert({
             user_id: userId,
+            school_id: actor.schoolId,
             push_token: token,
             platform,
             provider,
@@ -93,13 +102,35 @@ export async function DELETE(req: Request) {
   try {
     const actor = await authenticateAccountPortalRequest(req);
     if ("response" in actor) return actor.response;
+    if (!actor.schoolId) {
+      return NextResponse.json(
+        { error: "No school linked to this account" },
+        { status: 403 },
+      );
+    }
 
     const body = await parseJsonWithSchema(req, deleteSchema);
     const token = body.token.trim();
 
+    const userIds = Array.from(
+      new Set(
+        [actor.userId, actor.profileId].map((id) => String(id || "").trim()).filter(Boolean),
+      ),
+    );
+
     await Promise.all([
-      supabaseAdmin.from("user_devices").delete().eq("push_token", token),
-      supabaseAdmin.from("user_devices").delete().eq("expo_push_token", token),
+      supabaseAdmin
+        .from("user_devices")
+        .delete()
+        .eq("school_id", actor.schoolId)
+        .in("user_id", userIds)
+        .eq("push_token", token),
+      supabaseAdmin
+        .from("user_devices")
+        .delete()
+        .eq("school_id", actor.schoolId)
+        .in("user_id", userIds)
+        .eq("expo_push_token", token),
     ]);
 
     return NextResponse.json({ success: true });

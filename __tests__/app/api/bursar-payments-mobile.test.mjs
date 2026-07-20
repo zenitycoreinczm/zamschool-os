@@ -34,6 +34,14 @@ test("bursar payments supports idempotency key replay", () => {
   assert.match(bursarSource, /extractIdempotencyKey/);
   assert.match(bursarSource, /loadIdempotentResponse/);
   assert.match(bursarSource, /storeIdempotentResponse/);
+  assert.match(
+    bursarSource,
+    /loadIdempotentResponse\(\{\s*routeKey,\s*schoolId,\s*scopeKey,\s*idempotencyKey/,
+  );
+  assert.match(
+    bursarSource,
+    /storeIdempotentResponse\(\s*\{\s*routeKey,\s*schoolId,\s*scopeKey,\s*idempotencyKey/,
+  );
 });
 
 test("idempotency helper mints CSPRNG receipt numbers", () => {
@@ -42,12 +50,26 @@ test("idempotency helper mints CSPRNG receipt numbers", () => {
   assert.doesNotMatch(idempotencySource, /Math\.random/);
 });
 
+test("idempotency helper tenant-scopes idempotency_keys by school_id", () => {
+  assert.match(idempotencySource, /schoolId:\s*string/);
+  assert.match(idempotencySource, /\.eq\("school_id",\s*lookup\.schoolId\)/);
+  assert.match(idempotencySource, /school_id:\s*lookup\.schoolId/);
+});
+
 test("teacher results save enforces assignment scope and publish lock", () => {
   assert.match(resultsSaveSource, /requireTeacherContext/);
   assert.match(resultsSaveSource, /loadTeacherAssignmentScope/);
   assert.match(resultsSaveSource, /published_at/);
   assert.match(resultsSaveSource, /status: 409/);
   assert.match(resultsSaveSource, /onConflict:\s*"student_id,assignment_id"/);
+  assert.match(
+    resultsSaveSource,
+    /loadIdempotentResponse\(\{\s*routeKey,\s*schoolId,\s*scopeKey,\s*idempotencyKey/,
+  );
+  assert.match(
+    resultsSaveSource,
+    /storeIdempotentResponse\(\s*\{\s*routeKey,\s*schoolId,\s*scopeKey,\s*idempotencyKey/,
+  );
 });
 
 test("teacher results extract requires teacher context and parses spreadsheets", () => {

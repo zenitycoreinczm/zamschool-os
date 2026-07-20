@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export type IdempotencyLookup = {
   routeKey: string;
+  schoolId: string;
   scopeKey: string;
   idempotencyKey: string;
 };
@@ -34,10 +35,13 @@ export function hashRequestPayload(payload: unknown): string {
 export async function loadIdempotentResponse(
   lookup: IdempotencyLookup,
 ): Promise<NextResponse | null> {
+  if (!lookup.schoolId) return null;
+
   const { data, error } = await supabaseAdmin
     .from("idempotency_keys")
     .select("response_json, status_code")
     .eq("route_key", lookup.routeKey)
+    .eq("school_id", lookup.schoolId)
     .eq("scope_key", lookup.scopeKey)
     .eq("idempotency_key", lookup.idempotencyKey)
     .maybeSingle();
@@ -56,9 +60,15 @@ export async function storeIdempotentResponse(
   statusCode: number,
   responseJson: unknown,
 ): Promise<void> {
+  if (!lookup.schoolId) {
+    console.warn("[idempotency] store skipped: missing schoolId");
+    return;
+  }
+
   const { error } = await supabaseAdmin.from("idempotency_keys").upsert(
     {
       route_key: lookup.routeKey,
+      school_id: lookup.schoolId,
       scope_key: lookup.scopeKey,
       idempotency_key: lookup.idempotencyKey,
       request_hash: requestHash,

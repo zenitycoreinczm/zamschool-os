@@ -173,20 +173,21 @@ function buildReport(findings) {
   md += `| Review | ${findings.filter((f) => f.level === "review").length} |\n\n`;
 
   if (!findings.length) {
-    md += `_No findings - all scanned calls matched tenant guard heuristics._\n`;
-    return md;
+    md += `_No findings - all scanned calls matched tenant guard heuristics._\n\n`;
+  } else {
+    md += `## Findings\n\n| File | Line | Table | Level | Reason |\n|------|------|-------|-------|--------|\n`;
+    for (const f of findings) {
+      md += `| \`${f.file}\` | ${f.line} | \`${f.table}\` | ${f.level} | ${f.reason} |\n`;
+    }
+    md += `\n`;
   }
 
-  md += `## Findings\n\n| File | Line | Table | Level | Reason |\n|------|------|-------|-------|--------|\n`;
-  for (const f of findings) {
-    md += `| \`${f.file}\` | ${f.line} | \`${f.table}\` | ${f.level} | ${f.reason} |\n`;
-  }
-
-  md += `\n## Exceptions (by design)\n\n`;
+  md += `## Exceptions (by design)\n\n`;
   md += `- **Global tables:** \`${[...GLOBAL_TABLES].join("`, `")}\`\n`;
   md += `- **Token flows:** \`${[...TOKEN_SCOPED_TABLES].join("`, `")}\` with \`.eq('token')\` or invitation id\n`;
-  md += `- **Auth admin:** \`supabaseAdmin.auth.*\` (not scanned)\n\n`;
-  md += `## Week 2 checklist\n\n`;
+  md += `- **Auth admin:** \`supabaseAdmin.auth.*\` (not scanned)\n`;
+  md += `- **Idempotency:** \`idempotency_keys\` filtered by \`school_id\` + route/scope/key (service-role only)\n\n`;
+  md += `## Checklist\n\n`;
   md += `- [ ] Confirm each **review** row is safe or add \`.eq('school_id', schoolId)\`\n`;
   md += `- [ ] Re-run with \`--strict\` before production sign-off\n`;
   return md;

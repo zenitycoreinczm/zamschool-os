@@ -35,6 +35,7 @@ export async function loadParentProfileIdsByStudentRowId(input: {
   const linkQuery = await supabaseAdmin
     .from("parent_students")
     .select("parent_id, student_id")
+    .eq("school_id", input.schoolId)
     .in("student_id", linkStudentKeys);
 
   if (linkQuery.error) {
@@ -53,28 +54,24 @@ export async function loadParentProfileIdsByStudentRowId(input: {
     new Set(links.map((row) => String(row.parent_id || "").trim()).filter(Boolean)),
   );
 
-  // 1) parents.id → parents.profile_id (with and without school filter)
-  const [parentsInSchool, parentsAnySchool] = await Promise.all([
-    supabaseAdmin
-      .from("parents")
-      .select("id, profile_id, school_id")
-      .eq("school_id", input.schoolId)
-      .in("id", parentLinkIds),
-    supabaseAdmin
-      .from("parents")
-      .select("id, profile_id, school_id")
-      .in("id", parentLinkIds),
-  ]);
+  // 1) parents.id -> parents.profile_id, restricted to the attendance school.
+  const parentsInSchool = await supabaseAdmin
+    .from("parents")
+    .select("id, profile_id, school_id")
+    .eq("school_id", input.schoolId)
+    .in("id", parentLinkIds);
 
   // 2) parent_id already a profile id (or auth uid on profile)
   const [profilesById, profilesByAuth] = await Promise.all([
     supabaseAdmin
       .from("profiles")
       .select("id, auth_user_id, role, school_id")
+      .eq("school_id", input.schoolId)
       .in("id", parentLinkIds),
     supabaseAdmin
       .from("profiles")
       .select("id, auth_user_id, role, school_id")
+      .eq("school_id", input.schoolId)
       .in("auth_user_id", parentLinkIds),
   ]);
 
@@ -86,12 +83,6 @@ export async function loadParentProfileIdsByStudentRowId(input: {
       parentProfileByLinkId.set(String(row.id), String(row.profile_id));
     }
   }
-  for (const row of parentsAnySchool.data || []) {
-    if (row?.id && row?.profile_id && !parentProfileByLinkId.has(String(row.id))) {
-      parentProfileByLinkId.set(String(row.id), String(row.profile_id));
-    }
-  }
-
   for (const row of profilesById.data || []) {
     if (!row?.id) continue;
     const role = normalizeRole(row.role);
@@ -117,6 +108,7 @@ export async function loadParentProfileIdsByStudentRowId(input: {
     const { data: byProfileField } = await supabaseAdmin
       .from("parents")
       .select("id, profile_id")
+      .eq("school_id", input.schoolId)
       .in("profile_id", unresolved);
     for (const row of byProfileField || []) {
       if (row?.profile_id) {

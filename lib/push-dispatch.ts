@@ -18,7 +18,7 @@ export async function dispatchExpoPushToUsers(
   schoolId: string,
   messages: PushMessageInput[],
 ): Promise<{ sent: number; tokenCount: number }> {
-  if (!messages.length) return { sent: 0, tokenCount: 0 };
+  if (!schoolId || !messages.length) return { sent: 0, tokenCount: 0 };
 
   const byUser = new Map<string, PushMessageInput>();
   for (const msg of messages) {
@@ -34,10 +34,12 @@ export async function dispatchExpoPushToUsers(
     supabaseAdmin
       .from("profiles")
       .select("id, auth_user_id")
+      .eq("school_id", schoolId)
       .in("id", userIds),
     supabaseAdmin
       .from("profiles")
       .select("id, auth_user_id")
+      .eq("school_id", schoolId)
       .in("auth_user_id", userIds),
   ]);
 
@@ -64,6 +66,7 @@ export async function dispatchExpoPushToUsers(
   const primary = await supabaseAdmin
     .from("user_devices")
     .select("user_id, push_token, expo_push_token")
+    .eq("school_id", schoolId)
     .in("user_id", ids);
   if (!primary.error) {
     devices = primary.data || [];
@@ -71,6 +74,7 @@ export async function dispatchExpoPushToUsers(
     const alt = await supabaseAdmin
       .from("user_devices")
       .select("user_id, push_token")
+      .eq("school_id", schoolId)
       .in("user_id", ids);
     if (!alt.error) {
       devices = alt.data || [];
@@ -78,6 +82,7 @@ export async function dispatchExpoPushToUsers(
       const legacy = await supabaseAdmin
         .from("user_devices")
         .select("user_id, expo_push_token")
+        .eq("school_id", schoolId)
         .in("user_id", ids);
       if (legacy.error) {
         console.warn("[push] user_devices unavailable:", legacy.error.message);

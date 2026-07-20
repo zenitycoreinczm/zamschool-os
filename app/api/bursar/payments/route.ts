@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
     if (idempotencyKey) {
       const replay = await loadIdempotentResponse({
         routeKey,
+        schoolId,
         scopeKey,
         idempotencyKey,
       });
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     if (idempotencyKey) {
       await storeIdempotentResponse(
-        { routeKey, scopeKey, idempotencyKey },
+        { routeKey, schoolId, scopeKey, idempotencyKey },
         requestHash,
         201,
         responseBody,

@@ -204,6 +204,7 @@ async function fanOutAttendancePushes(
   const { data: profiles } = await supabaseAdmin
     .from("profiles")
     .select("id, auth_user_id")
+    .eq("school_id", schoolId)
     .in("id", userIds);
 
   const lookupIds = new Set(userIds);
@@ -219,6 +220,7 @@ async function fanOutAttendancePushes(
   const primary = await supabaseAdmin
     .from("user_devices")
     .select("user_id, push_token, expo_push_token")
+    .eq("school_id", schoolId)
     .in("user_id", Array.from(lookupIds));
   if (!primary.error) {
     devices = primary.data;
@@ -226,6 +228,7 @@ async function fanOutAttendancePushes(
     const fallback = await supabaseAdmin
       .from("user_devices")
       .select("user_id, push_token")
+      .eq("school_id", schoolId)
       .in("user_id", Array.from(lookupIds));
     if (!fallback.error) {
       devices = fallback.data;
@@ -233,6 +236,7 @@ async function fanOutAttendancePushes(
       const legacy = await supabaseAdmin
         .from("user_devices")
         .select("user_id, expo_push_token")
+        .eq("school_id", schoolId)
         .in("user_id", Array.from(lookupIds));
       devices = legacy.data;
       deviceError = legacy.error;

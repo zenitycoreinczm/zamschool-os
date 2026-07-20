@@ -25,6 +25,12 @@ export async function POST(req: Request) {
   try {
     const actor = await authenticateAccountPortalRequest(req);
     if ("response" in actor) return actor.response;
+    if (!actor.schoolId) {
+      return NextResponse.json(
+        { error: "No school linked to this account" },
+        { status: 403 },
+      );
+    }
 
     const body = await parseJsonWithSchema(req, pushSchema);
     const title = body.title.trim();
@@ -48,6 +54,7 @@ export async function POST(req: Request) {
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
         .select("id, auth_user_id")
+        .eq("school_id", actor.schoolId)
         .in("id", userIds);
 
       const lookupIds = new Set(userIds);
@@ -60,6 +67,7 @@ export async function POST(req: Request) {
       const { data: byAuth } = await supabaseAdmin
         .from("profiles")
         .select("id, auth_user_id")
+        .eq("school_id", actor.schoolId)
         .in("auth_user_id", userIds);
       for (const row of byAuth || []) {
         if (row.id) lookupIds.add(String(row.id));
@@ -73,6 +81,7 @@ export async function POST(req: Request) {
       const primary = await supabaseAdmin
         .from("user_devices")
         .select("push_token, expo_push_token")
+        .eq("school_id", actor.schoolId)
         .in("user_id", ids);
       if (!primary.error) {
         devices = primary.data || [];
@@ -80,12 +89,14 @@ export async function POST(req: Request) {
         const alt = await supabaseAdmin
           .from("user_devices")
           .select("push_token")
+          .eq("school_id", actor.schoolId)
           .in("user_id", ids);
         if (!alt.error) devices = alt.data || [];
         else {
           const legacy = await supabaseAdmin
             .from("user_devices")
             .select("expo_push_token")
+            .eq("school_id", actor.schoolId)
             .in("user_id", ids);
           devices = legacy.data || [];
         }
