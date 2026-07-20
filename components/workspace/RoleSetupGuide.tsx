@@ -53,6 +53,20 @@ export default function RoleSetupGuide({
           <p className="mt-2 text-xs font-medium text-slate-500">
             {done}/{total} core steps complete
           </p>
+          <div
+            className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200/80"
+            role="progressbar"
+            aria-valuenow={done}
+            aria-valuemin={0}
+            aria-valuemax={total}
+          >
+            <div
+              className="h-full rounded-full bg-sky-500 transition-all"
+              style={{
+                width: `${total > 0 ? Math.round((done / total) * 100) : 0}%`,
+              }}
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

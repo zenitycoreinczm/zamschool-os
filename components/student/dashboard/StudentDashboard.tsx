@@ -95,30 +95,59 @@ export default function StudentDashboard() {
       ) : null}
 
       {dashboard?.schoolDayHours?.classesStartAt ? (
-        <section className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-sm text-slate-700">
-          <p className="font-semibold text-violet-900">School day</p>
-          <p className="mt-1 text-slate-600">
-            Classes run{" "}
-            <span className="font-semibold tabular-nums text-slate-900">
-              {String(dashboard.schoolDayHours.classesStartAt).slice(0, 5)} –{" "}
-              {String(dashboard.schoolDayHours.classesEndAt || "").slice(0, 5)}
-            </span>
-            {dashboard.schoolDayHours.schoolOpensAt ? (
-              <>
-                {" "}
-                · campus open{" "}
-                <span className="tabular-nums">
-                  {String(dashboard.schoolDayHours.schoolOpensAt).slice(0, 5)} –{" "}
-                  {String(
-                    dashboard.schoolDayHours.schoolClosesAt ||
-                      dashboard.schoolDayHours.classesEndAt ||
-                      "",
-                  ).slice(0, 5)}
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3.5 text-sm text-slate-700">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="font-semibold text-violet-900">
+                School day · don&apos;t be late
+              </p>
+              <p className="mt-1 text-slate-600">
+                Classes run{" "}
+                <span className="font-semibold tabular-nums text-slate-900">
+                  {String(dashboard.schoolDayHours.classesStartAt).slice(0, 5)} –{" "}
+                  {String(dashboard.schoolDayHours.classesEndAt || "").slice(0, 5)}
                 </span>
-              </>
-            ) : null}
-            . Morning reminders on the mobile app use these times.
-          </p>
+                {dashboard.schoolDayHours.schoolOpensAt ? (
+                  <>
+                    {" "}
+                    · campus open{" "}
+                    <span className="tabular-nums">
+                      {String(dashboard.schoolDayHours.schoolOpensAt).slice(0, 5)}{" "}
+                      –{" "}
+                      {String(
+                        dashboard.schoolDayHours.schoolClosesAt ||
+                          dashboard.schoolDayHours.classesEndAt ||
+                          "",
+                      ).slice(0, 5)}
+                    </span>
+                  </>
+                ) : null}
+                .
+              </p>
+            </div>
+          </div>
+          <ul className="mt-2.5 space-y-1 text-xs text-violet-950/80">
+            <li>
+              · Phone reminders: ~1h 30m before start, then again ~1h before
+              (don&apos;t run late).
+            </li>
+            <li>
+              · Each lesson: 5 minutes before class so you can get to the right
+              room.
+            </li>
+            {(dashboard.schoolDayHours.morningReminders || [])
+              .slice(0, 3)
+              .map((slot: { fireAt?: string; label?: string; title?: string }) => (
+                <li key={`${slot.fireAt}-${slot.label}`}>
+                  · Today:{" "}
+                  <span className="font-semibold tabular-nums">
+                    {String(slot.fireAt || "").slice(0, 5)}
+                  </span>
+                  {slot.label ? ` (${slot.label} left)` : ""} —{" "}
+                  {slot.title || "Get ready"}
+                </li>
+              ))}
+          </ul>
         </section>
       ) : null}
 

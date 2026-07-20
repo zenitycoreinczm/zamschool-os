@@ -12,8 +12,12 @@ export const SCHOOL_DAY_SETTING_KEY = "school_day";
 export const DEFAULT_SCHOOL_TIMEZONE =
   process.env.SCHOOL_TIMEZONE || "Africa/Lusaka";
 
-/** Minutes before classesStartAt for student morning nudges. */
-export const DEFAULT_MORNING_REMINDER_OFFSETS = [120, 90, 60, 30] as const;
+/**
+ * Minutes before classesStartAt for “don’t be late” morning nudges.
+ * Product default: 1h30 before school, then again 30 minutes after that (1h before).
+ * Schools can still override via school_day settings.
+ */
+export const DEFAULT_MORNING_REMINDER_OFFSETS = [90, 60] as const;
 
 export type SchoolDayHours = {
   timezone: string;
@@ -217,8 +221,12 @@ export function buildMorningReminderSlots(
       let title: string;
       let body: string;
       if (mins >= 90) {
-        title = "School day starts soon";
-        body = `Classes begin at ${startLabel}. You have ${remainingLabel} to get ready and leave on time.`;
+        title = "Don't be late · school day starts soon";
+        body = `Classes begin at ${startLabel} (in ${remainingLabel}). Start getting ready now so you leave on time.`;
+      } else if (mins >= 55) {
+        // Second nudge (~30 min after the 90-min alert when defaults are [90, 60]).
+        title = `Leave soon · ${remainingLabel} to class`;
+        body = `Classes start at ${startLabel}. You should be heading out or almost ready — don't run late.`;
       } else if (mins >= 45) {
         title = `Leave soon · ${remainingLabel} left`;
         body = `Classes start at ${startLabel}. Finish getting ready so you are not late.`;
