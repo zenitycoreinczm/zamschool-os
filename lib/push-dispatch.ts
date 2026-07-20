@@ -63,32 +63,29 @@ export async function dispatchExpoPushToUsers(
     expo_push_token?: string | null;
   }> = [];
 
+  // Prefer push_token only (production schema). Fall back without school_id for
+  // legacy rows registered before school_id was required.
   const primary = await supabaseAdmin
     .from("user_devices")
-    .select("user_id, push_token, expo_push_token")
+    .select("user_id, push_token")
     .eq("school_id", schoolId)
     .in("user_id", ids);
   if (!primary.error) {
     devices = primary.data || [];
   } else {
-    const alt = await supabaseAdmin
+    console.warn("[push] user_devices school-scoped query failed:", primary.error.message);
+  }
+
+  if (devices.length === 0) {
+    const unscoped = await supabaseAdmin
       .from("user_devices")
       .select("user_id, push_token")
-      .eq("school_id", schoolId)
       .in("user_id", ids);
-    if (!alt.error) {
-      devices = alt.data || [];
-    } else {
-      const legacy = await supabaseAdmin
-        .from("user_devices")
-        .select("user_id, expo_push_token")
-        .eq("school_id", schoolId)
-        .in("user_id", ids);
-      if (legacy.error) {
-        console.warn("[push] user_devices unavailable:", legacy.error.message);
-        return { sent: 0, tokenCount: 0 };
-      }
-      devices = legacy.data || [];
+    if (!unscoped.error && unscoped.data?.length) {
+      devices = unscoped.data;
+    } else if (unscoped.error) {
+      console.warn("[push] user_devices unavailable:", unscoped.error.message);
+      return { sent: 0, tokenCount: 0 };
     }
   }
 

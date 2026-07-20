@@ -203,6 +203,7 @@ export async function POST(req: Request) {
       }
     }
 
+    // Notify parents first (what the teacher is waiting for), then side effects.
     const notificationDelivery = await syncResultPublishNotifications({
       schoolId,
       teacherId: access.context.profileId || userId,
@@ -220,9 +221,10 @@ export async function POST(req: Request) {
       };
     });
 
-    await invalidatePublishedResultsCache();
-    await refreshSchoolReadModels(schoolId);
-    await auditDomainWrite({
+    // Do not block the publish response on cache/read-model refresh.
+    void invalidatePublishedResultsCache().catch(() => {});
+    void refreshSchoolReadModels(schoolId).catch(() => {});
+    void auditDomainWrite({
       schoolId,
       userId,
       action: "results.published",
@@ -234,9 +236,10 @@ export async function POST(req: Request) {
         publishedAt,
         parentsNotified: notificationDelivery.parentCount,
         notificationsQueued: notificationDelivery.notificationCount,
+        pushAttempted: notificationDelivery.pushAttempted,
       },
       ipAddress: ip,
-    });
+    }).catch(() => {});
 
     return NextResponse.json({
       success: true,
@@ -253,7 +256,9 @@ export async function POST(req: Request) {
         notifyReason: notificationDelivery.reason || null,
         message:
           notificationDelivery.parentCount > 0
-            ? `Published ${publishIds.length} results · ${notificationDelivery.parentCount} parents notified`
+            ? `Published ${publishIds.length} results · ${notificationDelivery.parentCount} parents notified${
+                notificationDelivery.pushAttempted ? " (push sent)" : ""
+              }`
             : `Published ${publishIds.length} results. ${notificationDelivery.reason || "No parents notified."}`,
       },
     });

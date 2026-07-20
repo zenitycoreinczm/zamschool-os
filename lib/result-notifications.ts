@@ -21,7 +21,8 @@ export function buildResultNotificationPayloads(input: {
     dedupe_key: `${recipientId}:${input.studentId}:result:${input.resultId}`,
     title,
     message: `${input.teacherName} published ${input.studentName}'s ${input.subjectName} result for ${input.assignmentTitle} (${input.className}) on ${input.publishedAt}.`,
-    type: "results",
+    // Must match notifications_type_check: exam_result (not "results")
+    type: "exam_result",
   }));
 }
 
@@ -47,6 +48,7 @@ export function buildExamCertificateNotificationPayloads(input: {
     dedupe_key: `${recipientId}:${input.studentId}:exam:${input.examTitle}`,
     title,
     message: `${input.teacherName} published ${input.studentName}'s ${input.examTitle} results (${input.className}) - ${input.subjectCount} subjects. View certificate.`,
-    type: "results",
+    // Must match notifications_type_check: exam_result (not "results")
+    type: "exam_result",
   }));
 }

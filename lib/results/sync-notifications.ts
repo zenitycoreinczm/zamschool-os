@@ -261,30 +261,48 @@ export async function syncResultPublishNotifications(input: {
     };
   }
 
-  // Parent-only payloads already; still type them for clarity.
+  // DB check: announcement | fee_payment | attendance | exam_result | low_attendance | general
   const parentPayloads = payloads.map((p) => ({
     ...p,
-    type: p.type || "results",
+    type: p.type === "results" ? "exam_result" : p.type || "exam_result",
   }));
 
-  await enqueueNotifications(input.schoolId, parentPayloads);
-
+  // In-app + lock-screen in parallel so a DB notification glitch does not
+  // block Expo push (and vice versa).
   let pushAttempted = false;
-  try {
-    const pushResult = await dispatchExpoPushToUsers(
-      input.schoolId,
-      parentPayloads.map((p) => ({
-        userId: p.user_id,
-        title: p.title,
-        body: p.message,
-        type: "results",
-        tab: "results",
-      })),
-    );
-    pushAttempted = pushResult.tokenCount > 0;
-  } catch (err) {
-    console.error("[results] push fan-out failed:", err);
-  }
+  let pushSent = 0;
+  let enqueueError: string | null = null;
+
+  const enqueuePromise = enqueueNotifications(
+    input.schoolId,
+    parentPayloads,
+  ).catch((err) => {
+    console.error("[results] notification enqueue failed:", err);
+    enqueueError = err instanceof Error ? err.message : "enqueue failed";
+  });
+
+  const pushPromise = dispatchExpoPushToUsers(
+    input.schoolId,
+    parentPayloads.map((p) => ({
+      userId: p.user_id,
+      title: p.title,
+      body: p.message,
+      type: "exam_result",
+      tab: "results",
+      data: { type: "exam_result", tab: "results" },
+    })),
+  )
+    .then((pushResult) => {
+      pushAttempted = pushResult.tokenCount > 0;
+      pushSent = pushResult.sent;
+      return pushResult;
+    })
+    .catch((err) => {
+      console.error("[results] push fan-out failed:", err);
+      return { sent: 0, tokenCount: 0 };
+    });
+
+  await Promise.all([enqueuePromise, pushPromise]);
 
   const parentCount = new Set(parentPayloads.map((p) => p.user_id)).size;
 
@@ -293,6 +311,16 @@ export async function syncResultPublishNotifications(input: {
     notificationCount: parentPayloads.length,
     pushAttempted,
     linkedParents,
+    reason:
+      enqueueError && !pushAttempted
+        ? "Could not save in-app notifications and no device tokens were reached."
+        : enqueueError
+          ? "In-app notification save had an issue; push may still have been sent."
+          : pushAttempted && pushSent === 0
+            ? "Device tokens found but Expo reported no successful deliveries."
+            : !pushAttempted
+              ? "Parents notified in-app. No registered push tokens for those parents (open the parent app once with notifications on)."
+              : undefined,
   };
 }
 
