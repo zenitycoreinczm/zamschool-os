@@ -172,52 +172,154 @@ export default function PrincipalWorkspace() {
   const unreadNotifications = workspace?.unread.notifications ?? 0;
   const hasInbox = unreadMessages > 0 || unreadNotifications > 0;
 
+  const onboarding = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const m of liveMetrics) {
+      const n = Number(String(m.value).replace(/,/g, ""));
+      if (Number.isFinite(n)) map[String(m.label || "").toLowerCase()] = n;
+    }
+    return {
+      classCount: map.classes ?? 0,
+      studentCount: map.students ?? 0,
+      teacherCount: map.teachers ?? 0,
+    };
+  }, [liveMetrics]);
+
+  const needsOnboardingGuide =
+    !setupDismissed &&
+    (showSetupBanner ||
+      onboarding.classCount < 1 ||
+      onboarding.studentCount < 5 ||
+      onboarding.teacherCount < 1);
+
+  const liveNotices = useMemo(() => {
+    const items: { href: string; label: string }[] = [];
+    if (unreadMessages > 0) {
+      items.push({
+        href: "/app/messages",
+        label: `You have ${formatCount(unreadMessages)} message${unreadMessages === 1 ? "" : "s"}`,
+      });
+    }
+    if (unreadNotifications > 0) {
+      items.push({
+        href: "/app/notifications",
+        label: `${formatCount(unreadNotifications)} school update${unreadNotifications === 1 ? "" : "s"}`,
+      });
+    }
+    for (const h of highlights.slice(0, 3)) {
+      const lower = h.toLowerCase();
+      if (lower.includes("absent")) {
+        items.push({ href: "/app/admin/attendance", label: h });
+      } else if (lower.includes("invitation")) {
+        items.push({ href: "/app/principal/staff", label: h });
+      } else if (lower.includes("outstanding") || lower.includes("fee")) {
+        items.push({ href: "/app/admin/finance", label: h });
+      }
+    }
+    // Dedupe by label
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (seen.has(item.label)) return false;
+      seen.add(item.label);
+      return true;
+    });
+  }, [unreadMessages, unreadNotifications, highlights]);
+
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHero
         eyebrow="Head Teacher overview"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Leadership snapshot for ${yearTerm}.`}
+        description={`Welcome back, ${displayName}. Run the school from here — ${yearTerm}.`}
         accent="slate"
         stats={heroStats}
         actions={
           <>
-            <HeroAction href="/app/admin/audit" label="Audit trail" />
+            <HeroAction href="/app/announcements" label="Send announcement" />
             <HeroAction
-              href="/app/announcements"
-              label="Post announcement"
+              href="/app/admin/attendance"
+              label="Mark attendance"
               variant="secondary"
             />
           </>
         }
       />
 
-      {hasInbox ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-workspace-xl border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-sky-950">
-          <span className="font-medium">Needs your attention:</span>
-          {unreadMessages > 0 ? (
-            <InboxChip
-              href="/app/messages"
-              label={`${formatCount(unreadMessages)} messages`}
-            />
-          ) : null}
-          {unreadNotifications > 0 ? (
-            <InboxChip
-              href="/app/notifications"
-              label={`${formatCount(unreadNotifications)} notifications`}
-            />
-          ) : null}
+      {/* Quick actions — one tap */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          Quick actions
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {[
+            {
+              href: "/app/admin/attendance",
+              label: "Mark attendance",
+              hint: "Take today’s roll",
+            },
+            {
+              href: "/app/admin/academic",
+              label: "Submit results",
+              hint: "Enter or publish marks",
+            },
+            {
+              href: "/app/announcements",
+              label: "Send announcement",
+              hint: "Notify parents & staff",
+            },
+          ].map((action) => (
+            <Link
+              key={action.href + action.label}
+              href={action.href}
+              className="rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3.5 transition hover:border-sky-300 hover:bg-sky-50/40"
+            >
+              <p className="text-sm font-semibold text-slate-900">
+                {action.label}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">{action.hint}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {liveNotices.length > 0 || hasInbox ? (
+        <div className="flex flex-col gap-2 rounded-workspace-xl border border-sky-100 bg-sky-50/60 px-4 py-3 text-sm text-sky-950">
+          <span className="font-medium">What&apos;s happening now</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {liveNotices.length > 0
+              ? liveNotices.map((item) => (
+                  <InboxChip
+                    key={item.label}
+                    href={item.href}
+                    label={item.label}
+                  />
+                ))
+              : null}
+            {liveNotices.length === 0 && unreadMessages > 0 ? (
+              <InboxChip
+                href="/app/messages"
+                label={`${formatCount(unreadMessages)} messages`}
+              />
+            ) : null}
+            {liveNotices.length === 0 && unreadNotifications > 0 ? (
+              <InboxChip
+                href="/app/notifications"
+                label={`${formatCount(unreadNotifications)} notifications`}
+              />
+            ) : null}
+          </div>
         </div>
       ) : null}
 
       <FocusPills items={focusItems} accent="slate" />
 
-      {showSetupBanner ? (
+      {needsOnboardingGuide ? (
         <SchoolSetupBanner
-          loading={setupLoading}
+          loading={setupLoading || metricsLoading}
           initializing={initializing}
           status={setupStatus}
           lastResults={lastResults}
+          onboarding={onboarding}
           onInitialize={() => void runInitialization()}
           onDismiss={() => {
             persistSetupBannerDismissed();

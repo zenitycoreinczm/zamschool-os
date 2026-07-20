@@ -26,11 +26,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "ZamSchool OS - School Management System for African Schools",
+    default: "ZamSchool OS - The Fastest Way to Run a School in Zambia",
     template: "%s | ZamSchool OS",
   },
   description:
-    "ZamSchool OS is the all-in-one school operating system for modern African schools. Manage students, attendance, exams, parent communication, and school finance from one fast platform.",
+    "Run your entire school from your phone. Attendance, results, and communication in minutes. No SMS costs. Works offline.",
   applicationName: "ZamSchool OS",
   authors: [{ name: "ZamSchool OS" }],
   creator: "ZamSchool OS",
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
   keywords: [
     "ZamSchool OS",
     "ZamSchool",
-    "school management system",
+    "school management system Zambia",
     "school software Zambia",
-    "school OS Africa",
+    "run school from phone",
     "student attendance system",
     "parent portal school",
     "school fees management",
-    "exam results school software",
+    "no SMS school system",
     "teacher workspace",
     "Zambian schools",
   ],
@@ -57,9 +57,9 @@ export const metadata: Metadata = {
     locale: "en_ZM",
     url: siteUrl,
     siteName: "ZamSchool OS",
-    title: "ZamSchool OS - School Management System for African Schools",
+    title: "ZamSchool OS - Run your entire school from your phone",
     description:
-      "Manage students, attendance, exams, parent communication, and finance from one school operating system built for modern African schools.",
+      "Attendance, results, communication. Done in minutes. No SMS costs. Works offline. School management, simplified.",
     images: [
       {
         url: "/icon.png",
@@ -71,9 +71,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "ZamSchool OS - School Management System",
+    title: "ZamSchool OS - School management, simplified",
     description:
-      "The all-in-one school OS for African schools: students, attendance, exams, parents, and finance.",
+      "The fastest way to run a school in Zambia. Free setup. No SMS costs. Works offline.",
     images: ["/icon.png"],
   },
   robots: {

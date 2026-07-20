@@ -49,7 +49,7 @@ export function TeacherQuickActions() {
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Shortcuts
+            Quick actions
           </p>
           <h2
             id="teacher-quick-actions-heading"
@@ -57,6 +57,10 @@ export function TeacherQuickActions() {
           >
             Common tasks
           </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Designed so teachers don&apos;t need training — attendance in under
+            30 seconds.
+          </p>
         </div>
       </div>
 

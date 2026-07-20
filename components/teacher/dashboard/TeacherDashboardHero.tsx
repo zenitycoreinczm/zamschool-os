@@ -58,7 +58,7 @@ export function TeacherDashboardHero({
             />
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            Welcome back, {displayName}
+            Welcome back, {displayName} · Designed so you don&apos;t need training
           </p>
         </div>
 

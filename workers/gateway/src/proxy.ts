@@ -10,8 +10,8 @@ import { isCacheableGetPath } from "./types.ts";
  *   - Upstream `CDN-Cache-Control` (set by Next.js Edge Cache policy in
  *     lib/edge-cache.ts) can downgrade / override per route. We honor
  *     `Cache-Control: private` or `no-store` by skipping the cache write.
- *   - Cache key varies by Authorization header so we never bleed data
- *     across tenants in shared cache slots.
+ *   - Cache key includes a SHA-256 digest of the Authorization header so we
+ *     never bleed data across tenants in shared cache slots.
  *   - On upstream failure we serve a previously cached response, marked
  *     `X-Served-From: edge-cache` so logs/observability can spot it.
  */
@@ -22,16 +22,12 @@ export async function handleCachedProxy(
 ): Promise<Response> {
   const cache = (caches as unknown as { default: Cache }).default;
 
-  // Only vary cache by Authorization header for safety (no mixing tenant data).
-  // Authorization carries the Supabase JWT so we never cross cache between users.
   const authHeader = req.headers.get("Authorization") || "";
   const hasAuthorization = Boolean(authHeader);
-  const cacheKey = new Request(url.toString(), {
-    headers: { Authorization: authHeader },
-  });
+  const cacheKey = hasAuthorization ? await buildAuthenticatedCacheKey(url, authHeader) : null;
   const allowedByPrefix = isCacheableGetPath(url.pathname);
 
-  if (allowedByPrefix && hasAuthorization) {
+  if (allowedByPrefix && cacheKey) {
     const cached = await cache.match(cacheKey);
     if (cached) {
       const hitHeaders = new Headers(cached.headers);
@@ -67,9 +63,9 @@ export async function handleCachedProxy(
       // because the cache key varies by Authorization; no-store always wins.
       const upstreamSaysNoStore = /no-store/i.test(cdnCacheControl);
       const cacheable =
-        allowedByPrefix && hasAuthorization && !upstreamSaysNoStore;
+        allowedByPrefix && Boolean(cacheKey) && !upstreamSaysNoStore;
 
-      if (cacheable) {
+      if (cacheable && cacheKey) {
         const toCache = response.clone();
         const headers = new Headers(toCache.headers);
         // Keep whatever the upstream wanted on Cache-Control (also keep CDN-Cache-Control
@@ -115,7 +111,7 @@ export async function handleCachedProxy(
     // Network failure or upstream error: try the cache. We never bleed data -
     // the cache key already locks this to the same Authorization header.
     const cached =
-      allowedByPrefix && hasAuthorization ? await cache.match(cacheKey) : null;
+      allowedByPrefix && cacheKey ? await cache.match(cacheKey) : null;
     if (cached) {
       const fallbackHeaders = new Headers(cached.headers);
       fallbackHeaders.set("X-Served-From", "edge-cache");
@@ -131,4 +127,20 @@ export async function handleCachedProxy(
     // lib/gateway-read-client.ts → fallbackToLocal).
     return new Response("Offline and not cached", { status: 503 });
   }
+}
+
+async function buildAuthenticatedCacheKey(url: URL, authHeader: string): Promise<Request> {
+  const keyUrl = new URL(url.toString());
+  keyUrl.searchParams.set("__zamschool_auth", await sha256(authHeader));
+  return new Request(keyUrl.toString(), { method: "GET" });
+}
+
+async function sha256(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }

@@ -122,8 +122,10 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       "Student admissions, parent registration, transfers, and biodata management. No finance, grading, or HR access.",
     roles: ["REGISTRAR"],
     features: [
-      full("users"),
-      full("classes"),
+      // Delete is intentionally left to the later migration that upgrades
+      // existing schools, while the base seed keeps registrar write access.
+      writable("users"),
+      writable("classes"),
       readOnly("attendance"),
       readOnly("grades"),
       readOnly("announcements"),

@@ -176,16 +176,16 @@ test("domain staff defaults grant their required backend features", () => {
   );
   assert.match(
     permissionDefaultsSource,
-    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?writable\("subjects"\)/,
+    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?full\("subjects"\)/,
   );
   assert.match(
     permissionDefaultsSource,
-    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?writable\("timetable"\)/,
+    /roles:\s*\["ACADEMIC_ADMIN"\][\s\S]*?full\("timetable"\)/,
     "Academic Admin must be able to create class and teacher timetables",
   );
   assert.match(
     permissionDefaultsSource,
-    /roles:\s*\["ICT_ADMIN"\][\s\S]*?writable\("settings"\)/,
+    /roles:\s*\["ICT_ADMIN"\][\s\S]*?full\("settings"\)/,
     "ICT Admin can manage account and security settings",
   );
   assert.match(

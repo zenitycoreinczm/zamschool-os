@@ -14,7 +14,7 @@ export type { FeaturePerms } from "@/lib/permission-group-defaults";
 const ROLE_PERMISSION_FALLBACK = buildRolePermissionFallback();
 
 interface SchoolDbCacheEntry {
-  value: boolean;
+  value: boolean | null;
   ts: number;
 }
 
@@ -57,7 +57,7 @@ export function clearPermissionCache(schoolId?: string) {
 }
 
 /** True when the school has permission_groups (seeded or customized). */
-async function schoolUsesDbPermissions(schoolId: string): Promise<boolean> {
+async function schoolUsesDbPermissions(schoolId: string): Promise<boolean | null> {
   const cached = schoolsWithDbPermissions.get(schoolId);
   if (cached && Date.now() - cached.ts < SCHOOLS_DB_CACHE_TTL_MS) {
     return cached.value;
@@ -73,8 +73,9 @@ async function schoolUsesDbPermissions(schoolId: string): Promise<boolean> {
       "[feature-permissions] permission_groups lookup failed",
       error.message,
     );
-    schoolsWithDbPermissions.set(schoolId, { value: false, ts: Date.now() });
-    return false;
+    const fallbackValue = cached ? cached.value : null;
+    schoolsWithDbPermissions.set(schoolId, { value: fallbackValue, ts: Date.now() });
+    return fallbackValue;
   }
 
   const usesDb = (count ?? 0) > 0;
@@ -173,7 +174,7 @@ export async function checkFeaturePermission(
 
   const featurePerms =
     permissions[feature] ??
-    (!usesDb
+    (usesDb === false
       ? ROLE_PERMISSION_FALLBACK[normalizedRole as KnownRole]?.[feature]
       : undefined);
 

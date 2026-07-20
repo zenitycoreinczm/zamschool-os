@@ -6,9 +6,9 @@ const footerLinks = [
   {
     heading: "Platform",
     links: [
-      { label: "Features", href: "/#features" },
-      { label: "How it works", href: "/#how-it-works" },
-      { label: "Register school", href: "/register" },
+      { label: "Why ZamSchool OS", href: "/#why" },
+      { label: "Compare", href: "/#compare" },
+      { label: "Start free setup", href: "/register" },
       { label: "Log in", href: "/login" },
     ],
   },
@@ -49,8 +49,8 @@ export default function LandingFooter() {
           </Link>
 
           <p className="max-w-sm text-sm leading-6 text-slate-500">
-            School operating system for modern African schools: attendance,
-            people, communication, fees, and results in one place.
+            The fastest way to run a school in Zambia. Attendance, results, and
+            communication from your phone. No SMS costs. Works offline.
           </p>
           <div className="flex flex-col gap-2.5 text-sm">
             <a

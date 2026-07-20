@@ -267,15 +267,25 @@ function highlightsForRole(
   const items: string[] = [];
 
   if (["PRINCIPAL", "DEPUTY_HEAD", "REGISTRAR"].includes(role)) {
-    items.push(`${data.profileCounts.student} learners on roll`);
-    if (data.profileCounts.teacher > 0) {
+    if (data.profileCounts.student === 0) {
+      items.push("Add your first students to open the school");
+    } else {
+      items.push(`${data.profileCounts.student} learners on roll`);
+    }
+    if (data.profileCounts.teacher === 0 && role === "PRINCIPAL") {
+      items.push("Invite a teacher to unlock attendance");
+    } else if (data.profileCounts.teacher > 0) {
       items.push(`${data.profileCounts.teacher} teachers on staff`);
     }
     if (data.profileCounts.parent > 0) {
-      items.push(`${data.profileCounts.parent} parent/guardian accounts linked`);
+      items.push(`${data.profileCounts.parent} parents linked for live updates`);
     }
     if (data.attendanceSnapshot.absent > 0) {
-      items.push(`${data.attendanceSnapshot.absent} absent lesson marks in the last 7 days`);
+      items.push(
+        `${data.attendanceSnapshot.absent} students with absence marks this week`,
+      );
+    } else if (data.profileCounts.student > 0) {
+      items.push("No absences flagged in the last 7 days");
     }
     if (["PRINCIPAL"].includes(role) && data.financeSnapshot.pending > 0) {
       items.push(`${formatMoney(data.financeSnapshot.pending)} outstanding in fee balances`);

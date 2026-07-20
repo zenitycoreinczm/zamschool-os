@@ -1,4 +1,4 @@
-import type { Env } from "./types.ts";
+import type { Env, SessionSnapshot } from "./types.ts";
 import { verifyAuth } from "./auth.ts";
 import { handleCachedProxy } from "./proxy.ts";
 import { handleMutation, SchoolSyncQueue } from "./queue.ts";
@@ -95,7 +95,7 @@ const gatewayWorker = {
         if (!session) {
           return new Response("Unauthorized", { status: 401, headers: { ...cors, ...limitHdrs } });
         }
-        response = await handleDownload(req, env, url);
+        response = await handleDownload(env, url, session);
       } else if (route.kind === "cached_get_proxy" || route.kind === "get_proxy") {
         if (!session) {
           return new Response("Unauthorized", { status: 401, headers: { ...cors, ...limitHdrs } });
@@ -186,11 +186,39 @@ async function handleUpload(req: Request, env: Env, authHeader: string): Promise
   });
 }
 
-async function handleDownload(req: Request, env: Env, url: URL): Promise<Response> {
-  const key = decodeURIComponent(url.pathname.replace("/api/files/", ""));
+async function handleDownload(env: Env, url: URL, session: SessionSnapshot): Promise<Response> {
+  const key = normalizeUploadKey(url.pathname.replace("/api/files/", ""));
+  if (!key) {
+    return Response.json({ error: "Invalid file key" }, { status: 400 });
+  }
+
+  if (!session?.schoolId || !key.startsWith(`${session.schoolId}/`)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
   const object = await env.UPLOADS_BUCKET.get(key);
   if (!object) return new Response("Not Found", { status: 404 });
   return new Response(object.body, {
-    headers: { "Content-Type": object.httpMetadata?.contentType || "application/octet-stream" },
+    headers: {
+      "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
+      "Cache-Control": "private, no-store, max-age=0, must-revalidate",
+      "X-Content-Type-Options": "nosniff",
+    },
   });
+}
+
+function normalizeUploadKey(rawPath: string): string | null {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(rawPath);
+  } catch {
+    return null;
+  }
+
+  const key = decoded.trim().replace(/^\/+/, "");
+  if (!key || key.includes("..") || key.includes("\\") || /[\u0000-\u001f\u007f]/.test(key)) {
+    return null;
+  }
+
+  return key;
 }

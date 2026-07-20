@@ -37,6 +37,35 @@ function createEnv(upstreamHandler) {
   };
 }
 
+function createSessionEnv(upstreamHandler) {
+  const env = createEnv(upstreamHandler);
+  const sessions = new Map();
+  env.SESSION_CACHE = {
+    async get(key) {
+      return sessions.get(key) || null;
+    },
+    async put(key, value) {
+      sessions.set(key, JSON.parse(value));
+    },
+  };
+  env.SUPABASE_JWT_SECRET = "test-secret";
+  env.SUPABASE_JWT_AUDIENCE = "authenticated";
+  env.NODE_ENV = "test";
+  return env;
+}
+
+async function signJwt(payload) {
+  const { signTestJwt } = await import("./auth.ts");
+  return signTestJwt("test-secret", {
+    sub: "user-1",
+    role: "authenticated",
+    aud: "authenticated",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    app_metadata: { school_id: "school-1", role: "teacher" },
+    ...payload,
+  });
+}
+
 async function postUpload(env, formData, headers = {}) {
   return worker.fetch(
     new Request("https://gateway.example.test/api/upload", {
@@ -124,4 +153,85 @@ test("upload ignores client path and stores with upstream-authorized key", async
   assert.equal(body.key, "school-1/document/user-1/authorized-note.pdf");
   assert.equal(env.__uploads.objects.has("school-1/document/user-1/authorized-note.pdf"), true);
   assert.equal(env.__uploads.objects.has("../../attacker-controlled.pdf"), false);
+});
+
+test("download rejects cross-school upload keys", async () => {
+  const env = createSessionEnv(async () => new Response("unused"));
+  env.__uploads.objects.set("school-2/document/user-2/private.pdf", {
+    value: new Uint8Array([1, 2, 3]),
+    options: { httpMetadata: { contentType: "application/pdf" } },
+  });
+  const token = await signJwt({});
+
+  const res = await worker.fetch(
+    new Request("https://gateway.example.test/api/files/school-2/document/user-2/private.pdf", {
+      headers: {
+        Origin: "https://school.example.test",
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+    env,
+  );
+
+  assert.equal(res.status, 403);
+});
+
+test("download serves same-school upload with private no-store headers", async () => {
+  const env = createSessionEnv(async () => new Response("unused"));
+  env.__uploads.objects.set("school-1/document/user-1/private.pdf", {
+    value: new Uint8Array([1, 2, 3]),
+    options: { httpMetadata: { contentType: "application/pdf" } },
+  });
+  const token = await signJwt({});
+
+  const res = await worker.fetch(
+    new Request("https://gateway.example.test/api/files/school-1/document/user-1/private.pdf", {
+      headers: {
+        Origin: "https://school.example.test",
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+    env,
+  );
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Content-Type"), "application/pdf");
+  assert.match(res.headers.get("Cache-Control") || "", /no-store/);
+});
+
+test("cached proxy does not leak bearer token into upstream URL", async () => {
+  const token = await signJwt({});
+  const env = createSessionEnv(async (req) => {
+    assert.equal(new URL(req.url).searchParams.has("__zamschool_auth"), false);
+    assert.equal(req.headers.get("Authorization"), `Bearer ${token}`);
+    return Response.json(
+      { success: true, data: { school: "school-1" } },
+      { headers: { "Cache-Control": "private, max-age=60" } },
+    );
+  });
+  globalThis.caches = {
+    default: {
+      async match() {
+        return null;
+      },
+      async put(req) {
+        const cacheUrl = new URL(req.url);
+        assert.equal(cacheUrl.searchParams.has("__zamschool_auth"), true);
+        assert.doesNotMatch(req.url, /Bearer|valid-token|test-secret/);
+      },
+    },
+  };
+
+  const res = await worker.fetch(
+    new Request("https://gateway.example.test/api/dashboard/summary?term=current", {
+      headers: {
+        Origin: "https://school.example.test",
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+    env,
+  );
+
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("X-Edge-Cache-Decision"), "stored");
 });

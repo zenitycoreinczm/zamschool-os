@@ -51,7 +51,7 @@ export function ParentDashboardHero({
                 : `${childCount} linked child${childCount === 1 ? "" : "ren"}`}
             </span>
             <span className="text-slate-500">
-              Attendance, results, and school updates
+              Notified when they arrive · results instantly · live attendance
             </span>
           </p>
         </div>

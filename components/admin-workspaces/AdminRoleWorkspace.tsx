@@ -482,57 +482,9 @@ const CONFIG: Record<WorkspaceKey, WorkspaceConfig> = {
       icon: Users,
     },
     metricIcons: [Users, GraduationCap, Users, ClipboardCheck],
-    modules: [
-      module(
-        "Student directory",
-        "Full learner profiles, admissions records, and guardian links.",
-        "/app/registrar/people",
-        Users,
-        "emerald",
-      ),
-      module(
-        "Bulk learner import",
-        "Import new students from CSV/Excel admission files.",
-        "/app/registrar/people",
-        FolderOpen,
-        "sky",
-      ),
-      module(
-        "Class placements",
-        "Create classes, enrol students, and assign class teachers.",
-        "/app/registrar/classes",
-        GraduationCap,
-        "indigo",
-      ),
-      module(
-        "Attendance & enrolment",
-        "Enrolment status and early-term attendance overview.",
-        "/app/admin/attendance",
-        ClipboardCheck,
-        "violet",
-      ),
-      module(
-        "Documents & records",
-        "Learner biodata, birth certificates, and document tracking.",
-        "/app/registrar/people",
-        FileText,
-        "amber",
-      ),
-      module(
-        "Messages",
-        "Communicate admissions updates to parents and staff.",
-        "/app/messages",
-        MessageSquare,
-        "rose",
-      ),
-      module(
-        "Notifications",
-        "Admission approvals, transfer alerts, and enrolment events.",
-        "/app/notifications",
-        Bell,
-        "sky",
-      ),
-    ],
+    // Registrar home uses RegistrarDashboardHome; keep modules empty so the
+    // shared "Your modules" grid never appears for this role.
+    modules: [],
   },
 };
 

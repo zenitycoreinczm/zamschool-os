@@ -5,8 +5,6 @@ import { ArrowRight } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { FocusPills } from "@/components/workspace/FocusPills";
-import { ModuleCard } from "@/components/workspace/ModuleCard";
-import { SectionIntro } from "@/components/workspace/SectionIntro";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
 import { useWorkspaceData } from "@/components/workspace/workspace-context";
 import { schoolHeroStatsFromSummary } from "@/lib/workspace/metric-display";
@@ -24,29 +22,6 @@ const DEFAULT_FOCUS = [
   "Place learners in classes",
   "Keep records up to date",
 ];
-
-const PRIMARY_ACTIONS = [
-  {
-    title: "Register a student",
-    description: "Add a learner with class number and class.",
-    href: "/app/registrar/people",
-  },
-  {
-    title: "Register a parent",
-    description: "Create guardian accounts and contact details.",
-    href: "/app/registrar/people",
-  },
-  {
-    title: "Classes & placement",
-    description: "Create classes, enrol students, assign class teachers.",
-    href: "/app/registrar/classes",
-  },
-  {
-    title: "Link families",
-    description: "Connect parents to children on the Parents tab.",
-    href: "/app/registrar/people",
-  },
-] as const;
 
 const SIMPLE_STEPS = [
   "Create or open a class under Classes.",
@@ -100,24 +75,6 @@ export default function RegistrarDashboardHome() {
 
       <FocusPills items={focusItems} accent="slate" />
 
-      <section>
-        <SectionIntro
-          title="What you can do"
-          description="Core admissions tasks - open one and start working."
-        />
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {PRIMARY_ACTIONS.map((item) => (
-            <ModuleCard
-              key={item.title}
-              title={item.title}
-              description={item.description}
-              href={item.href}
-              tone="slate"
-            />
-          ))}
-        </div>
-      </section>
-
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">
@@ -151,21 +108,101 @@ export default function RegistrarDashboardHome() {
           <div className="mt-4 space-y-2">
             <Link
               href="/app/registrar/people"
-              className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
             >
-              <span className="text-sm font-medium text-slate-800">
-                People directory
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Student directory
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Full learner profiles, admissions records, and guardian links.
+                </span>
               </span>
-              <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5" />
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/app/registrar/people"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Bulk learner import
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Import new students from CSV/Excel admission files.
+                </span>
+              </span>
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
             </Link>
             <Link
               href="/app/registrar/classes"
-              className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
             >
-              <span className="text-sm font-medium text-slate-800">
-                Classes & class teachers
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Class placements
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Assign learners to classes, streams, and academic groups.
+                </span>
               </span>
-              <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5" />
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/app/admin/attendance"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Attendance & enrolment
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Enrolment status and early-term attendance overview.
+                </span>
+              </span>
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/app/registrar/people"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Documents & records
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Learner biodata, birth certificates, and document tracking.
+                </span>
+              </span>
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/app/messages"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Messages
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Communicate admissions updates to parents and staff.
+                </span>
+              </span>
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
+            </Link>
+            <Link
+              href="/app/notifications"
+              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-slate-800">
+                  Notifications
+                </span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  Admission approvals, transfer alerts, and enrolment events.
+                </span>
+              </span>
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
             </Link>
             <p className="pt-1 text-[11px] text-slate-400">
               Tip: class numbers (e.g. 45) make roll call and results clearer.

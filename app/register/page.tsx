@@ -679,20 +679,20 @@ function RegisterContent() {
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            School registration
+            Start a school · free setup
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {step === 1 && "Access code"}
-            {step === 2 && "Head Teacher account"}
-            {step === 3 && "School details"}
+            {step === 2 && "Your account"}
+            {step === 3 && "School name"}
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
             {step === 1 &&
-              "Enter the 6-digit code from your ZamSchool Super Admin to open registration."}
+              "Enter the 6-digit code from your ZamSchool Super Admin to open free setup."}
             {step === 2 &&
-              "Create the Head Teacher login. You will invite staff after the school is set up."}
+              "Create your Head Teacher login. After this you’ll add a class and students — advanced roles can wait."}
             {step === 3 &&
-              "Add the school’s official details. You can finish setup inside the app later."}
+              "Name your school and basic details. Next: add a class, then students. Done in minutes."}
           </p>
         </div>
 

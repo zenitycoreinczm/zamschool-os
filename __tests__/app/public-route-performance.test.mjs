@@ -31,8 +31,8 @@ test("landing route entry is server-rendered", async () => {
 test("landing route ships server-rendered above-the-fold content instead of client-only composition", async () => {
   const landingPage = await readFile(landingPagePath, "utf8");
 
-  assert.match(landingPage, /Get Started Free/);
-  assert.match(landingPage, /Register School/);
+  assert.match(landingPage, /Start a School \(Free Setup\)/);
+  assert.match(landingPage, /Run your entire school from your phone/);
   assert.doesNotMatch(landingPage, /import HeroSection from/);
   assert.doesNotMatch(landingPage, /import ScrollIndicator from/);
 });
