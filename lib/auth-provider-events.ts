@@ -23,7 +23,19 @@ export async function applyAuthProviderEvent({
   replace,
   signOut,
 }: ApplyAuthProviderEventArgs): Promise<void> {
+  const clearCaches = async () => {
+    try {
+      const { clearClientAuthCaches } = await import(
+        "@/lib/workspace/clear-client-auth-caches"
+      );
+      clearClientAuthCaches();
+    } catch {
+      // non-browser tests / chunk load failures should not block auth routing
+    }
+  };
+
   if (event === "TOKEN_REFRESHED" && !session) {
+    await clearCaches();
     await signOut();
   }
 
@@ -33,6 +45,7 @@ export async function applyAuthProviderEvent({
   // explicitly after a successful sign-in.
 
   if (event === "SIGNED_OUT") {
+    await clearCaches();
     replace("/login");
   }
 

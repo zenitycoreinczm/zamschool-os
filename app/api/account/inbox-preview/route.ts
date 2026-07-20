@@ -48,17 +48,12 @@ export async function GET(req: Request) {
     const recipientIds =
       identityIds.length > 0 ? identityIds : [access.context.userId];
 
-    const [messagesResult, notificationRows] = await Promise.all([
-      supabaseAdmin
-        .from("messages")
-        .select(
-          "id, sender_id, recipient_id, body, subject, created_at, is_read",
-        )
-        .eq("school_id", access.context.schoolId)
-        .in("recipient_id", recipientIds)
-        .eq("is_read", false)
-        .order("created_at", { ascending: false })
-        .limit(limit),
+    const [messageRows, notificationRows] = await Promise.all([
+      loadUnreadMessagePreviewRows({
+        schoolId: access.context.schoolId,
+        recipientIds,
+        limit,
+      }),
       loadNotificationsForUser({
         userId: access.context.userId,
         schoolId: access.context.schoolId,
@@ -67,11 +62,6 @@ export async function GET(req: Request) {
       }),
     ]);
 
-    if (messagesResult.error) {
-      throw messagesResult.error;
-    }
-
-    const messageRows = messagesResult.data || [];
     const senderIds = Array.from(
       new Set(
         messageRows
@@ -137,4 +127,36 @@ export async function GET(req: Request) {
       { status: 500 },
     );
   }
+}
+
+async function loadUnreadMessagePreviewRows(input: {
+  schoolId: string;
+  recipientIds: string[];
+  limit: number;
+}) {
+  const byId = new Map<string, any>();
+  for (const recipientId of input.recipientIds) {
+    const { data, error } = await supabaseAdmin
+      .from("messages")
+      .select("id, sender_id, recipient_id, body, subject, created_at, is_read")
+      .eq("school_id", input.schoolId)
+      .eq("recipient_id", recipientId)
+      .eq("is_read", false)
+      .order("created_at", { ascending: false })
+      .limit(input.limit);
+
+    if (error) throw error;
+    for (const row of data || []) {
+      const id = String(row?.id || "").trim();
+      if (id && !byId.has(id)) byId.set(id, row);
+    }
+  }
+
+  return Array.from(byId.values())
+    .sort(
+      (left, right) =>
+        Date.parse(String(right.created_at || "")) -
+        Date.parse(String(left.created_at || "")),
+    )
+    .slice(0, input.limit);
 }

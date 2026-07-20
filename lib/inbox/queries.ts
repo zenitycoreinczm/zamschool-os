@@ -45,14 +45,24 @@ export async function loadNotificationsForUser(input: {
         .limit(limit),
   ];
 
+  const byId = new Map<string, any>();
   for (const runQuery of queryAttempts) {
     const result = await runQuery();
     if (!result.error) {
-      return result.data || [];
+      for (const row of result.data || []) {
+        const id = String(row?.id || "").trim();
+        if (id && !byId.has(id)) byId.set(id, row);
+      }
     }
   }
 
-  return [];
+  return Array.from(byId.values())
+    .sort(
+      (left, right) =>
+        Date.parse(String(right.created_at || "")) -
+        Date.parse(String(left.created_at || "")),
+    )
+    .slice(0, limit);
 }
 
 /**
@@ -160,7 +170,7 @@ export async function markAllNotificationsReadForUser(input: {
   const ids = uniqueIds([userId, ...(input.identityIds || [])]);
   if (!schoolId || ids.length === 0) return 0;
 
-  let updated = 0;
+  const updatedIds = new Set<string>();
   const mutationAttempts = [
     () =>
       supabaseAdmin
@@ -184,11 +194,13 @@ export async function markAllNotificationsReadForUser(input: {
     const result = await runMutation();
     if (result.error) continue;
     if (Array.isArray(result.data) && result.data.length > 0) {
-      updated += result.data.length;
+      for (const row of result.data) {
+        if (row?.id) updatedIds.add(String(row.id));
+      }
     }
   }
 
-  return updated;
+  return updatedIds.size;
 }
 
 export async function countUnreadNotificationsForUser(input: {
@@ -201,28 +213,33 @@ export async function countUnreadNotificationsForUser(input: {
   const ids = uniqueIds([userId, ...(input.identityIds || [])]);
   if (ids.length === 0) return 0;
 
-  // Prefer the max of both column variants when both succeed so mixed identity
-  // storage cannot under-count. If only one column exists, use that count.
+  // Count unique ids across both column variants. Mixed schema/data can store
+  // some rows in user_id and others in recipient_id; max() under-counts that.
   const [byUserId, byRecipientId] = await Promise.all([
     supabaseAdmin
       .from("notifications")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("school_id", schoolId)
       .in("user_id", ids)
       .eq("is_read", false),
     supabaseAdmin
       .from("notifications")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("school_id", schoolId)
       .in("recipient_id", ids)
       .eq("is_read", false),
   ]);
 
-  const counts: number[] = [];
-  if (!byUserId.error) counts.push(byUserId.count || 0);
-  if (!byRecipientId.error) counts.push(byRecipientId.count || 0);
-  if (counts.length === 0) return 0;
-  // Same rows can match both columns only if both store the same id — take max
-  // so we never double-count distinct rows across schemas.
-  return Math.max(...counts);
+  const unreadIds = new Set<string>();
+  if (!byUserId.error) {
+    for (const row of byUserId.data || []) {
+      if (row?.id) unreadIds.add(String(row.id));
+    }
+  }
+  if (!byRecipientId.error) {
+    for (const row of byRecipientId.data || []) {
+      if (row?.id) unreadIds.add(String(row.id));
+    }
+  }
+  return unreadIds.size;
 }

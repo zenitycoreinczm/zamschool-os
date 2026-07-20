@@ -4,6 +4,8 @@
  */
 
 import { invalidateInboxCaches } from "@/lib/inbox/center-client";
+import { invalidateAnnouncementsClientCache } from "@/lib/announcements-client";
+import { invalidateEventsClientCache } from "@/lib/events-client";
 import {
   invalidateWorkspaceContext,
   invalidateWorkspaceSummary,
@@ -11,8 +13,6 @@ import {
 
 const LOCAL_PREFIXES = [
   "zamschool_workspace_context",
-  "zamschool:nav-seen:",
-  "zamschool:nav-seen:v1",
   "zamschool_workspace",
   "zamschool:inbox",
 ];
@@ -52,6 +52,16 @@ export function clearClientAuthCaches() {
   }
   try {
     invalidateInboxCaches();
+  } catch {
+    // ignore
+  }
+  try {
+    invalidateAnnouncementsClientCache();
+  } catch {
+    // ignore
+  }
+  try {
+    invalidateEventsClientCache();
   } catch {
     // ignore
   }

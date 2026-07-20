@@ -59,22 +59,27 @@ export function dispatchInboxRefresh(optimistic?: InboxRefreshDetail) {
   );
 
   // Reconcile from server so badges match DB after mark-as-read.
-  void fetchUnreadSummary("account", { force: true })
-    .then((summary) => {
-      patchCachedWorkspaceUnread({
-        messages: summary.messages,
-        notifications: summary.notifications,
-      });
-      window.dispatchEvent(
-        new CustomEvent(INBOX_REFRESH_EVENT, {
-          detail: {
-            messages: summary.messages,
-            notifications: summary.notifications,
-          } satisfies InboxRefreshDetail,
-        }),
-      );
-    })
-    .catch(() => {
-      // non-blocking - optimistic event already fired
+  void reconcileUnreadSummary("account");
+  void reconcileUnreadSummary("teacher");
+  void reconcileUnreadSummary("admin");
+}
+
+async function reconcileUnreadSummary(mode: "account" | "teacher" | "admin") {
+  try {
+    const summary = await fetchUnreadSummary(mode, { force: true });
+    patchCachedWorkspaceUnread({
+      messages: summary.messages,
+      notifications: summary.notifications,
     });
+    window.dispatchEvent(
+      new CustomEvent(INBOX_REFRESH_EVENT, {
+        detail: {
+          messages: summary.messages,
+          notifications: summary.notifications,
+        } satisfies InboxRefreshDetail,
+      }),
+    );
+  } catch {
+    // non-blocking - optimistic event already fired
+  }
 }

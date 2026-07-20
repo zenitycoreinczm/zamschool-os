@@ -107,6 +107,26 @@ type InboxPreviewData = {
   notifications: InboxNotificationPreview[];
 };
 
+function normalizeUniqueMessages(messages: InboxMessagePreview[]) {
+  const seen = new Set<string>();
+  return messages.filter((message) => {
+    const id = String(message.id || "").trim();
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function normalizeUniqueNotifications(notifications: InboxNotificationPreview[]) {
+  const seen = new Set<string>();
+  return notifications.filter((notification) => {
+    const id = String(notification.id || "").trim();
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 async function loadUnreadSummaryFromApi(
   mode: InboxApiMode,
 ): Promise<UnreadSummary> {
@@ -141,12 +161,14 @@ async function loadInboxPreviewFromApi(
       };
     }>(mode, `/api/account/inbox-preview?limit=${limit}`);
     return {
-      messages: Array.isArray(payload?.data?.messages)
-        ? payload.data.messages
-        : [],
-      notifications: Array.isArray(payload?.data?.notifications)
-        ? payload.data.notifications
-        : [],
+      messages: normalizeUniqueMessages(
+        Array.isArray(payload?.data?.messages) ? payload.data.messages : [],
+      ),
+      notifications: normalizeUniqueNotifications(
+        Array.isArray(payload?.data?.notifications)
+          ? payload.data.notifications
+          : [],
+      ),
     };
   } catch (err: unknown) {
     if (
