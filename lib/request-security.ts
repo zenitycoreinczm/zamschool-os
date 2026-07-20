@@ -146,24 +146,63 @@ const BLOCKED_AI_SCRAPER_UA_PATTERNS: RegExp[] = [
   /xAI/i,
 ];
 
-/** SEO crawlers allowed only on public marketing/legal pages - never /app or /api. */
-const SEO_CRAWLER_UA_PATTERNS: RegExp[] = [
+/**
+ * Google Search only — allowed on public marketing/legal pages, never /app or /api.
+ * Google-Extended (AI training) is blocked via BLOCKED_AI_SCRAPER_UA_PATTERNS first.
+ */
+const GOOGLE_SEARCH_BOT_UA_PATTERNS: RegExp[] = [
   /Googlebot/i,
   /Google-InspectionTool/i,
-  /bingbot/i,
-  /DuckDuckBot/i,
-  /Slurp/i,
-  /Applebot(?!-Extended)/i,
-  /YandexBot/i,
-  /Baiduspider/i,
 ];
 
-/** Public surface SEO bots may index (marketing only). */
+/**
+ * Non-Google search / SEO crawlers — hard-blocked site-wide.
+ * Policy: index only in Google; no Bing, DuckDuckGo, Yandex, SEO tools, etc.
+ */
+const BLOCKED_NON_GOOGLE_CRAWLER_UA_PATTERNS: RegExp[] = [
+  /bingbot/i,
+  /BingPreview/i,
+  /DuckDuckBot/i,
+  /Slurp/i,
+  /Yahoo!?\s*Slurp/i,
+  /Applebot(?!-Extended)/i,
+  /Yandex(Bot|Images|MobileBot)?/i,
+  /Baiduspider/i,
+  /Sogou/i,
+  /Exabot/i,
+  /facebot/i,
+  /ia_archiver/i,
+  /archive\.org_bot/i,
+  /SeznamBot/i,
+  /Qwantify/i,
+  /ecosia/i,
+  /NaverBot/i,
+  /Yetibot/i,
+  /coccocbot/i,
+  /petalbot/i,
+  /AhrefsBot/i,
+  /SemrushBot/i,
+  /DotBot/i,
+  /MJ12bot/i,
+  /BLEXBot/i,
+  /Rogerbot/i,
+  /Screaming Frog/i,
+  /SiteAuditBot/i,
+  /SEOkicks/i,
+  /ZoominfoBot/i,
+  /LinkpadBot/i,
+  /MauiBot/i,
+  /serpstatbot/i,
+];
+
+/** Public surface Google Search may index (marketing + entry only). */
 const SEO_ALLOWED_PATHS = new Set([
   "/",
   "/privacy",
   "/terms",
   "/cookies",
+  "/login",
+  "/register",
   "/robots.txt",
   "/sitemap.xml",
   "/icon.png",
@@ -254,7 +293,8 @@ function matchesAny(ua: string, patterns: RegExp[]): boolean {
  * - React Native Android default okhttp + Bearer: allowed (auth still required).
  * - AI training / agent scrapers: blocked everywhere.
  * - curl/python/scrapy/headless: blocked everywhere (except health; allowed in dev).
- * - SEO bots (Googlebot etc.): only public marketing paths - never /app or /api.
+ * - Google Search bots only: public marketing paths - never /app or /api.
+ * - Other search/SEO crawlers (Bing, DuckDuckGo, Ahrefs, etc.): blocked everywhere.
  * - Empty UA on auth or private product: blocked in production.
  */
 export function classifyClientBot(params: {
@@ -304,13 +344,23 @@ export function classifyClientBot(params: {
     reason = "blocked_automation_user_agent";
   }
 
-  // SEO crawlers: allow only marketing pages; block product + APIs.
-  if (ua && matchesAny(ua, SEO_CRAWLER_UA_PATTERNS)) {
+  // Non-Google crawlers: never welcome (robots + hard block).
+  if (ua && matchesAny(ua, BLOCKED_NON_GOOGLE_CRAWLER_UA_PATTERNS)) {
+    return {
+      block: true,
+      suspicious: true,
+      reason: "non_google_crawler",
+      score: 100,
+    };
+  }
+
+  // Google Search only: public marketing / entry pages; block product + APIs.
+  if (ua && matchesAny(ua, GOOGLE_SEARCH_BOT_UA_PATTERNS)) {
     if (!isSeoAllowedPublicPath(path)) {
       return {
         block: true,
         suspicious: true,
-        reason: "seo_crawler_private_surface",
+        reason: "googlebot_private_surface",
         score: 100,
       };
     }

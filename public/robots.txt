@@ -1,7 +1,13 @@
 # Prefer the dynamic /robots.txt route (app/robots.ts).
 # This static file is a fallback for non-Next hosts.
+#
+# Policy: Google Search only. No other crawlers.
 
 User-agent: *
+Disallow: /
+
+# Google Search
+User-agent: Googlebot
 Allow: /
 Allow: /privacy
 Allow: /terms
@@ -25,6 +31,53 @@ Disallow: /parent/
 Disallow: /payments/
 Disallow: /super-admin/
 Disallow: /_next/
+
+User-agent: Google-InspectionTool
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /login
+Allow: /register
+Disallow: /app/
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /first-login
+Disallow: /verify-email
+Disallow: /accept-invitation
+Disallow: /join
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /login/mfa
+Disallow: /admin/
+Disallow: /teacher/
+Disallow: /student/
+Disallow: /parent/
+Disallow: /payments/
+Disallow: /super-admin/
+Disallow: /_next/
+
+# Non-Google search engines
+User-agent: bingbot
+Disallow: /
+
+User-agent: BingPreview
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: Applebot
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
 
 # AI training / agent scrapers - stay off the whole site
 User-agent: GPTBot
@@ -79,6 +132,15 @@ User-agent: DeepSeek
 Disallow: /
 
 User-agent: Grok
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
 Disallow: /
 
 Sitemap: https://www.zamschoolos.site/sitemap.xml

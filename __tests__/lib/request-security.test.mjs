@@ -126,6 +126,13 @@ describe("classifyClientBot", () => {
       assert.equal(
         classifyClientBot({
           userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
+          pathname: "/login",
+        }).block,
+        false,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
           pathname: "/app/principal",
         }).block,
         true,
@@ -134,6 +141,52 @@ describe("classifyClientBot", () => {
         classifyClientBot({
           userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1)",
           pathname: "/api/admin/users",
+        }).block,
+        true,
+      );
+      // Search Console URL inspection
+      assert.equal(
+        classifyClientBot({
+          userAgent:
+            "Mozilla/5.0 (compatible; Google-InspectionTool/1.0;)",
+          pathname: "/privacy",
+        }).block,
+        false,
+      );
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  });
+
+  it("blocks non-Google crawlers even on public marketing paths", () => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; bingbot/2.0)",
+          pathname: "/",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "DuckDuckBot/1.0",
+          pathname: "/privacy",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; YandexBot/3.0)",
+          pathname: "/",
+        }).block,
+        true,
+      );
+      assert.equal(
+        classifyClientBot({
+          userAgent: "Mozilla/5.0 (compatible; AhrefsBot/7.0)",
+          pathname: "/",
         }).block,
         true,
       );

@@ -6,9 +6,21 @@ const siteUrl =
   "https://www.zamschoolos.site";
 
 /**
- * Public marketing may be indexed. Product UI, APIs, and auth flows stay closed.
- * AI training scrapers are disallowed entirely (also hard-blocked in middleware).
+ * Indexing policy:
+ * - Google Search (Googlebot / InspectionTool) may crawl public marketing pages.
+ * - All other crawlers: Disallow entire site (enforced in middleware too).
+ * - AI training scrapers: explicit Disallow (also hard-blocked in middleware).
+ * - Product UI, APIs, and auth flows stay closed.
  */
+const PUBLIC_ALLOW = [
+  "/",
+  "/privacy",
+  "/terms",
+  "/cookies",
+  "/login",
+  "/register",
+];
+
 const PRIVATE_DISALLOW = [
   "/app/",
   "/api/",
@@ -29,7 +41,11 @@ const PRIVATE_DISALLOW = [
   "/_next/",
 ];
 
-const AI_AGENTS = [
+/** Google Search crawlers only. */
+const GOOGLE_SEARCH_AGENTS = ["Googlebot", "Google-InspectionTool"];
+
+const AI_AND_OTHER_CRAWLERS = [
+  // AI training / agents
   "GPTBot",
   "ChatGPT-User",
   "OAI-SearchBot",
@@ -55,20 +71,37 @@ const AI_AGENTS = [
   "AhrefsBot",
   "DotBot",
   "BLEXBot",
+  "MJ12bot",
   "Scrapy",
   "DeepSeek",
   "Grok",
+  // Non-Google search engines
+  "bingbot",
+  "BingPreview",
+  "DuckDuckBot",
+  "Slurp",
+  "Applebot",
+  "YandexBot",
+  "Baiduspider",
+  "Sogou",
+  "SeznamBot",
+  "ia_archiver",
 ];
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
+      // Default: no crawlers. Google is allow-listed below.
       {
         userAgent: "*",
-        allow: ["/", "/privacy", "/terms", "/cookies", "/login", "/register"],
-        disallow: PRIVATE_DISALLOW,
+        disallow: ["/"],
       },
-      ...AI_AGENTS.map((userAgent) => ({
+      ...GOOGLE_SEARCH_AGENTS.map((userAgent) => ({
+        userAgent,
+        allow: PUBLIC_ALLOW,
+        disallow: PRIVATE_DISALLOW,
+      })),
+      ...AI_AND_OTHER_CRAWLERS.map((userAgent) => ({
         userAgent,
         disallow: ["/"] as string[],
       })),
