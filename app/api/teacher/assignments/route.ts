@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { resolveTeachersTableId } from "@/lib/live-schema-adapters";
 import { teacherHasClassAccess } from "@/lib/teacher-assignment-scope";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { validateTeacherManagedAssignmentTarget } from "@/lib/teacher-assignment-contract";
@@ -180,8 +181,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: assignmentTargetValidation.error }, { status: assignmentTargetValidation.status });
     }
 
-    // Prefer teachers.id when present; profile id remains in actorTeacherIds for legacy rows.
+    // Prefer teachers.id (FK + school trigger); profile id is only for legacy joins.
     const teacherKey =
+      resolveTeachersTableId({
+        actorProfileId: access.context.profileId || userId,
+        actorTeacherIds: assignmentScope.actorTeacherIds,
+      }) ||
       assignmentScope.actorTeacherIds.find((id) => id !== userId) ||
       assignmentScope.actorTeacherIds[0] ||
       userId;

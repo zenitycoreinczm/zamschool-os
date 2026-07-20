@@ -159,6 +159,31 @@ export function buildTeacherActorIds(input: {
   return Array.from(actorIds);
 }
 
+/**
+ * Prefer public.teachers.id for FKs / triggers on assignments.teacher_id,
+ * lessons.teacher_id, etc. actorTeacherIds also includes profile_id for legacy
+ * joins — never use [0] alone when writing those FKs.
+ */
+export function resolveTeachersTableId(input: {
+  actorProfileId: string;
+  actorTeacherIds: string[];
+  teachers?: Array<{ id: string; profile_id?: string | null }>;
+}): string | null {
+  const fromRows = (input.teachers || []).find(
+    (row) =>
+      row.id &&
+      (row.profile_id === input.actorProfileId ||
+        input.actorTeacherIds.includes(row.id)),
+  )?.id;
+  if (fromRows) return String(fromRows);
+
+  const profileId = String(input.actorProfileId || "").trim();
+  const nonProfile = input.actorTeacherIds.find(
+    (id) => id && id !== profileId,
+  );
+  return nonProfile ? String(nonProfile) : null;
+}
+
 export function buildParentLinkedStudentProfiles(input: {
   actorProfileId: string;
   actorSchoolId: string | null;

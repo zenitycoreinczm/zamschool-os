@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { resolveTeachersTableId } from "@/lib/live-schema-adapters";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { requireTeacherContext } from "@/lib/server-auth";
 import { safeErrorMessage, getClientIp, applyRateLimit } from "@/lib/server-guards";
@@ -134,15 +135,19 @@ export async function POST(req: NextRequest) {
       .eq("school_id", schoolId)
       .order("min_score", { ascending: true });
 
-    interface ParsedRow {
+    const warnings: string[] = [...sheet.warnings];
+    const parsed: Array<{
       identifier: string;
+      classNumber: number | null;
+      admissionNumber: string | null;
+      name: string | null;
       marks: number | null;
       grade: string | null;
-    }
-
-    const warnings: string[] = [...sheet.warnings];
-    const parsed: ParsedRow[] = sheet.rows.map((row) => ({
+    }> = sheet.rows.map((row) => ({
       identifier: row.identifier.trim(),
+      classNumber: row.classNumber,
+      admissionNumber: row.admissionNumber,
+      name: row.name,
       marks: row.marks,
       grade: row.grade || computeGrade(row.marks, gradingScales || []),
     }));
@@ -160,12 +165,32 @@ export async function POST(req: NextRequest) {
     }[] = [];
 
     for (const row of parsed) {
-      const key = row.identifier.toLowerCase().trim();
-      const studentId =
-        studentIdByIdentifier.get(key) ||
-        studentIdByIdentifier.get(key.replace(/[\s_-]/g, ""));
+      const candidates = [
+        row.classNumber != null ? String(row.classNumber) : null,
+        row.admissionNumber,
+        row.name,
+        row.identifier,
+      ].filter(Boolean) as string[];
+
+      let studentId: string | undefined;
+      for (const candidate of candidates) {
+        const key = candidate.toLowerCase().trim();
+        studentId =
+          studentIdByIdentifier.get(key) ||
+          studentIdByIdentifier.get(key.replace(/[\s_-]/g, ""));
+        if (studentId) break;
+      }
       if (!studentId) {
-        unmatched.push(row.identifier);
+        unmatched.push(
+          [
+            row.classNumber != null ? `#${row.classNumber}` : null,
+            row.name,
+            row.admissionNumber,
+            row.identifier,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
         continue;
       }
       resultsPayload.push({
@@ -180,13 +205,35 @@ export async function POST(req: NextRequest) {
 
     if (resultsPayload.length === 0) {
       return NextResponse.json({
-        error: `No students matched. Check exam numbers. Unmatched: ${unmatched.slice(0, 10).join(", ")}`,
+        error: `No students matched in this class. Use Class Number + Name. Unmatched: ${unmatched.slice(0, 10).join(", ")}`,
         unmatchedStudents: unmatched,
       }, { status: 400 });
     }
 
     // ── ATOMIC assignment upsert ──────────────────────────────────────────────
-    const teacherId = assignmentScope.actorTeacherIds[0];
+    // assignments.teacher_id → teachers.id (NOT profiles.id). actorTeacherIds[0]
+    // is usually the profile id and fails validate_assignments_row().
+    const { data: teacherRows } = await supabaseAdmin
+      .from("teachers")
+      .select("id, profile_id")
+      .eq("school_id", schoolId)
+      .eq("profile_id", access.context.profileId || userId);
+
+    const teacherId = resolveTeachersTableId({
+      actorProfileId: access.context.profileId || userId,
+      actorTeacherIds: assignmentScope.actorTeacherIds,
+      teachers: teacherRows || [],
+    });
+    if (!teacherId) {
+      return NextResponse.json(
+        {
+          error:
+            "Your account is not linked to a teacher record for this school. Ask the registrar or Head Teacher to finish your staff profile.",
+        },
+        { status: 403 },
+      );
+    }
+
     let assignmentId: string;
 
     try {
@@ -550,60 +597,133 @@ function parseExcelGrid(buffer: Buffer): string[][] {
 async function resolveStudentIds(
   schoolId: string,
   classId: string,
-  _rows: { identifier: string }[],
+  rows: Array<{
+    identifier: string;
+    classNumber?: number | null;
+    admissionNumber?: string | null;
+    name?: string | null;
+  }>,
 ): Promise<Map<string, string>> {
   const supabaseAdmin = getSupabaseAdmin();
-  const { data: students, error } = await supabaseAdmin
+
+  let students: any[] | null = null;
+  let error: { message?: string } | null = null;
+
+  const withClassNo = await supabaseAdmin
     .from("students")
-    .select("id, profile_id, student_number, class_id")
+    .select("id, profile_id, student_number, class_id, class_number")
     .eq("school_id", schoolId)
     .eq("class_id", classId);
+  if (!withClassNo.error) {
+    students = withClassNo.data;
+  } else {
+    const legacy = await supabaseAdmin
+      .from("students")
+      .select("id, profile_id, student_number, class_id")
+      .eq("school_id", schoolId)
+      .eq("class_id", classId);
+    students = legacy.data;
+    error = legacy.error;
+  }
 
   if (error) throw error;
 
-  const result = new Map<string, string>();
+  const { buildStudentMatchIndex, matchSheetRowToStudent } = await import(
+    "@/lib/results/match-students"
+  );
 
-  const indexKey = (value: string, studentId: string) => {
-    const key = String(value || "")
-      .toLowerCase()
-      .trim();
-    if (!key) return;
-    result.set(key, studentId);
-    result.set(key.replace(/[\s_-]/g, ""), studentId);
-  };
-
-  for (const s of students || []) {
-    if (s.student_number) indexKey(s.student_number, s.id);
-    if (s.profile_id) indexKey(s.profile_id, s.id);
-    indexKey(s.id, s.id);
-  }
-
-  if (students && students.length > 0) {
-    const profileIds = Array.from(
-      new Set(students.map((s: any) => s.profile_id).filter(Boolean)),
-    );
-    if (profileIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+  const profileIds = Array.from(
+    new Set((students || []).map((s: any) => s.profile_id).filter(Boolean)),
+  );
+  let profiles: Array<{
+    id: string;
+    email?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    class_number?: number | null;
+  }> = [];
+  if (profileIds.length > 0) {
+    const profileQuery = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, first_name, last_name, class_number")
+      .eq("school_id", schoolId)
+      .in("id", profileIds);
+    if (!profileQuery.error) {
+      profiles = profileQuery.data || [];
+    } else {
+      const legacyProfiles = await supabaseAdmin
         .from("profiles")
         .select("id, email, first_name, last_name")
         .eq("school_id", schoolId)
         .in("id", profileIds);
+      profiles = legacyProfiles.data || [];
+    }
+  }
 
-      const studentIdByProfile = new Map(
-        (students || [])
-          .filter((s: any) => s.profile_id)
-          .map((s: any) => [String(s.profile_id), String(s.id)]),
-      );
+  const profileById = new Map(profiles.map((p) => [p.id, p]));
 
-      for (const p of profiles || []) {
-        const studentId = studentIdByProfile.get(String(p.id));
-        if (!studentId) continue;
-        if (p.email) indexKey(p.email, studentId);
-        const fullName = [p.first_name, p.last_name]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        if (fullName) indexKey(fullName, studentId);
+  const matchable = (students || []).map((s: any) => {
+    const profile = s.profile_id ? profileById.get(s.profile_id) : null;
+    const fullName = profile
+      ? [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim()
+      : "";
+    const classNumber =
+      s.class_number != null
+        ? Number(s.class_number)
+        : profile?.class_number != null
+          ? Number(profile.class_number)
+          : null;
+    return {
+      id: String(s.id),
+      classId: String(s.class_id || classId),
+      classNumber:
+        Number.isFinite(classNumber) && (classNumber as number) > 0
+          ? (classNumber as number)
+          : null,
+      admissionNumber: s.student_number || null,
+      displayName: fullName || s.student_number || "Student",
+    };
+  });
+
+  const index = buildStudentMatchIndex(matchable);
+  const result = new Map<string, string>();
+
+  // Also keep legacy string keys for identifier lookup
+  for (const s of matchable) {
+    if (s.admissionNumber) {
+      result.set(s.admissionNumber.toLowerCase().trim(), s.id);
+      result.set(s.admissionNumber.toLowerCase().replace(/[\s_-]/g, ""), s.id);
+    }
+    if (s.classNumber != null) {
+      result.set(String(s.classNumber), s.id);
+      result.set(`#${s.classNumber}`, s.id);
+    }
+    result.set(s.id.toLowerCase(), s.id);
+    if (s.displayName) {
+      result.set(s.displayName.toLowerCase().trim(), s.id);
+    }
+  }
+
+  for (const row of rows) {
+    const match = matchSheetRowToStudent(
+      {
+        classNumber: row.classNumber,
+        admissionNumber: row.admissionNumber || row.identifier,
+        name: row.name,
+        identifier: row.identifier,
+      },
+      index,
+    );
+    if (match.student) {
+      const keys = [
+        row.identifier,
+        row.admissionNumber,
+        row.name,
+        row.classNumber != null ? String(row.classNumber) : null,
+      ].filter(Boolean) as string[];
+      for (const key of keys) {
+        result.set(key.toLowerCase().trim(), match.student.id);
+        result.set(key.toLowerCase().replace(/[\s_-]/g, ""), match.student.id);
       }
     }
   }
