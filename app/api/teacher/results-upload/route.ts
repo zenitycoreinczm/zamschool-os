@@ -235,29 +235,60 @@ export async function POST(req: NextRequest) {
     }
 
     let assignmentId: string;
+    // assignments.due_date is NOT NULL with no default — always set a date.
+    const dueDate = new Date();
+    dueDate.setUTCDate(dueDate.getUTCDate() + 14);
+    const dueDateIso = dueDate.toISOString().slice(0, 10);
 
     try {
-      const { data: assignment, error: assignError } = await supabaseAdmin
+      // Prefer find-then-insert so we never overwrite another teacher's due_date.
+      const { data: existingAssignment, error: existingError } = await supabaseAdmin
         .from("assignments")
-        .upsert({
-          school_id: schoolId,
-          class_id: classId,
-          subject_id: subjectId,
-          teacher_id: teacherId,
-          title: examTitle.trim(),
-          total_marks: totalMarks,
-        }, {
-          onConflict: "school_id,class_id,subject_id,title",
-          ignoreDuplicates: false,
-        })
         .select("id")
-        .single();
+        .eq("school_id", schoolId)
+        .eq("class_id", classId)
+        .eq("subject_id", subjectId)
+        .eq("title", examTitle.trim())
+        .maybeSingle();
+      if (existingError) throw existingError;
 
-      if (assignError) throw assignError;
-      assignmentId = assignment.id;
+      if (existingAssignment?.id) {
+        assignmentId = existingAssignment.id;
+      } else {
+        const { data: assignment, error: assignError } = await supabaseAdmin
+          .from("assignments")
+          .insert({
+            school_id: schoolId,
+            class_id: classId,
+            subject_id: subjectId,
+            teacher_id: teacherId,
+            title: examTitle.trim(),
+            description: `Results upload for ${examTitle.trim()}`,
+            due_date: dueDateIso,
+            total_marks: totalMarks,
+          })
+          .select("id")
+          .single();
+
+        if (assignError) throw assignError;
+        assignmentId = assignment.id;
+      }
     } catch (assignError: unknown) {
-      // If the unique constraint doesn't exist yet, fall back to check-then-insert
-      assignmentId = await fallbackCreateAssignment(schoolId, classId, subjectId, teacherId, examTitle.trim(), totalMarks);
+      // Concurrent create or missing unique path — retry via fallback.
+      try {
+        assignmentId = await fallbackCreateAssignment(
+          schoolId,
+          classId,
+          subjectId,
+          teacherId,
+          examTitle.trim(),
+          totalMarks,
+          dueDateIso,
+        );
+      } catch (fallbackError: unknown) {
+        console.error("[results-upload] assignment create failed:", assignError, fallbackError);
+        throw fallbackError;
+      }
     }
 
     // ── PUBLISH LOCK CHECK ────────────────────────────────────────────────────
@@ -278,27 +309,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── ATOMIC exam upsert ─────────────────────────────────────────────────────
+    // ── Optional exam link (exam_date is NOT NULL; soft-fail if schema differs) ─
     let examId: string | null = null;
     try {
-      const { data: exam, error: examError } = await supabaseAdmin
+      const examDateIso = new Date().toISOString().slice(0, 10);
+      const { data: existingExam } = await supabaseAdmin
         .from("exams")
-        .upsert({
-          school_id: schoolId,
-          class_id: classId,
-          subject_id: subjectId,
-          title: examTitle.trim(),
-          name: examTitle.trim(),
-        }, {
-          onConflict: "school_id,class_id,subject_id,title",
-          ignoreDuplicates: false,
-        })
         .select("id")
+        .eq("school_id", schoolId)
+        .eq("class_id", classId)
+        .eq("subject_id", subjectId)
+        .eq("title", examTitle.trim())
         .maybeSingle();
+      if (existingExam?.id) {
+        examId = existingExam.id;
+      } else {
+        const { data: exam, error: examError } = await supabaseAdmin
+          .from("exams")
+          .insert({
+            school_id: schoolId,
+            class_id: classId,
+            subject_id: subjectId,
+            title: examTitle.trim(),
+            exam_date: examDateIso,
+            total_marks: totalMarks,
+            status: "draft",
+          })
+          .select("id")
+          .maybeSingle();
 
-      if (examError && !isMissingTableError(examError)) throw examError;
-      examId = exam?.id || null;
-    } catch {
+        if (examError && !isMissingTableError(examError)) {
+          console.warn("[results-upload] exam create skipped:", examError.message);
+        }
+        examId = exam?.id || null;
+      }
+    } catch (examErr) {
+      console.warn("[results-upload] exam link skipped:", examErr);
       examId = null;
     }
 
@@ -437,6 +483,7 @@ export async function POST(req: NextRequest) {
 
     return applyEdgeCacheHeaders(response, "noStore");
   } catch (error: unknown) {
+    console.error("[results-upload] failed:", error);
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to upload results") },
       { status: 500 }
@@ -447,6 +494,7 @@ export async function POST(req: NextRequest) {
 async function fallbackCreateAssignment(
   schoolId: string, classId: string, subjectId: string,
   teacherId: string, title: string, totalMarks: number,
+  dueDateIso: string,
   retries = 3,
 ): Promise<string> {
   const supabaseAdmin = getSupabaseAdmin();
@@ -465,8 +513,14 @@ async function fallbackCreateAssignment(
     const { data: created, error } = await supabaseAdmin
       .from("assignments")
       .insert({
-        school_id: schoolId, class_id: classId, subject_id: subjectId,
-        teacher_id: teacherId, title, total_marks: totalMarks,
+        school_id: schoolId,
+        class_id: classId,
+        subject_id: subjectId,
+        teacher_id: teacherId,
+        title,
+        description: `Results upload for ${title}`,
+        due_date: dueDateIso,
+        total_marks: totalMarks,
       })
       .select("id")
       .maybeSingle();
