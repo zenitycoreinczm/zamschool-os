@@ -196,7 +196,11 @@ test("download serves same-school upload with private no-store headers", async (
 
   assert.equal(res.status, 200);
   assert.equal(res.headers.get("Content-Type"), "application/pdf");
-  assert.match(res.headers.get("Cache-Control") || "", /no-store/);
+  assert.equal(
+    res.headers.get("Cache-Control"),
+    "private, no-store, max-age=0, must-revalidate",
+  );
+  assert.equal(res.headers.get("X-Content-Type-Options"), "nosniff");
 });
 
 test("download rejects traversal, backslash, empty, and control-character keys", async () => {
