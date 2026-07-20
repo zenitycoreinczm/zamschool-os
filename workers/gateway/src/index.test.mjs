@@ -199,6 +199,32 @@ test("download serves same-school upload with private no-store headers", async (
   assert.match(res.headers.get("Cache-Control") || "", /no-store/);
 });
 
+test("download rejects traversal, backslash, empty, and control-character keys", async () => {
+  const env = createSessionEnv(async () => new Response("unused"));
+  const token = await signJwt({});
+  const authHeaders = {
+    Origin: "https://school.example.test",
+    Authorization: `Bearer ${token}`,
+  };
+
+  // Paths that survive URL parsing, then fail normalizeUploadKey after decode.
+  const paths = [
+    "/api/files/school-1/%2e%2e%2fschool-2/secret.pdf", // ".."
+    "/api/files/school-1/foo%5cbar.pdf", // backslash
+    "/api/files/", // empty
+    "/api/files/school-1/document/evil%00.pdf", // NUL
+    "/api/files/school-1/document/evil%7f.pdf", // DEL
+  ];
+
+  for (const path of paths) {
+    const res = await worker.fetch(
+      new Request(`https://gateway.example.test${path}`, { headers: authHeaders }),
+      env,
+    );
+    assert.equal(res.status, 400, `expected 400 for path ${path}`);
+  }
+});
+
 test("cached proxy does not leak bearer token into upstream URL", async () => {
   const token = await signJwt({});
   const env = createSessionEnv(async (req) => {
