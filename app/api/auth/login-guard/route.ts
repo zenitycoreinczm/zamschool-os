@@ -76,6 +76,7 @@ export async function POST(req: Request) {
         backend: status.backend ?? (redis ? "redis" : "memory"),
         locked: status.locked,
         retryAfterSec: status.retryAfterSec,
+        // "ip-ban" means the IP address is hard-banned for 24 hours.
         reason: status.reason ?? null,
       });
     }
@@ -92,7 +93,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // success - clear email-scoped failures
+    // success - clear email-scoped failures (IP ban is NOT cleared here)
     await clearLoginFailures({ email, ip });
     return NextResponse.json({
       ok: true,

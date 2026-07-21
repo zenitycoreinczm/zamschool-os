@@ -20,8 +20,10 @@ export const AUTH_API_RATE_LIMITS = {
   mfaVerify: { limit: free ? 5 : 6, windowMs: 60_000 },
   mfaFactorsRead: { limit: free ? 20 : 30, windowMs: 60_000 },
   mfaFactorsDelete: { limit: free ? 5 : 8, windowMs: 60_000 },
-  /** Login lockout check / record (server-side Redis). */
-  loginGuard: { limit: free ? 12 : 20, windowMs: 60_000 },
+  /** Login lockout check / record (server-side Redis).
+   *  3 attempts × 2 calls each (check + failure) = 6 minimum; allow 10 for
+   *  retries / success calls before the outer guard fires. */
+  loginGuard: { limit: free ? 6 : 10, windowMs: 60_000 },
 } as const;
 
 export type AuthApiRateLimitScope = keyof typeof AUTH_API_RATE_LIMITS;

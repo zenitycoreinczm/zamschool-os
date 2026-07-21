@@ -263,7 +263,7 @@ function LoginContent() {
   const callLoginGuard = async (
     email: string,
     outcome: "check" | "failure" | "success",
-  ): Promise<{ locked: boolean; retryAfterSec: number; redis?: boolean } | null> => {
+  ): Promise<{ locked: boolean; retryAfterSec: number; redis?: boolean; reason?: string | null } | null> => {
     try {
       const headers = new Headers({
         "Content-Type": "application/json",
@@ -289,11 +289,13 @@ function LoginContent() {
         locked?: boolean;
         retryAfterSec?: number;
         redis?: boolean;
+        reason?: string | null;
       };
       return {
         locked: Boolean(body.locked),
         retryAfterSec: Number(body.retryAfterSec || 0),
         redis: body.redis,
+        reason: body.reason ?? null,
       };
     } catch {
       return null;
@@ -331,10 +333,14 @@ function LoginContent() {
       // Server-side Redis lockout (cannot be cleared by wiping localStorage).
       const guard = await callLoginGuard(email, "check");
       if (guard?.locked) {
-        const cooldown = buildLoginCooldown(guard.retryAfterSec || 900);
+        const banSec = guard.retryAfterSec || 900;
+        const cooldown = buildLoginCooldown(banSec);
         setCooldown({ email, until: cooldown.until });
+        const isIpBan = guard.reason === "ip-ban";
         setError(
-          `Too many login attempts. Try again in ${Math.max(1, guard.retryAfterSec || 900)} seconds.`,
+          isIpBan
+            ? "Access from your network has been temporarily blocked due to repeated failed login attempts. Please try again in 24 hours or contact your school administrator."
+            : `Too many login attempts. Try again in ${Math.max(1, banSec)} seconds.`,
         );
         return;
       }
@@ -364,16 +370,20 @@ function LoginContent() {
       if (authError) {
         const afterFail = await callLoginGuard(email, "failure");
         if (afterFail?.locked) {
-          const next = buildLoginCooldown(afterFail.retryAfterSec || 900);
+          const banSec = afterFail.retryAfterSec || 900;
+          const next = buildLoginCooldown(banSec);
           setCooldown({ email, until: next.until });
+          const isIpBan = afterFail.reason === "ip-ban";
           setError(
-            `Too many login attempts. Try again in ${Math.max(1, afterFail.retryAfterSec || 900)} seconds.`,
+            isIpBan
+              ? "Access from your network has been temporarily blocked due to repeated failed login attempts. Please try again in 24 hours or contact your school administrator."
+              : `Too many login attempts. Try again in ${Math.max(1, banSec)} seconds.`,
           );
           return;
         }
-        // No soft 30s lock after a single bad password - staff often retry
+        // No soft lock after a single bad password - staff often retry
         // immediately with the correct temporary password.
-        throw authError;throw authError;
+        throw authError;
       }
 
       // Clear server + client cooldowns on successful login
@@ -537,14 +547,16 @@ function LoginContent() {
               <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-slate-700">
                 <p className="text-sm font-semibold text-sky-700">Active session detected</p>
                 <p className="mt-2 text-sm">
-                  {existingSession.email}
-                  {existingSession.role ? ` is already signed in as ${existingSession.role.toLowerCase()}.` : " is already signed in."}
+                  {/* Privacy: do not reveal the previous user's email address on shared devices. */}
+                  {existingSession.role
+                    ? `A ${existingSession.role.toLowerCase()} account is already signed in.`
+                    : "An account is already signed in."}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   {existingSession.mustChangePassword
                     ? "This managed account must finish first-login setup before entering the workspace."
                     : existingSession.hasSchool
-                    ? "Continue to workspace, or switch to another account first if you want to use teacher credentials created by an admin."
+                    ? "Continue to your workspace, or use a different account."
                     : "This account still needs onboarding. Continue to finish setup or switch accounts."}
                 </p>
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row">
