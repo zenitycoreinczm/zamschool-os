@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { VoiceInput } from "@/components/VoiceInput";
 
 const AUDIENCE_OPTIONS = [
   { value: "", label: "Everyone (all roles)" },
@@ -88,13 +89,20 @@ export function AnnouncementComposer({ classOptions = [], onPublished }: Props) 
         </label>
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-slate-700">Message</span>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={4}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-sky-200"
-            required
-          />
+          <div className="relative">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 outline-none focus:ring-2 focus:ring-sky-200"
+              required
+            />
+            <div className="absolute bottom-2 right-2">
+              <VoiceInput
+                onTranscript={(text) => setContent((prev) => prev + text)}
+              />
+            </div>
+          </div>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">

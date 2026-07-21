@@ -22,6 +22,7 @@ import {
 } from "@/components/messages/message-ui";
 import { MESSAGE_BODY_MAX } from "@/lib/messages/compose-limits";
 import { accountApiJson } from "@/lib/account-portal-api";
+import { VoiceInput } from "@/components/VoiceInput";
 import { dispatchInboxRefresh } from "@/lib/inbox/events";
 import type { MessageSendQuota } from "@/lib/messages/quota-types";
 
@@ -233,14 +234,21 @@ export function AccountMessagesPage({
           </div>
           <label className="block">
             <span className={messageLabelClass}>Message</span>
-            <textarea
-              value={form.body}
-              onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
-              placeholder="Keep it short and school-related…"
-              rows={5}
-              maxLength={MESSAGE_BODY_MAX + 50}
-              className={`${messageFieldClass} min-h-[140px] resize-y leading-relaxed`}
-            />
+            <div className="relative">
+              <textarea
+                value={form.body}
+                onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
+                placeholder="Keep it short and school-related…"
+                rows={5}
+                maxLength={MESSAGE_BODY_MAX + 50}
+                className={`${messageFieldClass} min-h-[140px] resize-y leading-relaxed pr-10`}
+              />
+              <div className="absolute bottom-2 right-2">
+                <VoiceInput
+                  onTranscript={(text) => setForm((prev) => ({ ...prev, body: prev.body + text }))}
+                />
+              </div>
+            </div>
           </label>
         </MessageComposePanel>
       ) : null}

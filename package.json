@@ -40,6 +40,7 @@
     "production:sign-off": "node node_modules/tsx/dist/cli.mjs ./scripts/production/sign-off-preflight.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1091.0",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@hookform/resolvers": "^5.2.2",

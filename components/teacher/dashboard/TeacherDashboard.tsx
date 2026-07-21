@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { useTeacherWorkspace } from "@/components/TeacherWorkspaceProvider";
+import { TeacherAssistant } from "@/components/teacher/TeacherAssistant";
 import { TeacherAttentionBanner } from "@/components/teacher/dashboard/TeacherAttentionBanner";
 import { TeacherAnnouncementsCard } from "@/components/teacher/dashboard/TeacherAnnouncementsCard";
 import { TeacherDashboardHero } from "@/components/teacher/dashboard/TeacherDashboardHero";
@@ -141,6 +142,7 @@ export default function TeacherDashboard() {
           <TeacherTeachingProfile teacher={teacher} />
         </div>
         <div className="space-y-5 md:space-y-6">
+          <TeacherAssistant />
           <TeacherWorkload workload={workload} />
           <TeacherAnnouncementsCard
             announcements={announcements}
