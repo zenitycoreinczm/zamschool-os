@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveTeachersTableId } from "@/lib/live-schema-adapters";
-import { teacherHasClassAccess } from "@/lib/teacher-assignment-scope";
+import {
+  teacherHasClassAccess,
+  type TeacherAssignmentScope,
+} from "@/lib/teacher-assignment-scope";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { validateTeacherManagedAssignmentTarget } from "@/lib/teacher-assignment-contract";
 import { requireTeacherContext } from "@/lib/server-auth";
@@ -423,10 +426,7 @@ export async function DELETE(request: NextRequest) {
  * - teacher_id is null / legacy and they have class access.
  */
 function canManageAssignment(
-  scope: {
-    actorTeacherIds: string[];
-    allowedClassIds: string[];
-  },
+  scope: TeacherAssignmentScope,
   assignment: { class_id?: string | null; teacher_id?: string | null },
 ) {
   if (!teacherHasClassAccess(scope, assignment.class_id)) return false;
