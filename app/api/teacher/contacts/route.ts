@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const roleFilter = normalizeRoleFilter(searchParams.get("role"));
     const accessData = await loadTeacherMessagingAccess({
       schoolId: access.context.schoolId,
-      actorProfileId: access.context.userId,
+      actorProfileId: access.context.profileId || access.context.userId,
     });
 
     if (accessData.allowedProfileIds.length === 0) {

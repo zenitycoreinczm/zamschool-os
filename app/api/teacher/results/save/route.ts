@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = getSupabaseAdmin();
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: access.context.profileId || userId,
     });
 
     if (

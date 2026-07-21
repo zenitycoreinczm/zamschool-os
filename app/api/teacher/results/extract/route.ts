@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
 
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: access.context.profileId || userId,
     });
     if (
       assignmentScope.actorTeacherIds.length === 0 ||

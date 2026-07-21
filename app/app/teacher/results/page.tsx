@@ -124,6 +124,7 @@ export default function TeacherResultsPage() {
   const loadData = useCallback(async () => {
     try {
       // Subjects + students (class list comes from classHealth — not today's lessons)
+      // Load all teaching subjects first; re-filter when a class is chosen.
       const [subjRes, studentsRes] = await Promise.all([
         adminApiJson("/api/teacher/subjects"),
         adminApiJson("/api/teacher/students"),
@@ -184,6 +185,31 @@ export default function TeacherResultsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // When a class is selected, load subjects scoped to that class so the
+  // dropdown matches the teacher's real teaching assignment (not only timetable).
+  useEffect(() => {
+    if (!selectedClass) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await adminApiJson(
+          `/api/teacher/subjects?classId=${encodeURIComponent(selectedClass)}`,
+        );
+        if (cancelled) return;
+        const next = (res.data || []) as Subject[];
+        setSubjects(next);
+        setSelectedSubject((prev) =>
+          prev && next.some((s) => s.id === prev) ? prev : "",
+        );
+      } catch {
+        // Keep previously loaded subjects if class-scoped fetch fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClass]);
 
   const studentsInClass = useMemo(
     () =>
@@ -582,9 +608,16 @@ export default function TeacherResultsPage() {
                 <select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  disabled={subjects.length === 0}
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
                 >
-                  <option value="">Select subject</option>
+                  <option value="">
+                    {subjects.length === 0
+                      ? selectedClass
+                        ? "No subjects assigned for this class"
+                        : "Select a class first"
+                      : "Select subject"}
+                  </option>
                   {subjects.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
@@ -592,6 +625,12 @@ export default function TeacherResultsPage() {
                     </option>
                   ))}
                 </select>
+                {subjects.length === 0 ? (
+                  <p className="mt-1.5 text-xs text-amber-700">
+                    Ask the Head Teacher or Registrar to assign you to this
+                    class and subject under staff teaching assignments.
+                  </p>
+                ) : null}
               </div>
 
               <div>

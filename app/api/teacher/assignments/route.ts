@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     const access = await requireTeacherContext(request);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
         { error: "No school linked to this account" },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status"); // active, draft, overdue
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: profileId || userId,
     });
 
     if (classId && !teacherHasClassAccess(assignmentScope, classId)) {
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
   try {
     const access = await requireTeacherContext(request);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
         { error: "No school linked to this account" },
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     const validatedData = assignmentSchema.parse(body);
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: profileId || userId,
     });
 
     if (assignmentScope.allowedClassIds.length === 0) {
@@ -226,7 +226,7 @@ export async function PUT(request: NextRequest) {
   try {
     const access = await requireTeacherContext(request);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
         { error: "No school linked to this account" },
@@ -245,7 +245,7 @@ export async function PUT(request: NextRequest) {
     const validatedData = assignmentSchema.partial().parse(updateData);
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: profileId || userId,
     });
 
     // Verify teacher owns the assignment
@@ -260,10 +260,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Assignment not found or access denied" }, { status: 404 });
     }
 
-    if (
-      !teacherHasClassAccess(assignmentScope, assignmentCheck.class_id) ||
-      !assignmentScope.actorTeacherIds.includes(assignmentCheck.teacher_id)
-    ) {
+    if (!canManageAssignment(assignmentScope, assignmentCheck)) {
       return NextResponse.json({ error: "Assignment not found or access denied" }, { status: 404 });
     }
 
@@ -317,7 +314,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const access = await requireTeacherContext(request);
     if (!access.ok) return access.response;
-    const { userId, schoolId } = access.context;
+    const { userId, schoolId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json(
         { error: "No school linked to this account" },
@@ -329,7 +326,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get("id");
     const assignmentScope = await loadTeacherAssignmentScope({
       schoolId,
-      actorProfileId: userId,
+      actorProfileId: profileId || userId,
     });
     
     if (!id) {
@@ -348,21 +345,65 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Assignment not found or access denied" }, { status: 404 });
     }
 
-    if (
-      !teacherHasClassAccess(assignmentScope, assignmentCheck.class_id) ||
-      !assignmentScope.actorTeacherIds.includes(assignmentCheck.teacher_id)
-    ) {
+    if (!canManageAssignment(assignmentScope, assignmentCheck)) {
       return NextResponse.json({ error: "Assignment not found or access denied" }, { status: 404 });
     }
 
-    // Delete assignment
+    // results.assignment_id FK has no ON DELETE CASCADE — clear dependents first.
+    // assignment_submissions already cascade, but delete explicitly for clarity.
+    const { error: resultsDeleteError } = await supabaseAdmin
+      .from("results")
+      .delete()
+      .eq("school_id", schoolId)
+      .eq("assignment_id", id);
+
+    if (resultsDeleteError) {
+      console.error("Error deleting assignment results:", resultsDeleteError);
+      return NextResponse.json(
+        {
+          error:
+            "Could not remove linked results for this assignment. Try again or contact support.",
+        },
+        { status: 500 },
+      );
+    }
+
+    const { error: submissionsDeleteError } = await supabaseAdmin
+      .from("assignment_submissions")
+      .delete()
+      .eq("school_id", schoolId)
+      .eq("assignment_id", id);
+
+    if (submissionsDeleteError) {
+      // Soft-continue: FK may already cascade; only hard-fail if assignment delete fails.
+      console.warn(
+        "assignment_submissions cleanup warning:",
+        submissionsDeleteError.message,
+      );
+    }
+
     const { error: deleteError } = await supabaseAdmin
       .from("assignments")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("school_id", schoolId);
 
     if (deleteError) {
       console.error("Error deleting assignment:", deleteError);
+      const message = String(deleteError.message || "").toLowerCase();
+      if (
+        message.includes("foreign key") ||
+        message.includes("violates") ||
+        deleteError.code === "23503"
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "This assignment still has linked records and could not be deleted. Remove related marks first or contact support.",
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json({ error: "Failed to delete assignment" }, { status: 500 });
     }
 
@@ -374,6 +415,24 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Teacher may manage an assignment if they teach the class and either:
+ * - created it (teacher_id matches profile or teachers row), or
+ * - teacher_id is null / legacy and they have class access.
+ */
+function canManageAssignment(
+  scope: {
+    actorTeacherIds: string[];
+    allowedClassIds: string[];
+  },
+  assignment: { class_id?: string | null; teacher_id?: string | null },
+) {
+  if (!teacherHasClassAccess(scope, assignment.class_id)) return false;
+  const teacherId = String(assignment.teacher_id || "").trim();
+  if (!teacherId) return true;
+  return scope.actorTeacherIds.includes(teacherId);
 }
 
 async function validateAssignmentTarget(input: {

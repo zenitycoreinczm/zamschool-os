@@ -50,17 +50,18 @@ export async function GET(req: Request) {
     const limit = Math.min(Math.max(Number(searchParams.get("limit") || 50), 1), 100);
     const accessData = await loadTeacherMessagingAccess({
       schoolId: access.context.schoolId || "",
-      actorProfileId: access.context.userId,
+      actorProfileId: access.context.profileId || access.context.userId,
     });
 
+    const actorId = access.context.profileId || access.context.userId;
     return NextResponse.json({
       data: await loadMessagesForTeacher(
-        access.context.userId,
+        actorId,
         access.context.schoolId || "",
         limit,
         accessData.allowedProfileIds
       ),
-      quota: await getMessageSendQuota(access.context.userId),
+      quota: await getMessageSendQuota(actorId),
     });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -94,7 +95,7 @@ export async function POST(req: Request) {
     const payload = createMessageSchema.parse(await req.json());
     const accessData = await loadTeacherMessagingAccess({
       schoolId: access.context.schoolId,
-      actorProfileId: access.context.userId,
+      actorProfileId: access.context.profileId || access.context.userId,
     });
     const recipient = await loadRecipientByIdentity(access.context.schoolId, payload.recipientId);
     if (!recipient) {

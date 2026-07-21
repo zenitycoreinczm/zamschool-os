@@ -43,9 +43,11 @@ export async function GET(req: Request) {
       );
     }
 
+    const actorProfileId =
+      access.context.profileId || access.context.userId;
     const data = await withCache(
-      `teacher:results:${schoolId}:${userId}`,
-      () => loadTeacherResults(userId, schoolId),
+      `teacher:results:${schoolId}:${actorProfileId}`,
+      () => loadTeacherResults(actorProfileId, schoolId),
       { ttlSeconds: 120, staleWhileRevalidate: 300, tags: ["results"] }
     );
 
@@ -58,10 +60,13 @@ export async function GET(req: Request) {
   }
 }
 
-async function loadTeacherResults(userId: string, schoolId: string) {
+async function loadTeacherResults(
+  actorProfileId: string,
+  schoolId: string,
+) {
   const assignmentScope = await loadTeacherAssignmentScope({
     schoolId,
-    actorProfileId: userId,
+    actorProfileId,
   });
 
   if (
