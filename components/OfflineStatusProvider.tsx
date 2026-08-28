@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import OfflineStatusBanner from "@/components/OfflineStatusBanner";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
@@ -10,8 +11,12 @@ import {
   resolveOfflineWarmupPages,
 } from "@/lib/offline-support";
 import { setNetworkOffline, setNetworkOnline } from "@/lib/network-status";
+import {
+  getSyncQueueCount,
+  processSyncQueue,
+} from "@/lib/offline-sync-queue";
 
-const OFFLINE_WARMUP_KEY = "zamschool-offline-core-warmed-v2";
+const OFFLINE_WARMUP_KEY = "zamschool-offline-core-warmed-v3";
 
 export default function OfflineStatusProvider({
   children,
@@ -20,6 +25,37 @@ export default function OfflineStatusProvider({
 }) {
   const workspace = useWorkspaceContext();
   const warmedForRef = useRef<string>("");
+  const isSyncingRef = useRef<boolean>(false);
+
+  // Sync queue runner when back online
+  const triggerQueueSync = async () => {
+    if (isSyncingRef.current || typeof window === "undefined" || !navigator.onLine) {
+      return;
+    }
+    const pendingCount = getSyncQueueCount();
+    if (pendingCount === 0) return;
+
+    isSyncingRef.current = true;
+    try {
+      const result = await processSyncQueue();
+      if (result.processed > 0) {
+        toast.success(
+          `Synced ${result.processed} offline change${result.processed > 1 ? "s" : ""} successfully!`,
+          { id: "offline-sync-success" },
+        );
+      }
+      if (result.failed > 0) {
+        toast.error(
+          `${result.failed} offline item${result.failed > 1 ? "s" : ""} failed to sync after retries.`,
+          { id: "offline-sync-failed" },
+        );
+      }
+    } catch (err) {
+      console.warn("[OfflineSync] Queue processing error:", err);
+    } finally {
+      isSyncingRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -32,13 +68,21 @@ export default function OfflineStatusProvider({
       });
     }
 
-    const handleOnline = () => setNetworkOnline();
-    const handleOffline = () => setNetworkOffline();
+    const handleOnline = () => {
+      setNetworkOnline();
+      void triggerQueueSync();
+    };
+
+    const handleOffline = () => {
+      setNetworkOffline();
+    };
 
     if (navigator.onLine === false) {
       setNetworkOffline();
     } else {
       setNetworkOnline();
+      // Check if there are queued items pending sync from a previous offline session
+      void triggerQueueSync();
     }
 
     window.addEventListener("online", handleOnline);
@@ -81,7 +125,7 @@ export default function OfflineStatusProvider({
 
   return (
     <>
-      <OfflineStatusBanner />
+      <OfflineStatusBanner onSyncRequested={triggerQueueSync} />
       {children}
     </>
   );
@@ -108,7 +152,6 @@ async function warmOfflineCore(params: {
       fetchWithOfflineSupport(path, {
         method: "GET",
         credentials: "include",
-        cache: "no-store",
       }).catch(() => null),
     ),
   );
@@ -118,7 +161,6 @@ async function warmOfflineCore(params: {
       fetchWithOfflineSupport(path, {
         method: "GET",
         credentials: "same-origin",
-        cache: "no-store",
       }).catch(() => null),
     ),
   );

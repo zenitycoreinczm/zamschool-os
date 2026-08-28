@@ -1,11 +1,11 @@
 # Load test results
 
-**Generated:** 2026-07-14T00:48:13.441Z
+**Generated:** 2026-07-20T12:53:43.925Z
 **Tier:** Smoke (`smoke`)
 **Target:** http://127.0.0.1:3000
 **Concurrency:** 5
 **Duration:** 15s
-**Auth token:** _not set — authenticated scenarios count 401 as errors_
+**Auth token:** _not set - authenticated scenarios count 401 as errors_
 
 | Scenario | Requests | Errors | Error % | p50 (ms) | **p95 (ms)** | p99 (ms) | SLO p95 | Pass |
 |----------|----------|--------|---------|----------|--------------|----------|---------|------|

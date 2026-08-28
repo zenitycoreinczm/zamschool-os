@@ -169,6 +169,9 @@ export default function ParentReportsPage() {
                           <th className="px-5 py-2 text-left font-medium text-slate-600">
                             Grade
                           </th>
+                          <th className="px-5 py-2 text-left font-medium text-slate-600">
+                            Remarks
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
@@ -187,6 +190,9 @@ export default function ParentReportsPage() {
                               <span className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700">
                                 {result.grade || "Pending"}
                               </span>
+                            </td>
+                            <td className="px-5 py-2 text-sm text-slate-600">
+                              {result.remarks || "\u2014"}
                             </td>
                           </tr>
                         ))}

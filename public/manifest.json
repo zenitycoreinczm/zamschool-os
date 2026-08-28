@@ -1,0 +1,20 @@
+{
+  "name": "ZamSchool OS",
+  "short_name": "ZamSchool",
+  "description": "Run your entire school from your phone. Attendance, results, and communication. Works offline.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "en-ZM"
+}

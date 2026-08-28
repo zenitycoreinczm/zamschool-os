@@ -2,23 +2,36 @@
  * ZamSchool OS service worker — public + app offline core.
  *
  * Goals:
- * - Landing (/) and offline shell always available offline (styled).
+ * - Landing (/), app shells, and offline shell always available offline (styled).
  * - /_next/static CSS/JS cached so phones don't get "HTML without CSS".
- * - Never serve auth/session APIs from cache.
+ * - Data APIs cached network-first so teachers/admins/parents can view cached
+ *   data when school networks drop.
+ * - Credentials/auth endpoints (/api/auth/*) bypass cache for security.
  */
-const STATIC_CACHE = "zamschool-static-v5";
-const ROUTE_CACHE = "zamschool-routes-v5";
-const API_CACHE = "zamschool-api-v5";
+const STATIC_CACHE = "zamschool-static-v6";
+const ROUTE_CACHE = "zamschool-routes-v6";
+const API_CACHE = "zamschool-api-v6";
 
 /** Self-contained HTML — no Tailwind / Next CSS dependency. */
 const OFFLINE_SHELL = "/offline.html";
-const PRECACHE_URLS = ["/", OFFLINE_SHELL, "/icon.png", "/login", "/register"];
+const PRECACHE_URLS = [
+  "/",
+  OFFLINE_SHELL,
+  "/icon.png",
+  "/login",
+  "/register",
+  "/offline",
+  "/app/teacher",
+  "/app/principal",
+  "/app/student",
+  "/app/parent",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(ROUTE_CACHE);
-      // addAll fails entirely if one URL 404s — add one-by-one.
+      // addAll fails entirely if one URL 404s — add one-by-one safely.
       await Promise.all(
         PRECACHE_URLS.map(async (url) => {
           try {
@@ -70,7 +83,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3. API
+  // 3. API endpoints (Network First with offline API Cache)
   if (url.pathname.startsWith("/api/")) {
     if (isAuthSensitiveApi(url.pathname)) {
       event.respondWith(fetch(request));
@@ -111,8 +124,22 @@ async function handleNavigationRequest(request) {
       (await caches.match(url.pathname));
 
     if (exact) {
-      // If we have HTML but assets may be missing, still try exact first.
       return exact;
+    }
+
+    // Role app fallback before generic shell
+    if (url.pathname.startsWith("/app/teacher")) {
+      const teacherCache = await cache.match("/app/teacher");
+      if (teacherCache) return teacherCache;
+    } else if (url.pathname.startsWith("/app/principal")) {
+      const principalCache = await cache.match("/app/principal");
+      if (principalCache) return principalCache;
+    } else if (url.pathname.startsWith("/app/student")) {
+      const studentCache = await cache.match("/app/student");
+      if (studentCache) return studentCache;
+    } else if (url.pathname.startsWith("/app/parent")) {
+      const parentCache = await cache.match("/app/parent");
+      if (parentCache) return parentCache;
     }
 
     // Branded offline shell (always styled — inline CSS).
@@ -137,7 +164,11 @@ async function networkFirst(request, cacheName) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(cacheName);
-      await cache.put(request, response.clone());
+      try {
+        await cache.put(request, response.clone());
+      } catch {
+        /* ignore cache put errors for non-cacheable headers */
+      }
     }
     return response;
   } catch {
@@ -243,18 +274,8 @@ function isStaticAssetRequest(pathname) {
 
 function isAuthSensitiveApi(pathname) {
   const sensitivePrefixes = [
-    "/api/account/bootstrap",
-    "/api/account/workspace-context",
-    "/api/account/unread-summary",
-    "/api/account/session",
-    "/api/account/shell",
-    "/api/account/messages",
-    "/api/account/notifications",
-    "/api/account/inbox-preview",
     "/api/auth/",
-    "/api/teacher/bootstrap",
-    "/api/teacher/messages",
-    "/api/teacher/notifications",
+    "/api/account/session",
   ];
   return sensitivePrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix),

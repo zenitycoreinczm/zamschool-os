@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-07-14T00:54:59.947Z",
+  "origin": "http://localhost:3000",
+  "host": "localhost:3000",
+  "cacheRules": [
+    {
+      "name": "ZamSchool - cache private dashboard reads",
+      "expression": "(http.host eq \"localhost:3000\" and starts_with(http.request.uri.path, \"/api/dashboard\"))",
+      "settings": {
+        "cache": true,
+        "edge_ttl": "respect_origin",
+        "browser_ttl": "respect_origin"
+      },
+      "notes": "Origin sends private, max-age=30 via lib/edge-cache.ts. Vary: Authorization."
+    },
+    {
+      "name": "ZamSchool - cache workspace context",
+      "expression": "(http.host eq \"localhost:3000\" and http.request.uri.path eq \"/api/account/workspace-context\")",
+      "settings": {
+        "cache": true,
+        "edge_ttl": "respect_origin",
+        "browser_ttl": "respect_origin"
+      }
+    },
+    {
+      "name": "ZamSchool - bypass inbox polling",
+      "expression": "(http.host eq \"localhost:3000\" and (http.request.uri.path eq \"/api/account/unread-summary\" or http.request.uri.path eq \"/api/account/inbox-preview\"))",
+      "settings": {
+        "cache": false
+      }
+    },
+    {
+      "name": "ZamSchool - bypass auth APIs",
+      "expression": "(http.host eq \"localhost:3000\" and starts_with(http.request.uri.path, \"/api/auth/\"))",
+      "settings": {
+        "cache": false
+      }
+    },
+    {
+      "name": "ZamSchool - static Next assets",
+      "expression": "(http.host eq \"localhost:3000\" and starts_with(http.request.uri.path, \"/_next/static/\"))",
+      "settings": {
+        "cache": true,
+        "edge_ttl": 86400,
+        "browser_ttl": 86400
+      }
+    }
+  ],
+  "rateLimitRules": [
+    {
+      "name": "ZamSchool - auth brute-force guard",
+      "expression": "(http.host eq \"localhost:3000\" and http.request.method eq \"POST\" and starts_with(http.request.uri.path, \"/api/auth/\"))",
+      "characteristics": [
+        "ip.src"
+      ],
+      "period": 60,
+      "requests_per_period": 10
+    },
+    {
+      "name": "ZamSchool - login page POST",
+      "expression": "(http.host eq \"localhost:3000\" and http.request.method eq \"POST\" and http.request.uri.path eq \"/login\")",
+      "characteristics": [
+        "ip.src"
+      ],
+      "period": 60,
+      "requests_per_period": 15
+    }
+  ]
+}

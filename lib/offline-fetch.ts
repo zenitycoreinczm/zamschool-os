@@ -3,20 +3,21 @@ import {
 } from "./offline-support.ts";
 import { networkStatusStore } from "./network-status.ts";
 import { isRetriableNetworkError } from "./client-api-errors.ts";
+import { addToSyncQueue } from "./offline-sync-queue.ts";
 
 type OfflineAwareFetchOptions = {
   fetchImpl?: typeof fetch;
   getBrowserOnline?: () => boolean;
   store?: typeof networkStatusStore;
   now?: () => number;
-  /** Abort if the request takes longer than this (ms). Default 25s. */
+  /** Abort if the request takes longer than this (ms). Default 35s. */
   timeoutMs?: number;
   /** Retry GET once on transient network failure. Default true for GET. */
   retryGet?: boolean;
 };
 
 // Dashboard mounts many parallel /api calls; browser + Next cold compile can
-// queue later widgets past 25s even when each handler is healthy.
+// queue later widgets past 35s even when each handler is healthy.
 const DEFAULT_TIMEOUT_MS = 35_000;
 const GET_RETRY_DELAY_MS = 700;
 
@@ -43,9 +44,46 @@ export async function fetchWithOfflineSupport(
     (method === "GET" || method === "HEAD") &&
     browserOnline;
 
+  const urlString = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
   if (isMutationMethod(method) && !browserOnline) {
     store.setOffline();
-    throw new Error(OFFLINE_FETCH_ERROR_MESSAGE);
+
+    // Sensitive auth endpoints cannot be done offline (credentials must be verified by server)
+    if (isAuthEndpoint(urlString)) {
+      throw new Error(OFFLINE_FETCH_ERROR_MESSAGE);
+    }
+
+    // Offline-First mutation: Queue operation and return synthetic 202 Accepted response
+    let parsedBody: any = null;
+    try {
+      if (typeof init.body === "string") {
+        parsedBody = JSON.parse(init.body);
+      } else if (init.body) {
+        parsedBody = init.body;
+      }
+    } catch {
+      parsedBody = init.body;
+    }
+
+    addToSyncQueue({
+      endpoint: urlString,
+      method: method as "POST" | "PUT" | "DELETE" | "PATCH",
+      body: parsedBody,
+    });
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        offlineQueued: true,
+        message: "Saved offline. Changes will automatically sync when you reconnect.",
+      }),
+      {
+        status: 202,
+        statusText: "Accepted (Offline Queued)",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   const attempt = async () => {
@@ -129,6 +167,15 @@ export async function fetchWithOfflineSupport(
 
 function isMutationMethod(method: string) {
   return method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+}
+
+function isAuthEndpoint(url: string) {
+  return (
+    url.includes("/api/auth/") ||
+    url.includes("/api/account/session") ||
+    url.includes("/login") ||
+    url.includes("/register")
+  );
 }
 
 function delay(ms: number) {

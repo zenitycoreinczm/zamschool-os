@@ -1,0 +1,2137 @@
+
+Error [AuthApiError]: Invalid Refresh Token: Refresh Token Not Found
+    at b4 (C:\Zamschool-main\.next\standalone\.next\server\middleware.js:34:42840)
+    at async b6 (C:\Zamschool-main\.next\standalone\.next\server\middleware.js:34:43784)
+    at async b5 (C:\Zamschool-main\.next\standalone\.next\server\middleware.js:34:43224)
+    at async c (C:\Zamschool-main\.next\standalone\.next\server\middleware.js:47:24994)
+    at async (C:\Zamschool-main\.next\standalone\.next\server\middleware.js:47:25257) {
+  __isAuthError: true,
+  status: 400,
+  code: 'refresh_token_not_found'
+}
+[SupabaseBudget] Approaching rate limit: 24/30 req/s (80%)
+[SupabaseBudget] Approaching rate limit: 25/30 req/s (83%)
+[SupabaseBudget] Approaching rate limit: 24/30 req/s (80%)
+[SupabaseBudget] Approaching rate limit: 25/30 req/s (83%)
+[SupabaseBudget] Approaching rate limit: 26/30 req/s (87%)
+[SupabaseBudget] Approaching rate limit: 27/30 req/s (90%)
+[SupabaseBudget] Approaching rate limit: 28/30 req/s (93%)
+⨯ Error: failed to pipe response
+    at l (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:51049)
+    at async g (C:\Zamschool-main\.next\standalone\.next\server\chunks\4194.js:1:26987)
+    at async j (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:24784)
+    at async h (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:25621)
+    at async Module.ai (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:26718) {
+  [cause]: TypeError: Invalid state: The ReadableStream is locked
+      at l (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:50969)
+      at g (C:\Zamschool-main\.next\standalone\.next\server\chunks\4194.js:1:27017)
+      at j (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:24797)
+      at async h (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:25621)
+      at async Module.ai (C:\Zamschool-main\.next\standalone\.next\server\app\api\teacher\bootstrap\route.js:1:26718) {
+    code: 'ERR_INVALID_STATE'
+  }
+}
+[SupabaseBudget] Approaching rate limit: 24/30 req/s (80%)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[feature-permissions] permission_groups lookup failed TypeError: fetch failed
+[announcements-server] fetch failed: TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error [ConnectTimeoutError]: Connect Timeout Error (attempted addresses: 13.245.173.190:443, timeout: 10000ms)
+      at ignore-listed frames {
+    code: 'UND_ERR_CONNECT_TIMEOUT'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error [ConnectTimeoutError]: Connect Timeout Error (attempted addresses: 13.245.173.190:443, 13.247.3.144:443, 13.246.252.83:443, 13.246.116.161:443, timeout: 10000ms)
+      at ignore-listed frames {
+    code: 'UND_ERR_CONNECT_TIMEOUT'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error [ConnectTimeoutError]: Connect Timeout Error (attempted addresses: 13.245.173.190:443, 13.247.3.144:443, 13.246.252.83:443, 13.246.116.161:443, timeout: 10000ms)
+      at ignore-listed frames {
+    code: 'UND_ERR_CONNECT_TIMEOUT'
+  }
+}
+[Redis] Circuit breaker: CLOSED → OPEN after 5 failures
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error [ConnectTimeoutError]: Connect Timeout Error (attempted addresses: 13.245.173.190:443, 13.247.3.144:443, 13.246.252.83:443, 13.246.116.161:443, timeout: 10000ms)
+      at ignore-listed frames {
+    code: 'UND_ERR_CONNECT_TIMEOUT'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:49259)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Circuit breaker: CLOSED → OPEN after 5 failures
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Circuit breaker: OPEN → HALF_OPEN (testing recovery)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Circuit breaker: OPEN → HALF_OPEN (testing recovery)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND jnnroitaftfmclegbeac.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'jnnroitaftfmclegbeac.supabase.co'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND jnnroitaftfmclegbeac.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'jnnroitaftfmclegbeac.supabase.co'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND jnnroitaftfmclegbeac.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'jnnroitaftfmclegbeac.supabase.co'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND jnnroitaftfmclegbeac.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'jnnroitaftfmclegbeac.supabase.co'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+[SupabaseConnectivity] Cannot reach Supabase at jnnroitaftfmclegbeac.supabase.co (NETWORK_ERROR). Check your internet connection, VPN/firewall, and NEXT_PUBLIC_SUPABASE_URL in .env.local. Further Supabase requests are paused for 30s to avoid retry storms.
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND jnnroitaftfmclegbeac.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'jnnroitaftfmclegbeac.supabase.co'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Operation error: [TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND included-labrador-149241.upstash.io
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'included-labrador-149241.upstash.io'
+  }
+}
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+TypeError: fetch failed: Supabase temporarily unreachable (connectivity circuit open)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:2967)
+    at c (C:\Zamschool-main\.next\standalone\.next\server\chunks\3951.js:1:3768)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:48552)
+    at $ (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:8215)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:1:10917)
+    at <unknown> (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:12275)
+    at e.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:19645)
+    at i.with (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:13905)
+    at i.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:28833)
+    at e.startActiveSpan (C:\Zamschool-main\.next\standalone\.next\server\chunks\3445.js:11:29367)
+[Redis] Circuit breaker: HALF_OPEN → CLOSED (recovered)
+[Redis] Circuit breaker: HALF_OPEN → CLOSED (recovered)
+[SupabaseFetchGuard] Slow query (1036ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/messages?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1040ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1039ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&user_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseBudget] Approaching rate limit: 24/30 req/s (80%)
+[SupabaseBudget] Approaching rate limit: 25/30 req/s (83%)
+[SupabaseBudget] Approaching rate limit: 26/30 req/s (87%)
+[SupabaseBudget] Approaching rate limit: 27/30 req/s (90%)
+[SupabaseBudget] Approaching rate limit: 26/30 req/s (87%)
+[SupabaseFetchGuard] Slow query (1177ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/classes?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91
+[SupabaseBudget] Approaching rate limit: 27/30 req/s (90%)
+[SupabaseFetchGuard] Slow query (1163ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/audit_logs?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&created_at=gte.2026-07-06T21%3A39%3A16.329Z
+[SupabaseBudget] Approaching rate limit: 28/30 req/s (93%)
+[SupabaseFetchGuard] Slow query (1171ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/staff_invitations?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&accepted_at=is.null&revoked_at=is.null
+[SupabaseFetchGuard] Slow query (1007ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1013ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/messages?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1016ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&user_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[sendAccountCredentialsEmail] Preparing email for twister23rd2@gmail.com (role=parent)
+[EmailService] Sending email — to=twister23rd2@gmail.com subject="Your ZamSchool Parent / Guardian account" from=twister23rd1@gmail.com
+[SupabaseBudget] Approaching rate limit: 24/30 req/s (80%)
+[SupabaseBudget] Approaching rate limit: 25/30 req/s (83%)
+[SupabaseBudget] Approaching rate limit: 26/30 req/s (87%)
+[SupabaseBudget] Approaching rate limit: 27/30 req/s (90%)
+[SupabaseBudget] Approaching rate limit: 28/30 req/s (93%)
+[SupabaseBudget] Approaching rate limit: 29/30 req/s (97%)
+[SupabaseBudget] Approaching rate limit: 30/30 req/s (100%)
+[SupabaseBudget] Approaching rate limit: 31/30 req/s (103%)
+[SupabaseBudget] Approaching rate limit: 32/30 req/s (107%)
+[SupabaseBudget] Approaching rate limit: 33/30 req/s (110%)
+[SupabaseFetchGuard] Slow query (1145ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1170ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/messages?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&recipient_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false
+[SupabaseFetchGuard] Slow query (1179ms): https://jnnroitaftfmclegbeac.supabase.co/rest/v1/notifications?select=id&school_id=eq.f29b7119-13b0-4daa-90e6-cf0057c5aa91&user_id=eq.c89633d8-cc26-4233-a754-4221b8122aa0&is_read=eq.false

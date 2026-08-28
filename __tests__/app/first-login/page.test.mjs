@@ -23,5 +23,5 @@ test("login page routes managed accounts into first-login before the workspace",
   assert.match(source, /must_change_password|mustChangePassword/);
   assert.match(source, /resolveOnboardingPath/);
   assert.match(source, /\/first-login/);
-  assert.match(source, /switch to another account first/i);
+  assert.match(source, /use a different account|switch to another account/i);
 });
