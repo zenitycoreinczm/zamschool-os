@@ -8,7 +8,7 @@ import LegalPageLayout, {
 export const metadata: Metadata = {
   title: "Terms of Service | ZamSchool OS",
   description:
-    "Terms for using ZamSchool OS, the school management platform provided by ZenityCore.",
+    "Terms for using ZamSchool OS, the school management platform provided by ZenityCore Technologies.",
 };
 
 export default function TermsPage() {
@@ -17,7 +17,7 @@ export default function TermsPage() {
       current="terms"
       title="Terms of Service"
       summary="These terms set out how schools and users may use ZamSchool OS, what ZenityCore is responsible for, and what remains the school’s responsibility. By using the platform, you agree to them."
-      lastUpdated="16 July 2026"
+      lastUpdated="28 August 2026"
       sections={[
         {
           id: "about",
@@ -26,15 +26,17 @@ export default function TermsPage() {
             <>
               <p>
                 ZamSchool OS is software provided by{" "}
-                <strong className="font-semibold text-slate-800">ZenityCore</strong>{" "}
+                <strong className="font-semibold text-slate-800">
+                  ZenityCore Technologies
+                </strong>{" "}
                 to help schools run administration, student records, teaching
                 workflows, attendance, results, communication, and fees where
                 enabled.
               </p>
               <p>
-                “We,” “us,” and “our” mean ZenityCore. “You” means a school,
-                organization, or any authorized user (staff, parent, guardian,
-                student, or administrator).
+                “We,” “us,” and “our” mean ZenityCore Technologies. “You” means
+                a school, organization, or any authorized user (staff, parent,
+                guardian, student, or administrator).
               </p>
             </>
           ),
@@ -144,7 +146,8 @@ export default function TermsPage() {
                 Users must treat personal and educational information carefully
                 and access it only for legitimate school work. Schools are
                 responsible for meeting laws, policies, and consent duties that
-                apply to student, family, and staff information.
+                apply to student, family, and staff information, including the
+                Zambia Data Protection Act, No. 3 of 2021.
               </p>
             </>
           ),

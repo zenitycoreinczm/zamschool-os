@@ -1,93 +1,139 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { ExternalLink, Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
 
-const footerLinks = [
+import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
+
+const footerNavigation = [
   {
-    heading: "Platform",
+    heading: "Platform & Desks",
     links: [
-      { label: "Why ZamSchool OS", href: "/#why" },
-      { label: "Compare", href: "/#compare" },
-      { label: "Start free setup", href: "/register" },
-      { label: "Log in", href: "/login" },
+      { label: "Web Portal (Admin & Bursar)", href: "/#platforms" },
+      { label: "Android App (Teachers & Parents)", href: "/#platforms" },
+      { label: "System Architecture", href: "/#architecture" },
+      { label: "Attendance Engine", href: "/#modules" },
+      { label: "ECZ Grading & Reports", href: "/#modules" },
+      { label: "Tuition & Fee Ledger", href: "/#modules" },
     ],
   },
   {
-    heading: "Trust & legal",
+    heading: "System & Architecture",
     links: [
+      { label: "Offline-First Sync", href: "/#architecture" },
+      { label: "Zero-SMS Push Mesh", href: "/#compare" },
+      { label: "Multi-Role RBAC", href: "/#architecture" },
+      { label: "Frequently Asked Questions", href: "/#faq" },
+      { label: "Compare with Legacy SMS", href: "/#compare" },
+      { label: "System Status", href: "/#trust" },
+    ],
+  },
+  {
+    heading: "Company & Trust",
+    links: [
+      { label: "ZenityCore Technologies", href: "https://zenitycore.tech", isExternal: true },
+      { label: "About Leadership", href: "/#leadership" },
+      { label: "Pricing & Pilot", href: "/#pricing" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
       { label: "Cookie Policy", href: "/cookies" },
-      { label: "Security & trust", href: "/#trust" },
-      { label: "Contact", href: "mailto:zenitycoreinc@gmail.com" },
+      { label: "Security Architecture", href: "/#trust" },
     ],
   },
-];
-
-const legalLinks = [
-  { label: "Privacy", href: "/privacy" },
-  { label: "Terms", href: "/terms" },
-  { label: "Cookies", href: "/cookies" },
 ];
 
 export default function LandingFooter() {
   return (
-    <footer className="bg-slate-950 text-slate-400">
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 pb-12 pt-20 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
-        <div className="flex flex-col gap-5">
-          <Link href="/" className="flex w-fit items-center gap-2.5 group">
-            <div className="h-9 w-9 overflow-hidden rounded-xl shadow-md transition-transform group-hover:scale-105">
+    <footer className="border-t border-slate-800 bg-slate-950 text-slate-400">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-16 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-12">
+        {/* Brand & Corporate profile */}
+        <div className="flex flex-col gap-4">
+          <Link href="/" className="group flex w-fit items-center gap-3">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-white/15 transition-transform group-hover:scale-105">
               <Image
                 src="/icon.png"
                 alt="ZamSchool OS"
-                width={36}
-                height={36}
+                width={40}
+                height={40}
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className="text-xl font-bold text-white">ZamSchool OS</span>
+            <div>
+              <span className="text-xl font-bold tracking-tight text-white">ZamSchool OS</span>
+              <p className="text-[11px] font-medium text-sky-400">The School Operating System</p>
+            </div>
           </Link>
 
-          <p className="max-w-sm text-sm leading-6 text-slate-500">
-            The fastest way to run a school in Zambia. Attendance, results, and
-            communication from your phone. No SMS costs. Works offline.
+          <p className="max-w-sm text-sm leading-6 text-slate-400">
+            Enterprise school operating system built for Zambian educational institutions. 
+            Native offline roll calls, ECZ report cards, and fee reconciliation on Web and Android.
           </p>
-          <div className="flex flex-col gap-2.5 text-sm">
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-slate-300">
+            <p className="font-semibold text-white">Backed by ZenityCore Technologies</p>
+            <p className="mt-1 text-slate-400">
+              Founded & led by CEO <span className="font-medium text-white">Ison Mumbuna</span>. 
+              Engineering resilient educational cloud & mobile solutions across Africa.
+            </p>
+            <a
+              href="https://zenitycore.tech"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 font-semibold text-sky-400 hover:text-sky-300"
+            >
+              zenitycore.tech
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-1 text-xs sm:text-sm">
             <a
               href="mailto:zenitycoreinc@gmail.com"
-              className="group flex items-center gap-2.5 transition-colors hover:text-white"
+              className="flex items-center gap-2.5 text-slate-400 transition hover:text-white"
             >
-              <Mail className="h-4 w-4 shrink-0 text-slate-600 transition-colors group-hover:text-sky-400" />
+              <Mail className="h-4 w-4 shrink-0 text-sky-400" />
               zenitycoreinc@gmail.com
             </a>
             <a
               href="tel:+260973385988"
-              className="flex items-center gap-2.5 transition-colors hover:text-white"
+              className="flex items-center gap-2.5 text-slate-400 transition hover:text-white"
             >
-              <Phone className="h-4 w-4 shrink-0 text-slate-600" />
+              <Phone className="h-4 w-4 shrink-0 text-sky-400" />
               +260 973 385 988
             </a>
-            <span className="flex items-center gap-2.5">
-              <MapPin className="h-4 w-4 shrink-0 text-slate-600" />
-              Mungu, Zambia
+            <span className="flex items-center gap-2.5 text-slate-400">
+              <MapPin className="h-4 w-4 shrink-0 text-sky-400" />
+              Lusaka & Mongu, Zambia
             </span>
           </div>
         </div>
 
-        {footerLinks.map((column) => (
-          <div key={column.heading} className="flex flex-col gap-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
-              {column.heading}
+        {/* Links columns */}
+        {footerNavigation.map((col) => (
+          <div key={col.heading} className="flex flex-col gap-3.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              {col.heading}
             </h3>
-            <ul className="flex flex-col gap-3">
-              {column.links.map((link) => (
+            <ul className="flex flex-col gap-2.5 text-sm">
+              {col.links.map((link) => (
                 <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="inline-block text-sm text-slate-500 transition-colors duration-200 hover:text-white"
-                  >
-                    {link.label}
-                  </Link>
+                  {link.isExternal ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-slate-400 transition hover:text-white"
+                    >
+                      {link.label}
+                      <ExternalLink className="h-3 w-3 opacity-60" />
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-slate-400 transition hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -95,28 +141,20 @@ export default function LandingFooter() {
         ))}
       </div>
 
-      <div className="border-t border-white/[0.05]" />
+      <div className="border-t border-white/[0.08]" />
 
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row">
-        <div className="flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.04] px-3.5 py-1.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:px-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <SystemStatusBadge />
+          <span className="flex items-center gap-1 text-slate-400">
+            <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
+            TLS 1.3 Encrypted & Local-First Cached
           </span>
-          <span className="text-[11px] font-semibold text-slate-500">All systems operational</span>
         </div>
 
-        <nav className="flex items-center gap-4">
-          {legalLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-xs text-slate-600 transition-colors hover:text-slate-300"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <p className="text-center sm:text-right">
+          © {new Date().getFullYear()} ZamSchool OS · Developed by ZenityCore Technologies. All rights reserved.
+        </p>
       </div>
     </footer>
   );

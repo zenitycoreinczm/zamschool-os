@@ -14,8 +14,7 @@ import { TeacherTodaySchedule } from "@/components/teacher/dashboard/TeacherToda
 import { TeacherWorkload } from "@/components/teacher/dashboard/TeacherWorkload";
 import { useTeacherDashboardData } from "@/components/teacher/dashboard/useTeacherDashboardData";
 import RoleSetupGuide, {
-  persistGuideDismissed,
-  readGuideDismissed,
+  useGuideDismissed,
 } from "@/components/workspace/RoleSetupGuide";
 import { buildTeacherGuide } from "@/lib/workspace/role-onboarding";
 
@@ -44,10 +43,7 @@ export default function TeacherDashboard() {
   } = useTeacherDashboardData(!workspaceLoading);
 
   // Hooks before any early return — otherwise React crashes the workspace shell.
-  const [guideDismissed, setGuideDismissed] = useState(true);
-  useEffect(() => {
-    setGuideDismissed(readGuideDismissed("zamschool.guide.teacher.dismissed"));
-  }, []);
+  const [guideDismissed, dismissGuide] = useGuideDismissed("zamschool.guide.teacher.dismissed");
 
   const guide = useMemo(() => {
     return buildTeacherGuide({
@@ -124,10 +120,7 @@ export default function TeacherDashboard() {
       {showGuide ? (
         <RoleSetupGuide
           guide={guide}
-          onDismiss={() => {
-            persistGuideDismissed(guide.storageKey);
-            setGuideDismissed(true);
-          }}
+          onDismiss={dismissGuide}
         />
       ) : null}
 

@@ -15,11 +15,34 @@ type RoleSetupGuideProps = {
 
 export function readGuideDismissed(storageKey: string) {
   if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(storageKey) === "1";
+  try {
+    return window.localStorage.getItem(storageKey) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function persistGuideDismissed(storageKey: string) {
-  window.localStorage.setItem(storageKey, "1");
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(storageKey, "1");
+  } catch {
+    // ignore storage access errors (private mode / restricted sandbox)
+  }
+}
+
+/**
+ * React 19 clean hook for guide dismissal without cascading effect re-renders
+ */
+export function useGuideDismissed(storageKey: string) {
+  const [dismissed, setDismissed] = useState(() => readGuideDismissed(storageKey));
+
+  const dismiss = () => {
+    persistGuideDismissed(storageKey);
+    setDismissed(true);
+  };
+
+  return [dismissed, dismiss] as const;
 }
 
 export default function RoleSetupGuide({

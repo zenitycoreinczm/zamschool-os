@@ -7,8 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { FocusPills } from "@/components/workspace/FocusPills";
 import RoleSetupGuide, {
-  persistGuideDismissed,
-  readGuideDismissed,
+  useGuideDismissed,
 } from "@/components/workspace/RoleSetupGuide";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
 import { useWorkspaceData } from "@/components/workspace/workspace-context";
@@ -39,13 +38,7 @@ const SIMPLE_STEPS = [
 export default function RegistrarDashboardHome() {
   const workspace = useWorkspaceData();
   const { metrics, highlights, loading } = useWorkspaceSummary();
-  const [guideDismissed, setGuideDismissed] = useState(true);
-
-  useEffect(() => {
-    setGuideDismissed(
-      readGuideDismissed("zamschool.guide.registrar.dismissed"),
-    );
-  }, []);
+  const [guideDismissed, dismissGuide] = useGuideDismissed("zamschool.guide.registrar.dismissed");
 
   const schoolName = workspace?.schoolName || "Your school";
   const yearTerm = workspace?.yearTerm || "the current term";
@@ -112,10 +105,7 @@ export default function RegistrarDashboardHome() {
       {showGuide ? (
         <RoleSetupGuide
           guide={guide}
-          onDismiss={() => {
-            persistGuideDismissed(guide.storageKey);
-            setGuideDismissed(true);
-          }}
+          onDismiss={dismissGuide}
         />
       ) : null}
 

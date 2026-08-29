@@ -157,5 +157,8 @@
   "student-identity.ts",
   "supabase-connectivity.ts",
   "teacher-assignment-references.ts",
-  "user-create-conflicts.ts"
+  "user-create-conflicts.ts",
+  "bulk-import-helpers.ts",
+  "edge-distributed-limit.ts",
+  "smart-reminders.ts"
 ]

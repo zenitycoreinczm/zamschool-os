@@ -420,9 +420,13 @@ export default function RegisterPage() {
     <Suspense
       fallback={
         <AuthPageShell>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          </div>
+          <section className="w-full max-w-[440px]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+              </div>
+            </div>
+          </section>
         </AuthPageShell>
       }
     >

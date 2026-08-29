@@ -8,9 +8,9 @@
  *   data when school networks drop.
  * - Credentials/auth endpoints (/api/auth/*) bypass cache for security.
  */
-const STATIC_CACHE = "zamschool-static-v6";
-const ROUTE_CACHE = "zamschool-routes-v6";
-const API_CACHE = "zamschool-api-v6";
+const STATIC_CACHE = "zamschool-static-v7";
+const ROUTE_CACHE = "zamschool-routes-v7";
+const API_CACHE = "zamschool-api-v7";
 
 /** Self-contained HTML — no Tailwind / Next CSS dependency. */
 const OFFLINE_SHELL = "/offline.html";
@@ -198,6 +198,10 @@ async function cacheFirstStatic(request) {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       await cache.put(request, networkResponse.clone());
+    } else if (networkResponse.status === 404 && request.url.includes("/_next/static/css/")) {
+      // If a fingerprinted Next CSS asset returns 404 (due to a fresh deployment),
+      // purge stale route cache so visitors fetch updated HTML matching current CSS hashes.
+      void caches.delete(ROUTE_CACHE);
     }
     return networkResponse;
   } catch {

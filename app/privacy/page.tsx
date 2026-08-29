@@ -8,7 +8,7 @@ import LegalPageLayout, {
 export const metadata: Metadata = {
   title: "Privacy Policy | ZamSchool OS",
   description:
-    "How ZenityCore collects, uses, and protects school and personal data in ZamSchool OS.",
+    "How ZenityCore Technologies collects, uses, and protects school and personal data in ZamSchool OS.",
 };
 
 export default function PrivacyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       current="privacy"
       title="Privacy Policy"
       summary="This policy explains what information ZamSchool OS handles, why we handle it, who can see it, and how you can ask questions or request changes. We wrote it in plain language so schools, staff, and families can understand it."
-      lastUpdated="16 July 2026"
+      lastUpdated="28 August 2026"
       sections={[
         {
           id: "who-we-are",
@@ -26,10 +26,14 @@ export default function PrivacyPage() {
             <>
               <p>
                 ZamSchool OS is a school management platform provided by{" "}
-                <strong className="font-semibold text-slate-800">ZenityCore</strong>
-                . In this policy, “we,” “us,” and “our” mean ZenityCore. “You”
-                means a school, staff member, parent, guardian, student, or any
-                other authorized person using the platform.
+                <strong className="font-semibold text-slate-800">
+                  ZenityCore Technologies
+                </strong>{" "}
+                (zenitycore.tech), a technology company based in Lusaka and
+                Mongu, Zambia. In this policy, “we,” “us,” and “our” mean
+                ZenityCore Technologies. “You” means a school, staff member,
+                parent, guardian, student, or any other authorized person using
+                the platform.
               </p>
               <p>
                 Contact: <LegalMail>zenitycoreinc@gmail.com</LegalMail>
@@ -58,6 +62,11 @@ export default function PrivacyPage() {
                   schools, and meet legal duties.
                 </li>
               </ul>
+              <p>
+                We handle personal data in line with the Zambia Data Protection
+                Act, No. 3 of 2021, which governs how personal data must be
+                collected, used, stored, and shared in Zambia.
+              </p>
             </>
           ),
         },
@@ -219,7 +228,9 @@ export default function PrivacyPage() {
               <p>
                 We use infrastructure providers that may store or process data
                 outside the country where a school is based. When that happens,
-                we rely on reasonable technical and contractual protections.
+                we rely on reasonable technical and contractual protections, and
+                we aim to meet the cross-border transfer safeguards expected
+                under the Zambia Data Protection Act, No. 3 of 2021.
               </p>
             </>
           ),
@@ -257,6 +268,12 @@ export default function PrivacyPage() {
                 <LegalMail>zenitycoreinc@gmail.com</LegalMail> with privacy
                 questions or requests. We may need to verify who you are and
                 confirm school authorization before making changes.
+              </p>
+              <p>
+                The Zambia Data Protection Act, No. 3 of 2021 also gives you
+                ways to raise data protection concerns. If a concern is not
+                resolved with us or your school, you may contact the Office of
+                the Data Protection Commissioner.
               </p>
             </>
           ),

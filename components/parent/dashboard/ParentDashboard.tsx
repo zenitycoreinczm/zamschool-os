@@ -12,8 +12,7 @@ import { ParentDashboardHero } from "@/components/parent/dashboard/ParentDashboa
 import { ParentLinkedChildren } from "@/components/parent/dashboard/ParentLinkedChildren";
 import { ParentPublishedResults } from "@/components/parent/dashboard/ParentPublishedResults";
 import RoleSetupGuide, {
-  persistGuideDismissed,
-  readGuideDismissed,
+  useGuideDismissed,
 } from "@/components/workspace/RoleSetupGuide";
 import { formatLocalDateInputValue } from "@/lib/local-date";
 import { buildParentGuide } from "@/lib/workspace/role-onboarding";
@@ -43,10 +42,7 @@ export default function ParentDashboard() {
   // Hooks must run before any early return (loading gate).
   const absentCount =
     Number(summary?.ABSENT ?? 0) + Number(summary?.LATE ?? 0);
-  const [guideDismissed, setGuideDismissed] = useState(true);
-  useEffect(() => {
-    setGuideDismissed(readGuideDismissed("zamschool.guide.parent.dismissed"));
-  }, []);
+  const [guideDismissed, dismissGuide] = useGuideDismissed("zamschool.guide.parent.dismissed");
   const guide = useMemo(
     () =>
       buildParentGuide({
@@ -107,10 +103,7 @@ export default function ParentDashboard() {
       {showGuide ? (
         <RoleSetupGuide
           guide={guide}
-          onDismiss={() => {
-            persistGuideDismissed(guide.storageKey);
-            setGuideDismissed(true);
-          }}
+          onDismiss={dismissGuide}
         />
       ) : null}
 

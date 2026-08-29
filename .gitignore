@@ -69,3 +69,4 @@ supa_token.txt
 .vercel/
 .vercel
 .env*
+output/

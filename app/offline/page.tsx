@@ -1,7 +1,9 @@
+import Link from "next/link";
+
 /**
  * Next.js /offline route — also used if someone navigates while partially online.
  * Primary offline shell is public/offline.html (inline CSS, SW-precache).
- * This page uses inline styles so it still looks right if Tailwind is missing.
+ * This page uses robust styling and high contrast.
  */
 export default function OfflinePage() {
   return (
@@ -75,7 +77,7 @@ export default function OfflinePage() {
             marginTop: "1.5rem",
           }}
         >
-          <a
+          <Link
             href="/"
             style={{
               display: "inline-flex",
@@ -90,8 +92,8 @@ export default function OfflinePage() {
             }}
           >
             Go to home
-          </a>
-          <a
+          </Link>
+          <Link
             href="/login"
             style={{
               display: "inline-flex",
@@ -107,7 +109,7 @@ export default function OfflinePage() {
             }}
           >
             Log in
-          </a>
+          </Link>
         </div>
         <div
           style={{

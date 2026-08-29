@@ -12,8 +12,7 @@ import { StudentPublishedResults } from "@/components/student/dashboard/StudentP
 import { StudentTodayLessons } from "@/components/student/dashboard/StudentTodayLessons";
 import { StudentUpcomingAssignments } from "@/components/student/dashboard/StudentUpcomingAssignments";
 import RoleSetupGuide, {
-  persistGuideDismissed,
-  readGuideDismissed,
+  useGuideDismissed,
 } from "@/components/workspace/RoleSetupGuide";
 import { getEmptyAttendanceSummary } from "@/components/student/dashboard/format";
 import type { StudentAssignmentRow } from "@/components/student/dashboard/types";
@@ -33,15 +32,11 @@ export default function StudentDashboard() {
 
   const [selectedAssignment, setSelectedAssignment] =
     useState<StudentAssignmentRow | null>(null);
-  const [guideDismissed, setGuideDismissed] = useState(true);
+  const [guideDismissed, dismissGuide] = useGuideDismissed("zamschool.guide.student.dismissed");
 
   const summary = dashboard?.attendance.summary || getEmptyAttendanceSummary();
   const className = dashboard?.profile.className || "Class pending";
   const classNumber = dashboard?.profile.classNumber ?? null;
-
-  useEffect(() => {
-    setGuideDismissed(readGuideDismissed("zamschool.guide.student.dismissed"));
-  }, []);
   const guide = useMemo(
     () =>
       buildStudentGuide({
@@ -88,10 +83,7 @@ export default function StudentDashboard() {
       {showGuide ? (
         <RoleSetupGuide
           guide={guide}
-          onDismiss={() => {
-            persistGuideDismissed(guide.storageKey);
-            setGuideDismissed(true);
-          }}
+          onDismiss={dismissGuide}
         />
       ) : null}
 

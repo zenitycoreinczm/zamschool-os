@@ -2,335 +2,757 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
-  Clock3,
-  PlayCircle,
+  ChevronRight,
+  Clock,
+  Coins,
+  Cpu,
+  Database,
+  ExternalLink,
+  FileSpreadsheet,
+  Fingerprint,
+  Globe,
+  HelpCircle,
+  Laptop,
+  Layers,
+  Lock,
+  MessageSquare,
+  Network,
+  RefreshCw,
+  School,
   ShieldCheck,
   Smartphone,
-  Wallet,
+  Sparkles,
+  Users,
   WifiOff,
   X,
   Zap,
 } from "lucide-react";
 
 import LandingFooter from "@/components/landing/LandingFooter";
+import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
 
-const valueBlocks = [
-  {
-    icon: Clock3,
-    title: "Save time",
-    body: "Teachers finish admin work in under 10 minutes. Attendance, results, and notices without the paper chase.",
-  },
-  {
-    icon: Wallet,
-    title: "Save money",
-    body: "No SMS bundles. No hidden costs. Unlimited push notifications for parents and staff.",
-  },
+const platformFeatures = {
+  web: [
+    {
+      title: "Head Teacher & Bursar Dashboard",
+      desc: "Full school oversight: student enrollment, teacher allocation, financial summaries, and timetable scheduling in one high-density portal.",
+    },
+    {
+      title: "Bursar Fee Ledger & Kwacha Accounting",
+      desc: "Track tuition fees, PTA levies, exam fees, generate instant digital receipts, and export real-time arrears reports.",
+    },
+    {
+      title: "ECZ-Standard Batch Report Cards",
+      desc: "One-click generation of official terminal report cards with Zambian grading scale (Distinction to Unsatisfactory) and class rankings.",
+    },
+    {
+      title: "Bulk CSV Onboarding & Records",
+      desc: "Import hundreds of learners and staff records in seconds from existing spreadsheets with zero data loss.",
+    },
+  ],
+  android: [
+    {
+      title: "Sub-30-Second Classroom Roll Call",
+      desc: "Designed for smartphones. Teachers mark 40+ learners in seconds with quick tap gestures directly in the classroom.",
+    },
+    {
+      title: "100% Offline-First Architecture",
+      desc: "Take attendance and enter marks without active internet. Data syncs automatically once a 2G/3G/4G or Wi-Fi connection is detected.",
+    },
+    {
+      title: "Zero-Cost Instant Push Broadcasts",
+      desc: "Parents receive instant arrival alerts, school notices, and emergency broadcasts with zero costly SMS bundles.",
+    },
+    {
+      title: "Parent Portal on Any Smartphone",
+      desc: "Guardians track attendance timestamps, continuous assessment marks, and fee payment balances in real time.",
+    },
+  ],
+};
+
+const architecturePillars = [
   {
     icon: WifiOff,
-    title: "Works anywhere",
-    body: "Offline-first design. Built for phones and slow internet across Zambia.",
+    badge: "Local-First Core",
+    title: "Offline-First Sync Engine",
+    description:
+      "Built with client-side IndexedDB caching and Service Worker background sync. Teachers work uninterrupted during power cuts or network outages across Zambian provinces.",
+  },
+  {
+    icon: MessageSquare,
+    badge: "Cost Reduction",
+    title: "Zero-SMS Direct Push Mesh",
+    description:
+      "Replaces expensive carrier SMS bundles with native Web and Android push protocols, saving schools thousands of Zambian Kwacha every academic term.",
+  },
+  {
+    icon: FileSpreadsheet,
+    badge: "National Syllabus",
+    title: "ECZ-Aligned Academic Engine",
+    description:
+      "Pre-configured for Zambian secondary and primary grading standards (Divisions 1–4, Distinctions, Merits, Credits, Passes) with automated aggregate calculations.",
+  },
+  {
+    icon: Lock,
+    badge: "Security & Governance",
+    title: "Multi-Role RBAC & Audit Trails",
+    description:
+      "Granular permission gates for Headteachers, Deputies, Bursars, Class Teachers, and Parents ensure strict data privacy and eliminate unauthorized grade tampering.",
   },
 ];
 
-const comparisonRows = [
+const moduleBreakdown = [
   {
-    feature: "SMS costs",
-    other: "Paid per message",
-    ours: "Free push notifications",
+    icon: Users,
+    title: "Classroom Attendance Engine",
+    points: [
+      "Sub-30-second roll calls per classroom",
+      "Immediate parent notification on mark entry",
+      "Termly Ministry of Education attendance logs",
+      "Automated absentee risk alerts for administration",
+    ],
   },
   {
-    feature: "Setup time",
-    other: "Complex configuration",
-    ours: "Minutes: school, class, students",
+    icon: BookOpen,
+    title: "Academic Grading & Report Cards",
+    points: [
+      "Continuous Assessment (CA) & Terminal Exam marks",
+      "ECZ-compliant grading scales & class rankings",
+      "Automated teacher & headmaster remarks",
+      "One-click batch printable PDF report cards",
+    ],
   },
   {
-    feature: "Mobile friendly",
-    other: "Limited / desktop-first",
-    ours: "Built for phones first",
+    icon: Coins,
+    title: "Bursar & School Fees Ledger",
+    points: [
+      "Real-time tuition, boarding, and PTA fee tracking",
+      "Automated digital payment receipts with audit IDs",
+      "Class-by-class arrears and collection breakdown",
+      "Exportable financial summaries for board meetings",
+    ],
   },
   {
-    feature: "Offline support",
-    other: "Usually none",
-    ours: "Yes, keep working offline",
+    icon: Zap,
+    title: "Zero-Cost Communications",
+    points: [
+      "Whole-school and class-specific broadcast channels",
+      "Direct push notices to Android phones and Web",
+      "Instant event, holiday, and exam timetable alerts",
+      "Replaces all costly SMS subscription bills",
+    ],
   },
 ];
 
-const howItWorks = [
+const comparisonData = [
   {
-    step: "1",
-    title: "Create your school",
-    body: "Name your school and open the Head Teacher account. Free setup.",
+    aspect: "Platform Availability",
+    legacy: "Desktop-only or paper logbooks",
+    zamschool: "Dual Platform: Web Portal + Android Mobile App",
   },
   {
-    step: "2",
-    title: "Add a class & students",
-    body: "One class is enough to start. Add learners in minutes.",
+    aspect: "Offline Operation",
+    legacy: "Requires continuous fast broadband",
+    zamschool: "100% Offline-First (Syncs when connected)",
   },
   {
-    step: "3",
-    title: "Run the school",
-    body: "Mark attendance, send notices, publish results from your phone.",
+    aspect: "Parent Communication Cost",
+    legacy: "K0.30–K0.50 per SMS bundle bill",
+    zamschool: "K0.00 (Unlimited direct push alerts)",
+  },
+  {
+    aspect: "Attendance Roll Call Time",
+    legacy: "10–15 minutes of teacher lecture time",
+    zamschool: "Under 30 seconds per classroom",
+  },
+  {
+    aspect: "ECZ Report Card Compilation",
+    legacy: "Days of manual calculator aggregation",
+    zamschool: "Instant 1-click batch PDF generation",
+  },
+  {
+    aspect: "Fee Arrears Reconciliation",
+    legacy: "Disorganized paper bank slips",
+    zamschool: "Real-time ledger with automated balances",
+  },
+  {
+    aspect: "Setup & Deployment Time",
+    legacy: "Weeks of on-premise installation",
+    zamschool: "Under 5 minutes (Cloud & Mobile ready)",
   },
 ];
 
-const teacherSpeed = [
-  { step: "1", label: "Open class" },
-  { step: "2", label: "Mark attendance" },
-  { step: "3", label: "Submit" },
+const trustPillars = [
+  {
+    icon: ShieldCheck,
+    title: "Multi-Role Access Control",
+    description:
+      "Granular permissions for Head Teachers, Bursars, Class Teachers, and Parents. Every user sees only what their role allows - nothing more.",
+  },
+  {
+    icon: Lock,
+    title: "Row-Level Database Security",
+    description:
+      "Every table enforces school-scoped row-level security, so one school can never read another school's records, even by accident.",
+  },
+  {
+    icon: Database,
+    title: "Complete Audit Trails",
+    description:
+      "Sensitive actions are logged with who did what, and when. Changes to results, fees, and records stay traceable end to end.",
+  },
+  {
+    icon: Fingerprint,
+    title: "Encryption & Backups",
+    description:
+      "Traffic is encrypted in transit and data rests on managed encrypted infrastructure with operational backups for recovery.",
+  },
 ];
 
-const parentHighlights = [
+const pilotIncluded = [
+  "Unlimited attendance & sub-30-second roll calls",
+  "ECZ-aligned results & printable report cards",
+  "Fee ledger, digital receipts & arrears tracking",
+  "Unlimited parent & staff push notifications",
+  "Offline mode on Web and Android",
+  "Full school data export whenever you need it",
+];
+
+const pilotTerms = [
+  "When paid plans begin, pricing is agreed with each school in advance - never a surprise invoice.",
+  "Unlimited push notifications stay free. There are no per-message charges, ever.",
+  "Your school data remains yours and is always exportable - no lock-in.",
+  "Setup, onboarding, and support are included while the pilot runs.",
+];
+
+const faqItems = [
   {
-    title: "Know when they arrive",
-    body: "Get notified when attendance is marked. No more waiting for a call.",
+    q: "Does ZamSchool OS work when there is no internet in the classroom?",
+    a: "Yes. ZamSchool OS is built with a local-first offline synchronization engine. Teachers can take daily roll calls and input marks completely offline. As soon as the device reconnects to Wi-Fi or mobile data, all records synchronize seamlessly with the school's central database.",
   },
   {
-    title: "See results instantly",
-    body: "View published marks the moment the school releases them.",
+    q: "What devices do our teachers and administration need?",
+    a: "Administrators and Bursars can access the full Web Cloud Portal on any standard desktop PC, laptop, or tablet. Teachers and Parents can use any standard Android smartphone via the mobile application or modern mobile web browser.",
   },
   {
-    title: "Track attendance live",
-    body: "Present, absent, and late, updated in real time for every child.",
+    q: "How does ZamSchool OS eliminate SMS communication expenses?",
+    a: "Traditional systems charge schools per SMS sent to parents. ZamSchool OS leverages native push notification meshes on Android and Web browsers. When a teacher marks attendance or publishes term results, parents receive instant notifications with zero carrier SMS fees.",
+  },
+  {
+    q: "Is ZamSchool OS compliant with the Zambian ECZ grading system?",
+    a: "Yes. ZamSchool OS includes native support for Zambian secondary and primary academic structures, including Term 1, 2, and 3 sessions, Continuous Assessment (CA) weighting, ECZ grading distinctions (1–9), and official aggregate computations.",
+  },
+  {
+    q: "How much does ZamSchool OS cost?",
+    a: "Setup is free. While we onboard founding schools, the entire platform is free during the pilot - attendance, results, the fee ledger, and unlimited parent notifications included. When paid plans begin, pricing will be agreed with each school in advance, and there are no per-SMS or per-message charges.",
+  },
+  {
+    q: "Who develops and maintains ZamSchool OS?",
+    a: "ZamSchool OS is engineered and backed by ZenityCore Technologies (zenitycore.tech), led by CEO Ison Mumbuna. Our engineering team provides continuous system updates, data backups, and dedicated nationwide customer support across Zambia.",
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="landing-critical-fallback min-h-screen bg-white text-slate-900">
-      {/*
-        Critical CSS fallback: if the main Tailwind chunk is delayed/blocked on
-        mobile networks, the hero still reads as a real product page (not raw text).
-      */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            .landing-critical-fallback{min-height:100vh;background:#fff;color:#0f172a;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-            .landing-critical-fallback header{position:sticky;top:0;z-index:40;border-bottom:1px solid #e2e8f0;background:rgba(255,255,255,.96)}
-            .landing-critical-fallback a{color:inherit;text-decoration:none}
-            .landing-critical-fallback .btn-primary,.landing-critical-fallback a[href="/register"]{border-radius:999px}
-          `,
-        }}
-      />
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-          <Link href="/" className="flex min-w-0 items-center gap-2.5">
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl shadow-sm sm:h-10 sm:w-10 sm:rounded-2xl">
+    <div className="min-h-screen bg-white text-slate-900 antialiased selection:bg-sky-500 selection:text-white">
+      {/* ─── Navigation Header ────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-950 p-1 shadow-sm ring-1 ring-slate-900/10 sm:h-11 sm:w-11">
               <Image
                 src="/icon.png"
                 alt="ZamSchool OS"
-                width={40}
-                height={40}
+                width={44}
+                height={44}
                 className="h-full w-full object-cover"
                 priority
               />
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-base font-bold text-slate-900 sm:text-lg">
-                ZamSchool OS
-              </p>
-              <p className="hidden text-[11px] font-medium text-slate-500 sm:block">
-                School management, simplified
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
+                  ZamSchool OS
+                </span>
+                <span className="hidden rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 sm:inline-block">
+                  v2.4
+                </span>
+              </div>
+              <p className="hidden text-xs font-medium text-slate-500 sm:block">
+                Enterprise School Management
               </p>
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-6 lg:flex">
-            {[
-              ["#why", "Why us"],
-              ["#compare", "Compare"],
-              ["#teachers", "Teachers"],
-              ["#parents", "Parents"],
-            ].map(([href, label]) => (
-              <Link
-                key={href}
-                href={href}
-                className="text-sm font-medium text-slate-600 transition hover:text-slate-900"
-              >
-                {label}
-              </Link>
-            ))}
+          {/* Desktop Navigation */}
+          <nav className="hidden items-center gap-7 lg:flex">
+            <Link
+              href="#platforms"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              Web & Android
+            </Link>
+            <Link
+              href="#architecture"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              Architecture
+            </Link>
+            <Link
+              href="#modules"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              Modules
+            </Link>
+            <Link
+              href="#compare"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              Comparison
+            </Link>
+            <Link
+              href="#leadership"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              Leadership
+            </Link>
+            <Link
+              href="#faq"
+              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            >
+              FAQ
+            </Link>
           </nav>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* User actions */}
+          <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="text-sm font-semibold text-slate-700 transition hover:text-slate-900"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 sm:px-4"
             >
-              Log in
+              Sign In
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center rounded-full bg-sky-500 px-3.5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-sky-400 sm:px-5 sm:py-2.5 sm:text-sm"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-sky-500 active:scale-95 sm:px-5 sm:py-2.5"
             >
-              Start free
+              <span>Start Free Setup</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </header>
 
       <main>
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_32%),linear-gradient(135deg,_#0f172a,_#111827_55%,_#172554)]">
+        {/* ─── Hero Section ─────────────────────────────────────────────────── */}
+        <section className="relative overflow-hidden bg-slate-950 text-white">
+          {/* Subtle grid pattern */}
           <div
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage:
-                "radial-gradient(circle, #ffffff 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
+                "radial-gradient(circle, #38bdf8 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
             }}
           />
-          <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12 lg:py-20">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-sky-200 sm:text-sm">
-                <Zap className="h-3.5 w-3.5 text-amber-300 sm:h-4 sm:w-4" />
-                The fastest way to run a school in Zambia
-              </span>
-              <h1 className="mt-5 max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:mt-7 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-                Run your entire school from your phone.
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:mt-5 sm:text-lg sm:leading-8">
-                Attendance, results, communication. Done in minutes.
-                <br className="hidden sm:block" />
-                No SMS costs. Works offline.
-              </p>
 
-              <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 sm:px-7 sm:py-4 sm:text-base"
-                >
-                  Start a School (Free Setup)
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#teachers"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/15 sm:px-7 sm:py-4 sm:text-base"
-                >
-                  <PlayCircle className="h-4 w-4" />
-                  Watch 2-Min Demo
-                </a>
-              </div>
+          <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:py-28">
+            <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+              {/* Left Column: Value Proposition */}
+              <div className="flex flex-col items-start text-left">
+                {/* Authority badge */}
+                <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-950/70 px-3.5 py-1.5 text-xs font-semibold text-sky-200 shadow-sm backdrop-blur">
+                  <ShieldCheck className="h-4 w-4 text-sky-400" />
+                  <span>Backed by ZenityCore Technologies · Zambian Education OS</span>
+                </div>
 
-              <p className="mt-4 text-xs text-slate-400 sm:text-sm">
-                Built for Zambian schools · No credit card ·{" "}
-                <Link href="/privacy" className="underline hover:text-slate-200">
-                  Privacy
-                </Link>
-              </p>
-            </div>
+                <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.15]">
+                  The Operating System for Zambian Schools.
+                </h1>
 
-            {/* Phone-first product preview */}
-            <section
-              aria-label="Platform preview"
-              className="mx-auto w-full max-w-sm rounded-[2rem] border border-white/10 bg-white p-4 shadow-[0_24px_80px_rgba(15,23,42,0.45)] sm:p-5"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    Live on phone
+                <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
+                  <span className="font-semibold text-white">Run your entire school from your phone</span> or web dashboard. 
+                  Engineered for <span className="font-semibold text-white">Web & Android</span>. 
+                  Run morning attendance in 30 seconds offline, automate ECZ-standard terminal report cards, 
+                  eliminate SMS bills with direct push broadcasts, and manage student fee ledgers with total transparency.
+                </p>
+
+                {/* Platform availability pills */}
+                <div className="mt-6 flex flex-wrap items-center gap-3 text-xs sm:text-sm font-medium">
+                  <div className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-slate-200">
+                    <Laptop className="h-4 w-4 text-sky-400" />
+                    <span>Web Cloud Portal (Admin & Bursar)</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-slate-200">
+                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                    <span>Android Mobile App (Teachers & Parents)</span>
+                  </div>
+                </div>
+
+                {/* Primary CTA Buttons */}
+                <div className="mt-8 flex w-full flex-col gap-3.5 sm:w-auto sm:flex-row sm:items-center">
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-7 py-4 text-base font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 active:scale-95"
+                  >
+                    <span>Start a School (Free Setup)</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+
+                  <a
+                    href="#architecture"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/90 px-6 py-4 text-base font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white"
+                  >
+                    <Cpu className="h-5 w-5 text-sky-400" />
+                    <span>Explore Architecture</span>
+                  </a>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-400 sm:text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    No Credit Card Required
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    Works 100% Offline
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    Zero Carrier SMS Fees
                   </span>
                 </div>
-                <Smartphone className="h-4 w-4 text-slate-400" />
               </div>
 
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl bg-slate-900 px-4 py-3.5 text-white">
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-sky-300">
-                    Today · Form 2A
-                  </p>
-                  <p className="mt-1 text-lg font-bold">Mark attendance</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    32 students · under 30 seconds
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    ["Present", "28", "text-emerald-700 bg-emerald-50"],
-                    ["Absent", "3", "text-rose-700 bg-rose-50"],
-                    ["Late", "1", "text-amber-700 bg-amber-50"],
-                  ].map(([label, value, style]) => (
-                    <div
-                      key={label}
-                      className={`rounded-xl px-2 py-2.5 text-center ${style}`}
-                    >
-                      <p className="text-lg font-bold">{value}</p>
-                      <p className="text-[10px] font-semibold opacity-80">
-                        {label}
-                      </p>
+              {/* Right Column: Live Enterprise System Mockup */}
+              <div className="relative mx-auto w-full max-w-md">
+                <div className="relative rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-sky-950/50">
+                  {/* Mock Window Header */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
+                      <span className="text-xs font-semibold text-slate-300">
+                        Munali Secondary School · Lusaka
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    <span className="rounded bg-sky-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-400 border border-sky-800">
+                      Live Sync Active
+                    </span>
+                  </div>
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
-                  <span className="font-semibold text-slate-900">Parent:</span>{" "}
-                  “Mwansa marked present at 07:42”
+                  {/* Attendance Card Mock */}
+                  <div className="mt-4 space-y-4">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-300">Form 3A Science Roll Call</span>
+                        <span className="font-mono text-emerald-400">07:38 AM</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">34 Learners · Sub-30s Classroom Log</p>
+
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div className="rounded-lg bg-emerald-950/60 border border-emerald-800/40 p-2 text-center">
+                          <p className="text-xl font-extrabold text-emerald-400">31</p>
+                          <p className="text-[10px] font-semibold text-emerald-300">Present</p>
+                        </div>
+                        <div className="rounded-lg bg-rose-950/60 border border-rose-800/40 p-2 text-center">
+                          <p className="text-xl font-extrabold text-rose-400">2</p>
+                          <p className="text-[10px] font-semibold text-rose-300">Absent</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-950/60 border border-amber-800/40 p-2 text-center">
+                          <p className="text-xl font-extrabold text-amber-400">1</p>
+                          <p className="text-[10px] font-semibold text-amber-300">Late</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Financial Ledger Snapshot */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-300">Term 1 Tuition Collections</span>
+                        <span className="text-xs font-bold text-sky-400">89.4% Collected</span>
+                      </div>
+                      <div className="mt-2 flex items-baseline justify-between">
+                        <span className="text-lg font-extrabold text-white">K 184,200</span>
+                        <span className="text-xs text-slate-400">Target: K 206,000</span>
+                      </div>
+                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                        <div className="h-full rounded-full bg-sky-500" style={{ width: "89.4%" }} />
+                      </div>
+                    </div>
+
+                    {/* Instant Broadcast Status */}
+                    <div className="flex items-center gap-3 rounded-xl border border-emerald-800/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                      <Zap className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <span>Zero SMS Cost: 34 parent push alerts dispatched instantly</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </section>
+            </div>
           </div>
         </section>
 
-        {/* Value blocks */}
-        <section id="why" className="border-b border-slate-200 bg-white">
-          <div className="mx-auto grid max-w-7xl gap-4 px-4 py-12 sm:grid-cols-3 sm:px-6 sm:py-16">
-            {valueBlocks.map(({ icon: Icon, title, body }) => (
-              <article
-                key={title}
-                className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-white shadow-sm">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h2 className="mt-4 text-xl font-bold text-slate-900">{title}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Comparison */}
-        <section id="compare" className="bg-slate-50 py-14 sm:py-20">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6">
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
-                Why schools switch
-              </p>
-              <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                Built to save time and money
+        {/* ─── Platform Breakdown: Web & Android ────────────────────────────── */}
+        <section id="platforms" className="border-b border-slate-200 bg-slate-50 py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Dual Platform Ecosystem
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Built for High-Power Desktop & Agile Mobile
               </h2>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                Same job as other systems, without SMS bills, long setup, or
-                desktop-only screens.
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                ZamSchool OS provides dedicated experiences for administrative desktops and classroom mobile devices, synchronized in real time.
               </p>
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="grid grid-cols-[1.2fr_1fr_1fr] border-b border-slate-200 bg-slate-900 text-left text-xs font-semibold uppercase tracking-wide text-slate-300 sm:text-sm">
-                <div className="px-3 py-3 sm:px-5 sm:py-4">Feature</div>
-                <div className="px-2 py-3 sm:px-4 sm:py-4">Other systems</div>
-                <div className="px-2 py-3 text-sky-300 sm:px-4 sm:py-4">
-                  ZamSchool OS
+            <div className="mt-12 grid gap-8 lg:grid-cols-2">
+              {/* Web Platform Card */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                      <Laptop className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900">Web Cloud Portal</h3>
+                      <p className="text-xs font-medium text-slate-500">For Head Teachers, Registrars & Bursars</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    Engineered for high-density administrative workflows on PC, Mac, and Chromebooks. Manage large-scale school governance with precision.
+                  </p>
+
+                  <ul className="mt-6 space-y-3.5">
+                    {platformFeatures.web.map((feat) => (
+                      <li key={feat.title} className="flex items-start gap-3 text-sm">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                        <div>
+                          <span className="font-semibold text-slate-900">{feat.title}: </span>
+                          <span className="text-slate-600">{feat.desc}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs font-medium text-slate-700">
+                  <span className="font-bold text-slate-900">Compatibility:</span> Chrome, Edge, Safari, Firefox · Accessible from any desktop browser with no local server maintenance.
                 </div>
               </div>
-              {comparisonRows.map((row) => (
+
+              {/* Android Mobile Card */}
+              <div className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                      <Smartphone className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900">Android Mobile Application</h3>
+                      <p className="text-xs font-medium text-slate-500">For Classroom Teachers & Parents</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    Optimized for rapid classroom roll calls, continuous assessment marks entry, and real-time parent progress monitoring even with poor connectivity.
+                  </p>
+
+                  <ul className="mt-6 space-y-3.5">
+                    {platformFeatures.android.map((feat) => (
+                      <li key={feat.title} className="flex items-start gap-3 text-sm">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <div>
+                          <span className="font-semibold text-slate-900">{feat.title}: </span>
+                          <span className="text-slate-600">{feat.desc}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs font-medium text-slate-700">
+                  <span className="font-bold text-slate-900">Compatibility:</span> Android 8.0+ Smartphones & Tablets · Progressive Web App (PWA) and APK installation support.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── System Architecture & Reliability ────────────────────────────── */}
+        <section id="architecture" className="border-b border-slate-200 bg-white py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                System Engineering
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Engineered for African Infrastructure Realities
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                Built from the ground up to solve power outages, expensive SMS bundles, and unstable rural internet across Zambia.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {architecturePillars.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-6 transition hover:border-slate-300 hover:bg-white hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-600 text-white shadow-sm">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-[10px] font-bold text-slate-700">
+                          {item.badge}
+                        </span>
+                      </div>
+                      <h3 className="mt-5 text-lg font-bold text-slate-900">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Architectural Data Flow Diagram */}
+            <div className="mt-12 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-6 text-white sm:p-8">
+              <div className="flex flex-col justify-between gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Resilient Data Flow Architecture</h3>
+                  <p className="text-xs text-slate-400">Bidirectional Sync & High-Availability Pipeline</p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-sky-400">
+                  <Database className="h-4 w-4" />
+                  <span>PostgreSQL Cloud + Client IndexedDB Engine</span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4">
+                  <div className="flex items-center gap-2 text-sky-400 font-semibold text-sm">
+                    <Smartphone className="h-4 w-4" />
+                    <span>01. Edge Device (Offline)</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
+                    Roll calls and marks write directly to encrypted local IndexedDB storage in under 5ms without network delays.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4">
+                  <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                    <RefreshCw className="h-4 w-4" />
+                    <span>02. Auto-Sync Mesh</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
+                    Service Worker detects connection recovery and securely uploads batched transactions with automated conflict resolution.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                    <Zap className="h-4 w-4" />
+                    <span>03. Zero-SMS Push Broadcast</span>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
+                    Cloud workers trigger direct push events to registered parent devices and update headmaster dashboards simultaneously.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Core Modules ─────────────────────────────────────────────────── */}
+        <section id="modules" className="border-b border-slate-200 bg-slate-50 py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Complete School Suite
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Every Department, One Unified System
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                Replace fragmented notebooks, spreadsheets, and SMS bills with specialized modules designed for Zambian school standards.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-6 md:grid-cols-2">
+              {moduleBreakdown.map((mod) => {
+                const Icon = mod.icon;
+                return (
+                  <div
+                    key={mod.title}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white">
+                        <Icon className="h-5 w-5 text-sky-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900">{mod.title}</h3>
+                    </div>
+
+                    <ul className="mt-6 space-y-3">
+                      {mod.points.map((pt) => (
+                        <li key={pt} className="flex items-center gap-2.5 text-sm text-slate-700">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-sky-600" />
+                          <span>{pt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Comparison Matrix ────────────────────────────────────────────── */}
+        <section id="compare" className="border-b border-slate-200 bg-white py-16 sm:py-24">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <div className="text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Direct Comparison
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Why Schools Replace Legacy Portals with ZamSchool OS
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-600">
+                See how ZamSchool OS delivers lower costs, faster operations, and native offline resilience.
+              </p>
+            </div>
+
+            <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-200 bg-slate-900 text-left text-xs font-bold uppercase tracking-wider text-slate-300 sm:text-sm">
+                <div className="px-4 py-4 sm:px-6">Capability</div>
+                <div className="px-3 py-4 sm:px-5">Legacy Systems / Paper</div>
+                <div className="bg-sky-950/80 px-3 py-4 text-sky-300 sm:px-5">ZamSchool OS</div>
+              </div>
+
+              {comparisonData.map((row) => (
                 <div
-                  key={row.feature}
-                  className="grid grid-cols-[1.2fr_1fr_1fr] border-b border-slate-100 text-sm last:border-b-0"
+                  key={row.aspect}
+                  className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-100 text-xs sm:text-sm last:border-b-0"
                 >
-                  <div className="px-3 py-3.5 font-semibold text-slate-900 sm:px-5">
-                    {row.feature}
+                  <div className="px-4 py-4 font-semibold text-slate-900 sm:px-6">
+                    {row.aspect}
                   </div>
-                  <div className="flex items-start gap-1.5 px-2 py-3.5 text-slate-500 sm:px-4">
-                    <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-400" />
-                    <span className="text-xs sm:text-sm">{row.other}</span>
+                  <div className="flex items-start gap-1.5 px-3 py-4 text-slate-500 sm:px-5">
+                    <X className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                    <span>{row.legacy}</span>
                   </div>
-                  <div className="flex items-start gap-1.5 bg-sky-50/50 px-2 py-3.5 font-medium text-slate-900 sm:px-4">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                    <span className="text-xs sm:text-sm">{row.ours}</span>
+                  <div className="flex items-start gap-1.5 bg-sky-50/50 px-3 py-4 font-medium text-slate-900 sm:px-5">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{row.zamschool}</span>
                   </div>
                 </div>
               ))}
@@ -338,225 +760,303 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* How it works: simplified onboarding story */}
-        <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Get started
-            </p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Three steps. Then you&apos;re running.
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              No complex roles on day one. Create school → add class → add
-              students. Advanced desks come later when you need them.
-            </p>
-          </div>
-          <ol className="mt-8 grid gap-3 md:grid-cols-3">
-            {howItWorks.map((item) => (
-              <li
-                key={item.step}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <p className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500 text-sm font-bold text-white">
-                  {item.step}
-                </p>
-                <h3 className="mt-3 text-base font-semibold text-slate-900">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {item.body}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* Teacher experience: speed demo */}
-        <section
-          id="teachers"
-          className="border-y border-slate-200 bg-slate-950 py-14 text-white sm:py-20"
-        >
+        {/* ─── Pricing & Pilot Programme ─────────────────────────────────────── */}
+        <section id="pricing" className="border-b border-slate-200 bg-slate-50 py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="grid items-center gap-10 lg:grid-cols-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
-                  For teachers
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Simple, Honest Pricing
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Free for Founding Schools
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                Setup is free, and while we onboard founding schools the entire
+                platform is free during the pilot. No SMS bills, no card
+                required, no hidden charges.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-6 lg:grid-cols-2">
+              <div className="flex flex-col rounded-2xl border-2 border-sky-500 bg-white p-6 shadow-sm sm:p-8">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xl font-bold text-slate-900">Founding School Pilot</h3>
+                  <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">
+                    Current
+                  </span>
+                </div>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-extrabold tracking-tight text-slate-900">K0</span>
+                  <span className="text-sm font-medium text-slate-500">per school, per term</span>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Everything the platform does, free while we grow with our founding schools.
                 </p>
-                <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                  Designed so teachers don&apos;t need training.
-                </h2>
-                <p className="mt-4 text-base leading-7 text-slate-300">
-                  Tap class → mark attendance → submit. Under 30 seconds. That is
-                  the whole product promise for the teaching desk.
-                </p>
-                <ul className="mt-6 space-y-2.5 text-sm text-slate-200">
-                  {[
-                    "Attendance in one screen",
-                    "Results without spreadsheets",
-                    "Works on the phone they already own",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                      {item}
+                <ul className="mt-6 flex-1 space-y-3">
+                  {pilotIncluded.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                      <span>{item}</span>
                     </li>
                   ))}
                 </ul>
+                <Link
+                  href="/register"
+                  className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  <span>Start Free School Setup</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300">
-                  Teacher mode · under 30 seconds
+              <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <h3 className="text-xl font-bold text-slate-900">After the Pilot</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Paid plans will come - and when they do, you will always know
+                  what you are paying for before you pay it.
                 </p>
-                <ol className="mt-6 space-y-4">
-                  {teacherSpeed.map((item, i) => (
-                    <li key={item.step} className="flex items-center gap-4">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-sm font-bold">
-                        {item.step}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold">{item.label}</p>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                          <div
-                            className="h-full rounded-full bg-sky-400"
-                            style={{ width: `${((i + 1) / 3) * 100}%` }}
-                          />
-                        </div>
-                      </div>
+                <ul className="mt-6 flex-1 space-y-3">
+                  {pilotTerms.map((item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                      <span>{item}</span>
                     </li>
                   ))}
-                </ol>
-                <p className="mt-6 text-center text-sm font-medium text-sky-200">
-                  Total: under 30 seconds · no training required
+                </ul>
+                <p className="mt-8 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+                  Questions about pricing for your school? Call{" "}
+                  <a href="tel:+260973385988" className="font-semibold text-slate-900">
+                    +260 973 385 988
+                  </a>{" "}
+                  or email{" "}
+                  <a href="mailto:zenitycoreinc@gmail.com" className="font-semibold text-slate-900">
+                    zenitycoreinc@gmail.com
+                  </a>
+                  .
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Parent experience */}
-        <section id="parents" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">
-              For parents
-            </p>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Peace of mind, not another phone call.
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Parents stay informed without SMS fees or waiting at the office
-              gate.
-            </p>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {parentHighlights.map((item) => (
-              <article
-                key={item.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
-              >
-                <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {item.body}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
+        {/* ─── Trust, Security & Live Status ─────────────────────────────────── */}
+        <section id="trust" className="border-b border-slate-200 bg-white py-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Trust & Security
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Student Records, Protected by Design
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                Schools entrust us with their most sensitive records. Every
+                layer of ZamSchool OS is engineered to honor that trust.
+              </p>
+            </div>
 
-        {/* Trust strip */}
-        <section id="trust" className="mx-auto max-w-7xl border-t border-slate-200 px-4 py-12 sm:px-6">
-          <div className="grid gap-3 md:grid-cols-3">
-            {[
-              {
-                icon: ShieldCheck,
-                title: "Private by design",
-                body: "Each school is separate. Role-based access. Sign-in required.",
-              },
-              {
-                icon: Smartphone,
-                title: "Phone-first",
-                body: "Built for the devices your teachers and parents already use.",
-              },
-              {
-                icon: Zap,
-                title: "School management, simplified",
-                body: "We save time, money, and effort, not just list features.",
-              },
-            ].map(({ icon: Icon, title, body }) => (
-              <article
-                key={title}
-                className="rounded-xl border border-slate-200 bg-white p-5"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-700">
-                    <Icon className="h-4 w-4" />
+            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {trustPillars.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-6 transition hover:border-slate-300 hover:bg-white hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
+                        <Icon className="h-5 w-5 text-sky-400" />
+                      </div>
+                      <h3 className="mt-4 text-base font-bold text-slate-900">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                        {item.description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="text-base font-semibold text-slate-900">
-                    {title}
-                  </h3>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{body}</p>
-              </article>
-            ))}
-          </div>
-          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            <Link
-              href="/privacy"
-              className="font-medium text-slate-700 underline-offset-2 hover:underline"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              href="/terms"
-              className="font-medium text-slate-700 underline-offset-2 hover:underline"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              href="/cookies"
-              className="font-medium text-slate-700 underline-offset-2 hover:underline"
-            >
-              Cookie Policy
-            </Link>
+                );
+              })}
+            </div>
+
+            <div className="mt-10 flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-6 text-center sm:p-8">
+              <SystemStatusBadge variant="light" />
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
+                This indicator runs a live probe against the platform&apos;s
+                health endpoint from your browser on every page load. If we ever
+                have service trouble, it turns amber instead of quietly claiming
+                everything is fine.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section id="about" className="bg-slate-950 py-14 text-white sm:py-20">
+        {/* ─── Corporate Authority & Leadership ─────────────────────────────── */}
+        <section id="leadership" className="border-b border-slate-200 bg-slate-950 py-16 text-white sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="grid items-center gap-12 lg:grid-cols-2">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-sky-400">
+                  Leadership & Corporate Backing
+                </span>
+                <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+                  Backed by ZenityCore Technologies
+                </h2>
+                <p className="mt-4 text-base leading-relaxed text-slate-300">
+                  ZamSchool OS is engineered and operated by <span className="font-semibold text-white">ZenityCore Technologies</span> (
+                  <a
+                    href="https://zenitycore.tech"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                  >
+                    zenitycore.tech
+                  </a>
+                  ), an enterprise software organization founded and led by Chief Executive Officer <span className="font-semibold text-white">Ison Mumbuna</span>.
+                </p>
+
+                <p className="mt-3 text-base leading-relaxed text-slate-300">
+                  Our mission is to eliminate educational administrative bottlenecks across Africa by building software that runs reliably on local infrastructure, regardless of bandwidth limitations or power fluctuations.
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center gap-3 text-sm text-slate-200">
+                    <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400" />
+                    <span>Strict Zambian student data sovereignty & cryptographic encryption</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-slate-200">
+                    <Network className="h-5 w-5 shrink-0 text-sky-400" />
+                    <span>Nationwide engineering & support presence in Lusaka and Mongu</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-slate-200">
+                    <Globe className="h-5 w-5 shrink-0 text-sky-400" />
+                    <span>Dedicated 99.9% uptime SLA for registered educational institutions</span>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-center gap-4">
+                  <a
+                    href="https://zenitycore.tech"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
+                  >
+                    <span>Visit zenitycore.tech</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                  <a
+                    href="mailto:zenitycoreinc@gmail.com"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                  >
+                    <span>Contact Leadership</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Leadership profile card */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-8 shadow-xl">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500 text-2xl font-black text-white shadow-lg">
+                    IM
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Ison Mumbuna</h3>
+                    <p className="text-sm font-medium text-sky-400">Chief Executive Officer & Founder</p>
+                    <p className="text-xs text-slate-400">ZenityCore Technologies</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm leading-relaxed text-slate-300">
+                  <p className="italic">
+                    “We engineered ZamSchool OS to ensure that no head teacher spends hours balancing registers by candlelight, and no school exhausts its budget on SMS credits. Real education happens when teachers have tools that work unconditionally on their phones and computers.”
+                  </p>
+                  <p className="mt-3 text-xs font-semibold text-sky-400">— Ison Mumbuna, CEO</p>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3 text-center text-xs">
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+                    <p className="font-bold text-white">Direct Line</p>
+                    <p className="mt-0.5 text-slate-400">+260 973 385 988</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
+                    <p className="font-bold text-white">Executive Desk</p>
+                    <p className="mt-0.5 text-slate-400">zenitycoreinc@gmail.com</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Frequently Asked Questions ───────────────────────────────────── */}
+        <section id="faq" className="border-b border-slate-200 bg-white py-16 sm:py-24">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6">
+            <div className="text-center">
+              <span className="text-xs font-bold uppercase tracking-widest text-sky-700">
+                Clear Answers
+              </span>
+              <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                Frequently Asked Questions
+              </h2>
+              <p className="mt-3 text-base leading-relaxed text-slate-600">
+                Everything school administrators and headteachers ask when switching to ZamSchool OS.
+              </p>
+            </div>
+
+            <div className="mt-12 space-y-4">
+              {faqItems.map((item, idx) => (
+                <details
+                  key={idx}
+                  className="group rounded-2xl border border-slate-200 bg-slate-50/50 p-5 transition hover:border-slate-300 open:bg-white open:shadow-sm sm:p-6"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-slate-900 marker:content-none">
+                    <span className="flex items-center gap-3">
+                      <HelpCircle className="h-5 w-5 shrink-0 text-sky-600" />
+                      {item.q}
+                    </span>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-90" />
+                  </summary>
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600 pl-8">
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── Final CTA ────────────────────────────────────────────────────── */}
+        <section className="bg-slate-950 py-16 text-white sm:py-24">
           <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
-              Ready when you are
-            </p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-              School management, simplified.
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/60 px-4 py-1.5 text-xs font-semibold text-sky-300">
+              <Sparkles className="h-4 w-4" />
+              <span>Transform Your School Operations Today</span>
+            </div>
+
+            <h2 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-5xl">
+              Ready to modernise your school?
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-              The fastest way to run a school in Zambia. Start free. Add your
-              first class today.
+
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+              Set up your school in under 5 minutes. Add classes, register teachers, and experience instant offline roll calls on Web and Android.
             </p>
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
+
+            <div className="mt-8 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-500 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-sky-400 sm:px-8 sm:py-4 sm:text-base"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-8 py-4 text-base font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400 sm:w-auto"
               >
-                Start a School (Free Setup)
-                <ArrowRight className="h-4 w-4" />
+                <span>Start Free School Setup</span>
+                <ArrowRight className="h-5 w-5" />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white transition hover:bg-white/15 sm:px-8 sm:py-4 sm:text-base"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-8 py-4 text-base font-semibold text-slate-200 transition hover:bg-slate-800 hover:text-white sm:w-auto"
               >
-                Log in
+                <span>Sign In to School Desk</span>
               </Link>
-              <a
-                href="mailto:zenitycoreinc@gmail.com?subject=ZamSchool%20OS%20enquiry"
-                className="inline-flex items-center justify-center rounded-full border border-white/10 px-7 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-white/5 sm:px-8 sm:py-4 sm:text-base"
-              >
-                Contact us
-              </a>
             </div>
+
             <p className="mt-6 text-xs text-slate-500">
-              Contact: zenitycoreinc@gmail.com · +260 973 385 988 · Mungu, Zambia
+              ZenityCore Technologies · Customer Support Hotline: +260 973 385 988 · Lusaka & Mongu, Zambia
             </p>
           </div>
         </section>
