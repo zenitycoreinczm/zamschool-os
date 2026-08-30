@@ -280,9 +280,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden">
       {/* ─── Navigation Header ────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20 sm:h-11 sm:w-11">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20 sm:h-11 sm:w-11">
               <div className="h-full w-full overflow-hidden rounded-[10px] bg-slate-950">
                 <Image
                   src="/icon.png"
@@ -295,11 +295,11 @@ export default function HomePage() {
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tight text-white sm:text-xl">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-base font-black tracking-tight text-white sm:text-xl">
                   ZamSchool<span className="text-sky-400">OS</span>
                 </span>
-                <span className="rounded-full bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 text-[10px] font-bold text-sky-300">
+                <span className="rounded-full bg-sky-500/10 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 sm:px-2">
                   v2.4
                 </span>
               </div>
@@ -356,16 +356,16 @@ export default function HomePage() {
           </nav>
 
           {/* User actions */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              className="hidden rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white sm:inline-flex sm:text-sm"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 py-2 text-xs sm:text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:brightness-110 active:scale-95 sm:px-5 sm:py-2.5"
+              className="hidden items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-sky-500/25 transition hover:brightness-110 active:scale-95 sm:inline-flex sm:px-5 sm:py-2.5 sm:text-sm"
             >
               <span>Free Setup</span>
               <ArrowRight className="h-4 w-4" />
@@ -376,7 +376,8 @@ export default function HomePage() {
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Toggle navigation menu"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 transition hover:bg-slate-700 hover:text-white lg:hidden"
+              aria-expanded={mobileMenuOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 transition hover:bg-slate-700 hover:text-white lg:hidden"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -385,12 +386,12 @@ export default function HomePage() {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen ? (
-          <div className="border-t border-slate-800 bg-slate-950/95 px-4 py-5 backdrop-blur-xl lg:hidden">
-            <div className="flex flex-col gap-3">
+          <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-slate-800 bg-slate-950/98 px-4 py-5 backdrop-blur-xl lg:hidden">
+            <div className="flex flex-col gap-2.5">
               <Link
                 href="#platforms"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>📱 Dual Platform (Web & Android)</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -398,7 +399,7 @@ export default function HomePage() {
               <Link
                 href="#architecture"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>⚡ Offline Sync Architecture</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -406,7 +407,7 @@ export default function HomePage() {
               <Link
                 href="#modules"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>📊 School Modules & Features</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -414,7 +415,7 @@ export default function HomePage() {
               <Link
                 href="#compare"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>⚔️ Compare with Legacy SMS</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -422,7 +423,7 @@ export default function HomePage() {
               <Link
                 href="#pricing"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>🏷️ Free Founding Pilot Pricing</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -430,7 +431,7 @@ export default function HomePage() {
               <Link
                 href="#leadership"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>🏛️ ZenityCore Corporate Leadership</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
@@ -438,24 +439,24 @@ export default function HomePage() {
               <Link
                 href="#faq"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/60 px-4 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
               >
                 <span>❓ Frequently Asked Questions</span>
                 <ChevronRight className="h-4 w-4 text-slate-500" />
               </Link>
 
-              <div className="mt-2 grid grid-cols-2 gap-2 pt-2">
+              <div className="mt-2 grid grid-cols-2 gap-2.5 pt-2">
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 py-3 text-center text-sm font-bold text-slate-200 hover:bg-slate-800"
+                  className="flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 py-3.5 text-center text-sm font-bold text-slate-200 hover:bg-slate-800 active:bg-slate-800"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center rounded-xl bg-sky-500 py-3 text-center text-sm font-bold text-white shadow-md shadow-sky-500/20 hover:bg-sky-400"
+                  className="flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-sky-500/20 hover:brightness-110 active:scale-95"
                 >
                   Start School
                 </Link>
@@ -467,7 +468,7 @@ export default function HomePage() {
 
       <main>
         {/* ─── Hero Section with Vibrant Modern Backdrops ───────────────────── */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-10 pb-16 sm:py-20 lg:py-24">
+        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-8 pb-14 sm:py-20 lg:py-24">
           {/* Ambient Glow Orbs */}
           <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-sky-500/15 blur-[120px]" />
           <div className="pointer-events-none absolute top-1/3 right-0 h-[400px] w-[400px] rounded-full bg-indigo-500/10 blur-[120px]" />
@@ -477,12 +478,12 @@ export default function HomePage() {
               {/* Left Column: Core Value Proposition */}
               <div className="flex flex-col items-start text-left">
                 {/* Authority badge */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/60 px-3.5 py-1.5 text-xs font-semibold text-sky-200 shadow-sm backdrop-blur">
-                  <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Backed by ZenityCore Technologies · Zambian Education OS</span>
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/60 px-3.5 py-1.5 text-xs font-semibold text-sky-200 shadow-sm backdrop-blur">
+                  <span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="leading-snug">Backed by ZenityCore Technologies · Zambian Education OS</span>
                 </div>
 
-                <h1 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.12]">
+                <h1 className="mt-5 text-2xl font-black tracking-tight text-white break-words sm:text-4xl lg:text-[3.25rem] lg:leading-[1.12]">
                   Run your entire school{" "}
                   <span className="bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
                     from your phone
@@ -498,48 +499,48 @@ export default function HomePage() {
                 </p>
 
                 {/* Platform pills */}
-                <div className="mt-6 flex flex-wrap items-center gap-2.5 text-xs sm:text-sm font-medium">
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2 text-slate-200 backdrop-blur">
-                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs sm:gap-2.5 sm:text-sm font-medium">
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-slate-200 backdrop-blur sm:px-3.5 sm:py-2">
+                    <Smartphone className="h-4 w-4 text-emerald-400 shrink-0" />
                     <span>Android App (Teachers & Parents)</span>
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2 text-slate-200 backdrop-blur">
-                    <Laptop className="h-4 w-4 text-sky-400" />
+                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-slate-200 backdrop-blur sm:px-3.5 sm:py-2">
+                    <Laptop className="h-4 w-4 text-sky-400 shrink-0" />
                     <span>Web Cloud (Head Teacher & Bursar)</span>
                   </div>
                 </div>
 
                 {/* Primary CTA Buttons */}
-                <div className="mt-8 flex w-full flex-col gap-3.5 sm:w-auto sm:flex-row sm:items-center">
+                <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                   <Link
                     href="/register"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-7 py-4 text-base font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 active:scale-95"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 active:scale-95 sm:w-auto sm:px-7 sm:py-4 sm:text-base"
                   >
                     <span>Start a School (Free Pilot)</span>
-                    <ArrowRight className="h-5 w-5" />
+                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Link>
 
                   <a
                     href="#platforms"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-6 py-4 text-base font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-5 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white sm:w-auto sm:px-6 sm:py-4 sm:text-base"
                   >
-                    <Smartphone className="h-5 w-5 text-sky-400" />
+                    <Smartphone className="h-4 w-4 text-sky-400 sm:h-5 sm:w-5" />
                     <span>See Live Demo</span>
                   </a>
                 </div>
 
                 {/* Trust Highlights */}
-                <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-400 sm:text-sm">
+                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400 sm:gap-x-5 sm:text-sm">
                   <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                     100% Offline Ready
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                     Zero SMS Carrier Costs
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                     ECZ Grading Aligned
                   </span>
                 </div>
@@ -548,45 +549,45 @@ export default function HomePage() {
               {/* Right Column: Interactive Mobile & Web Experience Mockup */}
               <div className="relative mx-auto w-full max-w-md lg:max-w-none">
                 {/* Tab Switcher */}
-                <div className="flex items-center justify-center gap-2 pb-3">
+                <div className="flex w-full items-center justify-center gap-2 pb-3">
                   <button
                     type="button"
                     onClick={() => setActiveTab("mobile")}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition sm:gap-2 sm:px-4 sm:text-sm ${
                       activeTab === "mobile"
                         ? "bg-sky-500 text-white shadow-lg shadow-sky-500/25"
                         : "border border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white"
                     }`}
                   >
                     <Smartphone className="h-3.5 w-3.5" />
-                    <span>📱 Android Phone View</span>
+                    <span>📱 Android View</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveTab("web")}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition sm:gap-2 sm:px-4 sm:text-sm ${
                       activeTab === "web"
                         ? "bg-sky-500 text-white shadow-lg shadow-sky-500/25"
                         : "border border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white"
                     }`}
                   >
                     <Laptop className="h-3.5 w-3.5" />
-                    <span>💻 Web Admin Portal</span>
+                    <span>💻 Web Portal</span>
                   </button>
                 </div>
 
                 {activeTab === "mobile" ? (
                   /* Smartphone Device Simulation */
-                  <div className="relative mx-auto max-w-[340px] rounded-[36px] border-[5px] border-slate-700 bg-slate-950 p-3 shadow-2xl shadow-sky-950/80">
+                  <div className="relative mx-auto w-full max-w-[320px] rounded-[32px] border-[4px] border-slate-700 bg-slate-950 p-2.5 shadow-2xl shadow-sky-950/80 sm:max-w-[340px] sm:rounded-[36px] sm:border-[5px] sm:p-3">
                     {/* Top speaker notch */}
-                    <div className="mx-auto mb-2 h-4 w-28 rounded-full bg-slate-800" />
+                    <div className="mx-auto mb-2 h-3.5 w-24 rounded-full bg-slate-800 sm:h-4 sm:w-28" />
 
                     {/* App Screen */}
-                    <div className="rounded-[24px] bg-slate-900 p-4 border border-slate-800 text-left">
+                    <div className="rounded-[22px] bg-slate-900 p-3 sm:rounded-[24px] sm:p-4 border border-slate-800 text-left">
                       {/* App Header */}
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 sm:pb-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center text-white font-black text-xs">
+                          <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center text-white font-black text-xs shrink-0">
                             ZS
                           </div>
                           <div>
@@ -594,14 +595,14 @@ export default function HomePage() {
                             <p className="text-[10px] text-emerald-400">● Offline Mode Active</p>
                           </div>
                         </div>
-                        <span className="rounded bg-sky-950 border border-sky-800 px-2 py-0.5 text-[9px] font-bold text-sky-400">
+                        <span className="rounded bg-sky-950 border border-sky-800 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">
                           Grade 9B
                         </span>
                       </div>
 
                       {/* Roll Call Fast Action List */}
-                      <div className="mt-3 space-y-2 text-xs">
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2.5 border border-slate-800">
+                      <div className="mt-2.5 sm:mt-3 space-y-2 text-xs">
+                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
                           <div>
                             <p className="font-semibold text-slate-200">1. Mwape Chanda</p>
                             <p className="text-[10px] text-slate-400">Reg # 2026/089</p>
@@ -611,7 +612,7 @@ export default function HomePage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2.5 border border-slate-800">
+                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
                           <div>
                             <p className="font-semibold text-slate-200">2. Kondwani Banda</p>
                             <p className="text-[10px] text-slate-400">Reg # 2026/092</p>
@@ -621,7 +622,7 @@ export default function HomePage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2.5 border border-slate-800">
+                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
                           <div>
                             <p className="font-semibold text-slate-200">3. Thandiwe Tembo</p>
                             <p className="text-[10px] text-slate-400">Reg # 2026/104</p>
@@ -633,7 +634,7 @@ export default function HomePage() {
                       </div>
 
                       {/* Quick Summary Pill */}
-                      <div className="mt-3 grid grid-cols-3 gap-1.5 text-center">
+                      <div className="mt-2.5 sm:mt-3 grid grid-cols-3 gap-1.5 text-center">
                         <div className="rounded-lg bg-emerald-950/70 border border-emerald-800/50 p-1.5">
                           <p className="text-sm font-extrabold text-emerald-400">38</p>
                           <p className="text-[9px] text-emerald-300">Present</p>
@@ -649,7 +650,7 @@ export default function HomePage() {
                       </div>
 
                       {/* Zero-SMS notice */}
-                      <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 p-2 text-[10px] text-emerald-200">
+                      <div className="mt-2.5 sm:mt-3 flex items-center gap-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 p-2 text-[10px] text-emerald-200">
                         <Zap className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                         <span>Instant push alert will reach parents automatically.</span>
                       </div>
@@ -657,23 +658,23 @@ export default function HomePage() {
                   </div>
                 ) : (
                   /* Web Desktop Portal Mockup */
-                  <div className="relative rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl shadow-sky-950/50 text-left">
+                  <div className="relative rounded-2xl border border-slate-700 bg-slate-900 p-4 sm:p-5 shadow-2xl shadow-sky-950/50 text-left">
                     {/* Mock Window Header */}
                     <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
-                        <span className="text-xs font-semibold text-slate-200">
+                        <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0" />
+                        <span className="text-xs font-semibold text-slate-200 truncate">
                           Munali Secondary School · Headteacher Dashboard
                         </span>
                       </div>
-                      <span className="rounded bg-sky-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-400 border border-sky-800">
+                      <span className="rounded bg-sky-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-400 border border-sky-800 shrink-0">
                         Term 1 Active
                       </span>
                     </div>
 
                     {/* Financial Ledger Snapshot */}
                     <div className="mt-4 space-y-3">
-                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-4">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-slate-300">
                             Tuition & Boarding Collections
@@ -681,7 +682,7 @@ export default function HomePage() {
                           <span className="text-xs font-bold text-emerald-400">89.4% Kwacha Collected</span>
                         </div>
                         <div className="mt-2 flex items-baseline justify-between">
-                          <span className="text-xl font-extrabold text-white">K 184,200</span>
+                          <span className="text-lg sm:text-xl font-extrabold text-white">K 184,200</span>
                           <span className="text-xs text-slate-400">Target: K 206,000</span>
                         </div>
                         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
@@ -690,7 +691,7 @@ export default function HomePage() {
                       </div>
 
                       {/* ECZ Results Status */}
-                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-4">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-slate-300">ECZ Terminal Report Cards</span>
                           <span className="font-mono text-sky-400">542 Generated</span>
@@ -708,13 +709,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── Platform Breakdown: Web & Android ────────────────────────────── */}
-        <section id="platforms" className="border-y border-slate-800 bg-slate-950 py-16 sm:py-24">
+        <section id="platforms" className="border-y border-slate-800 bg-slate-950 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
                 Dual Platform Architecture
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Built for High-Power Desktop & Agile Mobile
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -722,16 +723,16 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-8 lg:grid-cols-2">
+            <div className="mt-10 sm:mt-12 grid gap-6 sm:gap-8 lg:grid-cols-2">
               {/* Web Platform Card */}
-              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl sm:p-8">
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
                 <div>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-inner">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-inner shrink-0">
                       <Laptop className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Web Cloud Portal</h3>
+                      <h3 className="text-lg sm:text-xl font-bold text-white">Web Cloud Portal</h3>
                       <p className="text-xs font-medium text-sky-400">For Head Teachers, Registrars & Bursars</p>
                     </div>
                   </div>
@@ -753,20 +754,20 @@ export default function HomePage() {
                   </ul>
                 </div>
 
-                <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
+                <div className="mt-6 sm:mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
                   <span className="font-bold text-sky-400">Compatibility:</span> Chrome, Edge, Safari, Firefox · Accessible from any desktop browser with no local server setup.
                 </div>
               </div>
 
               {/* Android Mobile Card */}
-              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl sm:p-8">
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
                 <div>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-inner">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-inner shrink-0">
                       <Smartphone className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Android Mobile Application</h3>
+                      <h3 className="text-lg sm:text-xl font-bold text-white">Android Mobile Application</h3>
                       <p className="text-xs font-medium text-emerald-400">For Classroom Teachers & Parents</p>
                     </div>
                   </div>
@@ -788,7 +789,7 @@ export default function HomePage() {
                   </ul>
                 </div>
 
-                <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
+                <div className="mt-6 sm:mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
                   <span className="font-bold text-emerald-400">Compatibility:</span> Android 8.0+ Smartphones & Tablets · Progressive Web App (PWA) and APK installation support.
                 </div>
               </div>
@@ -797,13 +798,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── System Architecture & Offline Sync ────────────────────────────── */}
-        <section id="architecture" className="border-b border-slate-800 bg-slate-900/70 py-16 sm:py-24">
+        <section id="architecture" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
                 Offline-First Reliability
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Engineered for African Infrastructure Realities
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -811,24 +812,24 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 sm:mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {architecturePillars.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.title}
-                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/80 p-6 transition hover:border-slate-700 hover:bg-slate-950 hover:shadow-xl"
+                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/80 p-5 sm:p-6 transition hover:border-slate-700 hover:bg-slate-950 hover:shadow-xl"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0">
                           <Icon className="h-5 w-5" />
                         </div>
                         <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-300 border border-slate-700">
                           {item.badge}
                         </span>
                       </div>
-                      <h3 className="mt-5 text-lg font-bold text-white">{item.title}</h3>
+                      <h3 className="mt-5 text-base sm:text-lg font-bold text-white">{item.title}</h3>
                       <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.description}</p>
                     </div>
                   </div>
@@ -837,14 +838,14 @@ export default function HomePage() {
             </div>
 
             {/* Architectural Data Flow Diagram */}
-            <div className="mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-6 text-white sm:p-8">
-              <div className="flex flex-col justify-between gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
+            <div className="mt-10 sm:mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-5 sm:p-8 text-white">
+              <div className="flex flex-col justify-between gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
                 <div>
-                  <h3 className="text-lg font-bold text-white">Resilient Data Flow Architecture</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Resilient Data Flow Architecture</h3>
                   <p className="text-xs text-slate-400">Bidirectional Sync & High-Availability Pipeline</p>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-sky-400 font-semibold">
-                  <Database className="h-4 w-4" />
+                  <Database className="h-4 w-4 shrink-0" />
                   <span>PostgreSQL Cloud + Client IndexedDB Engine</span>
                 </div>
               </div>
@@ -852,7 +853,7 @@ export default function HomePage() {
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
                   <div className="flex items-center gap-2 text-sky-400 font-semibold text-sm">
-                    <Smartphone className="h-4 w-4" />
+                    <Smartphone className="h-4 w-4 shrink-0" />
                     <span>01. Edge Device (Offline)</span>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-slate-300">
@@ -862,7 +863,7 @@ export default function HomePage() {
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
                   <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-                    <RefreshCw className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4 shrink-0" />
                     <span>02. Auto-Sync Mesh</span>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-slate-300">
@@ -872,7 +873,7 @@ export default function HomePage() {
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
                   <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
-                    <Zap className="h-4 w-4" />
+                    <Zap className="h-4 w-4 shrink-0" />
                     <span>03. Zero-SMS Push Broadcast</span>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-slate-300">
@@ -885,13 +886,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── Core Modules ─────────────────────────────────────────────────── */}
-        <section id="modules" className="border-b border-slate-800 bg-slate-950 py-16 sm:py-24">
+        <section id="modules" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-400">
                 Complete School Suite
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Every Department, One Unified System
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -899,21 +900,21 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-2">
+            <div className="mt-10 sm:mt-12 grid gap-6 md:grid-cols-2">
               {moduleBreakdown.map((mod) => {
                 const Icon = mod.icon;
                 return (
                   <div
                     key={mod.title}
-                    className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl sm:p-8"
+                    className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 sm:p-8 shadow-xl"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800 text-sky-400 border border-slate-700">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800 text-sky-400 border border-slate-700 shrink-0">
                           <Icon className="h-6 w-6" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-white">{mod.title}</h3>
+                          <h3 className="text-lg sm:text-xl font-bold text-white">{mod.title}</h3>
                           <span className="text-[11px] font-semibold text-sky-400">{mod.tag}</span>
                         </div>
                       </div>
@@ -921,8 +922,8 @@ export default function HomePage() {
 
                     <ul className="mt-6 space-y-3">
                       {mod.points.map((pt) => (
-                        <li key={pt} className="flex items-center gap-2.5 text-sm text-slate-300">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                        <li key={pt} className="flex items-start gap-2.5 text-sm text-slate-300">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                           <span>{pt}</span>
                         </li>
                       ))}
@@ -935,13 +936,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── Comparison Matrix ────────────────────────────────────────────── */}
-        <section id="compare" className="border-b border-slate-800 bg-slate-900/70 py-16 sm:py-24">
+        <section id="compare" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <div className="text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
                 Direct Comparison
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Why Schools Replace Legacy Portals with ZamSchool OS
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-400">
@@ -949,7 +950,8 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-10 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl">
+            {/* Desktop Table View (sm+) */}
+            <div className="hidden sm:block mt-10 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl">
               <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-800 bg-slate-900 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 sm:px-6 sm:text-sm">
                 <div>Capability</div>
                 <div className="text-slate-400">Legacy / Paper</div>
@@ -975,17 +977,45 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+
+            {/* Mobile Card View (Zero Horizontal Overflow, Crisp Readability) */}
+            <div className="sm:hidden mt-8 space-y-3.5">
+              {comparisonData.map((row) => (
+                <div
+                  key={row.aspect}
+                  className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-md text-left"
+                >
+                  <p className="text-sm font-bold text-white">{row.aspect}</p>
+                  <div className="mt-3 space-y-2 text-xs">
+                    <div className="flex items-start gap-2 rounded-xl bg-slate-900/80 p-2.5 text-slate-400 border border-slate-800/80">
+                      <X className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+                      <div>
+                        <span className="font-semibold text-slate-500 block text-[10px] uppercase">Legacy / Paper</span>
+                        <span>{row.legacy}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-xl bg-emerald-950/30 p-2.5 text-emerald-300 border border-emerald-800/40">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                      <div>
+                        <span className="font-semibold text-emerald-400 block text-[10px] uppercase">ZamSchool OS</span>
+                        <span>{row.zamschool}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ─── Pricing & Pilot Programme ─────────────────────────────────────── */}
-        <section id="pricing" className="border-b border-slate-800 bg-slate-950 py-16 sm:py-24">
+        <section id="pricing" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
                 Simple, Transparent Terms
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Free for Founding Schools
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -995,17 +1025,17 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 lg:grid-cols-2">
-              <div className="flex flex-col rounded-3xl border-2 border-sky-500/80 bg-gradient-to-b from-sky-950/40 via-slate-900 to-slate-950 p-6 shadow-2xl sm:p-8">
+            <div className="mt-10 sm:mt-12 grid gap-6 lg:grid-cols-2">
+              <div className="flex flex-col rounded-3xl border-2 border-sky-500/80 bg-gradient-to-b from-sky-950/40 via-slate-900 to-slate-950 p-5 sm:p-8 shadow-2xl">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-xl font-bold text-white">Founding School Pilot</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-white">Founding School Pilot</h3>
                   <span className="rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-1 text-xs font-bold text-sky-300">
                     Current Term
                   </span>
                 </div>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-black tracking-tight text-white">K0</span>
-                  <span className="text-sm font-medium text-slate-400">per school, per term</span>
+                  <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">K0</span>
+                  <span className="text-xs sm:text-sm font-medium text-slate-400">per school, per term</span>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-slate-300">
                   Everything the platform does, free while we grow with our founding schools.
@@ -1020,15 +1050,15 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
+                  className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-6 py-3.5 sm:py-4 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
                 >
                   <span>Start Free School Setup</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
 
-              <div className="flex flex-col rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-xl sm:p-8">
-                <h3 className="text-xl font-bold text-white">After the Pilot</h3>
+              <div className="flex flex-col rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
+                <h3 className="text-lg sm:text-xl font-bold text-white">After the Pilot</h3>
                 <p className="mt-3 text-sm leading-relaxed text-slate-300">
                   Paid plans will come - and when they do, you will always know
                   what you are paying for before you pay it.
@@ -1043,11 +1073,11 @@ export default function HomePage() {
                 </ul>
                 <p className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs leading-relaxed text-slate-400">
                   Questions about onboarding your school? Call{" "}
-                  <a href="tel:+260973385988" className="font-semibold text-sky-400 hover:underline">
+                  <a href="tel:+260973385988" className="font-semibold text-sky-400 hover:underline break-all">
                     +260 973 385 988
                   </a>{" "}
                   or email{" "}
-                  <a href="mailto:zenitycoreinc@gmail.com" className="font-semibold text-sky-400 hover:underline">
+                  <a href="mailto:zenitycoreinc@gmail.com" className="font-semibold text-sky-400 hover:underline break-all">
                     zenitycoreinc@gmail.com
                   </a>
                   .
@@ -1058,13 +1088,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── Trust, Security & Live Status ─────────────────────────────────── */}
-        <section id="trust" className="border-b border-slate-800 bg-slate-900/70 py-16 sm:py-24">
+        <section id="trust" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
                 Security & Data Integrity
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Student Records, Protected by Design
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -1073,16 +1103,16 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-10 sm:mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {trustPillars.map((item) => {
                 const Icon = item.icon;
                 return (
                   <div
                     key={item.title}
-                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/90 p-6 shadow-lg"
+                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/90 p-5 sm:p-6 shadow-lg"
                   >
                     <div>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sky-400 border border-slate-800 shadow-inner">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sky-400 border border-slate-800 shadow-inner shrink-0">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="mt-4 text-base font-bold text-white">{item.title}</h3>
@@ -1095,7 +1125,7 @@ export default function HomePage() {
               })}
             </div>
 
-            <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-slate-800 bg-slate-950 p-6 text-center sm:p-8">
+            <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-slate-800 bg-slate-950 p-5 text-center sm:p-8">
               <SystemStatusBadge variant="dark" />
               <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-400">
                 This indicator runs a live probe against the platform&apos;s
@@ -1106,14 +1136,14 @@ export default function HomePage() {
         </section>
 
         {/* ─── Corporate Authority & Leadership ─────────────────────────────── */}
-        <section id="leadership" className="border-b border-slate-800 bg-slate-950 py-16 sm:py-24">
+        <section id="leadership" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
                   Leadership & Corporate Backing
                 </span>
-                <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                   Backed by ZenityCore Technologies
                 </h2>
                 <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-300">
@@ -1148,19 +1178,19 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-wrap items-center gap-4">
+                <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4">
                   <a
                     href="https://zenitycore.tech"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
                   >
                     <span>Visit zenitycore.tech</span>
                     <ExternalLink className="h-4 w-4" />
                   </a>
                   <a
                     href="mailto:zenitycoreinc@gmail.com"
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
                   >
                     <span>Contact Leadership</span>
                   </a>
@@ -1168,14 +1198,14 @@ export default function HomePage() {
               </div>
 
               {/* Leadership profile card */}
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl">
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-2xl">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-2xl font-black text-white shadow-lg">
+                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-xl sm:text-2xl font-black text-white shadow-lg shrink-0">
                     IM
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white">Ison Mumbuna</h3>
-                    <p className="text-sm font-medium text-sky-400">Chief Executive Officer & Founder</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-white">Ison Mumbuna</h3>
+                    <p className="text-xs sm:text-sm font-medium text-sky-400">Chief Executive Officer & Founder</p>
                     <p className="text-xs text-slate-400">ZenityCore Technologies</p>
                   </div>
                 </div>
@@ -1187,14 +1217,14 @@ export default function HomePage() {
                   <p className="mt-3 text-xs font-semibold text-sky-400">— Ison Mumbuna, CEO</p>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3 text-center text-xs">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-center text-xs">
                   <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
                     <p className="font-bold text-white">Direct Line</p>
-                    <p className="mt-0.5 text-slate-400">+260 973 385 988</p>
+                    <p className="mt-0.5 text-slate-400 break-all">+260 973 385 988</p>
                   </div>
                   <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
                     <p className="font-bold text-white">Executive Desk</p>
-                    <p className="mt-0.5 text-slate-400">zenitycoreinc@gmail.com</p>
+                    <p className="mt-0.5 text-slate-400 break-all">zenitycoreinc@gmail.com</p>
                   </div>
                 </div>
               </div>
@@ -1203,13 +1233,13 @@ export default function HomePage() {
         </section>
 
         {/* ─── Frequently Asked Questions ───────────────────────────────────── */}
-        <section id="faq" className="border-b border-slate-800 bg-slate-900/70 py-16 sm:py-24">
+        <section id="faq" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <div className="text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
                 Clear Answers
               </span>
-              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
                 Frequently Asked Questions
               </h2>
               <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
@@ -1217,20 +1247,20 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-12 space-y-3.5">
+            <div className="mt-10 sm:mt-12 space-y-3.5">
               {faqItems.map((item, idx) => (
                 <details
                   key={idx}
                   className="group rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-6 transition hover:border-slate-700 open:bg-slate-950"
                 >
                   <summary className="flex cursor-pointer items-center justify-between text-sm sm:text-base font-bold text-white marker:content-none">
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-2.5 sm:gap-3">
                       <HelpCircle className="h-5 w-5 shrink-0 text-sky-400" />
                       {item.q}
                     </span>
                     <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-90" />
                   </summary>
-                  <p className="mt-4 text-xs sm:text-sm leading-relaxed text-slate-300 pl-8">
+                  <p className="mt-4 text-xs sm:text-sm leading-relaxed text-slate-300 pl-0 sm:pl-8">
                     {item.a}
                   </p>
                 </details>
@@ -1240,7 +1270,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── Final CTA ────────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 py-16 sm:py-24 text-white">
+        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 py-14 sm:py-24 text-white">
           <div className="pointer-events-none absolute inset-0 bg-radial-[circle_at_center,_var(--tw-gradient-stops)] from-sky-500/10 via-transparent to-transparent" />
 
           <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6">
@@ -1249,7 +1279,7 @@ export default function HomePage() {
               <span>Transform Your School Operations Today</span>
             </div>
 
-            <h2 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">
+            <h2 className="mt-6 text-2xl font-black tracking-tight sm:text-5xl">
               Ready to modernise your school?
             </h2>
 
@@ -1257,17 +1287,17 @@ export default function HomePage() {
               Set up your school in under 5 minutes. Add classes, register teachers, and experience instant offline roll calls on Web and Android.
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-8 py-4 text-base font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 sm:w-auto"
               >
                 <span>Start Free School Setup</span>
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 px-8 py-4 text-base font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white sm:w-auto"
               >
                 <span>Sign In to School Desk</span>
               </Link>
