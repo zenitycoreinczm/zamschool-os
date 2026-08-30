@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
 
 import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
 
@@ -43,12 +42,11 @@ const footerNavigation = [
 
 export default function LandingFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-slate-950 text-slate-400">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-16 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-12">
-        {/* Brand & Corporate profile */}
+    <footer className="border-t border-slate-200 bg-slate-50 text-slate-600">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-14 sm:px-6 sm:pt-16 md:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-12">
         <div className="flex flex-col gap-4">
           <Link href="/" className="group flex w-fit items-center gap-3">
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-900 ring-1 ring-white/15 transition-transform group-hover:scale-105">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200 transition-transform group-hover:scale-105">
               <Image
                 src="/icon.png"
                 alt="ZamSchool OS"
@@ -58,61 +56,49 @@ export default function LandingFooter() {
               />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-white">ZamSchool OS</span>
-              <p className="text-[11px] font-medium text-sky-400">The School Operating System</p>
+              <span className="text-xl font-bold tracking-tight text-slate-900">ZamSchool OS</span>
+              <p className="text-[11px] font-medium text-sky-700">The School Operating System</p>
             </div>
           </Link>
 
-          <p className="max-w-sm text-sm leading-6 text-slate-400">
-            Enterprise school operating system built for Zambian educational institutions. 
-            Native offline roll calls, ECZ report cards, and fee reconciliation on Web and Android.
+          <p className="max-w-sm text-sm leading-6 text-slate-600">
+            Enterprise school operating system built for Zambian educational institutions. Native offline roll calls,
+            ECZ report cards, and fee reconciliation on Web and Android.
           </p>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-slate-300">
-            <p className="font-semibold text-white">Backed by ZenityCore Technologies</p>
-            <p className="mt-1 text-slate-400">
-              Founded & led by CEO <span className="font-medium text-white">Ison Mumbuna</span>. 
-              Engineering resilient educational cloud & mobile solutions across Africa.
+          <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600">
+            <p className="font-semibold text-slate-900">Backed by ZenityCore Technologies</p>
+            <p className="mt-1 text-slate-600">
+              Founded & led by CEO <span className="font-medium text-slate-900">Ison Mumbuna</span>. Engineering
+              resilient educational cloud & mobile solutions across Africa.
             </p>
             <a
               href="https://zenitycore.tech"
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1.5 font-semibold text-sky-400 hover:text-sky-300"
+              className="mt-2 inline-flex font-semibold text-sky-700 hover:text-sky-800 hover:underline"
             >
               zenitycore.tech
-              <ExternalLink className="h-3 w-3" />
             </a>
           </div>
 
           <div className="flex flex-col gap-2 pt-1 text-xs sm:text-sm">
             <a
               href="mailto:zenitycoreinc@gmail.com"
-              className="flex items-center gap-2.5 text-slate-400 transition hover:text-white"
+              className="break-all text-slate-600 transition hover:text-sky-700"
             >
-              <Mail className="h-4 w-4 shrink-0 text-sky-400" />
               zenitycoreinc@gmail.com
             </a>
-            <a
-              href="tel:+260973385988"
-              className="flex items-center gap-2.5 text-slate-400 transition hover:text-white"
-            >
-              <Phone className="h-4 w-4 shrink-0 text-sky-400" />
+            <a href="tel:+260973385988" className="text-slate-600 transition hover:text-sky-700">
               +260 973 385 988
             </a>
-            <span className="flex items-center gap-2.5 text-slate-400">
-              <MapPin className="h-4 w-4 shrink-0 text-sky-400" />
-              Lusaka & Mongu, Zambia
-            </span>
+            <span className="text-slate-600">Lusaka & Mongu, Zambia</span>
           </div>
         </div>
 
-        {/* Links columns */}
         {footerNavigation.map((col) => (
           <div key={col.heading} className="flex flex-col gap-3.5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">
-              {col.heading}
-            </h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">{col.heading}</h3>
             <ul className="flex flex-col gap-2.5 text-sm">
               {col.links.map((link) => (
                 <li key={link.label}>
@@ -121,16 +107,12 @@ export default function LandingFooter() {
                       href={link.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-slate-400 transition hover:text-white"
+                      className="text-slate-600 transition hover:text-sky-700"
                     >
                       {link.label}
-                      <ExternalLink className="h-3 w-3 opacity-60" />
                     </a>
                   ) : (
-                    <Link
-                      href={link.href}
-                      className="text-slate-400 transition hover:text-white"
-                    >
+                    <Link href={link.href} className="text-slate-600 transition hover:text-sky-700">
                       {link.label}
                     </Link>
                   )}
@@ -141,15 +123,12 @@ export default function LandingFooter() {
         ))}
       </div>
 
-      <div className="border-t border-white/[0.08]" />
+      <div className="border-t border-slate-200" />
 
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:px-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <SystemStatusBadge />
-          <span className="flex items-center gap-1 text-slate-400">
-            <ShieldCheck className="h-3.5 w-3.5 text-sky-400" />
-            TLS 1.3 Encrypted & Local-First Cached
-          </span>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <SystemStatusBadge variant="light" />
+          <span className="text-slate-500">TLS 1.3 Encrypted & Local-First Cached</span>
         </div>
 
         <p className="text-center sm:text-right">

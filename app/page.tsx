@@ -3,42 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Coins,
-  Cpu,
-  Database,
-  ExternalLink,
-  FileSpreadsheet,
-  Fingerprint,
-  Globe,
-  HelpCircle,
-  Laptop,
-  Layers,
-  Lock,
-  Mail,
-  Menu,
-  MessageSquare,
-  Network,
-  Phone,
-  RefreshCw,
-  School,
-  ShieldCheck,
-  Smartphone,
-  Sparkles,
-  UserCheck,
-  Users,
-  Wifi,
-  WifiOff,
-  X,
-  Zap,
-} from "lucide-react";
+import { ChevronRight, Menu, X } from "lucide-react";
 
 import LandingFooter from "@/components/landing/LandingFooter";
 import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
@@ -84,28 +49,24 @@ const platformFeatures = {
 
 const architecturePillars = [
   {
-    icon: WifiOff,
     badge: "Local-First Core",
     title: "Offline-First Sync Engine",
     description:
       "Built with client-side IndexedDB caching and Service Worker background sync. Teachers work uninterrupted during power cuts or network outages across Zambian provinces.",
   },
   {
-    icon: MessageSquare,
     badge: "Cost Reduction",
     title: "Zero-SMS Direct Push Mesh",
     description:
       "Replaces expensive carrier SMS bundles with native Web and Android push protocols, saving schools thousands of Zambian Kwacha every academic term.",
   },
   {
-    icon: FileSpreadsheet,
     badge: "National Syllabus",
     title: "ECZ-Aligned Academic Engine",
     description:
       "Pre-configured for Zambian secondary and primary grading standards (Divisions 1–4, Distinctions, Merits, Credits, Passes) with automated aggregate calculations.",
   },
   {
-    icon: Lock,
     badge: "Security & Governance",
     title: "Multi-Role RBAC & Audit Trails",
     description:
@@ -115,10 +76,9 @@ const architecturePillars = [
 
 const moduleBreakdown = [
   {
-    icon: Users,
     title: "Classroom Attendance Engine",
     tag: "Sub-30s Roll Call",
-    color: "from-sky-500/10 to-blue-500/5 text-sky-600 border-sky-200",
+    tagClass: "text-sky-600",
     points: [
       "Sub-30-second roll calls per classroom",
       "Immediate parent notification on mark entry",
@@ -127,10 +87,9 @@ const moduleBreakdown = [
     ],
   },
   {
-    icon: BookOpen,
     title: "Academic Grading & Report Cards",
     tag: "ECZ Form 1–4 & Grade 1–7",
-    color: "from-emerald-500/10 to-teal-500/5 text-emerald-600 border-emerald-200",
+    tagClass: "text-emerald-600",
     points: [
       "Continuous Assessment (CA) & Terminal Exam marks",
       "ECZ-compliant grading scales & class rankings",
@@ -139,10 +98,9 @@ const moduleBreakdown = [
     ],
   },
   {
-    icon: Coins,
     title: "Bursar & School Fees Ledger",
     tag: "Kwacha Accounting",
-    color: "from-amber-500/10 to-yellow-500/5 text-amber-600 border-amber-200",
+    tagClass: "text-amber-600",
     points: [
       "Real-time tuition, boarding, and PTA fee tracking",
       "Automated digital payment receipts with audit IDs",
@@ -151,10 +109,9 @@ const moduleBreakdown = [
     ],
   },
   {
-    icon: Zap,
     title: "Zero-Cost Communications",
     tag: "No SMS Bills",
-    color: "from-purple-500/10 to-indigo-500/5 text-purple-600 border-purple-200",
+    tagClass: "text-purple-600",
     points: [
       "Whole-school and class-specific broadcast channels",
       "Direct push notices to Android phones and Web",
@@ -204,25 +161,21 @@ const comparisonData = [
 
 const trustPillars = [
   {
-    icon: ShieldCheck,
     title: "Multi-Role Access Control",
     description:
       "Granular permissions for Head Teachers, Bursars, Class Teachers, and Parents. Every user sees only what their role allows - nothing more.",
   },
   {
-    icon: Lock,
     title: "Row-Level Database Security",
     description:
       "Every table enforces school-scoped row-level security, so one school can never read another school's records, even by accident.",
   },
   {
-    icon: Database,
     title: "Complete Audit Trails",
     description:
       "Sensitive actions are logged with who did what, and when. Changes to results, fees, and records stay traceable end to end.",
   },
   {
-    icon: Fingerprint,
     title: "Encryption & Backups",
     description:
       "Traffic is encrypted in transit and data rests on managed encrypted infrastructure with operational backups for recovery.",
@@ -272,612 +225,395 @@ const faqItems = [
   },
 ];
 
+const mobileNavLinks = [
+  { href: "#platforms", label: "Dual Platform (Web & Android)" },
+  { href: "#architecture", label: "Offline Sync Architecture" },
+  { href: "#modules", label: "School Modules & Features" },
+  { href: "#compare", label: "Compare with Legacy SMS" },
+  { href: "#pricing", label: "Free Founding Pilot Pricing" },
+  { href: "#leadership", label: "ZenityCore Corporate Leadership" },
+  { href: "#faq", label: "Frequently Asked Questions" },
+];
+
+function Check({ className = "bg-emerald-100 text-emerald-700" }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${className}`}
+    >
+      ✓
+    </span>
+  );
+}
+
+function Cross() {
+  return (
+    <span
+      aria-hidden="true"
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-[11px] font-bold text-rose-600"
+    >
+      ✕
+    </span>
+  );
+}
+
 export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"mobile" | "web">("mobile");
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 antialiased selection:bg-sky-500 selection:text-white overflow-x-hidden">
-      {/* ─── Navigation Header ────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+    <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 antialiased selection:bg-sky-600 selection:text-white">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 p-0.5 shadow-md shadow-sky-500/20 sm:h-11 sm:w-11">
-              <div className="h-full w-full overflow-hidden rounded-[10px] bg-slate-950">
-                <Image
-                  src="/icon.png"
-                  alt="ZamSchool OS"
-                  width={44}
-                  height={44}
-                  className="h-full w-full object-cover"
-                  priority
-                />
-              </div>
+          <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200 sm:h-10 sm:w-10">
+              <Image
+                src="/icon.png"
+                alt="ZamSchool OS"
+                width={40}
+                height={40}
+                className="h-full w-full object-cover"
+                priority
+              />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-base font-black tracking-tight text-white sm:text-xl">
-                  ZamSchool<span className="text-sky-400">OS</span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-base font-black tracking-tight text-slate-900 sm:text-lg">
+                  ZamSchool<span className="text-sky-600">OS</span>
                 </span>
-                <span className="rounded-full bg-sky-500/10 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 sm:px-2">
+                <span className="rounded-full border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 sm:px-2">
                   v2.4
                 </span>
               </div>
-              <p className="hidden text-xs font-medium text-slate-400 sm:block">
+              <p className="hidden text-xs font-medium text-slate-500 sm:block">
                 Zambian School Operating System
               </p>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden items-center gap-6 lg:flex">
-            <Link
-              href="#platforms"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#platforms" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Web & Android
             </Link>
-            <Link
-              href="#architecture"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#architecture" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Architecture
             </Link>
-            <Link
-              href="#modules"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#modules" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Modules
             </Link>
-            <Link
-              href="#compare"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#compare" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Comparison
             </Link>
-            <Link
-              href="#pricing"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#pricing" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Pricing
             </Link>
-            <Link
-              href="#leadership"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#leadership" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Leadership
             </Link>
-            <Link
-              href="#faq"
-              className="text-sm font-medium text-slate-300 transition hover:text-sky-400"
-            >
+            <Link href="#faq" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
               FAQ
             </Link>
           </nav>
 
-          {/* User actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="hidden rounded-xl px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white sm:inline-flex sm:text-sm"
+              className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="hidden items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-sky-500/25 transition hover:brightness-110 active:scale-95 sm:inline-flex sm:px-5 sm:py-2.5 sm:text-sm"
+              className="hidden items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95 sm:inline-flex"
             >
-              <span>Free Setup</span>
-              <ArrowRight className="h-4 w-4" />
+              Free Setup
             </Link>
 
-            {/* Mobile Menu Toggle */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 text-slate-300 transition hover:bg-slate-700 hover:text-white lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
         {mobileMenuOpen ? (
-          <div className="max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t border-slate-800 bg-slate-950/98 px-4 py-5 backdrop-blur-xl lg:hidden">
-            <div className="flex flex-col gap-2.5">
-              <Link
-                href="#platforms"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>📱 Dual Platform (Web & Android)</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#architecture"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>⚡ Offline Sync Architecture</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#modules"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>📊 School Modules & Features</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#compare"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>⚔️ Compare with Legacy SMS</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>🏷️ Free Founding Pilot Pricing</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#leadership"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>🏛️ ZenityCore Corporate Leadership</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
-              <Link
-                href="#faq"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between rounded-xl bg-slate-900/70 px-4 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 active:bg-slate-800"
-              >
-                <span>❓ Frequently Asked Questions</span>
-                <ChevronRight className="h-4 w-4 text-slate-500" />
-              </Link>
+          <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
+            <nav className="flex flex-col">
+              {mobileNavLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="border-b border-slate-100 py-3 text-sm font-semibold text-slate-700 transition last:border-b-0 hover:text-sky-700 active:text-sky-700"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
 
-              <div className="mt-2 grid grid-cols-2 gap-2.5 pt-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 py-3.5 text-center text-sm font-bold text-slate-200 hover:bg-slate-800 active:bg-slate-800"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-sky-500/20 hover:brightness-110 active:scale-95"
-                >
-                  Start School
-                </Link>
-              </div>
+            <div className="mt-3 grid grid-cols-2 gap-2.5 pb-1">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center rounded-xl border border-slate-300 bg-white py-3.5 text-center text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center rounded-xl bg-sky-600 py-3.5 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
+              >
+                Start School
+              </Link>
             </div>
           </div>
         ) : null}
       </header>
 
       <main>
-        {/* ─── Hero Section with Vibrant Modern Backdrops ───────────────────── */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 pt-8 pb-14 sm:py-20 lg:py-24">
-          {/* Ambient Glow Orbs */}
-          <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-sky-500/15 blur-[120px]" />
-          <div className="pointer-events-none absolute top-1/3 right-0 h-[400px] w-[400px] rounded-full bg-indigo-500/10 blur-[120px]" />
-
+        <section className="relative overflow-hidden bg-gradient-to-b from-sky-50 via-white to-white pt-10 pb-14 sm:pt-16 sm:pb-20 lg:py-24">
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
-              {/* Left Column: Core Value Proposition */}
+            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
               <div className="flex flex-col items-start text-left">
-                {/* Authority badge */}
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/60 px-3.5 py-1.5 text-xs font-semibold text-sky-200 shadow-sm backdrop-blur">
-                  <span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-sky-700 shadow-sm">
+                  <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
                   <span className="leading-snug">Backed by ZenityCore Technologies · Zambian Education OS</span>
                 </div>
 
-                <h1 className="mt-5 text-2xl font-black tracking-tight text-white break-words sm:text-4xl lg:text-[3.25rem] lg:leading-[1.12]">
+                <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-900 break-words sm:text-4xl lg:text-[3.25rem] lg:leading-[1.12]">
                   Run your entire school{" "}
-                  <span className="bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-sky-600 to-emerald-500 bg-clip-text text-transparent">
                     from your phone
                   </span>{" "}
                   or computer.
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
-                  Engineered for <span className="font-semibold text-white">Web & Android</span>. 
-                  Take morning roll calls in <span className="font-semibold text-emerald-300">30 seconds offline</span>, 
-                  compile ECZ-standard report cards with one click, eliminate expensive SMS bundles with direct push alerts, 
-                  and balance school fee ledgers with total transparency.
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg sm:leading-8">
+                  Engineered for <span className="font-semibold text-slate-900">Web & Android</span>. Take morning roll calls in{" "}
+                  <span className="font-semibold text-emerald-600">30 seconds offline</span>, compile ECZ-standard report
+                  cards with one click, eliminate expensive SMS bundles with direct push alerts, and balance school fee
+                  ledgers with total transparency.
                 </p>
 
-                {/* Platform pills */}
-                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs sm:gap-2.5 sm:text-sm font-medium">
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-slate-200 backdrop-blur sm:px-3.5 sm:py-2">
-                    <Smartphone className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Android App (Teachers & Parents)</span>
+                <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-medium sm:gap-2.5 sm:text-sm">
+                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-700 sm:px-3.5 sm:py-2">
+                    Android App · Teachers & Parents
                   </div>
-                  <div className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-slate-200 backdrop-blur sm:px-3.5 sm:py-2">
-                    <Laptop className="h-4 w-4 text-sky-400 shrink-0" />
-                    <span>Web Cloud (Head Teacher & Bursar)</span>
+                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-slate-700 sm:px-3.5 sm:py-2">
+                    Web Cloud · Head Teacher & Bursar
                   </div>
                 </div>
 
-                {/* Primary CTA Buttons */}
                 <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                   <Link
                     href="/register"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 active:scale-95 sm:w-auto sm:px-7 sm:py-4 sm:text-base"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95 sm:w-auto sm:py-4 sm:text-base"
                   >
-                    <span>Start a School (Free Pilot)</span>
-                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Start a School (Free Pilot)
                   </Link>
 
                   <a
                     href="#platforms"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-5 py-3.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white sm:w-auto sm:px-6 sm:py-4 sm:text-base"
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto sm:py-4 sm:text-base"
                   >
-                    <Smartphone className="h-4 w-4 text-sky-400 sm:h-5 sm:w-5" />
-                    <span>See Live Demo</span>
+                    See Live Demo
                   </a>
                 </div>
 
-                {/* Trust Highlights */}
-                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400 sm:gap-x-5 sm:text-sm">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
+                  <span className="flex items-center gap-2">
+                    <Check className="bg-emerald-100 text-emerald-700" />
                     100% Offline Ready
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span className="flex items-center gap-2">
+                    <Check className="bg-emerald-100 text-emerald-700" />
                     Zero SMS Carrier Costs
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span className="flex items-center gap-2">
+                    <Check className="bg-emerald-100 text-emerald-700" />
                     ECZ Grading Aligned
                   </span>
                 </div>
               </div>
 
-              {/* Right Column: Interactive Mobile & Web Experience Mockup */}
               <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-                {/* Tab Switcher */}
-                <div className="flex w-full items-center justify-center gap-2 pb-3">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("mobile")}
-                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition sm:gap-2 sm:px-4 sm:text-sm ${
-                      activeTab === "mobile"
-                        ? "bg-sky-500 text-white shadow-lg shadow-sky-500/25"
-                        : "border border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    <Smartphone className="h-3.5 w-3.5" />
-                    <span>📱 Android View</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("web")}
-                    className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition sm:gap-2 sm:px-4 sm:text-sm ${
-                      activeTab === "web"
-                        ? "bg-sky-500 text-white shadow-lg shadow-sky-500/25"
-                        : "border border-slate-700 bg-slate-800/80 text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    <Laptop className="h-3.5 w-3.5" />
-                    <span>💻 Web Portal</span>
-                  </button>
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
+                  <Image
+                    src="/landing.jpg"
+                    alt="ZamSchool OS in action"
+                    width={880}
+                    height={1168}
+                    priority
+                    sizes="(min-width: 1024px) 45vw, 100vw"
+                    className="h-auto w-full object-cover"
+                  />
                 </div>
-
-                {activeTab === "mobile" ? (
-                  /* Smartphone Device Simulation */
-                  <div className="relative mx-auto w-full max-w-[320px] rounded-[32px] border-[4px] border-slate-700 bg-slate-950 p-2.5 shadow-2xl shadow-sky-950/80 sm:max-w-[340px] sm:rounded-[36px] sm:border-[5px] sm:p-3">
-                    {/* Top speaker notch */}
-                    <div className="mx-auto mb-2 h-3.5 w-24 rounded-full bg-slate-800 sm:h-4 sm:w-28" />
-
-                    {/* App Screen */}
-                    <div className="rounded-[22px] bg-slate-900 p-3 sm:rounded-[24px] sm:p-4 border border-slate-800 text-left">
-                      {/* App Header */}
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 sm:pb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center text-white font-black text-xs shrink-0">
-                            ZS
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-white">Teacher Roll Call</p>
-                            <p className="text-[10px] text-emerald-400">● Offline Mode Active</p>
-                          </div>
-                        </div>
-                        <span className="rounded bg-sky-950 border border-sky-800 px-1.5 py-0.5 text-[9px] font-bold text-sky-400">
-                          Grade 9B
-                        </span>
-                      </div>
-
-                      {/* Roll Call Fast Action List */}
-                      <div className="mt-2.5 sm:mt-3 space-y-2 text-xs">
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
-                          <div>
-                            <p className="font-semibold text-slate-200">1. Mwape Chanda</p>
-                            <p className="text-[10px] text-slate-400">Reg # 2026/089</p>
-                          </div>
-                          <span className="rounded-md bg-emerald-500/20 border border-emerald-500/40 px-2 py-1 text-[10px] font-bold text-emerald-300">
-                            ✓ Present
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
-                          <div>
-                            <p className="font-semibold text-slate-200">2. Kondwani Banda</p>
-                            <p className="text-[10px] text-slate-400">Reg # 2026/092</p>
-                          </div>
-                          <span className="rounded-md bg-emerald-500/20 border border-emerald-500/40 px-2 py-1 text-[10px] font-bold text-emerald-300">
-                            ✓ Present
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-xl bg-slate-950/80 p-2 sm:p-2.5 border border-slate-800">
-                          <div>
-                            <p className="font-semibold text-slate-200">3. Thandiwe Tembo</p>
-                            <p className="text-[10px] text-slate-400">Reg # 2026/104</p>
-                          </div>
-                          <span className="rounded-md bg-rose-500/20 border border-rose-500/40 px-2 py-1 text-[10px] font-bold text-rose-300">
-                            ✕ Absent
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Quick Summary Pill */}
-                      <div className="mt-2.5 sm:mt-3 grid grid-cols-3 gap-1.5 text-center">
-                        <div className="rounded-lg bg-emerald-950/70 border border-emerald-800/50 p-1.5">
-                          <p className="text-sm font-extrabold text-emerald-400">38</p>
-                          <p className="text-[9px] text-emerald-300">Present</p>
-                        </div>
-                        <div className="rounded-lg bg-rose-950/70 border border-rose-800/50 p-1.5">
-                          <p className="text-sm font-extrabold text-rose-400">2</p>
-                          <p className="text-[9px] text-rose-300">Absent</p>
-                        </div>
-                        <div className="rounded-lg bg-sky-950/70 border border-sky-800/50 p-1.5">
-                          <p className="text-sm font-extrabold text-sky-400">22s</p>
-                          <p className="text-[9px] text-sky-300">Elapsed</p>
-                        </div>
-                      </div>
-
-                      {/* Zero-SMS notice */}
-                      <div className="mt-2.5 sm:mt-3 flex items-center gap-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 p-2 text-[10px] text-emerald-200">
-                        <Zap className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                        <span>Instant push alert will reach parents automatically.</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Web Desktop Portal Mockup */
-                  <div className="relative rounded-2xl border border-slate-700 bg-slate-900 p-4 sm:p-5 shadow-2xl shadow-sky-950/50 text-left">
-                    {/* Mock Window Header */}
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-200 truncate">
-                          Munali Secondary School · Headteacher Dashboard
-                        </span>
-                      </div>
-                      <span className="rounded bg-sky-950 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-400 border border-sky-800 shrink-0">
-                        Term 1 Active
-                      </span>
-                    </div>
-
-                    {/* Financial Ledger Snapshot */}
-                    <div className="mt-4 space-y-3">
-                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-300">
-                            Tuition & Boarding Collections
-                          </span>
-                          <span className="text-xs font-bold text-emerald-400">89.4% Kwacha Collected</span>
-                        </div>
-                        <div className="mt-2 flex items-baseline justify-between">
-                          <span className="text-lg sm:text-xl font-extrabold text-white">K 184,200</span>
-                          <span className="text-xs text-slate-400">Target: K 206,000</span>
-                        </div>
-                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                          <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400" style={{ width: "89.4%" }} />
-                        </div>
-                      </div>
-
-                      {/* ECZ Results Status */}
-                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 sm:p-4">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-semibold text-slate-300">ECZ Terminal Report Cards</span>
-                          <span className="font-mono text-sky-400">542 Generated</span>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-400">
-                          Automated Division & Distinction rankings ready for batch print.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </section>
 
-        {/* ─── Platform Breakdown: Web & Android ────────────────────────────── */}
-        <section id="platforms" className="border-y border-slate-800 bg-slate-950 py-14 sm:py-24">
+        <section id="platforms" className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
                 Dual Platform Architecture
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Built for High-Power Desktop & Agile Mobile
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
-                ZamSchool OS provides dedicated experiences for administrative desktops and classroom mobile phones, synchronized in real time.
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                ZamSchool OS provides dedicated experiences for administrative desktops and classroom mobile phones,
+                synchronized in real time.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 grid gap-6 sm:gap-8 lg:grid-cols-2">
-              {/* Web Platform Card */}
-              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
+            <div className="mt-10 grid gap-6 sm:mt-12 lg:grid-cols-2">
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shadow-inner shrink-0">
-                      <Laptop className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white">Web Cloud Portal</h3>
-                      <p className="text-xs font-medium text-sky-400">For Head Teachers, Registrars & Bursars</p>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Web Cloud Portal</h3>
+                    <p className="mt-0.5 text-xs font-semibold text-sky-600">
+                      For Head Teachers, Registrars & Bursars
+                    </p>
                   </div>
 
-                  <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                    Engineered for high-density administrative workflows on PC, Mac, and Chromebooks. Manage large-scale school governance with precision.
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    Engineered for high-density administrative workflows on PC, Mac, and Chromebooks. Manage large-scale
+                    school governance with precision.
                   </p>
 
                   <ul className="mt-6 space-y-3.5">
                     {platformFeatures.web.map((feat) => (
                       <li key={feat.title} className="flex items-start gap-3 text-sm">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
+                        <Check className="bg-sky-100 text-sky-700" />
                         <div>
-                          <span className="font-semibold text-white">{feat.title}: </span>
-                          <span className="text-slate-400">{feat.desc}</span>
+                          <span className="font-semibold text-slate-900">{feat.title}: </span>
+                          <span className="text-slate-600">{feat.desc}</span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="mt-6 sm:mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
-                  <span className="font-bold text-sky-400">Compatibility:</span> Chrome, Edge, Safari, Firefox · Accessible from any desktop browser with no local server setup.
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600 sm:mt-8">
+                  <span className="font-bold text-sky-700">Compatibility:</span> Chrome, Edge, Safari, Firefox ·
+                  Accessible from any desktop browser with no local server setup.
                 </div>
               </div>
 
-              {/* Android Mobile Card */}
-              <div className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
+              <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-inner shrink-0">
-                      <Smartphone className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white">Android Mobile Application</h3>
-                      <p className="text-xs font-medium text-emerald-400">For Classroom Teachers & Parents</p>
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Android Mobile Application</h3>
+                    <p className="mt-0.5 text-xs font-semibold text-emerald-600">
+                      For Classroom Teachers & Parents
+                    </p>
                   </div>
 
-                  <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                    Optimized for rapid classroom roll calls, continuous assessment marks entry, and real-time parent progress monitoring even with poor connectivity.
+                  <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                    Optimized for rapid classroom roll calls, continuous assessment marks entry, and real-time parent
+                    progress monitoring even with poor connectivity.
                   </p>
 
                   <ul className="mt-6 space-y-3.5">
                     {platformFeatures.android.map((feat) => (
                       <li key={feat.title} className="flex items-start gap-3 text-sm">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                        <Check className="bg-emerald-100 text-emerald-700" />
                         <div>
-                          <span className="font-semibold text-white">{feat.title}: </span>
-                          <span className="text-slate-400">{feat.desc}</span>
+                          <span className="font-semibold text-slate-900">{feat.title}: </span>
+                          <span className="text-slate-600">{feat.desc}</span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="mt-6 sm:mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs font-medium text-slate-300">
-                  <span className="font-bold text-emerald-400">Compatibility:</span> Android 8.0+ Smartphones & Tablets · Progressive Web App (PWA) and APK installation support.
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600 sm:mt-8">
+                  <span className="font-bold text-emerald-700">Compatibility:</span> Android 8.0+ Smartphones &
+                  Tablets · Progressive Web App (PWA) and APK installation support.
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ─── System Architecture & Offline Sync ────────────────────────────── */}
-        <section id="architecture" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
+        <section id="architecture" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
                 Offline-First Reliability
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Engineered for African Infrastructure Realities
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
-                Built from the ground up to solve load shedding, expensive SMS bundles, and rural connectivity outages across Zambia.
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                Built from the ground up to solve load shedding, expensive SMS bundles, and rural connectivity outages
+                across Zambia.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {architecturePillars.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.title}
-                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/80 p-5 sm:p-6 transition hover:border-slate-700 hover:bg-slate-950 hover:shadow-xl"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <span className="rounded-full bg-slate-800 px-2.5 py-0.5 text-[10px] font-bold text-slate-300 border border-slate-700">
-                          {item.badge}
-                        </span>
-                      </div>
-                      <h3 className="mt-5 text-base sm:text-lg font-bold text-white">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.description}</p>
-                    </div>
+            <div className="mt-10 grid gap-6 sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
+              {architecturePillars.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:shadow-md sm:p-6"
+                >
+                  <div>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600">
+                      {item.badge}
+                    </span>
+                    <h3 className="mt-4 text-base font-bold text-slate-900 sm:text-lg">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.description}</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Architectural Data Flow Diagram */}
-            <div className="mt-10 sm:mt-12 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-5 sm:p-8 text-white">
-              <div className="flex flex-col justify-between gap-3 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
+            <div className="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:mt-12 sm:p-8">
+              <div className="flex flex-col justify-between gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-white">Resilient Data Flow Architecture</h3>
-                  <p className="text-xs text-slate-400">Bidirectional Sync & High-Availability Pipeline</p>
+                  <h3 className="text-base font-bold text-slate-900 sm:text-lg">Resilient Data Flow Architecture</h3>
+                  <p className="text-xs text-slate-500">Bidirectional Sync & High-Availability Pipeline</p>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-sky-400 font-semibold">
-                  <Database className="h-4 w-4 shrink-0" />
-                  <span>PostgreSQL Cloud + Client IndexedDB Engine</span>
+                <div className="text-xs font-semibold text-sky-700">
+                  PostgreSQL Cloud + Client IndexedDB Engine
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
-                  <div className="flex items-center gap-2 text-sky-400 font-semibold text-sm">
-                    <Smartphone className="h-4 w-4 shrink-0" />
-                    <span>01. Edge Device (Offline)</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                    Roll calls and marks write directly to encrypted local IndexedDB storage in under 5ms without network delays.
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-bold text-slate-900">
+                    <span className="text-sky-600">01.</span> Edge Device (Offline)
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    Roll calls and marks write directly to encrypted local IndexedDB storage in under 5ms without
+                    network delays.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
-                  <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-                    <RefreshCw className="h-4 w-4 shrink-0" />
-                    <span>02. Auto-Sync Mesh</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                    Service Worker detects connection recovery and securely uploads batched transactions with automated conflict resolution.
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-bold text-slate-900">
+                    <span className="text-emerald-600">02.</span> Auto-Sync Mesh
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    Service Worker detects connection recovery and securely uploads batched transactions with automated
+                    conflict resolution.
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
-                    <Zap className="h-4 w-4 shrink-0" />
-                    <span>03. Zero-SMS Push Broadcast</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                    Cloud workers trigger direct push events to registered parent devices and update headmaster dashboards simultaneously.
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-bold text-slate-900">
+                    <span className="text-amber-600">03.</span> Zero-SMS Push Broadcast
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    Cloud workers trigger direct push events to registered parent devices and update headmaster
+                    dashboards simultaneously.
                   </p>
                 </div>
               </div>
@@ -885,119 +621,108 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Core Modules ─────────────────────────────────────────────────── */}
-        <section id="modules" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
+        <section id="modules" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700">
                 Complete School Suite
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Every Department, One Unified System
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
-                Replace fragmented notebooks, spreadsheets, and SMS bills with specialized modules designed for Zambian school standards.
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                Replace fragmented notebooks, spreadsheets, and SMS bills with specialized modules designed for Zambian
+                school standards.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 grid gap-6 md:grid-cols-2">
-              {moduleBreakdown.map((mod) => {
-                const Icon = mod.icon;
-                return (
-                  <div
-                    key={mod.title}
-                    className="rounded-3xl border border-slate-800 bg-slate-900/80 p-5 sm:p-8 shadow-xl"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800 text-sky-400 border border-slate-700 shrink-0">
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg sm:text-xl font-bold text-white">{mod.title}</h3>
-                          <span className="text-[11px] font-semibold text-sky-400">{mod.tag}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <ul className="mt-6 space-y-3">
-                      {mod.points.map((pt) => (
-                        <li key={pt} className="flex items-start gap-2.5 text-sm text-slate-300">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                          <span>{pt}</span>
-                        </li>
-                      ))}
-                    </ul>
+            <div className="mt-10 grid gap-6 sm:mt-12 md:grid-cols-2">
+              {moduleBreakdown.map((mod) => (
+                <div
+                  key={mod.title}
+                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
+                >
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 sm:text-xl">{mod.title}</h3>
+                    <span className={`text-[11px] font-semibold ${mod.tagClass}`}>{mod.tag}</span>
                   </div>
-                );
-              })}
+
+                  <ul className="mt-6 space-y-3">
+                    {mod.points.map((pt) => (
+                      <li key={pt} className="flex items-start gap-2.5 text-sm text-slate-600">
+                        <Check className="bg-emerald-100 text-emerald-700" />
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ─── Comparison Matrix ────────────────────────────────────────────── */}
-        <section id="compare" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
+        <section id="compare" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <div className="text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
                 Direct Comparison
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Why Schools Replace Legacy Portals with ZamSchool OS
               </h2>
-              <p className="mx-auto mt-3 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-400">
+              <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
                 See how ZamSchool OS delivers lower costs, faster operations, and native offline resilience.
               </p>
             </div>
 
-            {/* Desktop Table View (sm+) */}
-            <div className="hidden sm:block mt-10 overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl">
-              <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-800 bg-slate-900 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-300 sm:px-6 sm:text-sm">
+            <div className="mt-10 hidden overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm sm:block">
+              <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-200 bg-slate-50 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-600 sm:px-6 sm:text-sm">
                 <div>Capability</div>
-                <div className="text-slate-400">Legacy / Paper</div>
-                <div className="text-sky-400">ZamSchool OS</div>
+                <div className="text-slate-500">Legacy / Paper</div>
+                <div className="text-sky-700">ZamSchool OS</div>
               </div>
 
               {comparisonData.map((row) => (
                 <div
                   key={row.aspect}
-                  className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-800/80 px-4 py-4 text-xs sm:px-6 sm:text-sm last:border-b-0"
+                  className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-100 px-4 py-4 text-xs last:border-b-0 sm:px-6 sm:text-sm"
                 >
-                  <div className="font-semibold text-slate-200">
-                    {row.aspect}
-                  </div>
+                  <div className="font-semibold text-slate-900">{row.aspect}</div>
                   <div className="flex items-start gap-1.5 text-slate-500">
-                    <X className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+                    <Cross />
                     <span>{row.legacy}</span>
                   </div>
-                  <div className="flex items-start gap-1.5 font-medium text-emerald-300">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <div className="flex items-start gap-1.5 font-medium text-slate-700">
+                    <Check className="bg-emerald-100 text-emerald-700" />
                     <span>{row.zamschool}</span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Mobile Card View (Zero Horizontal Overflow, Crisp Readability) */}
-            <div className="sm:hidden mt-8 space-y-3.5">
+            <div className="mt-8 space-y-3.5 sm:hidden">
               {comparisonData.map((row) => (
                 <div
                   key={row.aspect}
-                  className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-md text-left"
+                  className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm"
                 >
-                  <p className="text-sm font-bold text-white">{row.aspect}</p>
+                  <p className="text-sm font-bold text-slate-900">{row.aspect}</p>
                   <div className="mt-3 space-y-2 text-xs">
-                    <div className="flex items-start gap-2 rounded-xl bg-slate-900/80 p-2.5 text-slate-400 border border-slate-800/80">
-                      <X className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
+                    <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500">
+                      <Cross />
                       <div>
-                        <span className="font-semibold text-slate-500 block text-[10px] uppercase">Legacy / Paper</span>
+                        <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-400">
+                          Legacy / Paper
+                        </span>
                         <span>{row.legacy}</span>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2 rounded-xl bg-emerald-950/30 p-2.5 text-emerald-300 border border-emerald-800/40">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-800">
+                      <Check className="bg-emerald-200 text-emerald-800" />
                       <div>
-                        <span className="font-semibold text-emerald-400 block text-[10px] uppercase">ZamSchool OS</span>
+                        <span className="mb-0.5 block text-[10px] font-semibold uppercase text-emerald-600">
+                          ZamSchool OS
+                        </span>
                         <span>{row.zamschool}</span>
                       </div>
                     </div>
@@ -1008,76 +733,74 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Pricing & Pilot Programme ─────────────────────────────────────── */}
-        <section id="pricing" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
+        <section id="pricing" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
                 Simple, Transparent Terms
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Free for Founding Schools
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
-                Setup is free, and while we onboard founding schools the entire
-                platform is free during the pilot. No SMS bills, no credit card
-                required, no hidden charges.
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                Setup is free, and while we onboard founding schools the entire platform is free during the pilot. No
+                SMS bills, no credit card required, no hidden charges.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 grid gap-6 lg:grid-cols-2">
-              <div className="flex flex-col rounded-3xl border-2 border-sky-500/80 bg-gradient-to-b from-sky-950/40 via-slate-900 to-slate-950 p-5 sm:p-8 shadow-2xl">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg sm:text-xl font-bold text-white">Founding School Pilot</h3>
-                  <span className="rounded-full bg-sky-500/20 border border-sky-500/40 px-3 py-1 text-xs font-bold text-sky-300">
-                    Current Term
-                  </span>
+            <div className="mt-10 grid gap-6 sm:mt-12 lg:grid-cols-2">
+              <div className="flex flex-col rounded-3xl border-2 border-sky-600 bg-white p-5 shadow-xl shadow-sky-600/10 sm:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Founding School Pilot</h3>
+                  <span className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white">Current Term</span>
                 </div>
                 <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">K0</span>
-                  <span className="text-xs sm:text-sm font-medium text-slate-400">per school, per term</span>
+                  <span className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">K0</span>
+                  <span className="text-xs font-medium text-slate-500 sm:text-sm">per school, per term</span>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
                   Everything the platform does, free while we grow with our founding schools.
                 </p>
                 <ul className="mt-6 flex-1 space-y-3">
                   {pilotIncluded.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-200">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" />
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <Check className="bg-sky-100 text-sky-700" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-6 py-3.5 sm:py-4 text-sm font-bold text-white shadow-lg shadow-sky-500/25 transition hover:bg-sky-400"
+                  className="mt-8 inline-flex items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 sm:py-4"
                 >
-                  <span>Start Free School Setup</span>
-                  <ArrowRight className="h-4 w-4" />
+                  Start Free School Setup
                 </Link>
               </div>
 
-              <div className="flex flex-col rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-xl">
-                <h3 className="text-lg sm:text-xl font-bold text-white">After the Pilot</h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-300">
-                  Paid plans will come - and when they do, you will always know
-                  what you are paying for before you pay it.
+              <div className="flex flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
+                <h3 className="text-lg font-bold text-slate-900 sm:text-xl">After the Pilot</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Paid plans will come - and when they do, you will always know what you are paying for before you pay
+                  it.
                 </p>
                 <ul className="mt-6 flex-1 space-y-3">
                   {pilotTerms.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-300">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    <li key={item} className="flex items-start gap-2.5 text-sm text-slate-600">
+                      <Check className="bg-emerald-100 text-emerald-700" />
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs leading-relaxed text-slate-400">
+                <p className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
                   Questions about onboarding your school? Call{" "}
-                  <a href="tel:+260973385988" className="font-semibold text-sky-400 hover:underline break-all">
+                  <a href="tel:+260973385988" className="font-semibold text-sky-700 hover:underline break-all">
                     +260 973 385 988
                   </a>{" "}
                   or email{" "}
-                  <a href="mailto:zenitycoreinc@gmail.com" className="font-semibold text-sky-400 hover:underline break-all">
+                  <a
+                    href="mailto:zenitycoreinc@gmail.com"
+                    className="font-semibold text-sky-700 hover:underline break-all"
+                  >
                     zenitycoreinc@gmail.com
                   </a>
                   .
@@ -1087,144 +810,138 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Trust, Security & Live Status ─────────────────────────────────── */}
-        <section id="trust" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
+        <section id="trust" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
                 Security & Data Integrity
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Student Records, Protected by Design
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
-                Schools entrust us with their most sensitive records. Every
-                layer of ZamSchool OS is engineered to honor that trust.
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                Schools entrust us with their most sensitive records. Every layer of ZamSchool OS is engineered to
+                honor that trust.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {trustPillars.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.title}
-                    className="flex flex-col justify-between rounded-3xl border border-slate-800 bg-slate-950/90 p-5 sm:p-6 shadow-lg"
-                  >
-                    <div>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-sky-400 border border-slate-800 shadow-inner shrink-0">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <h3 className="mt-4 text-base font-bold text-white">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                        {item.description}
-                      </p>
-                    </div>
+            <div className="mt-10 grid gap-6 sm:mt-12 sm:grid-cols-2 lg:grid-cols-4">
+              {trustPillars.map((item) => (
+                <div
+                  key={item.title}
+                  className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6"
+                >
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">{item.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.description}</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-slate-800 bg-slate-950 p-5 text-center sm:p-8">
-              <SystemStatusBadge variant="dark" />
-              <p className="max-w-2xl text-xs sm:text-sm leading-relaxed text-slate-400">
-                This indicator runs a live probe against the platform&apos;s
-                health endpoint from your browser on every page load. Real-time verification for administrators and educators.
+            <div className="mt-10 flex flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-center sm:p-8">
+              <SystemStatusBadge variant="light" />
+              <p className="max-w-2xl text-xs leading-relaxed text-slate-600 sm:text-sm">
+                This indicator runs a live probe against the platform&apos;s health endpoint from your browser on every
+                page load. Real-time verification for administrators and educators.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ─── Corporate Authority & Leadership ─────────────────────────────── */}
-        <section id="leadership" className="border-b border-slate-800 bg-slate-950 py-14 sm:py-24">
+        <section id="leadership" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
                   Leadership & Corporate Backing
                 </span>
-                <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                   Backed by ZenityCore Technologies
                 </h2>
-                <p className="mt-4 text-sm sm:text-base leading-relaxed text-slate-300">
-                  ZamSchool OS is engineered and operated by <span className="font-semibold text-white">ZenityCore Technologies</span> (
+                <p className="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
+                  ZamSchool OS is engineered and operated by{" "}
+                  <span className="font-semibold text-slate-900">ZenityCore Technologies</span> (
                   <a
                     href="https://zenitycore.tech"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-sky-400 underline underline-offset-4 hover:text-sky-300"
+                    className="text-sky-700 underline underline-offset-4 hover:text-sky-800"
                   >
                     zenitycore.tech
                   </a>
-                  ), an enterprise software organization founded and led by Chief Executive Officer <span className="font-semibold text-white">Ison Mumbuna</span>.
+                  ), an enterprise software organization founded and led by Chief Executive Officer{" "}
+                  <span className="font-semibold text-slate-900">Ison Mumbuna</span>.
                 </p>
 
-                <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-300">
-                  Our mission is to eliminate educational administrative bottlenecks across Africa by building software that runs reliably on local infrastructure, regardless of bandwidth limitations or power fluctuations.
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                  Our mission is to eliminate educational administrative bottlenecks across Africa by building software
+                  that runs reliably on local infrastructure, regardless of bandwidth limitations or power
+                  fluctuations.
                 </p>
 
                 <div className="mt-6 space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-slate-200">
-                    <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400" />
+                  <div className="flex items-start gap-3 text-sm text-slate-700">
+                    <Check className="mt-0 bg-emerald-100 text-emerald-700" />
                     <span>Strict Zambian student data sovereignty & cryptographic encryption</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-200">
-                    <Network className="h-5 w-5 shrink-0 text-sky-400" />
+                  <div className="flex items-start gap-3 text-sm text-slate-700">
+                    <Check className="mt-0 bg-sky-100 text-sky-700" />
                     <span>Nationwide engineering & support presence in Lusaka and Mongu</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-200">
-                    <Globe className="h-5 w-5 shrink-0 text-sky-400" />
+                  <div className="flex items-start gap-3 text-sm text-slate-700">
+                    <Check className="mt-0 bg-sky-100 text-sky-700" />
                     <span>Dedicated 99.9% uptime SLA for registered educational institutions</span>
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4">
+                <div className="mt-8 flex flex-col flex-wrap items-center gap-3 sm:flex-row sm:gap-4">
                   <a
                     href="https://zenitycore.tech"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800 sm:w-auto"
                   >
-                    <span>Visit zenitycore.tech</span>
-                    <ExternalLink className="h-4 w-4" />
+                    Visit zenitycore.tech
                   </a>
                   <a
                     href="mailto:zenitycoreinc@gmail.com"
-                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
                   >
-                    <span>Contact Leadership</span>
+                    Contact Leadership
                   </a>
                 </div>
               </div>
 
-              {/* Leadership profile card */}
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-5 sm:p-8 shadow-2xl">
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-xl sm:text-2xl font-black text-white shadow-lg shrink-0">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-xl font-black text-white shadow-md sm:h-16 sm:w-16 sm:text-2xl">
                     IM
                   </div>
                   <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white">Ison Mumbuna</h3>
-                    <p className="text-xs sm:text-sm font-medium text-sky-400">Chief Executive Officer & Founder</p>
-                    <p className="text-xs text-slate-400">ZenityCore Technologies</p>
+                    <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Ison Mumbuna</h3>
+                    <p className="text-xs font-medium text-sky-700 sm:text-sm">Chief Executive Officer & Founder</p>
+                    <p className="text-xs text-slate-500">ZenityCore Technologies</p>
                   </div>
                 </div>
 
-                <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs sm:text-sm leading-relaxed text-slate-300">
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-slate-600 sm:text-sm">
                   <p className="italic">
-                    “We engineered ZamSchool OS to ensure that no head teacher spends hours balancing registers by candlelight, and no school exhausts its budget on SMS credits. Real education happens when teachers have tools that work unconditionally on their phones and computers.”
+                    “We engineered ZamSchool OS to ensure that no head teacher spends hours balancing registers by
+                    candlelight, and no school exhausts its budget on SMS credits. Real education happens when teachers
+                    have tools that work unconditionally on their phones and computers.”
                   </p>
-                  <p className="mt-3 text-xs font-semibold text-sky-400">— Ison Mumbuna, CEO</p>
+                  <p className="mt-3 text-xs font-semibold text-sky-700">— Ison Mumbuna, CEO</p>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-center text-xs">
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-                    <p className="font-bold text-white">Direct Line</p>
-                    <p className="mt-0.5 text-slate-400 break-all">+260 973 385 988</p>
+                <div className="mt-6 grid grid-cols-1 gap-3 text-center text-xs sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="font-bold text-slate-900">Direct Line</p>
+                    <p className="mt-0.5 break-all text-slate-600">+260 973 385 988</p>
                   </div>
-                  <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-                    <p className="font-bold text-white">Executive Desk</p>
-                    <p className="mt-0.5 text-slate-400 break-all">zenitycoreinc@gmail.com</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="font-bold text-slate-900">Executive Desk</p>
+                    <p className="mt-0.5 break-all text-slate-600">zenitycoreinc@gmail.com</p>
                   </div>
                 </div>
               </div>
@@ -1232,74 +949,64 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ─── Frequently Asked Questions ───────────────────────────────────── */}
-        <section id="faq" className="border-b border-slate-800 bg-slate-900/70 py-14 sm:py-24">
+        <section id="faq" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <div className="text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-400">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
                 Clear Answers
               </span>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-4xl">
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                 Frequently Asked Questions
               </h2>
-              <p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-400">
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
                 Everything school administrators and headteachers ask when switching to ZamSchool OS.
               </p>
             </div>
 
-            <div className="mt-10 sm:mt-12 space-y-3.5">
+            <div className="mt-10 space-y-3.5 sm:mt-12">
               {faqItems.map((item, idx) => (
                 <details
                   key={idx}
-                  className="group rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-6 transition hover:border-slate-700 open:bg-slate-950"
+                  className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 sm:p-6"
                 >
-                  <summary className="flex cursor-pointer items-center justify-between text-sm sm:text-base font-bold text-white marker:content-none">
-                    <span className="flex items-center gap-2.5 sm:gap-3">
-                      <HelpCircle className="h-5 w-5 shrink-0 text-sky-400" />
-                      {item.q}
-                    </span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-500 transition-transform group-open:rotate-90" />
+                  <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-bold text-slate-900 marker:content-none sm:text-base">
+                    <span>{item.q}</span>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-90" />
                   </summary>
-                  <p className="mt-4 text-xs sm:text-sm leading-relaxed text-slate-300 pl-0 sm:pl-8">
-                    {item.a}
-                  </p>
+                  <p className="mt-4 text-xs leading-relaxed text-slate-600 sm:text-sm">{item.a}</p>
                 </details>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ─── Final CTA ────────────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 to-slate-900 py-14 sm:py-24 text-white">
-          <div className="pointer-events-none absolute inset-0 bg-radial-[circle_at_center,_var(--tw-gradient-stops)] from-sky-500/10 via-transparent to-transparent" />
-
+        <section className="relative overflow-hidden bg-gradient-to-b from-sky-50 to-white py-14 sm:py-20 lg:py-24">
           <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/60 px-4 py-1.5 text-xs font-semibold text-sky-300">
-              <Sparkles className="h-4 w-4" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-1.5 text-xs font-semibold text-sky-700 shadow-sm">
               <span>Transform Your School Operations Today</span>
             </div>
 
-            <h2 className="mt-6 text-2xl font-black tracking-tight sm:text-5xl">
+            <h2 className="mt-6 text-2xl font-black tracking-tight text-slate-900 sm:text-5xl">
               Ready to modernise your school?
             </h2>
 
-            <p className="mx-auto mt-4 max-w-2xl text-sm sm:text-lg leading-relaxed text-slate-300">
-              Set up your school in under 5 minutes. Add classes, register teachers, and experience instant offline roll calls on Web and Android.
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-lg">
+              Set up your school in under 5 minutes. Add classes, register teachers, and experience instant offline
+              roll calls on Web and Android.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-bold text-white shadow-xl shadow-sky-500/25 transition hover:brightness-110 sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
-                <span>Start Free School Setup</span>
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                Start Free School Setup
               </Link>
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-800/80 px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
-                <span>Sign In to School Desk</span>
+                Sign In to School Desk
               </Link>
             </div>
 
