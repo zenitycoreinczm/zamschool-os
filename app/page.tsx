@@ -7,6 +7,8 @@ import { ChevronRight, Menu, X } from "lucide-react";
 
 import LandingFooter from "@/components/landing/LandingFooter";
 import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
+import CookieConsentBanner from "@/components/landing/CookieConsentBanner";
+import SiteRatingWidget from "@/components/landing/SiteRatingWidget";
 
 const platformFeatures = {
   web: [
@@ -52,7 +54,7 @@ const architecturePillars = [
     badge: "Local-First Core",
     title: "Offline-First Sync Engine",
     description:
-      "Built with client-side IndexedDB caching and Service Worker background sync. Teachers work uninterrupted during power cuts or network outages across Zambian provinces.",
+      "Built with client-side localStorage caching and Service Worker background sync. Teachers work uninterrupted during power cuts or network outages across Zambian provinces.",
   },
   {
     badge: "Cost Reduction",
@@ -331,7 +333,8 @@ export default function HomePage() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="hidden min-h-[44px] items-center rounded-xl px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex"
+              aria-label="Sign In"
+              className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 sm:min-h-[44px] sm:min-w-0 sm:border-0 sm:bg-transparent sm:px-3 sm:hover:bg-slate-100"
             >
               Sign In
             </Link>
@@ -415,7 +418,7 @@ export default function HomePage() {
               <div className="flex flex-col items-start text-left">
                 <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-sky-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-sky-700 shadow-sm">
                   <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
-                  <span className="leading-snug">Backed by ZenityCore Technologies · Zambian Education OS</span>
+                  <span className="leading-snug min-w-0 break-words">Backed by ZenityCore Technologies · Zambian Education OS</span>
                 </div>
 
                 <h1 className="mt-5 text-[clamp(1.75rem,6.5vw,2.5rem)] font-black leading-[1.15] tracking-tight text-slate-900 break-words lg:text-[3.25rem] lg:leading-[1.12]">
@@ -519,9 +522,9 @@ export default function HomePage() {
                     {platformFeatures.web.map((feat) => (
                       <li key={feat.title} className="flex items-start gap-3 text-sm">
                         <Check className="bg-sky-100 text-sky-700" />
-                        <div>
-                          <span className="font-semibold text-slate-900">{feat.title}: </span>
-                          <span className="text-slate-600">{feat.desc}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-slate-900 break-words">{feat.title}: </span>
+                          <span className="text-slate-600 break-words">{feat.desc}</span>
                         </div>
                       </li>
                     ))}
@@ -552,9 +555,9 @@ export default function HomePage() {
                     {platformFeatures.android.map((feat) => (
                       <li key={feat.title} className="flex items-start gap-3 text-sm">
                         <Check className="bg-emerald-100 text-emerald-700" />
-                        <div>
-                          <span className="font-semibold text-slate-900">{feat.title}: </span>
-                          <span className="text-slate-600">{feat.desc}</span>
+                        <div className="min-w-0">
+                          <span className="font-semibold text-slate-900 break-words">{feat.title}: </span>
+                          <span className="text-slate-600 break-words">{feat.desc}</span>
                         </div>
                       </li>
                     ))}
@@ -609,7 +612,7 @@ export default function HomePage() {
                   <p className="text-xs text-slate-500">Bidirectional Sync & High-Availability Pipeline</p>
                 </div>
                 <div className="text-xs font-semibold text-sky-700">
-                  PostgreSQL Cloud + Client IndexedDB Engine
+                  PostgreSQL Cloud + Client localStorage Engine
                 </div>
               </div>
 
@@ -619,8 +622,7 @@ export default function HomePage() {
                     <span className="text-sky-600">01.</span> Edge Device (Offline)
                   </p>
                   <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    Roll calls and marks write directly to encrypted local IndexedDB storage in under 5ms without
-                    network delays.
+                    Roll calls and marks write directly to localStorage in under 5ms without network delays.
                   </p>
                 </div>
 
@@ -678,7 +680,7 @@ export default function HomePage() {
                     {mod.points.map((pt) => (
                       <li key={pt} className="flex items-start gap-2.5 text-sm text-slate-600">
                         <Check className="bg-emerald-100 text-emerald-700" />
-                        <span>{pt}</span>
+                        <span className="min-w-0 break-words">{pt}</span>
                       </li>
                     ))}
                   </ul>
@@ -715,13 +717,13 @@ export default function HomePage() {
                   className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-100 px-4 py-4 text-xs last:border-b-0 sm:px-6 sm:text-sm"
                 >
                   <div className="font-semibold text-slate-900">{row.aspect}</div>
-                  <div className="flex items-start gap-1.5 text-slate-500">
+                  <div className="flex min-w-0 items-start gap-1.5 text-slate-500">
                     <Cross />
-                    <span>{row.legacy}</span>
+                    <span className="min-w-0 break-words">{row.legacy}</span>
                   </div>
-                  <div className="flex items-start gap-1.5 font-medium text-slate-700">
+                  <div className="flex min-w-0 items-start gap-1.5 font-medium text-slate-700">
                     <Check className="bg-emerald-100 text-emerald-700" />
-                    <span>{row.zamschool}</span>
+                    <span className="min-w-0 break-words">{row.zamschool}</span>
                   </div>
                 </div>
               ))}
@@ -737,20 +739,20 @@ export default function HomePage() {
                   <div className="mt-3 space-y-2 text-xs">
                     <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500">
                       <Cross />
-                      <div>
+                      <div className="min-w-0">
                         <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-400">
                           Legacy / Paper
                         </span>
-                        <span>{row.legacy}</span>
+                        <span className="break-words">{row.legacy}</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-800">
                       <Check className="bg-emerald-200 text-emerald-800" />
-                      <div>
+                      <div className="min-w-0">
                         <span className="mb-0.5 block text-[10px] font-semibold uppercase text-emerald-600">
                           ZamSchool OS
                         </span>
-                        <span>{row.zamschool}</span>
+                        <span className="break-words">{row.zamschool}</span>
                       </div>
                     </div>
                   </div>
@@ -792,7 +794,7 @@ export default function HomePage() {
                   {pilotIncluded.map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
                       <Check className="bg-sky-100 text-sky-700" />
-                      <span>{item}</span>
+                      <span className="min-w-0 break-words">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -814,7 +816,7 @@ export default function HomePage() {
                   {pilotTerms.map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-sm text-slate-600">
                       <Check className="bg-emerald-100 text-emerald-700" />
-                      <span>{item}</span>
+                      <span className="min-w-0 break-words">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -910,15 +912,15 @@ export default function HomePage() {
                 <div className="mt-6 space-y-3">
                   <div className="flex items-start gap-3 text-sm text-slate-700">
                     <Check className="mt-0 bg-emerald-100 text-emerald-700" />
-                    <span>Strict Zambian student data sovereignty & cryptographic encryption</span>
+                    <span className="min-w-0 break-words">Strict Zambian student data sovereignty & cryptographic encryption</span>
                   </div>
                   <div className="flex items-start gap-3 text-sm text-slate-700">
                     <Check className="mt-0 bg-sky-100 text-sky-700" />
-                    <span>Nationwide engineering & support presence in Lusaka and Mongu</span>
+                    <span className="min-w-0 break-words">Nationwide engineering & support presence in Lusaka and Mongu</span>
                   </div>
                   <div className="flex items-start gap-3 text-sm text-slate-700">
                     <Check className="mt-0 bg-sky-100 text-sky-700" />
-                    <span>Dedicated 99.9% uptime SLA for registered educational institutions</span>
+                    <span className="min-w-0 break-words">Dedicated 99.9% uptime SLA for registered educational institutions</span>
                   </div>
                 </div>
 
@@ -1003,10 +1005,10 @@ export default function HomePage() {
                   className="landing-card group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 open:border-sky-200 open:bg-sky-50/40 sm:p-6"
                 >
                   <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-slate-900 marker:content-none [&::-webkit-details-marker]:hidden sm:text-base">
-                    <span>{item.q}</span>
+                    <span className="min-w-0 break-words">{item.q}</span>
                     <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-90" />
                   </summary>
-                  <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-sm">{item.a}</p>
+                  <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-600 break-words sm:mt-4 sm:text-sm">{item.a}</p>
                 </details>
               ))}
             </div>
@@ -1050,7 +1052,14 @@ export default function HomePage() {
         </section>
       </main>
 
+      <section className="border-t border-slate-200 bg-slate-50 py-14 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <SiteRatingWidget />
+        </div>
+      </section>
+
       <LandingFooter />
+      <CookieConsentBanner />
     </div>
   );
 }
