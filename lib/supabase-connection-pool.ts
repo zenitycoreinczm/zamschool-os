@@ -45,9 +45,6 @@ export function getOptimizedAdminClient(): ReturnType<typeof createClient> {
         "Prefer": "count=exact", // Always request count for pagination
       },
     },
-    db: {
-      schema: "public",
-    },
   });
 
   return adminClient;
