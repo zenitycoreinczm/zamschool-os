@@ -257,6 +257,16 @@ function Cross() {
   );
 }
 
+const sectionChips = [
+  { href: "#platforms", label: "Platforms" },
+  { href: "#architecture", label: "Architecture" },
+  { href: "#modules", label: "Modules" },
+  { href: "#compare", label: "Compare" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#leadership", label: "Leadership" },
+  { href: "#faq", label: "FAQ" },
+];
+
 export default function HomePage() {
   // Native <details> powers the mobile drawer so navigation works even
   // before React hydration completes on slow 3G/4G connections.
@@ -269,7 +279,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 antialiased selection:bg-sky-600 selection:text-white">
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+      <header className="landing-header sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <Link href="/" className="flex min-h-[44px] min-w-0 items-center gap-2.5 py-1 sm:gap-3">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200 sm:h-10 sm:w-10">
@@ -288,7 +298,7 @@ export default function HomePage() {
                   ZamSchool<span className="text-sky-600">OS</span>
                 </span>
               </div>
-              <p className="hidden text-xs font-medium text-slate-500 sm:block">
+              <p className="max-w-[200px] truncate text-[10px] font-medium leading-tight text-slate-500 sm:max-w-none sm:text-xs">
                 Zambian School Operating System
               </p>
             </div>
@@ -327,7 +337,7 @@ export default function HomePage() {
             </Link>
             <Link
               href="/register"
-              className="hidden min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95 sm:inline-flex"
+              className="landing-press hidden min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95 sm:inline-flex"
             >
               Free Setup
             </Link>
@@ -335,14 +345,14 @@ export default function HomePage() {
             {/* Mobile drawer: native <details> so it opens without JS. */}
             <details className="group relative lg:hidden" ref={mobileNavRef}>
               <summary
-                className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden"
+                className="landing-nav-toggle landing-press flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden"
                 aria-label="Toggle navigation menu"
               >
                 <Menu className="h-5 w-5 group-open:hidden" />
                 <X className="hidden h-5 w-5 group-open:block" />
               </summary>
 
-              <div className="absolute inset-x-0 top-full z-50 mt-2 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+              <div className="mobile-nav-panel absolute inset-x-0 top-full z-50 mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
                 <nav className="flex flex-col" aria-label="Mobile navigation">
                   {mobileNavLinks.map((link) => (
                     <Link
@@ -368,7 +378,7 @@ export default function HomePage() {
                   <Link
                     href="/register"
                     onClick={closeMobileNav}
-                    className="flex min-h-[48px] items-center justify-center rounded-xl bg-sky-600 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
+                    className="landing-press flex min-h-[48px] items-center justify-center rounded-xl bg-sky-600 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
                   >
                     Start School
                   </Link>
@@ -377,6 +387,25 @@ export default function HomePage() {
             </details>
           </div>
         </div>
+
+        {/* Always-visible section shortcuts on mobile: one-tap navigation
+            without opening the drawer. Horizontally scrollable, no JS. */}
+        <nav
+          aria-label="Section shortcuts"
+          className="border-t border-slate-100 bg-white/95 backdrop-blur-md lg:hidden"
+        >
+          <div className="landing-chip-strip mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2 sm:px-6">
+            {sectionChips.map((chip) => (
+              <Link
+                key={chip.href}
+                href={chip.href}
+                className="flex min-h-[36px] shrink-0 items-center rounded-full border border-slate-200 bg-slate-50 px-3.5 text-xs font-semibold text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 active:bg-sky-100 active:text-sky-800"
+              >
+                {chip.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
       </header>
 
       <main>
@@ -416,7 +445,7 @@ export default function HomePage() {
                 <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                   <Link
                     href="/register"
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95 sm:w-auto sm:py-4 sm:text-base"
+                    className="landing-press inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95 sm:w-auto sm:py-4 sm:text-base"
                   >
                     Start a School (Free Pilot)
                   </Link>
@@ -439,7 +468,8 @@ export default function HomePage() {
               </div>
 
               <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[340px] lg:max-w-[400px]">
-                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
+                <div className="absolute -inset-3 -z-10 rounded-[2rem] bg-gradient-to-b from-sky-100/60 to-transparent blur-xl" aria-hidden="true" />
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 ring-1 ring-black/[0.03]">
                   <Image
                     src="/landing.jpg"
                     alt="ZamSchool OS in action"
@@ -455,7 +485,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="platforms" className="border-y border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
+        <section id="platforms" className="landing-section border-y border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
@@ -540,7 +570,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="architecture" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
+        <section id="architecture" className="landing-section border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
@@ -559,7 +589,7 @@ export default function HomePage() {
               {architecturePillars.map((item) => (
                 <div
                   key={item.title}
-                  className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:shadow-md sm:p-6"
+                  className="landing-card flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:shadow-md sm:p-6"
                 >
                   <div>
                     <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600">
@@ -618,7 +648,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="modules" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
+        <section id="modules" className="landing-section border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700">
@@ -637,7 +667,7 @@ export default function HomePage() {
               {moduleBreakdown.map((mod) => (
                 <div
                   key={mod.title}
-                  className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
+                  className="landing-card rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8"
                 >
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 sm:text-xl">{mod.title}</h3>
@@ -658,7 +688,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="compare" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
+        <section id="compare" className="landing-section border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <div className="text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
@@ -730,7 +760,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="pricing" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
+        <section id="pricing" className="landing-section border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-700">
@@ -746,7 +776,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-10 grid gap-6 sm:mt-12 lg:grid-cols-2">
-              <div className="flex flex-col rounded-3xl border-2 border-sky-600 bg-white p-5 shadow-xl shadow-sky-600/10 sm:p-8">
+              <div className="landing-card flex flex-col rounded-3xl border-2 border-sky-600 bg-white p-5 shadow-xl shadow-sky-600/10 sm:p-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Founding School Pilot</h3>
                   <span className="rounded-full bg-sky-600 px-3 py-1 text-xs font-bold text-white">Current Term</span>
@@ -768,7 +798,7 @@ export default function HomePage() {
                 </ul>
                 <Link
                   href="/register"
-                  className="mt-8 inline-flex items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 sm:py-4"
+                  className="landing-press mt-8 inline-flex items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95 sm:py-4"
                 >
                   Start Free School Setup
                 </Link>
@@ -807,7 +837,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="trust" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
+        <section id="trust" className="landing-section border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="mx-auto max-w-3xl text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
@@ -846,7 +876,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="leadership" className="border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
+        <section id="leadership" className="landing-section border-b border-slate-200 bg-slate-50 py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6">
             <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
@@ -952,7 +982,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" className="border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
+        <section id="faq" className="landing-section border-b border-slate-200 bg-white py-14 sm:py-20 lg:py-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <div className="text-center">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-sky-700">
@@ -970,13 +1000,13 @@ export default function HomePage() {
               {faqItems.map((item, idx) => (
                 <details
                   key={idx}
-                  className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 sm:p-6"
+                  className="landing-card group rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-300 open:border-sky-200 open:bg-sky-50/40 sm:p-6"
                 >
-                  <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-bold text-slate-900 marker:content-none sm:text-base">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-slate-900 marker:content-none [&::-webkit-details-marker]:hidden sm:text-base">
                     <span>{item.q}</span>
-                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-90" />
+                    <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-90" />
                   </summary>
-                  <p className="mt-4 text-xs leading-relaxed text-slate-600 sm:text-sm">{item.a}</p>
+                  <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-600 sm:mt-4 sm:text-sm">{item.a}</p>
                 </details>
               ))}
             </div>
@@ -1001,13 +1031,13 @@ export default function HomePage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/register"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+                className="landing-press inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-600/20 transition hover:bg-sky-700 active:scale-95 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
                 Start Free School Setup
               </Link>
               <Link
                 href="/login"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto sm:px-8 sm:py-4 sm:text-base"
+                className="landing-press inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] sm:w-auto sm:px-8 sm:py-4 sm:text-base"
               >
                 Sign In to School Desk
               </Link>

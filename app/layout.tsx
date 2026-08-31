@@ -31,6 +31,9 @@ const siteUrl =
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // cover lets env(safe-area-inset-*) apply in PWA/standalone + notched
+  // landscape; the landing header consumes the insets via .landing-header.
+  viewportFit: "cover",
   // Light-first: the landing page and workspace are white surfaces.
   // "dark light" made Safari/Firefox render dark form controls + scrollbars
   // on the light UI in dark mode, which users read as broken CSS.
