@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       {
         allowedRoles: [...KNOWN_ROLES],
         requireSchool: true,
-        allowMetadataRoleFallback: true,
+        
       },
       req,
     );

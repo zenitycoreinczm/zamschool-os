@@ -1,6 +1,6 @@
 # ZamSchool OS
 
-ZamSchool OS is a school administration platform for Zambia. You use it to manage classes, subjects, timetables, attendance, results, fees, messaging, and announcements. The application is multi-tenant: every school is a tenant, every user belongs to one school, every query is scoped to a school.
+ZamSchool OS is a production-grade school administration platform for Zambia. You use it to manage classes, subjects, timetables, attendance, results, fees, messaging, and announcements. The application is multi-tenant: every school is a tenant, every user belongs to one school, every query is scoped to a school.
 
 The documentation set is small and focused. You should read these in order:
 
@@ -25,6 +25,10 @@ You are looking at a Next.js 16 application using the App Router, Tailwind 4 for
 - **Forms**: React Hook Form, Zod 4
 - **Image CDN**: Cloudflare R2
 - **Edge cache**: Cloudflare
+
+## Status
+
+Production-ready as of 2026-08-31. All core modules (messaging, role-based permissions, attendance, results, fees, timetables, announcements) are fully functional across mobile, web, and desktop. Deployed at https://zamschoolos.site via Vercel.
 
 ## Getting started
 
@@ -76,7 +80,7 @@ The system supports 14 roles with role-based shells and route prefixes. The acti
 
 ## Security
 
-You should treat every page as if it were public. RLS is enabled on every production table; service-role queries are audited by `npm run audit:tenant:strict` (CI-enforced). MFA is TOTP-based with fail-closed rate limiting. See [SECURITY.md](./docs/SECURITY.md) for the threat model and the layers.
+Every page is treated as public by default. RLS is enabled on every production table; service-role queries are audited by `npm run audit:tenant:strict` (CI-enforced). MFA is TOTP-based with fail-closed rate limiting. Response headers use a two-tier policy: public entry pages get lenient headers for emulator/preview compatibility; API and workspace routes get full lockdown (X-Frame-Options: DENY, COOP, CORP, CSP frame-ancestors 'none'). See [SECURITY.md](./docs/SECURITY.md#response-header-policy). See [SECURITY.md](./docs/SECURITY.md) for the threat model and the layers.
 
 ## License
 

@@ -33,6 +33,8 @@ const ADMISSION_ROLES = [
   "SUPER_ADMIN",
 ] as const;
 
+const STUDENT_LIST_PAGE_SIZE = 1000;
+
 export async function GET(req: Request) {
   try {
     const access = await requireActorContext(
@@ -69,10 +71,13 @@ export async function GET(req: Request) {
       query = query.eq("class_id", classId);
     }
 
-    const { data, error } = await query.order("admission_status_updated_at", {
-      ascending: false,
-      nullsFirst: false,
-    });
+    const { data, error } = await query
+      .order("admission_status_updated_at", {
+        ascending: false,
+        nullsFirst: false,
+      })
+      // Explicit cap (PostgREST truncates at 1000 silently anyway).
+      .range(0, STUDENT_LIST_PAGE_SIZE - 1);
 
     if (error) {
       // Fallback if admission_status columns don't exist yet
@@ -89,10 +94,12 @@ export async function GET(req: Request) {
           .eq("school_id", schoolId);
 
         const { data: fallbackData, error: fallbackError } =
-          await fallbackQuery.order("enrollment_date", {
-            ascending: false,
-            nullsFirst: false,
-          });
+          await fallbackQuery
+            .order("enrollment_date", {
+              ascending: false,
+              nullsFirst: false,
+            })
+            .range(0, STUDENT_LIST_PAGE_SIZE - 1);
 
         if (fallbackError) throw fallbackError;
 
@@ -102,12 +109,17 @@ export async function GET(req: Request) {
             ...row,
             admission_status: row.admission_status || "registered",
           })),
+          hasMore: (fallbackData || []).length >= STUDENT_LIST_PAGE_SIZE,
         });
       }
       throw error;
     }
 
-    return NextResponse.json({ success: true, data: data || [] });
+    return NextResponse.json({
+      success: true,
+      data: data || [],
+      hasMore: (data || []).length >= STUDENT_LIST_PAGE_SIZE,
+    });
   } catch (error: unknown) {
     return NextResponse.json(
       {

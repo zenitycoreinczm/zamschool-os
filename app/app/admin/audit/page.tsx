@@ -82,7 +82,7 @@ export default function AdminAuditPage() {
 
   return (
     <div className="space-y-6">
-      <Surface variant="default" className="rounded-[28px] p-5 md:p-6">
+      <Surface variant="default" className="rounded-workspace-2xl p-5 md:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:justify-between">
           <div className="space-y-4">
             <div>
@@ -134,7 +134,7 @@ export default function AdminAuditPage() {
         </div>
       </Surface>
 
-      <Surface variant="default" className="rounded-[28px] overflow-hidden">
+      <Surface variant="default" className="rounded-workspace-2xl overflow-hidden">
         <div className="border-b border-workspace-border px-5 py-4 md:px-6">
           <div className="text-lg font-semibold text-slate-900">Change log</div>
           <p className="mt-1 text-sm text-slate-500">Filtered results update immediately as you search or focus a specific action type.</p>

@@ -29,7 +29,6 @@ export async function GET(req: Request) {
       {
         allowedRoles: [...ACCOUNT_PROFILE_ROLES],
         requireSchool: false,
-        allowMetadataRoleFallback: true,
       },
       req,
     );
@@ -143,7 +142,6 @@ export async function PUT(req: Request) {
       {
         allowedRoles: [...ACCOUNT_PROFILE_ROLES],
         requireSchool: false,
-        allowMetadataRoleFallback: true,
       },
       req,
     );

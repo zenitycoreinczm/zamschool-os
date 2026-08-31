@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
 import { Download, ChevronDown, ChevronUp } from "lucide-react";
@@ -221,6 +220,8 @@ export default function ParentResultsPage() {
 
     setDownloading(idx);
     try {
+      // Dynamic import: only paid for when a certificate is actually downloaded.
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(el, {
         quality: 0.95,
         pixelRatio: 2,

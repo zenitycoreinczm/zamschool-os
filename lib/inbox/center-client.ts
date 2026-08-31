@@ -2,6 +2,7 @@
 
 import { accountApiJson } from "@/lib/account-portal-api";
 import { adminApiJson } from "@/lib/admin-browser-api";
+import { createCoalescedStore } from "@/lib/inbox/request-coalescer";
 
 export type InboxApiMode = "account" | "admin" | "teacher";
 
@@ -53,48 +54,19 @@ function apiJson<T>(mode: InboxApiMode, input: string, init?: RequestInit) {
 }
 
 // Mode-keyed caches so admin/teacher/account never share stale data.
-// generation bumps on invalidate so late inflight responses cannot repopulate
-// the cache after the user has marked items read.
-let inboxCacheGeneration = 0;
-
-const unreadSummaryInFlight = new Map<string, Promise<UnreadSummary>>();
-const unreadSummaryCache = new Map<
-  string,
-  { expiresAt: number; data: UnreadSummary; generation: number }
->();
 // Short client TTL: long caches made already-read items reappear as "new".
 const UNREAD_SUMMARY_TTL_MS = 2_500;
-
-const inboxPreviewInFlight = new Map<
-  string,
-  Promise<{
-    messages: InboxMessagePreview[];
-    notifications: InboxNotificationPreview[];
-  }>
->();
-const inboxPreviewCache = new Map<
-  string,
-  {
-    expiresAt: number;
-    generation: number;
-    data: {
-      messages: InboxMessagePreview[];
-      notifications: InboxNotificationPreview[];
-    };
-  }
->();
 const INBOX_PREVIEW_TTL_MS = 2_500;
 
+const unreadSummaryStore = createCoalescedStore<UnreadSummary>();
+const inboxPreviewStore = createCoalescedStore<InboxPreviewData>();
+
 export function invalidateUnreadSummaryCache() {
-  inboxCacheGeneration += 1;
-  unreadSummaryCache.clear();
-  unreadSummaryInFlight.clear();
+  unreadSummaryStore.invalidate();
 }
 
 export function invalidateInboxPreviewCache() {
-  inboxCacheGeneration += 1;
-  inboxPreviewCache.clear();
-  inboxPreviewInFlight.clear();
+  inboxPreviewStore.invalidate();
 }
 
 export function invalidateInboxCaches() {
@@ -185,47 +157,11 @@ export async function fetchUnreadSummary(
   mode: InboxApiMode = "account",
   options: FetchOptions = {},
 ): Promise<UnreadSummary> {
-  const cacheKey = mode;
-  if (options.force) {
-    unreadSummaryCache.delete(cacheKey);
-    unreadSummaryInFlight.delete(cacheKey);
-  }
-
-  const cached = unreadSummaryCache.get(cacheKey);
-  if (
-    cached &&
-    Date.now() < cached.expiresAt &&
-    cached.generation === inboxCacheGeneration
-  ) {
-    return cached.data;
-  }
-
-  const inflight = unreadSummaryInFlight.get(cacheKey);
-  if (inflight && !options.force) return inflight;
-
-  const generationAtStart = inboxCacheGeneration;
-  const request: Promise<UnreadSummary> = (async () => {
-    let data = await loadUnreadSummaryFromApi(mode);
-    // Mark-as-read invalidated caches while this request was in flight.
-    // Re-fetch once so we never publish pre-read counts as if they were new.
-    if (generationAtStart !== inboxCacheGeneration) {
-      data = await loadUnreadSummaryFromApi(mode);
-    } else {
-      unreadSummaryCache.set(cacheKey, {
-        expiresAt: Date.now() + UNREAD_SUMMARY_TTL_MS,
-        data,
-        generation: inboxCacheGeneration,
-      });
-    }
-    return data;
-  })().finally(() => {
-    if (unreadSummaryInFlight.get(cacheKey) === request) {
-      unreadSummaryInFlight.delete(cacheKey);
-    }
-  });
-
-  unreadSummaryInFlight.set(cacheKey, request);
-  return request;
+  return unreadSummaryStore.load(
+    mode,
+    () => loadUnreadSummaryFromApi(mode),
+    { force: options.force, ttlMs: UNREAD_SUMMARY_TTL_MS },
+  );
 }
 
 export async function fetchInboxPreview(
@@ -233,45 +169,11 @@ export async function fetchInboxPreview(
   limit = 8,
   options: FetchOptions = {},
 ): Promise<InboxPreviewData> {
-  const cacheKey = `${mode}:${limit}`;
-  if (options.force) {
-    inboxPreviewCache.delete(cacheKey);
-    inboxPreviewInFlight.delete(cacheKey);
-  }
-
-  const cached = inboxPreviewCache.get(cacheKey);
-  if (
-    cached &&
-    Date.now() < cached.expiresAt &&
-    cached.generation === inboxCacheGeneration
-  ) {
-    return cached.data;
-  }
-
-  const inflight = inboxPreviewInFlight.get(cacheKey);
-  if (inflight && !options.force) return inflight;
-
-  const generationAtStart = inboxCacheGeneration;
-  const request: Promise<InboxPreviewData> = (async () => {
-    let data = await loadInboxPreviewFromApi(mode, limit);
-    if (generationAtStart !== inboxCacheGeneration) {
-      data = await loadInboxPreviewFromApi(mode, limit);
-    } else {
-      inboxPreviewCache.set(cacheKey, {
-        expiresAt: Date.now() + INBOX_PREVIEW_TTL_MS,
-        generation: inboxCacheGeneration,
-        data,
-      });
-    }
-    return data;
-  })().finally(() => {
-    if (inboxPreviewInFlight.get(cacheKey) === request) {
-      inboxPreviewInFlight.delete(cacheKey);
-    }
-  });
-
-  inboxPreviewInFlight.set(cacheKey, request);
-  return request;
+  return inboxPreviewStore.load(
+    `${mode}:${limit}`,
+    () => loadInboxPreviewFromApi(mode, limit),
+    { force: options.force, ttlMs: INBOX_PREVIEW_TTL_MS },
+  );
 }
 
 export async function markMessageRead(mode: InboxApiMode, messageId: string) {

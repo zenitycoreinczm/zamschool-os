@@ -22,7 +22,6 @@ import {
   X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import Papa from "papaparse";
 import { toast } from "sonner";
 
 interface BulkImportProps {
@@ -104,13 +103,16 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setSelectedFileName(file.name);
     setCredentials([]);
 
+    // Dynamic import keeps papaparse out of the initial page bundle.
+    const PapaModule = await import("papaparse");
+    const Papa = (PapaModule.default ?? PapaModule) as typeof PapaModule;
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,

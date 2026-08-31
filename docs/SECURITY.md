@@ -15,6 +15,36 @@ Security is enforced at four layers. You must satisfy all of them; none is suffi
 3. **Shell guards.** Each shell checks the user's role on mount and redirects away from paths that belong to a different role. `AdminShell` does this in `resolveWorkspaceRedirect` (`AdminShell.tsx`).
 4. **Rate limiting.** MFA routes, login, and password-reset are rate-limited with fail-closed semantics. The helper lives in `lib/auth-api-rate-limit.ts`.
 
+## Response header policy
+
+The middleware (`proxy.ts`, function `applySecurityHeaders()`) applies a **two-tier** security header system introduced on 2026-08-31. The split prevents overly broad frame-killing headers from breaking viewport emulators and embed-based tooling on public pages while keeping private surfaces fully locked down.
+
+### Tier 1 — Hardened headers (private surfaces)
+
+Applied to: `/api/*`, `/app/*`, `/dashboard`, `/admin`, `/teacher`, `/student`, `/parent`, `/payments`, `/super-admin`, `/error`.
+
+Defined in `lib/request-security.ts` as `HARDENED_SECURITY_HEADERS`:
+
+- `X-Frame-Options: DENY`
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Resource-Policy: same-origin`
+- `X-DNS-Prefetch-Control: off`
+- `X-Permitted-Cross-Domain-Policies: none`
+- `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`
+
+CSP `frame-ancestors` is set to `'none'` via `lib/csp-policy.ts` `buildContentSecurityPolicy({ frameAncestors: "none" })`.
+
+### Tier 2 — Public surface headers
+
+Applied to: `/`, `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, `/accept-invitation`, `/join`, `/offline`, `/first-login`, `/cookies`, `/privacy`, `/terms`, and SEO-allowed static paths.
+
+Defined in `lib/request-security.ts` as `PUBLIC_SURFACE_SECURITY_HEADERS`:
+
+- `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options` only.
+- **No** `X-Frame-Options`, **no** `Cross-Origin-Opener-Policy`, **no** `Cross-Origin-Resource-Policy`, **no** `X-DNS-Prefetch-Control`.
+
+CSP `frame-ancestors` is set to allow `'self' zamschoolos.site *.zamschoolos.site vercel.app *.vercel.app` via `lib/csp-policy.ts` `buildContentSecurityPolicy({ frameAncestors: "selfplus" })`.
+
 ## Service role
 
 The Supabase service role bypasses RLS. You should treat it as privileged and rare. Every use of the service role is audited by `npm run audit:tenant`. The strict variant (`npm run audit:tenant:strict`) fails the build if any service-role query touches a tenant-scoped table without an explicit school filter. You should not add new service-role queries; if you think you need one, write a Postgres function with `security definer` instead.
@@ -40,7 +70,7 @@ When hosting many schools (provincial or Zambia-wide), treat the origin as a **d
 
 - Upstash Redis is **required** for distributed rate limits, login lockout, and temporary IP bans.
 - Cloudflare (DNS + WAF + R2) sits in front of the origin; optional gateway worker for edge JWT rate limits.
-- Host allow-list, body-size limits, and abuse IP bans are enforced in `proxy.ts`.
+- Host allow-list and body-size limits are enforced in `proxy.ts`. Edge bot classification and IP blocklists are intentionally **disabled** because they were banning shared school NAT IPs; route-level per-user rate limits still apply. See `proxy.ts` lines 44–47 for the rationale.
 - Full runbook: [DATACENTER_SECURITY.md](./DATACENTER_SECURITY.md).
 - Preflight: `npm run security:server`.
 

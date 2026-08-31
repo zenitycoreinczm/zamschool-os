@@ -163,5 +163,6 @@
   "smart-reminders.ts",
   "password-policy.ts",
   "sheet-sanitize.ts",
-  "upload-authorization.ts"
+  "upload-authorization.ts",
+  "auth-aal-guard.ts"
 ]

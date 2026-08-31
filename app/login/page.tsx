@@ -29,6 +29,7 @@ import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { supabase } from "@/lib/supabase";
 import { clearClientAuthCaches } from "@/lib/workspace/clear-client-auth-caches";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { cn } from "@/lib/utils";
 
 const MFA_CHALLENGE_PATH = "/login/mfa";
@@ -110,13 +111,11 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <AuthPageShell>
-        <section className="w-full max-w-[440px]">
-          <div className="rounded-workspace-xl border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-            </div>
+        <AuthCard>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
           </div>
-        </section>
+        </AuthCard>
       </AuthPageShell>
     }>
       <LoginContent />
@@ -500,8 +499,7 @@ function LoginContent() {
 
   return (
     <AuthPageShell>
-        <section className="w-full max-w-[440px]">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+        <AuthCard>
 
             <div className="mb-6 flex items-start gap-3.5">
               <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -564,7 +562,7 @@ function LoginContent() {
                     type="button"
                     onClick={continueToWorkspace}
                     disabled={continuingSession || switchingAccount}
-                    className="flex-1 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 disabled:opacity-70"
+                    className="flex-1 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200 disabled:opacity-70"
                   >
                     {continuingSession ? "Opening workspace..." : "Continue to workspace"}
                   </button>
@@ -680,8 +678,7 @@ function LoginContent() {
                 </Link>
               </p>
             </div>
-          </div>
-        </section>
+        </AuthCard>
     </AuthPageShell>
   );
 }

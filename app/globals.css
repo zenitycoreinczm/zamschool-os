@@ -53,6 +53,13 @@
         0 2px 4px rgb(15 23 42 / 0.04), 0 8px 20px rgb(15 23 42 / 0.06);
     --shadow-workspace-lg:
         0 4px 8px rgb(15 23 42 / 0.05), 0 16px 32px rgb(15 23 42 / 0.08);
+    /* Auth / standalone card elevation */
+    --shadow-workspace-xl:
+        0 8px 16px rgb(15 23 42 / 0.06), 0 24px 70px rgb(15 23 42 / 0.12);
+    /* Upward shadow for fixed bottom overlays (cookie banner, docks) */
+    --shadow-workspace-overlay: 0 -4px 20px rgb(15 23 42 / 0.08);
+    /* Brand-tinted glow for highlighted cards */
+    --shadow-workspace-glow: 0 0 20px rgb(14 165 233 / 0.15);
     --shadow-workspace-focus: 0 0 0 3px rgb(14 165 233 / 0.22);
 
     /* Motion */
@@ -72,6 +79,13 @@ html {
     /* Prevent iOS text inflation that can look “broken” on marketing pages */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Root-level overflow containment. Without this, a single wide flex item
+       (e.g. an inline-flex badge with unbroken long text) expands the
+       layout viewport past the device width. Mobile browsers then ignore
+       <meta viewport width=device-width> and treat the page as ~1280px
+       wide, which activates every Tailwind breakpoint (sm/md/lg all true)
+       and renders the desktop layout squished inside the phone screen. */
+    overflow-x: hidden;
 }
 
 body {
@@ -88,6 +102,13 @@ body {
         "Helvetica Neue",
         Arial,
         sans-serif;
+    /* Mirror html overflow containment for browsers that propagate body
+       overflow to the viewport (Safari on iOS, legacy Android WebView). */
+    overflow-x: hidden;
+    /* Ensure any long unbroken words (URLs, email addresses, exam codes)
+       wrap inside their containers instead of pushing the page wider. */
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 ::selection {
@@ -239,7 +260,7 @@ html {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    box-shadow: 0 0 20px rgba(14, 165, 233, 0.15);
+    box-shadow: var(--shadow-workspace-glow);
     opacity: 0;
     transition: opacity var(--duration-workspace-normal) var(--ease-workspace-out);
     pointer-events: none;

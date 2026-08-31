@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthCard } from "@/components/auth/AuthCard";
 
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();
@@ -52,7 +53,7 @@ function AcceptInvitationContent() {
 
   return (
     <AuthPageShell>
-      <div className="w-full max-w-lg rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+      <AuthCard widthClassName="max-w-lg" className="p-8">
         <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
           <ShieldCheck className="h-7 w-7" />
         </div>
@@ -84,7 +85,7 @@ function AcceptInvitationContent() {
             </p>
             <Link
               href="/login"
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800"
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800"
             >
               Go to sign in
             </Link>
@@ -104,13 +105,13 @@ function AcceptInvitationContent() {
             </p>
             <Link
               href="/login"
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800"
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800"
             >
               Return to sign in
             </Link>
           </div>
         ) : null}
-      </div>
+      </AuthCard>
     </AuthPageShell>
   );
 }

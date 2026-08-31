@@ -17,7 +17,11 @@ import {
   validateCsrfToken,
   CSRF_TOKEN_COOKIE,
 } from "./lib/csrf";
-import { HARDENED_SECURITY_HEADERS } from "./lib/request-security";
+import {
+  HARDENED_SECURITY_HEADERS,
+  PUBLIC_SURFACE_SECURITY_HEADERS,
+  isSeoAllowedPublicPath,
+} from "./lib/request-security";
 import {
   isAllowedEdgeHost,
   isDisallowedEdgeMethod,
@@ -362,15 +366,50 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
     request.nextUrl.protocol === "https:" ||
     request.nextUrl.hostname.endsWith(".vercel.app");
 
-  Object.entries(HARDENED_SECURITY_HEADERS).forEach(([key, value]) => {
+  const pathname = String(request.nextUrl.pathname || "/");
+  const isApi = pathname.startsWith("/api/");
+  const isPrivateWorkspace =
+    pathname.startsWith("/app") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/teacher") ||
+    pathname.startsWith("/student") ||
+    pathname.startsWith("/parent") ||
+    pathname.startsWith("/payments") ||
+    pathname.startsWith("/super-admin") ||
+    pathname === "/error";
+
+  const isPublicHtmlEntry =
+    isSeoAllowedPublicPath(pathname) ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/verify-email") ||
+    pathname.startsWith("/accept-invitation") ||
+    pathname.startsWith("/join") ||
+    pathname.startsWith("/offline") ||
+    pathname.startsWith("/first-login") ||
+    pathname.startsWith("/cookies") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms");
+
+  const needsHardenedHeaders = isApi || isPrivateWorkspace || !isPublicHtmlEntry;
+
+  const headers = needsHardenedHeaders
+    ? HARDENED_SECURITY_HEADERS
+    : PUBLIC_SURFACE_SECURITY_HEADERS;
+  Object.entries(headers).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
+
   response.headers.set(
     "Content-Security-Policy",
     buildContentSecurityPolicy({
       isProduction: isProductionCspMode(),
       shouldUpgradeInsecureRequests:
         isHttps && !isLoopbackOrigin(request.nextUrl.origin),
+      frameAncestors: needsHardenedHeaders ? "none" : "selfplus",
     }),
   );
 
@@ -386,7 +425,7 @@ function applySecurityHeaders(response: NextResponse, request: NextRequest) {
   response.headers.delete("Server");
 
   // Indexing + AI-training policy (enforced headers; robots.txt is also updated).
-  applyRobotHeaders(response, request.nextUrl.pathname || "/");
+  applyRobotHeaders(response, pathname);
 
   // Cache-control for auth HTML already set elsewhere; reinforce no-store for cookies.
   if (!response.headers.has("X-Content-Type-Options")) {

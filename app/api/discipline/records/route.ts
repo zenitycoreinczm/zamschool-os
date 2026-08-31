@@ -8,6 +8,10 @@ import {
   safeErrorMessage,
   getClientIp,
 } from "@/lib/server-guards";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { auditDomainWrite } from "@/lib/audit-domain";
@@ -17,6 +21,7 @@ import {
   buildDisciplineStatusChangeNotificationPayloads,
 } from "@/lib/discipline-notifications";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
+import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 
 const createRecordSchema = z.object({
   studentId: z.string().uuid(),
@@ -46,15 +51,38 @@ const updateRecordSchema = z.object({
 export async function GET(req: Request) {
   try {
     // Admins and teachers can both read discipline records.
-    // Database RLS policies scope teachers to their assigned classes.
     let access = await requireAdminContext(req);
-    if (!access.ok) {
+    const isTeacherAccess = !access.ok;
+    if (isTeacherAccess) {
       access = await requireTeacherContext(req);
     }
     if (!access.ok) return access.response;
-    const { schoolId } = access.context;
+    const { schoolId, userId, profileId } = access.context;
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked" }, { status: 403 });
+    }
+
+    // For teachers, scope to their assigned classes only
+    let scopedClassIds: string[] | null = null;
+    if (isTeacherAccess && profileId) {
+      const scope = await loadTeacherAssignmentScope({
+        schoolId,
+        actorProfileId: profileId,
+      });
+      // Teachers can see records for classes they supervise or teach
+      scopedClassIds = Array.from(
+        new Set([...scope.supervisedClassIds, ...scope.taughtClassIds]),
+      );
+      
+      // If teacher has no assigned classes, return empty list
+      if (scopedClassIds.length === 0) {
+        const response = NextResponse.json({
+          success: true,
+          data: [],
+          pagination: { limit: 0, offset: 0, total: 0 },
+        });
+        return applyEdgeCacheHeaders(response, "noStore");
+      }
     }
 
     const { searchParams } = new URL(req.url);
@@ -79,7 +107,30 @@ export async function GET(req: Request) {
       .range(offset, offset + limit - 1);
 
     if (studentId) query = query.eq("student_id", studentId);
-    if (classId) query = query.eq("class_id", classId);
+    
+    // Apply teacher class scoping
+    if (scopedClassIds) {
+      // If explicit classId filter provided, intersect with scoped classes
+      if (classId) {
+        if (!scopedClassIds.includes(classId)) {
+          // Teacher doesn't have access to this class
+          const response = NextResponse.json({
+            success: true,
+            data: [],
+            pagination: { limit, offset, total: 0 },
+          });
+          return applyEdgeCacheHeaders(response, "noStore");
+        }
+        query = query.eq("class_id", classId);
+      } else {
+        // Scope to all assigned classes
+        query = query.in("class_id", scopedClassIds);
+      }
+    } else if (classId) {
+      // Admin with explicit class filter
+      query = query.eq("class_id", classId);
+    }
+    
     if (status) query = query.eq("status", status);
     if (severity) query = query.eq("severity", parseInt(severity, 10));
 
@@ -237,16 +288,26 @@ export async function POST(req: Request) {
   try {
     const access = await requireAdminContext(req);
     if (!access.ok) return access.response;
+    const { userId, schoolId } = access.context;
+    if (!schoolId) {
+      return NextResponse.json({ error: "No school linked" }, { status: 403 });
+    }
+
+    const rate = await applyPlatformRateLimit({
+      scope: "discipline-create",
+      schoolId,
+      req,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const perm = await requireFeatureAccess(
       access.context,
       "discipline",
       "create",
     );
     if (!perm.ok) return perm.response;
-    const { userId, schoolId } = access.context;
-    if (!schoolId) {
-      return NextResponse.json({ error: "No school linked" }, { status: 403 });
-    }
 
     const body = await parseJsonWithSchema(req, createRecordSchema);
 
@@ -352,16 +413,26 @@ export async function PUT(req: Request) {
   try {
     const access = await requireAdminContext(req);
     if (!access.ok) return access.response;
+    const { userId, schoolId } = access.context;
+    if (!schoolId) {
+      return NextResponse.json({ error: "No school linked" }, { status: 403 });
+    }
+
+    const rate = await applyPlatformRateLimit({
+      scope: "discipline-update",
+      schoolId,
+      req,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const perm = await requireFeatureAccess(
       access.context,
       "discipline",
       "update",
     );
     if (!perm.ok) return perm.response;
-    const { userId, schoolId } = access.context;
-    if (!schoolId) {
-      return NextResponse.json({ error: "No school linked" }, { status: 403 });
-    }
 
     const body = await parseJsonWithSchema(req, updateRecordSchema);
     const { id, ...updates } = body;

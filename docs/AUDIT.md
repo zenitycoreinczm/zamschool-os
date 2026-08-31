@@ -138,6 +138,16 @@ Compared to the prior audit snapshot (after the 2026-06-28 quality pass):
 - 6 prior "Needs Work" observations moved to [Resolved since 2026-06-21](#resolved-since-2026-06-21) with confirmed current file/line refs.
 - 2 prior unchecked-by-AUDIT items confirmed by re-verification and moved to [Done Well](#done-well) (`MobileDock` typed contract; `prefers-reduced-motion` coverage).
 
+## Production release (2026-08-31)
+
+The application was declared production-ready on 2026-08-31 after comprehensive cross-platform testing (mobile, web, desktop). All core modules confirmed functional: messaging, role-based permissions, attendance, results, fees, timetables, announcements. Two issues were identified and fixed during the release process:
+
+1. **Mobile layout overflow.** Flex items with unbroken text expanded the layout viewport past device width, causing mobile browsers to render the desktop layout squished. Fixed by adding `overflow-x: hidden` to `html`/`body` in `app/globals.css` and `min-w-0 break-words` to all flex text items in `app/page.tsx` and `components/landing/SystemStatusBadge.tsx`.
+
+2. **Viewport emulator connection refusal.** The middleware applied full security lockdown (XFO=DENY, COOP, CORP, CSP frame-ancestors 'none') to every response including public pages. Viewport emulators and iframe-based tools could not load the site. Fixed by introducing a two-tier header system in `lib/request-security.ts` (`HARDENED_SECURITY_HEADERS` vs `PUBLIC_SURFACE_SECURITY_HEADERS`) and updating `proxy.ts` `applySecurityHeaders()` to classify requests by path. Public entry pages now get lenient headers; API and workspace routes remain fully locked down. Documented in [SECURITY.md](./SECURITY.md#response-header-policy).
+
+Deployed to https://zamschoolos.site via Vercel. Build: webpack compiled in ~25s, TypeScript strict check passed, 239 static pages generated.
+
 ## Implementation Plan
 
 This section tracks the close-out of the residual items in [Needs Work](#needs-work).

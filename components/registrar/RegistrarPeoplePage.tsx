@@ -600,7 +600,7 @@ export default function RegistrarPeoplePage() {
       {formOpen ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4">
           <div className="flex min-h-full items-start justify-center py-4 sm:items-center">
-            <div role="dialog" aria-modal="true" className="w-full max-w-4xl max-h-[92vh] min-h-0 overflow-hidden rounded-[28px] bg-white border border-slate-200 shadow-2xl flex flex-col">
+            <div role="dialog" aria-modal="true" className="w-full max-w-4xl max-h-[92vh] min-h-0 overflow-hidden rounded-workspace-2xl bg-white border border-slate-200 shadow-2xl flex flex-col">
               <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50 px-6 py-5">
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">

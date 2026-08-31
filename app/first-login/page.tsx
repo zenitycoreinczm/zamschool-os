@@ -7,6 +7,7 @@ import { AlertCircle, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { resolveOnboardingPath } from "@/lib/auth-routing";
 import { supabase } from "@/lib/supabase";
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { cn } from "@/lib/utils";
 import { adminApiFetch } from "@/lib/admin-browser-api";
 
@@ -188,7 +189,7 @@ export default function FirstLoginPage() {
 
   return (
     <AuthPageShell contentClassName="py-10">
-      <div className="w-full max-w-lg rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+      <AuthCard widthClassName="max-w-lg" className="p-8">
         <div className="flex items-start gap-4">
           <div className="grid h-14 w-14 place-items-center rounded-2xl bg-sky-50 text-sky-700">
             <LockKeyhole className="h-6 w-6" />
@@ -232,13 +233,13 @@ export default function FirstLoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Finish first-login setup
           </button>
         </form>
-      </div>
+      </AuthCard>
     </AuthPageShell>
   );
 }

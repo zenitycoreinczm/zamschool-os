@@ -2,7 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect -- badge state synchronizes external unread/feed sources. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { fetchAnnouncementsList } from "@/lib/announcements-client";
@@ -23,8 +23,11 @@ import {
 } from "@/lib/workspace/nav-badges";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 
-const POLL_MS = 60_000;
-const LIST_LIMIT = 40;
+// Badge polling cadence. 2 minutes keeps badges fresh enough for nav chips
+// while halving background requests per user on mobile data. Feed list
+// fetches only need enough rows to count "new since seen" items.
+const POLL_MS = 120_000;
+const LIST_LIMIT = 20;
 
 type UseNavBadgesOptions = {
   /** Account/admin/teacher unread-summary API mode. */
@@ -194,17 +197,27 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
     }
   }, [apiMode, canTrackSchoolFeeds, pathname, role, trackFeedSections, userId]);
 
+  // loadCounts changes identity on every navigation (it reads pathname to decide
+  // which feed sections to skip). Keep it in a ref so the poll effect is driven
+  // only by the authenticated user, not by route changes.
+  const loadCountsRef = useRef(loadCounts);
+  useEffect(() => {
+    loadCountsRef.current = loadCounts;
+  }, [loadCounts]);
+
   // Initial load + poll + inbox refresh bus.
   useEffect(() => {
     if (!userId) return;
 
-    void loadCounts();
+    void loadCountsRef.current();
     const interval = window.setInterval(() => {
-      void loadCounts();
+      // Do not burn background requests while the tab is hidden.
+      if (document.hidden) return;
+      void loadCountsRef.current();
     }, POLL_MS);
 
     const onRefresh = () => {
-      void loadCounts();
+      void loadCountsRef.current();
     };
     window.addEventListener(INBOX_REFRESH_EVENT, onRefresh);
 
@@ -212,7 +225,7 @@ export function useNavBadges(options: UseNavBadgesOptions = {}) {
       window.clearInterval(interval);
       window.removeEventListener(INBOX_REFRESH_EVENT, onRefresh);
     };
-  }, [loadCounts, userId]);
+  }, [userId]);
 
   // Clear feed badges when the user opens announcements/events.
   useEffect(() => {

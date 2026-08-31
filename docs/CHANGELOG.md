@@ -12,6 +12,14 @@ You should link to the PR or issue from each entry. Long descriptions belong in 
 
 ## Entries
 
+### 2026-08-31
+
+- **Production release.** Application declared production-ready after comprehensive cross-platform testing (mobile, web, desktop). All core modules confirmed functional: messaging, role-based permissions, attendance, results, fees, timetables, announcements. Deployed to https://zamschoolos.site via Vercel.
+- **Mobile layout fix.** Added `overflow-x: hidden` to `html`/`body` in `app/globals.css` and `min-w-0 break-words` to all flex text items in `app/page.tsx` and `components/landing/SystemStatusBadge.tsx`. Prevents wide flex items from expanding the layout viewport past device width on mobile.
+- **Security header split.** Introduced two-tier response header system in `lib/request-security.ts` (`HARDENED_SECURITY_HEADERS` vs `PUBLIC_SURFACE_SECURITY_HEADERS`). Updated `proxy.ts` `applySecurityHeaders()` to classify requests by path: public entry pages get lenient headers for emulator/preview compatibility; API and workspace routes get full lockdown (XFO=DENY, COOP, CORP, CSP frame-ancestors 'none'). Updated `lib/csp-policy.ts` with `frameAncestors` option ("none" vs "selfplus"). Fixed viewport emulator connection refusals.
+- **vercel.json update.** Split global header rule (lenient for public pages) from `/api/(.*)` overlay (hardened). Removed blanket XFO/COOP/CORP from the catch-all rule.
+- Docs: updated README.md (production status, two-tier header reference), SECURITY.md (response header policy section, disabled edge bot classification note), ARCHITECTURE.md (middleware bullet, production deployment section), UI-UX.md (mobile overflow containment subsection), DEVELOPMENT.md (build heap note, deployment section), PRODUCTION.md (Vercel deploy/rollback details), AUDIT.md (production release section).
+
 ### 2026-06-21
 
 - Docs: wiped `docs/_archive/` (33 stale pilot/plan/operation files). Re-pointed the dangling references in `DATA.md`, `SECURITY.md`, `OPERATIONS.md`, `PRODUCTION.md`, and `CHANGELOG.md` to the team wiki or the live baseline migration.

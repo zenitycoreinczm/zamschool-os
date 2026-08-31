@@ -65,6 +65,8 @@ type RecipientOption = {
 export default function AppMessagesPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [recipients, setRecipients] = useState<RecipientOption[]>([]);
   const [schoolId, setSchoolId] = useState<string | null>(null);
@@ -99,35 +101,18 @@ export default function AppMessagesPage() {
         setSchoolId(me.school_id);
         setCurrentUserId(auth.user.id);
 
-        const [messagesBody, profilesResult] = await Promise.all([
-          adminApiJson<{ data?: MessageRow[]; quota?: MessageSendQuota }>("/api/admin/messages"),
-          supabase
-            .from("profiles")
-            .select("id, auth_user_id, first_name, last_name, email, role")
-            .eq("school_id", me.school_id)
-            .order("first_name", { ascending: true }),
-        ]);
+        const messagesBody = await adminApiJson<{
+          data?: MessageRow[];
+          quota?: MessageSendQuota;
+          hasMore?: boolean;
+        }>("/api/admin/messages");
 
         setMessages(Array.isArray(messagesBody.data) ? messagesBody.data : []);
         setQuota(messagesBody.quota ?? null);
-
-        const currentUserId = auth.user.id;
-        setRecipients(
-          (profilesResult.data || [])
-            .map((profile: any) => {
-              const identityId = String(profile.auth_user_id || profile.id || "").trim();
-              return {
-                id: identityId,
-                label: getDisplayName(profile),
-                role: String(profile.role || "user").toLowerCase(),
-              };
-            })
-            .filter((profile) => profile.id && profile.id !== currentUserId)
-        );
+        setHasMore(Boolean(messagesBody.hasMore));
       } catch (error: any) {
         toast.error(error?.message || "Failed to load messages");
         setMessages([]);
-        setRecipients([]);
       } finally {
         setLoading(false);
       }
@@ -135,6 +120,33 @@ export default function AppMessagesPage() {
 
     load();
   }, []);
+
+  const loadRecipients = async () => {
+    if (recipients.length > 0 || !schoolId || !currentUserId) return;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, auth_user_id, first_name, last_name, email, role")
+        .eq("school_id", schoolId)
+        .order("first_name", { ascending: true });
+      if (error) throw error;
+
+      setRecipients(
+        (data || [])
+          .map((profile: any) => {
+            const identityId = String(profile.auth_user_id || profile.id || "").trim();
+            return {
+              id: identityId,
+              label: getDisplayName(profile),
+              role: String(profile.role || "user").toLowerCase(),
+            };
+          })
+          .filter((profile) => profile.id && profile.id !== currentUserId)
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to load recipients");
+    }
+  };
 
   const filteredMessages = useMemo(() => {
     return messages.filter((message) => {
@@ -205,11 +217,35 @@ export default function AppMessagesPage() {
   };
 
   const refreshMessages = async () => {
-    const response = await adminApiJson<{ data?: MessageRow[]; quota?: MessageSendQuota }>(
-      "/api/admin/messages"
-    );
+    const response = await adminApiJson<{
+      data?: MessageRow[];
+      quota?: MessageSendQuota;
+      hasMore?: boolean;
+    }>("/api/admin/messages");
     setMessages(Array.isArray(response.data) ? response.data : []);
     setQuota(response.quota ?? null);
+    setHasMore(Boolean(response.hasMore));
+  };
+
+  const loadOlderMessages = async () => {
+    if (loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      const response = await adminApiJson<{
+        data?: MessageRow[];
+        hasMore?: boolean;
+      }>(`/api/admin/messages?offset=${messages.length}`);
+      const older = Array.isArray(response.data) ? response.data : [];
+      setMessages((prev) => {
+        const seen = new Set(prev.map((item) => item.id));
+        return [...prev, ...older.filter((item) => !seen.has(item.id))];
+      });
+      setHasMore(Boolean(response.hasMore));
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to load older messages");
+    } finally {
+      setLoadingOlder(false);
+    }
   };
 
   const markAsRead = async (message: MessageRow) => {
@@ -263,7 +299,13 @@ export default function AppMessagesPage() {
         quota={quota}
         composeOpen={composeOpen}
         canCompose={canSendToday}
-        onCompose={() => setComposeOpen((value) => !value)}
+        onCompose={() => {
+          setComposeOpen((value) => {
+            const next = !value;
+            if (next) void loadRecipients();
+            return next;
+          });
+        }}
       />
 
       <MessageFirstVisitHint role="admin" dailyLimit={quota?.limit ?? 5} />
@@ -347,7 +389,10 @@ export default function AppMessagesPage() {
                 <h2 className="text-sm font-semibold text-slate-900">Compose</h2>
                 <button
                   type="button"
-                  onClick={() => setComposeOpen(true)}
+                  onClick={() => {
+                    setComposeOpen(true);
+                    void loadRecipients();
+                  }}
                   disabled={!canSendToday}
                   className="text-xs font-semibold text-slate-700 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -413,6 +458,16 @@ export default function AppMessagesPage() {
               })}
             </ul>
           )}
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={() => void loadOlderMessages()}
+              disabled={loadingOlder}
+              className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loadingOlder ? "Loading older messages…" : "Load older messages"}
+            </button>
+          ) : null}
         </MessagesInboxShell>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthCard } from "@/components/auth/AuthCard";
 
 export default function ForgotPasswordPage() {
   return (
@@ -72,8 +73,7 @@ function ForgotPasswordContent() {
 
   return (
     <AuthPageShell contentClassName="py-8">
-      <section className="w-full max-w-[440px]">
-        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+      <AuthCard>
           <div className="mb-6 flex items-start gap-3.5">
             <div className="mt-0.5 h-12 w-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
               <Image
@@ -150,7 +150,7 @@ function ForgotPasswordContent() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-3 text-base font-bold text-white transition hover:bg-slate-800 disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 text-base font-bold text-white transition hover:bg-slate-800 disabled:opacity-70"
             >
               {loading ? (
                 <>
@@ -171,8 +171,7 @@ function ForgotPasswordContent() {
               Back to sign in
             </Link>
           </div>
-        </div>
-      </section>
+      </AuthCard>
     </AuthPageShell>
   );
 }

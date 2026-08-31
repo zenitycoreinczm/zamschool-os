@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       {
         allowedRoles: [...ACCOUNT_PROFILE_ROLES],
         requireSchool: false,
-        allowMetadataRoleFallback: true,
+        
       },
       req,
     );
@@ -45,13 +45,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const schoolId = access.context.schoolId;
-    if (!schoolId) {
-      return NextResponse.json(
-        { error: "No school linked to this account" },
-        { status: 403 },
-      );
-    }
+    const schoolId = access.context.schoolId || "global";
 
     const profileId = access.context.profileId || access.context.userId;
     const {
@@ -68,14 +62,15 @@ export async function POST(req: Request) {
     await persistAvatarUrl({
       profileId,
       authUserId: access.context.userId,
-      schoolId,
+      schoolId: access.context.schoolId || null,
       avatarUrl: protectedUrl,
     });
     const avatarUrl = protectedUrl;
-    // Bust school-scoped workspace Redis + hot-read so header avatar updates immediately.
-    await invalidateActorCaches(access.context.userId, schoolId);
-    if (profileId && profileId !== access.context.userId) {
-      await invalidateActorCaches(profileId, schoolId);
+    if (access.context.schoolId) {
+      await invalidateActorCaches(access.context.userId, access.context.schoolId);
+      if (profileId && profileId !== access.context.userId) {
+        await invalidateActorCaches(profileId, access.context.schoolId);
+      }
     }
 
     return NextResponse.json({
@@ -98,16 +93,17 @@ export async function POST(req: Request) {
 async function persistAvatarUrl(input: {
   profileId: string;
   authUserId: string;
-  schoolId: string;
+  schoolId: string | null;
   avatarUrl: string;
 }) {
-  const byProfileId = await supabaseAdmin
+  let query = supabaseAdmin
     .from("profiles")
     .update({ avatar_url: input.avatarUrl })
-    .eq("id", input.profileId)
-    .eq("school_id", input.schoolId)
-    .select("id")
-    .maybeSingle();
+    .eq("id", input.profileId);
+  if (input.schoolId) {
+    query = query.eq("school_id", input.schoolId);
+  }
+  const byProfileId = await query.select("id").maybeSingle();
 
   if (!byProfileId.error && byProfileId.data?.id) {
     return;
@@ -117,13 +113,14 @@ async function persistAvatarUrl(input: {
     throw byProfileId.error;
   }
 
-  const byAuthUserId = await supabaseAdmin
+  let authQuery = supabaseAdmin
     .from("profiles")
     .update({ avatar_url: input.avatarUrl })
-    .eq("auth_user_id", input.authUserId)
-    .eq("school_id", input.schoolId)
-    .select("id")
-    .maybeSingle();
+    .eq("auth_user_id", input.authUserId);
+  if (input.schoolId) {
+    authQuery = authQuery.eq("school_id", input.schoolId);
+  }
+  const byAuthUserId = await authQuery.select("id").maybeSingle();
 
   if (!byAuthUserId.error && byAuthUserId.data?.id) {
     return;

@@ -22,7 +22,10 @@ import { createAuditLog } from "@/lib/audit-log";
 import { canActorCreateSchoolRole } from "@/lib/account-create-policy";
 import { sendAccountCredentialsEmail } from "@/lib/send-account-credentials";
 import { invalidateActorCaches } from "@/lib/invalidate-actor-caches";
-import { createOrUpdateAuthUserWithTemporaryPassword } from "@/lib/auth-admin-users";
+import {
+  createOrUpdateAuthUserWithTemporaryPassword,
+  findAuthUserByEmail,
+} from "@/lib/auth-admin-users";
 const createInvitationSchema = z.object({
   email: z.string().email(),
   role: z.enum([
@@ -216,8 +219,33 @@ export async function POST(req: Request) {
         { status: 409 },
       );
     }
-    // Delete stale invitation rows, but keep any matching auth user and reset
-    // its password below so the displayed temporary password always works.
+    // SECURITY: cross-tenant guard. Duplicate checks above are school-scoped,
+    // but createOrUpdateAuthUserWithTemporaryPassword resolves auth users
+    // GLOBALLY and would reset their password. Refuse if this email belongs to
+    // a user at another school, or to any existing auth account (they must use
+    // password reset themselves - the inviter must never learn their password).
+    const { data: globalProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (globalProfile) {
+      return NextResponse.json(
+        { error: "This email already has an account on the platform" },
+        { status: 409 },
+      );
+    }
+    const existingAuthUser = await findAuthUserByEmail(email);
+    if (existingAuthUser) {
+      return NextResponse.json(
+        {
+          error:
+            "This email already has an account. Ask the person to use Forgot Password instead.",
+        },
+        { status: 409 },
+      );
+    }
+    // Delete stale invitation rows from previous attempts for this email.
     await supabaseAdmin
       .from("staff_invitations")
       .delete()

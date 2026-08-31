@@ -14,6 +14,10 @@ import {
   detectCsvDelimiter,
   parseResultsGrid,
 } from "@/lib/results/sheet-parse";
+import {
+  batchFallbackUpsertResults,
+  type ResultsClientLike,
+} from "@/lib/results/fallback-upsert";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -107,12 +111,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (parseError: unknown) {
       return NextResponse.json(
-        {
-          error:
-            parseError instanceof Error
-              ? parseError.message
-              : "Failed to parse file",
-        },
+        { error: safeErrorMessage(parseError, "Failed to parse file") },
         { status: 400 },
       );
     }
@@ -532,50 +531,13 @@ async function fallbackUpsertResults(
   schoolId: string,
   rows: { student_id: string; assignment_id: string; exam_id: string | null; score: number | null; grade: string | null; school_id: string }[],
 ): Promise<{ created: number; updated: number }> {
-  const supabaseAdmin = getSupabaseAdmin();
-  let created = 0;
-  let updated = 0;
-
-  for (const row of rows) {
-    const { data: existing } = await supabaseAdmin
-      .from("results")
-      .select("id")
-      .eq("school_id", schoolId)
-      .eq("student_id", row.student_id)
-      .eq("assignment_id", row.assignment_id)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await supabaseAdmin
-        .from("results")
-        .update({ score: row.score, grade: row.grade, exam_id: row.exam_id })
-        .eq("school_id", schoolId)
-        .eq("id", existing.id);
-      if (error) throw error;
-      updated++;
-    } else {
-      const { error } = await supabaseAdmin.from("results").insert({
-        school_id: schoolId,
-        student_id: row.student_id,
-        assignment_id: row.assignment_id,
-        exam_id: null,
-        score: row.score,
-        grade: row.grade,
-        grading_status: "draft",
-      });
-      if (error) {
-        // Unique violation - row was inserted concurrently, treat as update
-        if (error.code === "23505" || error.message?.includes("unique")) {
-          updated++;
-          continue;
-        }
-        throw error;
-      }
-      created++;
-    }
-  }
-
-  return { created, updated };
+  return batchFallbackUpsertResults(
+    // supabase-js builders are deeply generic; the structural interface is
+    // behavior-tested separately (see results-fallback-upsert tests).
+    getSupabaseAdmin() as unknown as ResultsClientLike,
+    schoolId,
+    rows,
+  );
 }
 
 function computeGrade(

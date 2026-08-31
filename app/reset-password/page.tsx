@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { AuthPageShell } from "@/components/auth/AuthPageShell";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -209,7 +210,7 @@ function ResetPasswordContent() {
   if (!ready) {
     return (
       <AuthPageShell>
-        <section className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+        <AuthCard widthClassName="max-w-md" className="p-8 text-center">
           <AlertCircle className="mx-auto mb-4 h-10 w-10 text-amber-500" />
           <h1 className="text-xl font-bold text-slate-950">
             Link expired or invalid
@@ -224,7 +225,7 @@ function ResetPasswordContent() {
           >
             Request new link
           </Link>
-        </section>
+        </AuthCard>
       </AuthPageShell>
     );
   }
@@ -251,7 +252,7 @@ function ResetPasswordContent() {
           </p>
         </div>
 
-        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.12)]">
+        <div className="rounded-workspace-2xl border border-slate-200 bg-white p-6 shadow-workspace-xl">
           {error ? (
             <div className="mb-5 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -317,7 +318,7 @@ function ResetPasswordContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-3 font-bold text-white hover:bg-slate-800 disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3 font-bold text-white hover:bg-slate-800 disabled:opacity-70"
               >
                 {loading ? (
                   <>

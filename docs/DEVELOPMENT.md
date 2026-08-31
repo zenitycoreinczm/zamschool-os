@@ -19,7 +19,7 @@ The scripts in `package.json` today (`npm run <name>`):
 |---------|--------------|
 | `dev` | Start the Next.js dev server (webpack mode, port 3000). |
 | `dev:restart` | Windows-only helper to tear down and restart the dev server. |
-| `build` | `next build --webpack`. Triggers `postbuild` `prepare-standalone.mjs`. |
+| `build` | `next build --webpack`. Triggers `postbuild` `prepare-standalone.mjs`. Requires ~8GB heap (`NODE_OPTIONS=--max-old-space-size=8192`) on machines with limited RAM. |
 | `start` | Run the standalone build via `scripts/start-standalone.mjs`. |
 | `test` | Run the test suite — currently **36 inventoried** static-grep + runtime files under `__tests__/`, `lib/`, `components/`, `public/`, `scripts/`, and `workers/` (the runner reports 53 in aggregate because some suites are split). |
 | `test:all` | Alias for `test`. |
@@ -118,3 +118,13 @@ If a test passes locally but fails on GitHub Actions (or vice versa), the suspec
 2. **Lockfile drift** — `npm ci` in CI uses `package-lock.json` exactly. Locally, `npm install` may have moved things. Run `npm ci` locally before pushing.
 3. **Environment variables** — the test runner sets `NODE_ENV=test`. If you have stray dev-only env vars in `.env.local`, they may pass locally and break CI.
 4. **Hidden file globs** — `.gitignore` covers a lot; if your local checkout has scratch files that happen to contain test-fixture strings, they could be matched. `scripts/run-tests.mjs` only scans `__tests__/`, `lib/`, `components/`, `public/`, `scripts/`, `workers/` — nothing else.
+
+## Deployment
+
+Production deploys to https://zamschoolos.site via Vercel CLI:
+
+```
+vercel --prod --yes
+```
+
+The `.next/` directory should be cleaned before deploying if you have run a local build (`npm run clean`). Vercel builds remotely with 8GB RAM and restores cache from prior deployments. The production alias is managed in the Vercel dashboard under the `zamschool-os-web` project.

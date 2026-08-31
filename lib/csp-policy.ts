@@ -4,6 +4,16 @@ export type CspBuildInput = {
   isProduction: boolean;
   shouldUpgradeInsecureRequests: boolean;
   supabaseOrigin?: string | null;
+  /**
+   * Controls the `frame-ancestors` directive.
+   * - "none" (default): no embedding at all - for API responses, app workspaces,
+   *   auth mutations, and any private surface. Blocks clickjacking completely.
+   * - "selfplus": allows self + the canonical production origins + Vercel
+   *   preview URLs. Used on public marketing/entry pages so iframe-based
+   *   viewport emulators, link-preview embeds, and DevTools device-mode
+   *   sandbox profiles can still load the document.
+   */
+  frameAncestors?: "none" | "selfplus";
 };
 
 function parseOrigin(value: string | undefined): string | null {
@@ -53,10 +63,15 @@ export function buildContentSecurityPolicy(input: CspBuildInput): string {
 
   const connectSrc = unique(["'self'", ...externalHosts, ...wsOrigins]);
 
+  const frameAncestorsDirective =
+    input.frameAncestors === "selfplus"
+      ? "frame-ancestors 'self' zamschoolos.site *.zamschoolos.site vercel.app *.vercel.app"
+      : "frame-ancestors 'none'";
+
   const directives = [
     "default-src 'self'",
     "base-uri 'self'",
-    "frame-ancestors 'none'",
+    frameAncestorsDirective,
     "frame-src 'none'",
     "form-action 'self'",
     `img-src ${imgSrc.join(" ")}`,

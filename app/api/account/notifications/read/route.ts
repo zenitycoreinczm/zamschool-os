@@ -47,7 +47,7 @@ export async function POST(req: Request) {
           .map((value: unknown) => String(value || "").trim())
           .filter(Boolean),
       ),
-    );
+    ).slice(0, 100); // Cap to prevent query-size amplification
 
     if (bulkIds.length === 0) {
       return NextResponse.json(

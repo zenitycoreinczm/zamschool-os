@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyAuthApiRateLimit, authApiRateLimitResponse } from "@/lib/auth-api-rate-limit";
+import { requireAal2ForSensitiveAuthAction } from "@/lib/auth-aal-guard";
 
 export async function GET(req: Request) {
   try {
@@ -45,11 +46,20 @@ export async function DELETE(req: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
+      error: getUserError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (getUserError || !user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+
+    // Enforce AAL2 for MFA factor deletion
+    const session = await supabase.auth.getSession();
+    const aalGuard = await requireAal2ForSensitiveAuthAction({
+      userId: user.id,
+      sessionAccessToken: session.data.session?.access_token || null,
+    });
+    if (!aalGuard.ok) return aalGuard.response;
 
     const rate = await applyAuthApiRateLimit({
       scope: "mfaFactorsDelete",

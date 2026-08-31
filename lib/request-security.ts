@@ -473,7 +473,21 @@ export const HARDENED_SECURITY_HEADERS: Record<string, string> = {
   "X-DNS-Prefetch-Control": "off",
   "X-Permitted-Cross-Domain-Policies": "none",
   "Cross-Origin-Opener-Policy": "same-origin",
-  "Cross-Origin-Resource-Policy": "same-site",
+  "Cross-Origin-Resource-Policy": "same-origin",
+};
+
+/**
+ * Public marketing / entry pages: still safe, but permissive enough for
+ * iframe-based emulators, DevTools device-mode clean profiles, link
+ * previews, and browser DNS prefetch. Still NO clickjacking risk because
+ * Content-Security-Policy frame-ancestors is set separately to
+ * "'self' zamschoolos.site *.zamschoolos.site vercel.app *.vercel.app".
+ */
+export const PUBLIC_SURFACE_SECURITY_HEADERS: Record<string, string> = {
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()",
+  "X-Content-Type-Options": "nosniff",
 };
 
 /**

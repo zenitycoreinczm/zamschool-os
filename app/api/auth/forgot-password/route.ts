@@ -11,49 +11,14 @@ import { getAppOrigin } from "@/lib/app-origin";
 import { wrapEmailHtml, emailButton } from "@/lib/email-templates";
 import { createResetToken } from "@/lib/stateless-token";
 import { applyAuthApiRateLimit, authApiRateLimitResponse } from "@/lib/auth-api-rate-limit";
+import {
+  findUserByEmail,
+  type SupabaseAdminLike,
+} from "@/lib/password-reset/find-user-by-email";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });
-
-/** Look up a user by email via the profiles table (indexed, fast).
- *  Returns { id, firstName } or null if not found. */
-async function findUserByEmail(
-  normalizedEmail: string,
-): Promise<{ id: string; firstName: string } | null> {
-  // 1. Try profiles table first (public schema, indexed)
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("id, first_name")
-    .eq("email", normalizedEmail)
-    .maybeSingle();
-
-  if (profile) {
-    return {
-      id: profile.id,
-      firstName: (profile.first_name as string) || "",
-    };
-  }
-
-  // 2. Fallback: search auth.users directly (handles auth-only accounts)
-  //    Uses a bounded scan - safe for school-scale user counts.
-  const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
-    perPage: 50,
-  });
-
-  const match = authUsers?.users?.find(
-    (u) => u.email?.toLowerCase() === normalizedEmail,
-  );
-
-  if (match) {
-    return {
-      id: match.id,
-      firstName: (match.user_metadata?.first_name as string) || "",
-    };
-  }
-
-  return null;
-}
 
 export async function POST(req: Request) {
   try {
@@ -77,7 +42,12 @@ export async function POST(req: Request) {
         "If an account exists with that email, a password reset link has been sent.",
     });
 
-    const user = await findUserByEmail(normalizedEmail);
+    const user = await findUserByEmail(
+      // supabase-js's query builders are deeply generic; cast to the narrow
+      // structural interface the lookup needs (behavior covered by tests).
+      supabaseAdmin as unknown as SupabaseAdminLike,
+      normalizedEmail,
+    );
     if (!user) {
       return successResponse;
     }

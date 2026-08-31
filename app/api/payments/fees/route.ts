@@ -7,6 +7,10 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { getClientIp } from "@/lib/server-guards";
 import { logger } from "@/lib/logger";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
 
 const log = logger.child({ module: "payments.fees" });
 
@@ -58,13 +62,23 @@ export async function POST(request: NextRequest) {
   try {
     const access = await requirePaymentsContext(request);
     if (!access.ok) return access.response;
+    const { schoolId, userId } = access.context;
+
+    const rate = await applyPlatformRateLimit({
+      scope: "fees-create",
+      schoolId,
+      req: request,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const perm = await requireFeatureAccess(
       access.context,
       "payments",
       "create",
     );
     if (!perm.ok) return perm.response;
-    const { schoolId, userId } = access.context;
 
     const body = await request.json();
     const payload = feeSchema.parse(body);

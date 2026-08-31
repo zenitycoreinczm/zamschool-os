@@ -23,7 +23,9 @@ export async function GET(req: Request) {
     const entityType = searchParams.get("entityType");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-    const limit = parseInt(searchParams.get("limit") || "100", 10);
+    const rawLimit = parseInt(searchParams.get("limit") || "100", 10);
+    // Clamp so the client cannot force unbounded audit_logs scans.
+    const limit = Math.max(1, Math.min(Number.isFinite(rawLimit) ? rawLimit : 100, 500));
 
     let query = supabaseAdmin
       .from("audit_logs")

@@ -7,18 +7,32 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { invalidateByTag } from "@/lib/enhanced-cache";
 import { getClientIp } from "@/lib/server-guards";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
 
 export async function POST(request: NextRequest) {
   try {
     const access = await requirePaymentsContext(request);
     if (!access.ok) return access.response;
+    const { schoolId, userId } = access.context;
+
+    const rate = await applyPlatformRateLimit({
+      scope: "billing-generate",
+      schoolId,
+      req: request,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const perm = await requireFeatureAccess(
       access.context,
       "payments",
       "create",
     );
     if (!perm.ok) return perm.response;
-    const { schoolId, userId } = access.context;
 
     const { month, fee_id: feeId } = parseBillingGenerateInput(
       await request.json(),

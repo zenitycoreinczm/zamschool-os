@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -16,6 +16,10 @@ import {
 import { toast } from "sonner";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { formatAttendanceStatusLabel } from "@/lib/attendance/status";
+import {
+  buildInitialRollCallState,
+  mergeRollCallStateOnRefresh,
+} from "@/lib/attendance/rollcall-state";
 import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
 import { cn } from "@/lib/utils";
 
@@ -104,45 +108,65 @@ export default function TeacherAttendancePage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [nowTick, setNowTick] = useState(0);
 
-  const loadLessons = useCallback(async (selectedDate: string) => {
-    setLoading(true);
-    try {
-      const body = await adminApiJson<{ success: boolean; data: Lesson[] }>(
-        `/api/teacher/classes?date=${selectedDate}`,
-      );
-      const items = Array.isArray(body.data) ? body.data : [];
-      setLessons(items);
+  // Refs so the silent background refresh can merge without clobbering
+  // staged (unsaved) teacher edits.
+  const exceptionsRef = useRef(exceptions);
+  exceptionsRef.current = exceptions;
+  const expandedRef = useRef(expanded);
+  expandedRef.current = expanded;
 
-      const initialExceptions: Record<
-        string,
-        Record<string, AttendanceStatus>
-      > = {};
-      const expandedSet = new Set<string>();
-
-      for (const lesson of items) {
-        // Expand open/late lessons by default
-        if (lesson.window?.canMark || !lesson.window) {
-          expandedSet.add(lesson.id);
-        }
-        const lessonExceptions: Record<string, AttendanceStatus> = {};
-        for (const student of lesson.roster) {
-          if (student.status && student.status !== "PRESENT") {
-            lessonExceptions[student.id] = student.status as AttendanceStatus;
-          }
-        }
-        initialExceptions[lesson.id] = lessonExceptions;
-      }
-      setExceptions(initialExceptions);
-      setExpanded(expandedSet);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load lessons";
-      toast.error(message);
-      setLessons([]);
-    } finally {
-      setLoading(false);
-    }
+  const fetchLessons = useCallback(async (selectedDate: string) => {
+    const body = await adminApiJson<{ success: boolean; data: Lesson[] }>(
+      `/api/teacher/classes?date=${selectedDate}`,
+    );
+    return Array.isArray(body.data) ? body.data : [];
   }, []);
+
+  const loadLessons = useCallback(
+    async (selectedDate: string) => {
+      setLoading(true);
+      try {
+        const items = await fetchLessons(selectedDate);
+        setLessons(items);
+        const state = buildInitialRollCallState(items);
+        setExceptions(
+          state.exceptions as Record<string, Record<string, AttendanceStatus>>,
+        );
+        setExpanded(state.expanded);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load lessons";
+        toast.error(message);
+        setLessons([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchLessons],
+  );
+
+  // Background refresh: keeps countdown windows fresh without a loading
+  // flash, and never overwrites staged marks or collapsed cards.
+  const refreshLessonsSilently = useCallback(
+    async (selectedDate: string) => {
+      try {
+        const items = await fetchLessons(selectedDate);
+        const merged = mergeRollCallStateOnRefresh(
+          exceptionsRef.current,
+          expandedRef.current,
+          items,
+        );
+        setLessons(items);
+        setExceptions(
+          merged.exceptions as Record<string, Record<string, AttendanceStatus>>,
+        );
+        setExpanded(merged.expanded);
+      } catch {
+        // Silent: keep showing the last known state.
+      }
+    },
+    [fetchLessons],
+  );
 
   useEffect(() => {
     void loadLessons(date);
@@ -150,15 +174,18 @@ export default function TeacherAttendancePage() {
 
   // Refresh window labels every 30s so countdown stays accurate.
   useEffect(() => {
-    const id = window.setInterval(() => setNowTick((n) => n + 1), 30_000);
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      setNowTick((n) => n + 1);
+    }, 30_000);
     return () => window.clearInterval(id);
   }, []);
 
   // Soft re-fetch when a lesson becomes open/late.
   useEffect(() => {
     if (nowTick === 0) return;
-    void loadLessons(date);
-  }, [nowTick]); // eslint-disable-line react-hooks/exhaustive-deps
+    void refreshLessonsSilently(date);
+  }, [nowTick, date, refreshLessonsSilently]);
 
   const totalStudents = useMemo(
     () => lessons.reduce((sum, lesson) => sum + lesson.roster.length, 0),
@@ -177,6 +204,28 @@ export default function TeacherAttendancePage() {
   const openCount = lessons.filter((l) => l.window?.canMark).length;
   const lateCount = lessons.filter((l) => l.window?.status === "late").length;
   const submittedCount = lessons.filter((l) => l.hasSubmission).length;
+
+  // Parent link health: count students with linked parents per lesson
+  const parentLinkHealth = useMemo(() => {
+    return lessons.map((lesson) => {
+      const linkedCount = lesson.roster.filter(
+        (s) => s.profileId && s.status !== null,
+      ).length;
+      return {
+        lessonId: lesson.id,
+        linkedParents: linkedCount,
+        totalStudents: lesson.roster.length,
+        hasAnyLinked: linkedCount > 0,
+      };
+    });
+  }, [lessons]);
+
+  const getLessonParentHealth = useCallback(
+    (lessonId: string) => {
+      return parentLinkHealth.find((h) => h.lessonId === lessonId);
+    },
+    [parentLinkHealth],
+  );
 
   const toggleException = (
     lessonId: string,
@@ -202,6 +251,47 @@ export default function TeacherAttendancePage() {
       return next;
     });
   };
+
+  // Quick mark: select first N students as absent (common scenario)
+  const quickMarkAbsent = (lessonId: string, count: number) => {
+    const lesson = lessons.find((l) => l.id === lessonId);
+    if (!lesson) return;
+    
+    setExceptions((prev) => {
+      const current = prev[lessonId] || {};
+      const next = { ...current };
+      
+      // Mark first N students as absent
+      for (let i = 0; i < Math.min(count, lesson.roster.length); i++) {
+        next[lesson.roster[i].id] = "ABSENT";
+      }
+      
+      return { ...prev, [lessonId]: next };
+    });
+  };
+
+  // Keyboard shortcut handler for fast marking
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only when not in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Ctrl/Cmd + A = mark all present for first open lesson
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        const firstOpenLesson = lessons.find((l) => l.window?.canMark);
+        if (firstOpenLesson) {
+          markAllPresent(firstOpenLesson.id);
+          toast.success(`Marked all present for ${firstOpenLesson.subjectName}`);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lessons]);
 
   const submitAttendance = async (lesson: Lesson) => {
     if (lesson.window && !lesson.window.canMark) {
@@ -281,7 +371,7 @@ export default function TeacherAttendancePage() {
         }
       }
 
-      await loadLessons(date);
+      await refreshLessonsSilently(date);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to save attendance";
@@ -305,6 +395,12 @@ export default function TeacherAttendancePage() {
               Mark attendance only during each lesson window. Head Teacher is
               alerted if roll call is not started within 10 minutes of the period
               start.
+            </p>
+            <p className="mt-2 text-xs text-slate-400">
+              <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px]">
+                Ctrl+A
+              </kbd>{" "}
+              = mark all present for first open lesson
             </p>
           </div>
           <div className="w-full max-w-[200px] rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur">
@@ -437,6 +533,25 @@ export default function TeacherAttendancePage() {
                     {win?.message ? (
                       <p className="mt-1 text-[11px] text-slate-400">{win.message}</p>
                     ) : null}
+                    {/* Parent link health indicator */}
+                    {(() => {
+                      const health = getLessonParentHealth(lesson.id);
+                      if (health && !health.hasAnyLinked) {
+                        return (
+                          <p className="mt-1 flex items-center gap-1 text-[11px] text-amber-600">
+                            <AlertTriangle className="h-3 w-3" />
+                            No parents linked — notifications won't be sent
+                          </p>
+                        );
+                      } else if (health && health.linkedParents < health.totalStudents) {
+                        return (
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            {health.linkedParents}/{health.totalStudents} students have linked parents
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     {exceptionKeys.length === 0 ? (
@@ -464,11 +579,40 @@ export default function TeacherAttendancePage() {
                         type="button"
                         onClick={() => markAllPresent(lesson.id)}
                         disabled={locked}
-                        className="rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Users className="mr-1 inline h-3 w-3" />
                         Mark All Present
                       </button>
+                      {/* Quick mark buttons for common scenarios */}
+                      {!locked && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => quickMarkAbsent(lesson.id, 1)}
+                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                            title="Quick mark 1 student absent"
+                          >
+                            −1 Absent
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => quickMarkAbsent(lesson.id, 2)}
+                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                            title="Quick mark 2 students absent"
+                          >
+                            −2 Absent
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => quickMarkAbsent(lesson.id, 3)}
+                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                            title="Quick mark 3 students absent"
+                          >
+                            −3 Absent
+                          </button>
+                        </>
+                      )}
                       {locked ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
                           <Lock className="h-3 w-3" />
@@ -515,7 +659,7 @@ export default function TeacherAttendancePage() {
                                           status,
                                         )
                                       }
-                                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                                      className={`inline-flex min-h-[44px] items-center rounded-lg px-3 text-xs font-semibold transition-all ${
                                         active
                                           ? STATUS_COLORS[status]
                                           : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -535,7 +679,7 @@ export default function TeacherAttendancePage() {
                                       "ABSENT",
                                     )
                                   }
-                                  className="rounded-lg bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-200"
+                                  className="inline-flex min-h-[44px] items-center rounded-lg bg-emerald-100 px-3 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-200"
                                 >
                                   {formatAttendanceStatusLabel(currentStatus)}
                                 </button>
@@ -550,10 +694,11 @@ export default function TeacherAttendancePage() {
                                       currentStatus,
                                     )
                                   }
-                                  className="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-500 hover:bg-emerald-100 hover:text-emerald-600"
+                                  aria-label={`Revert ${student.displayName} to present`}
                                   title="Revert to Present"
+                                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600"
                                 >
-                                  ✓
+                                  <Check className="h-4 w-4" />
                                 </button>
                               )}
                             </div>
@@ -563,38 +708,60 @@ export default function TeacherAttendancePage() {
                     </div>
 
                     <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-3">
-                      <button
-                        type="button"
-                        onClick={() => void submitAttendance(lesson)}
-                        disabled={saving === lesson.id || locked}
-                        className={cn(
-                          "inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
-                          locked
-                            ? "cursor-not-allowed bg-slate-400"
-                            : win?.status === "late"
-                              ? "bg-amber-500 hover:bg-amber-400"
-                              : "bg-emerald-600 hover:bg-emerald-500",
-                        )}
-                      >
-                        {saving === lesson.id ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Saving…
-                          </>
-                        ) : locked ? (
-                          <>
-                            <Lock className="h-4 w-4" />
-                            {win?.status === "upcoming"
-                              ? "Not open yet"
-                              : "Window closed"}
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-4 w-4" />
-                            Submit Roll Call
-                          </>
-                        )}
-                      </button>
+                      {(() => {
+                        const health = getLessonParentHealth(lesson.id);
+                        const willNotifyCount = health?.linkedParents || 0;
+                        const totalCount = health?.totalStudents || lesson.roster.length;
+                        
+                        return (
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => void submitAttendance(lesson)}
+                              disabled={saving === lesson.id || locked}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
+                                locked
+                                  ? "cursor-not-allowed bg-slate-400"
+                                  : win?.status === "late"
+                                    ? "bg-amber-500 hover:bg-amber-400"
+                                    : "bg-emerald-600 hover:bg-emerald-500",
+                              )}
+                            >
+                              {saving === lesson.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Saving…
+                                </>
+                              ) : locked ? (
+                                <>
+                                  <Lock className="h-4 w-4" />
+                                  {win?.status === "upcoming"
+                                    ? "Not open yet"
+                                    : "Window closed"}
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="h-4 w-4" />
+                                  Submit Roll Call
+                                </>
+                              )}
+                            </button>
+                            
+                            {/* Parent notification preview */}
+                            {!locked && willNotifyCount > 0 && (
+                              <span className="text-xs text-emerald-700">
+                                Will notify {willNotifyCount} parent{willNotifyCount !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {!locked && willNotifyCount === 0 && totalCount > 0 && (
+                              <span className="text-xs text-amber-700">
+                                No parents linked — link in admin first
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ) : null}

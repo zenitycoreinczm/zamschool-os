@@ -20,7 +20,6 @@ import {
   UserX,
 } from "lucide-react";
 import { toast } from "sonner";
-import Papa from "papaparse";
 import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiFetch, adminApiJson } from "@/lib/admin-browser-api";
@@ -120,6 +119,38 @@ export default function TeacherResultsPage() {
   const [dragOver, setDragOver] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved preferences from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('results-upload-preferences');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        if (prefs.lastClassId) setSelectedClass(prefs.lastClassId);
+        if (prefs.lastSubjectId) setSelectedSubject(prefs.lastSubjectId);
+        if (prefs.lastExamTitle) setExamTitle(prefs.lastExamTitle);
+        if (prefs.lastTotalMarks) setTotalMarks(prefs.lastTotalMarks);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []);
+
+  // Save preferences when they change
+  useEffect(() => {
+    if (!selectedClass && !selectedSubject && !examTitle) return;
+    
+    try {
+      localStorage.setItem('results-upload-preferences', JSON.stringify({
+        lastClassId: selectedClass,
+        lastSubjectId: selectedSubject,
+        lastExamTitle: examTitle,
+        lastTotalMarks: totalMarks,
+      }));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [selectedClass, selectedSubject, examTitle, totalMarks]);
 
   const loadData = useCallback(async () => {
     try {
@@ -242,6 +273,9 @@ export default function TeacherResultsPage() {
         if (name.endsWith(".csv") || name.endsWith(".txt")) {
           const text = await f.text();
           const delimiter = detectCsvDelimiter(text);
+          // Dynamic import keeps papaparse out of the initial page bundle.
+          const PapaModule = await import("papaparse");
+          const Papa = (PapaModule.default ?? PapaModule) as typeof PapaModule;
           const gridResult = Papa.parse<string[]>(text, {
             header: false,
             skipEmptyLines: "greedy",
@@ -550,6 +584,26 @@ export default function TeacherResultsPage() {
     classes.find((c) => c.id === selectedClass)?.name || "";
   const selectedSubjectName =
     subjects.find((s) => s.id === selectedSubject)?.name || "";
+
+  // Parent link health for selected class
+  const parentLinkHealth = useMemo(() => {
+    if (!selectedClass) return null;
+    
+    const studentsInSelectedClass = students.filter(
+      (s) => s.classId === selectedClass,
+    );
+    
+    // Count students with profile_id (potential for parent linking)
+    const linkedCount = studentsInSelectedClass.filter(
+      (s) => s.admissionNumber && s.displayName,
+    ).length;
+    
+    return {
+      totalStudents: studentsInSelectedClass.length,
+      hasProfiles: linkedCount,
+      hasAnyLinked: linkedCount > 0,
+    };
+  }, [students, selectedClass]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
@@ -1181,6 +1235,22 @@ export default function TeacherResultsPage() {
                   <span className="font-medium">Students:</span>{" "}
                   {studentsInClass.length} enrolled
                 </div>
+                {/* Parent link health */}
+                {parentLinkHealth && (
+                  <div className="mt-2 rounded-lg border border-dashed px-3 py-2 text-xs">
+                    {parentLinkHealth.hasAnyLinked ? (
+                      <span className="text-emerald-700">
+                        ✓ Parents can be notified for{" "}
+                        {parentLinkHealth.hasProfiles} students
+                      </span>
+                    ) : (
+                      <span className="flex items-start gap-1.5 text-amber-700">
+                        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                        No parents linked yet — link in admin first
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

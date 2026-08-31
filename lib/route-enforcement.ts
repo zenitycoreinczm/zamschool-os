@@ -19,7 +19,6 @@ export type RouteAccessOptions = {
   featureAction?: FeatureAction;
   domain?: SchoolDomain;
   domainAction?: DomainAction;
-  allowMetadataRoleFallback?: boolean;
 };
 
 export type RouteAccessResult =
@@ -40,7 +39,6 @@ export async function enforceRouteAccess(
     {
       allowedRoles: options.allowedRoles,
       requireSchool: options.requireSchool ?? true,
-      allowMetadataRoleFallback: options.allowMetadataRoleFallback,
     },
     req,
   );

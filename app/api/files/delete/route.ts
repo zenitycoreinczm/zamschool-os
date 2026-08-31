@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { requireActorContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
 import { deleteFile } from "@/lib/r2-client";
 
 export async function POST(req: NextRequest) {
@@ -12,6 +16,17 @@ export async function POST(req: NextRequest) {
       req,
     );
     if (!access.ok) return access.response;
+    const { schoolId, userId } = access.context;
+
+    const rate = await applyPlatformRateLimit({
+      scope: "file-delete",
+      schoolId,
+      req,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const perm = await requireFeatureAccess(access.context, "files", "delete");
     if (!perm.ok) return perm.response;
 

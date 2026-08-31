@@ -25,7 +25,6 @@ type ActorContextOptions = {
   profile: ProfileLike;
   allowedRoles: KnownRole[];
   requireSchool: boolean;
-  allowMetadataRoleFallback?: boolean;
 };
 
 type ActorContextFailure = {
@@ -57,11 +56,7 @@ export function buildActorContext(
   }
 
   const profileRole = normalizeRole(options.profile?.role);
-  const role =
-    profileRole ||
-    (options.allowMetadataRoleFallback
-      ? normalizeRole(options.user.user_metadata?.role)
-      : null);
+  const role = profileRole || null;
 
   if (!role || !options.allowedRoles.includes(role)) {
     return {

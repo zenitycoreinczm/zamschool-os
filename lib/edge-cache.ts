@@ -24,6 +24,8 @@ export const EDGE_CACHE = {
   noStore: "private, no-store, max-age=0, must-revalidate",
   /** Public CDN assets. */
   publicAsset: "public, max-age=86400, stale-while-revalidate=604800",
+  /** Anonymous public reads (e.g. /api/public/*) - safe to share-cache briefly. */
+  publicRead: "public, max-age=60, stale-while-revalidate=600",
   /** Health probe. */
   publicHealth: "public, max-age=10, stale-while-revalidate=30",
 } as const;
@@ -36,7 +38,12 @@ export function applyEdgeCacheHeaders(
 ): NextResponse {
   response.headers.set("Cache-Control", EDGE_CACHE[preset]);
   response.headers.set("CDN-Cache-Control", EDGE_CACHE[preset]);
-  if (preset !== "noStore" && preset !== "publicAsset" && preset !== "publicHealth") {
+  if (
+    preset !== "noStore" &&
+    preset !== "publicAsset" &&
+    preset !== "publicHealth" &&
+    preset !== "publicRead"
+  ) {
     response.headers.set("Vary", "Authorization, Cookie");
   }
   return response;
@@ -110,6 +117,10 @@ export function resolveEdgeCachePreset(pathname: string, method: string): EdgeCa
 
   if (normalized === "/api/health") {
     return "publicHealth";
+  }
+
+  if (normalized.startsWith("/api/public/")) {
+    return "publicRead";
   }
 
   if (matchesPrefix(normalized, SCHOOL_SETTINGS_PREFIXES)) {

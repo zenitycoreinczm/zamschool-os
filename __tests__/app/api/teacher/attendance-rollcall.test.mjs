@@ -110,7 +110,7 @@ test("frontend refreshes roster after successful save", () => {
   );
   assert.match(
     pageSource,
-    /await loadLessons\(date\)/,
-    "frontend must call loadLessons after successful save to reflect saved statuses",
+    /await refreshLessonsSilently\(date\)/,
+    "frontend must refresh lessons after successful save to reflect saved statuses",
   );
 });

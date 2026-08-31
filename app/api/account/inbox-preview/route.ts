@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       {
         allowedRoles: [...INBOX_PREVIEW_ROLES],
         requireSchool: false,
-        allowMetadataRoleFallback: true,
+        
       },
       req,
     );

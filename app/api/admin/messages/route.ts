@@ -22,6 +22,10 @@ import {
   resolveMessagingIdentityId,
 } from "@/lib/messages/participants";
 import { getMessageSendQuota } from "@/lib/messages/send-quota";
+import {
+  parseMessageListLimit,
+  parseMessageListOffset,
+} from "@/lib/messages/list-params";
 
 const createMessageSchema = z.object({
   recipientId: z.string().min(1),
@@ -53,6 +57,8 @@ export async function GET(req: Request) {
     const unreadOnly = searchParams.get("unreadOnly") === "true";
     const asSender = searchParams.get("asSender") === "true";
     const viewAll = searchParams.get("viewAll") === "true";
+    const limit = parseMessageListLimit(searchParams.get("limit"));
+    const offset = parseMessageListOffset(searchParams.get("offset"));
 
     let query = supabaseAdmin
       .from("messages")
@@ -76,11 +82,15 @@ export async function GET(req: Request) {
       query = query.eq("is_read", false);
     }
 
-    const { data: rows, error } = await query.order("created_at", {
-      ascending: false,
-    });
+    const { data: fetched, error } = await query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit);
 
     if (error) throw error;
+
+    const all = fetched || [];
+    const hasMore = all.length > limit;
+    const rows = hasMore ? all.slice(0, limit) : all;
 
     const participantIds = Array.from(
       new Set(
@@ -102,7 +112,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      data: enrichAdminMessageRows(rows || [], profilesByIdentity),
+      data: enrichAdminMessageRows(rows, profilesByIdentity),
+      hasMore,
       quota: await getMessageSendQuota(userId),
     });
   } catch (error: unknown) {

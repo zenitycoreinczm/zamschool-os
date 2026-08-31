@@ -59,3 +59,10 @@ You should follow these rules:
 3. **Use `clamp()` for fluid horizontal padding.** The reference is `padding-inline: clamp(1rem, 2vw, 1.5rem)` at `app/globals.css:226-232`.
 4. **`MobileDock` is `fixed bottom-0`** at the mobile breakpoint only. Anchor it inside a `<nav>` and use a stable column count (4 or 5) per shell.
 5. **`prefers-reduced-motion`** should disable `animate-enter-up` as well as loader dots. Add it when you add new animations.
+
+### Mobile overflow containment (2026-08-31)
+
+1. **Root-level overflow containment.** `html` and `body` both have `overflow-x: hidden` in `app/globals.css`. This prevents wide flex items from expanding the layout viewport past device width, which would cause mobile browsers to ignore the viewport meta tag and render the desktop layout squished.
+2. **Body text wrapping.** `body` also has `overflow-wrap: break-word` and `word-break: break-word` to ensure long unbroken text wraps.
+3. **Flex item min-width override on landing page.** Every flex item containing text across the landing page (`app/page.tsx`) now has `min-w-0` and `break-words` classes. This overrides the browser default `min-width: auto` on flex items that prevented text wrapping. Applied to: hero badge, platform feature lists, module breakdown items, comparison table cells, mobile comparison cards, pilot included/terms lists, leadership checklist spans, FAQ questions/answers.
+4. **SystemStatusBadge label.** The label span in `SystemStatusBadge.tsx` also got `min-w-0 break-words`.

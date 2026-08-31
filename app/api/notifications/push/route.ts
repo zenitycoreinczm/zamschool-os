@@ -3,6 +3,14 @@ import { z } from "zod";
 
 import { authenticateAccountPortalRequest } from "@/lib/account-portal-auth";
 import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
+import {
+  capUserIds,
+  filterOwnedTokens,
+} from "@/lib/notifications/push-recipients";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const pushSchema = z.object({
@@ -32,19 +40,34 @@ export async function POST(req: Request) {
       );
     }
 
+    const rate = await applyPlatformRateLimit({
+      scope: "push-send",
+      schoolId: actor.schoolId,
+      req,
+      userId: actor.userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
+
     const body = await parseJsonWithSchema(req, pushSchema);
     const title = body.title.trim();
     const messageBody = body.body.trim();
-    const userIds = Array.from(
-      new Set((body.userIds || []).map((id) => String(id || "").trim()).filter(Boolean)),
-    );
-    let tokens = Array.from(
+    const userIds = capUserIds(body.userIds || []);
+    // SECURITY: client-supplied tokens are only honored when they belong to
+    // the caller's own registered devices - otherwise any authenticated user
+    // could push to arbitrary (e.g. harvested) Expo tokens.
+    const requestedTokens = Array.from(
       new Set((body.tokens || []).map((t) => String(t || "").trim()).filter(Boolean)),
     );
+    let tokens: string[] = [];
+    if (requestedTokens.length > 0) {
+      const owned = await loadCallerOwnedTokens(actor.userId, actor.schoolId);
+      tokens = filterOwnedTokens(requestedTokens, owned);
+    }
 
     if (userIds.length === 0 && tokens.length === 0) {
       return NextResponse.json(
-        { error: "userIds or tokens required", sent: 0 },
+        { error: "userIds or own device tokens required", sent: 0 },
         { status: 400 },
       );
     }
@@ -171,4 +194,30 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+}
+
+/** Push tokens registered to the caller's own devices in this school. */
+async function loadCallerOwnedTokens(
+  userId: string,
+  schoolId: string,
+): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from("user_devices")
+    .select("push_token, expo_push_token")
+    .eq("school_id", schoolId)
+    .eq("user_id", userId);
+
+  if (error) return [];
+
+  const owned: string[] = [];
+  for (const device of data || []) {
+    const token = String(
+      (device as { push_token?: string | null; expo_push_token?: string | null })
+        .push_token ||
+        (device as { expo_push_token?: string | null }).expo_push_token ||
+        "",
+    ).trim();
+    if (token) owned.push(token);
+  }
+  return owned;
 }

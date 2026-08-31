@@ -31,7 +31,7 @@ Two approvers are required: the engineer making the release and an independent r
 
 You should be able to roll back inside ten minutes. The mechanism:
 
-- **Frontend.** Revert the offending commit on `main`. Re-deploy. The build is reproducible from `package.json` and `package-lock.json`.
+- **Frontend.** Revert the offending commit on `main`. Run `vercel --prod --yes` to re-deploy. Alternatively, use `vercel redeploy <deployment-url>` from the Vercel dashboard to roll back to a specific prior deployment without a code change. The build is reproducible from `package.json` and `package-lock.json`.
 - **Database.** Every migration is paired with a forward-only plan and a tested reverse plan in the PR description. If the reverse plan is not safe, the migration is held back.
 - **Worker.** The gateway worker is versioned in `workers/gateway/wrangler.toml`. Roll back via Cloudflare's deployment history.
 - **Cache.** Cloudflare cache rules purge on demand. You can also flip the origin to a previous build by changing the DNS target.
@@ -43,6 +43,7 @@ You should not roll forward to fix a regression. Revert, ship the revert, and re
 You ship:
 
 - The Next.js standalone build (see `scripts/prepare-standalone.mjs`).
+- The Vercel production deployment via `vercel --prod --yes`. The production domain https://zamschoolos.site is aliased to the `zamschool-os-web` Vercel project.
 - The gateway worker (if it changed) via `npx wrangler deploy` from `workers/gateway/`.
 - New migrations, applied in order against the production database (see [`scripts/apply-migrations.mjs`](./../scripts/apply-migrations.mjs)).
 

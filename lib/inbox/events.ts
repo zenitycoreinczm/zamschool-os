@@ -3,6 +3,7 @@
 import {
   fetchUnreadSummary,
   invalidateInboxCaches,
+  type InboxApiMode,
 } from "@/lib/inbox/center-client";
 import { invalidateShell } from "@/lib/shell-client";
 import { invalidateTeacherBootstrap } from "@/lib/teacher-bootstrap-client";
@@ -15,7 +16,10 @@ export type InboxRefreshDetail = {
   notifications?: number;
 };
 
-export function dispatchInboxRefresh(optimistic?: InboxRefreshDetail) {
+export function dispatchInboxRefresh(
+  optimistic?: InboxRefreshDetail,
+  mode: InboxApiMode = "account",
+) {
   if (typeof window === "undefined") return;
 
   try {
@@ -58,13 +62,14 @@ export function dispatchInboxRefresh(optimistic?: InboxRefreshDetail) {
     }),
   );
 
-  // Reconcile from server so badges match DB after mark-as-read.
-  void reconcileUnreadSummary("account");
-  void reconcileUnreadSummary("teacher");
-  void reconcileUnreadSummary("admin");
+  // Reconcile from server so badges match DB after mark-as-read. Only the
+  // dispatching mode is prefetched: teacher/account share one client, and an
+  // admin-mode call for a non-admin user 403s into a {0,0} that would overwrite
+  // the counts it is meant to correct. Other roles refresh via their listener.
+  void reconcileUnreadSummary(mode);
 }
 
-async function reconcileUnreadSummary(mode: "account" | "teacher" | "admin") {
+async function reconcileUnreadSummary(mode: InboxApiMode) {
   try {
     const summary = await fetchUnreadSummary(mode, { force: true });
     patchCachedWorkspaceUnread({

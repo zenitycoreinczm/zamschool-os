@@ -10,6 +10,7 @@ import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { passwordSchema } from "@/lib/password-policy";
+import { requireAal2ForSensitiveAuthAction } from "@/lib/auth-aal-guard";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -20,6 +21,13 @@ export async function POST(req: Request) {
   try {
     const actor = await authenticateAccountPortalRequest(req);
     if ("response" in actor) return actor.response;
+
+    // Enforce AAL2 for password change
+    const aalGuard = await requireAal2ForSensitiveAuthAction({
+      userId: actor.userId,
+      sessionAccessToken: null, // Account portal auth doesn't expose access token here
+    });
+    if (!aalGuard.ok) return aalGuard.response;
 
     const rate = await applyPlatformRateLimit({
       scope: "account-change-password",

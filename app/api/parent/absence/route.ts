@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { requireParentContext } from "@/lib/server-auth";
-import { safeErrorMessage } from "@/lib/server-guards";
+import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
+import {
+  applyPlatformRateLimit,
+  platformRateLimitResponse,
+} from "@/lib/platform-api-guard";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getParentRecord, getLinkedStudents, buildDisplayName } from "@/lib/parent-route-utils";
+
+const absenceSchema = z.object({
+  studentId: z.string().min(1).max(64),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  reason: z.string().trim().min(1).max(500),
+});
 
 export async function GET(req: Request) {
   try {
@@ -90,15 +101,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { studentId, date, reason } = body;
+    const rate = await applyPlatformRateLimit({
+      scope: "parent-absence-write",
+      schoolId,
+      req,
+      userId,
+      preset: "messagesWrite",
+    });
+    if (!rate.allowed) return platformRateLimitResponse(rate);
 
-    if (!studentId || !date || !reason) {
-      return NextResponse.json(
-        { error: "studentId, date, and reason are required" },
-        { status: 400 }
-      );
-    }
+    const { studentId, date, reason } = await parseJsonWithSchema(
+      req,
+      absenceSchema,
+    );
 
     const parentRecord = await getParentRecord({ profileId: userId, schoolId });
     if (!parentRecord) {
@@ -160,10 +175,9 @@ export async function POST(req: Request) {
 
     return jsonResponse({ success: true, message: "Absence justification submitted" });
   } catch (error: unknown) {
-    return NextResponse.json(
-      { error: safeErrorMessage(error, "Failed to submit absence justification") },
-      { status: 500 }
-    );
+    const message = safeErrorMessage(error, "Failed to submit absence justification");
+    const status = message.startsWith("Invalid request data") ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

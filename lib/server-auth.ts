@@ -82,7 +82,6 @@ export async function requireActorContext(
   options: {
     allowedRoles: KnownRole[];
     requireSchool: boolean;
-    allowMetadataRoleFallback?: boolean;
   },
   req?: Request,
 ): Promise<
@@ -160,7 +159,6 @@ export async function requireActorContext(
     profile,
     allowedRoles: options.allowedRoles,
     requireSchool: options.requireSchool,
-    allowMetadataRoleFallback: options.allowMetadataRoleFallback,
   });
 
   if (!result.ok) {
@@ -213,7 +211,6 @@ export async function requireAdminSetupContext(req?: Request) {
         "SUPER_ADMIN",
       ],
       requireSchool: false,
-      allowMetadataRoleFallback: true,
     },
     req,
   );

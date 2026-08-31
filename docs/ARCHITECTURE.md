@@ -49,6 +49,7 @@ For the threat model, RLS policy, service-role audit, MFA setup, and rate-limit 
 ## What runs where
 
 - **Next.js server (`next start`)** — page rendering, API routes, middleware, server actions.
+- **Middleware (`proxy.ts`)** — applies a two-tier security header policy: hardened headers (XFO, COOP, CORP, CSP frame-ancestors 'none') on API and workspace routes; lenient public headers on marketing/entry pages. See [SECURITY.md](./SECURITY.md#response-header-policy).
 - **Edge worker (`workers/gateway/`)** — public reads, image cache, R2 routing, fail-open cache headers.
 - **Supabase** — Postgres, auth, RLS policies, storage buckets, real-time channels (used sparingly).
 - **Cloudflare** — DNS, cache rules, R2 backing store, image transformations.
@@ -65,3 +66,7 @@ Two React context providers coexist for the authenticated workspace. They are de
 **Why two providers.** `TeacherWorkspaceStats` and `TeacherWorkloadSummary` do not exist in the other role contexts. Folding them into the canonical provider would force every shell to carry teacher-specific state they don't use. The current shape keeps each shell's surface small and lets the teacher shell publish its own `refresh()` (used by mutation flows that invalidate teacher stats, e.g. completing attendance, posting a result). New role shells (registrar, hr-admin, etc.) should add their own thin provider that wraps `useWorkspaceContext()` for shared fields and layers role-specific data, mirroring `TeacherWorkspaceProvider`.
 
 **Anti-pattern.** Avoid per-shell direct fetches of `/api/account/shell` with local `useState` for hydration data. New role shells should not regress to that pattern.
+
+## Production deployment
+
+The application is deployed at https://zamschoolos.site via Vercel. The production domain is aliased to the Vercel project `zamschool-os-web`. Builds use the standalone output mode (`scripts/prepare-standalone.mjs`). The gateway worker is deployed separately via `wrangler deploy` from `workers/gateway/`.

@@ -97,7 +97,7 @@ export default function SystemStatusBadge({
           )}
         />
       </span>
-      <span className="font-semibold">{statusLabels[status]}</span>
+      <span className="min-w-0 break-words font-semibold">{statusLabels[status]}</span>
     </div>
   );
 }
