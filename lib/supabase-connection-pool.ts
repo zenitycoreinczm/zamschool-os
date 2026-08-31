@@ -6,7 +6,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import type { PostgrestFilterBuilder } from "@supabase/postgrest-js";
+
 
 // Connection pool singleton
 let adminClient: ReturnType<typeof createClient> | null = null;
@@ -184,7 +184,7 @@ export async function executeWithRetry<T>(
  * More efficient than offset-based for large datasets
  */
 export async function paginatedQuery<T>(
-  queryBuilder: (page: number, pageSize: number) => PostgrestFilterBuilder<any, any, any>,
+  queryBuilder: (page: number, pageSize: number) => PromiseLike<{ data: T[] | null; error: any }>,
   options: {
     pageSize?: number;
     maxPages?: number;
