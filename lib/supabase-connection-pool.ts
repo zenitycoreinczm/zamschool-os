@@ -140,7 +140,7 @@ export async function batchQueries<T>(
  * Execute query with automatic retry on transient failures
  */
 export async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
+  queryFn: () => PromiseLike<{ data: T | null; error: any }>,
   maxRetries: number = 2,
 ): Promise<{ data: T | null; error: any }> {
   let lastError: any = null;
