@@ -51,7 +51,11 @@ export function addToSyncQueue(item: Omit<SyncQueueItem, "id" | "timestamp" | "r
     // Register for Background Sync if available (browser will retry when online)
     if (typeof window !== "undefined" && "serviceWorker" in navigator && "SyncManager" in window) {
       void navigator.serviceWorker.ready.then((registration) => {
-        return registration.sync.register("zamschool-sync-queue");
+        // Background Sync API types not in lib.dom.d.ts - safe cast
+        const syncRegistration = registration as ServiceWorkerRegistration & {
+          sync: { register(tag: string): Promise<void> };
+        };
+        return syncRegistration.sync.register("zamschool-sync-queue");
       }).catch((error) => {
         console.warn("[OfflineSync] Background Sync registration failed:", error);
       });

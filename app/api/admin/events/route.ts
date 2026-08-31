@@ -123,7 +123,7 @@ export async function POST(req: Request) {
     if (!access.ok) return access.response;
     const feature = await requireFeatureAccess(
       access.context,
-      "announcements",
+      "events",
       "create",
     );
     if (!feature.ok) return feature.response;
@@ -209,7 +209,7 @@ export async function PUT(req: Request) {
     if (!access.ok) return access.response;
     const feature = await requireFeatureAccess(
       access.context,
-      "announcements",
+      "events",
       "update",
     );
     if (!feature.ok) return feature.response;
@@ -273,7 +273,7 @@ export async function DELETE(req: Request) {
     if (!access.ok) return access.response;
     const feature = await requireFeatureAccess(
       access.context,
-      "announcements",
+      "events",
       "delete",
     );
     if (!feature.ok) return feature.response;

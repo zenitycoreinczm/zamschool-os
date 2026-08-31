@@ -202,6 +202,32 @@ export async function PUT(req: Request) {
     const { schoolId } = access.context;
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
+    const markAll = searchParams.get("markAll");
+
+    // Batch mark-all-read: update all unread notifications for this school in one query
+    if (markAll === "true") {
+      const { error } = await supabaseAdmin
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("school_id", schoolId)
+        .eq("is_read", false);
+
+      if (error) throw error;
+
+      await invalidateUnreadRelatedCaches(access.context.userId, schoolId);
+
+      await auditDomainWrite({
+        schoolId,
+        userId: access.context.userId,
+        action: "notifications.mark_all_read",
+        entityType: "notification",
+        entityId: "all",
+        newData: { isRead: true },
+        ipAddress: getClientIp(req),
+      });
+
+      return NextResponse.json({ success: true, markedAll: true });
+    }
 
     if (!id) {
       return NextResponse.json(

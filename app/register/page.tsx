@@ -922,7 +922,7 @@ function RegisterContent() {
                         ),
                         "pr-12",
                       )}
-                      placeholder="Min. 8 characters, 1 capital, 1 number"
+                      placeholder="Min. 12 characters, 1 capital, 1 number"
                       id="password"
                       autoComplete="new-password"
                     />
@@ -964,8 +964,8 @@ function RegisterContent() {
 
                   <div className="mt-2 space-y-1">
                     <PasswordRule
-                      met={accountPassword.length >= 8}
-                      label="At least 8 characters"
+                      met={accountPassword.length >= 12}
+                      label="At least 12 characters"
                     />
                     <PasswordRule
                       met={/[A-Z]/.test(accountPassword)}

@@ -109,43 +109,14 @@ export default function NotificationsPage() {
       )
     );
 
-    const results = await Promise.allSettled(
-      notifIds.map((id) =>
-        adminApiJson(`/api/admin/notifications?id=${encodeURIComponent(id)}`, {
-          method: "PUT",
-        }).then(() => id)
-      )
-    );
-    const succeeded = new Set(
-      results
-        .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
-        .map((result) => result.value)
-    );
-    const failedCount = results.length - succeeded.size;
-
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.type !== "notification" || !item.recordId) {
-          return { ...item, status: "read" };
-        }
-        if (succeeded.has(item.recordId)) {
-          return { ...item, status: "read" };
-        }
-        return item;
-      })
-    );
-
-    if (failedCount > 0) {
-      if (failedCount === results.length) {
-        setItems(previous);
-      }
-      toast.error(
-        failedCount === 1
-          ? "One notification could not be marked as read"
-          : `${failedCount} notifications could not be marked as read`
-      );
-    } else {
+    try {
+      await adminApiJson("/api/admin/notifications?markAll=true", {
+        method: "PUT",
+      });
       dispatchInboxRefresh();
+    } catch {
+      setItems(previous);
+      toast.error("Notifications could not be marked as read");
     }
   };
 
