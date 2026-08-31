@@ -280,9 +280,6 @@ export default function HomePage() {
                 <span className="text-base font-black tracking-tight text-slate-900 sm:text-lg">
                   ZamSchool<span className="text-sky-600">OS</span>
                 </span>
-                <span className="rounded-full border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 sm:px-2">
-                  v2.4
-                </span>
               </div>
               <p className="hidden text-xs font-medium text-slate-500 sm:block">
                 Zambian School Operating System
@@ -416,13 +413,6 @@ export default function HomePage() {
                   >
                     Start a School (Free Pilot)
                   </Link>
-
-                  <a
-                    href="#platforms"
-                    className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:w-auto sm:py-4 sm:text-base"
-                  >
-                    See Live Demo
-                  </a>
                 </div>
 
                 <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
@@ -441,7 +431,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+              <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[340px] lg:max-w-[400px]">
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5">
                   <Image
                     src="/landing.jpg"
@@ -937,7 +927,7 @@ export default function HomePage() {
                     candlelight, and no school exhausts its budget on SMS credits. Real education happens when teachers
                     have tools that work unconditionally on their phones and computers.”
                   </p>
-                  <p className="mt-3 text-xs font-semibold text-sky-700">— Ison Mumbuna, CEO</p>
+                  <p className="mt-3 text-xs font-semibold text-sky-700">Ison Mumbuna, CEO</p>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 text-center text-xs sm:grid-cols-2">
