@@ -17,26 +17,13 @@ import {
   validateCsrfToken,
   CSRF_TOKEN_COOKIE,
 } from "./lib/csrf";
-import {
-  HARDENED_SECURITY_HEADERS,
-  checkMiddlewareFloodLimit,
-  classifyClientBot,
-  clientIpFromHeaders,
-  isBlockedAttackPath,
-  isSensitiveAuthSurface,
-} from "./lib/request-security";
+import { HARDENED_SECURITY_HEADERS } from "./lib/request-security";
 import {
   isAllowedEdgeHost,
   isDisallowedEdgeMethod,
   isEdgeContentLengthAllowed,
-  isOnStaticIpBlocklist,
 } from "./lib/server-security-edge";
-import {
-  freeTierFloodLimits,
-  isFreeTierMode,
-  isProductionInvocationBlockedPath,
-} from "./lib/free-tier-guard";
-import { checkEdgeDistributedLimit } from "./lib/edge-distributed-limit";
+import { isProductionInvocationBlockedPath } from "./lib/free-tier-guard";
 
 const API_CORS_METHODS = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
 const DEFAULT_ALLOWED_HEADERS = "Authorization, Content-Type";
@@ -52,9 +39,12 @@ const ALLOWED_CORS_HEADERS = [
 
 export async function proxy(request: NextRequest) {
   const pathname = normalizeLegacyDashboardPath(request.nextUrl.pathname);
-  const ip = clientIpFromHeaders(request.headers);
 
-  // ── Data-center edge gate (host / method / size / IP) ────────────────────
+  // ── Edge protocol gates (method / host / size) ──────────────────────────
+  // NOTE: bot classification, IP blocklists, Redis IP bans, and edge flood
+  // limits are intentionally DISABLED. They were banning shared school NAT
+  // IPs for an hour after a single automation client hit the site, which
+  // blocked real users. Route-level per-user rate limits still apply.
   if (isDisallowedEdgeMethod(request.method)) {
     const denied = new NextResponse(null, { status: 405 });
     applySecurityHeaders(denied, request);
@@ -78,153 +68,11 @@ export async function proxy(request: NextRequest) {
     return denied;
   }
 
-  if (isOnStaticIpBlocklist(ip)) {
-    const denied = NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    applySecurityHeaders(denied, request);
-    return denied;
-  }
-
-  // Distributed temporary bans (Redis) - fail open if Redis is unreachable.
-  try {
-    const { getIpBanRemainingSec } = await import("./lib/ip-reputation");
-    const bannedFor = await getIpBanRemainingSec(ip);
-    if (bannedFor > 0) {
-      const denied = NextResponse.json(
-        { error: "Temporarily blocked due to abusive traffic." },
-        {
-          status: 403,
-          headers: { "Retry-After": String(bannedFor) },
-        },
-      );
-      applySecurityHeaders(denied, request);
-      return denied;
-    }
-  } catch {
-    // Never take the site down if reputation store fails.
-  }
-
-  // Drop common scanner / exploit probes before any session or DB work.
-  if (isBlockedAttackPath(pathname)) {
-    void import("./lib/ip-reputation")
-      .then(({ recordIpAbuse }) => recordIpAbuse(ip, "attack_path"))
-      .catch(() => {});
-    const blocked = new NextResponse(null, { status: 404 });
-    applySecurityHeaders(blocked, request);
-    return blocked;
-  }
-
   // Never pay a serverless invocation for debug/test routes in production.
   if (isProductionInvocationBlockedPath(pathname)) {
     const blocked = new NextResponse(null, { status: 404 });
     applySecurityHeaders(blocked, request);
     return blocked;
-  }
-
-  // Bot / AI scraper / automation gate - site-wide (not only login).
-  // Blocks curl/python/scrapers and AI training agents from harvesting UI/API.
-  // Official mobile (ZamSchoolOS-Mobile UA or authenticated okhttp) is allowed.
-  const bot = classifyClientBot({
-    userAgent: request.headers.get("user-agent"),
-    pathname,
-    method: request.method,
-    authorization: request.headers.get("authorization"),
-  });
-  if (bot.block) {
-    void import("./lib/ip-reputation")
-      .then(({ recordIpAbuse }) => recordIpAbuse(ip, "bot_block"))
-      .catch(() => {});
-    const denied = NextResponse.json(
-      { error: "Request blocked" },
-      { status: 403 },
-    );
-    applySecurityHeaders(denied, request);
-    applyRobotHeaders(denied, pathname);
-    return denied;
-  }
-
-  // Edge flood guards:
-  //   L1 — per-isolate memory (cheap; stops single-instance scrapers)
-  //   L2 — Upstash fixed-window (free tier only; stops multi-isolate fan-out
-  //        that would burn Vercel Hobby + Supabase free quotas)
-  {
-    const floodLimits = freeTierFloodLimits();
-    const surface = isSensitiveAuthSurface(pathname)
-      ? "auth"
-      : pathname.startsWith("/api/")
-        ? "api"
-        : "page";
-    const surfaceLimit =
-      surface === "auth"
-        ? floodLimits.auth
-        : surface === "api"
-          ? floodLimits.api
-          : floodLimits.page;
-    const memLimit = bot.suspicious
-      ? surfaceLimit.suspicious
-      : surfaceLimit.normal;
-
-    const flood = checkMiddlewareFloodLimit({
-      key: `${surface}-edge:${ip}`,
-      limit: memLimit,
-      windowMs: floodLimits.windowMs,
-    });
-    if (!flood.allowed) {
-      void import("./lib/ip-reputation")
-        .then(({ recordIpAbuse }) =>
-          recordIpAbuse(ip, `${surface}_flood`),
-        )
-        .catch(() => {});
-      const limited = NextResponse.json(
-        { error: "Too many requests. Please try again shortly." },
-        {
-          status: 429,
-          headers: { "Retry-After": String(flood.retryAfterSec) },
-        },
-      );
-      applySecurityHeaders(limited, request);
-      return limited;
-    }
-
-    // Distributed free-tier shield (Redis). Skip health probes — monitors poll often.
-    const isHealthProbe =
-      pathname === "/api/health" || pathname === "/api/health/ready";
-    if (isFreeTierMode() && !isHealthProbe) {
-      const distributed = await checkEdgeDistributedLimit({
-        ip,
-        surface,
-        suspicious: bot.suspicious,
-      });
-      if (!distributed.allowed) {
-        void import("./lib/ip-reputation")
-          .then(({ recordIpAbuse }) =>
-            recordIpAbuse(
-              ip,
-              distributed.reason === "daily"
-                ? "api_daily_cap"
-                : `${surface}_dist_flood`,
-            ),
-          )
-          .catch(() => {});
-        const limited = NextResponse.json(
-          {
-            error:
-              distributed.reason === "daily"
-                ? "Daily request budget exceeded. Please try again tomorrow."
-                : "Too many requests. Please try again shortly.",
-            code:
-              distributed.reason === "daily"
-                ? "DAILY_EDGE_LIMIT"
-                : "EDGE_RATE_LIMIT",
-          },
-          {
-            status: 429,
-            headers: { "Retry-After": String(distributed.retryAfterSec) },
-          },
-        );
-        applySecurityHeaders(limited, request);
-        return limited;
-      }
-    }
   }
 
   // RSC prefetch requests (_rsc=…) are speculative: the browser fires them when

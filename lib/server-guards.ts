@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { isRedisConfigured, redisSlidingWindowHit } from "./redis/client";
 import { rateLimitKey } from "@/lib/redis/keys";
-import {
-  classifyClientBot,
-  isBlockedAttackPath,
-} from "@/lib/request-security";
 
 export { safeErrorMessage } from "./safe-error";
 
@@ -175,40 +171,15 @@ export async function parseJsonWithSchema<T>(
 }
 
 /**
- * Reject empty / scanner user-agents and path probes on auth routes.
- * Does not replace CSRF or rate limits - first-line bot hygiene only.
+ * First-line request hygiene for auth routes.
+ *
+ * NOTE: bot/UA blocking is intentionally DISABLED. UA heuristics were
+ * blocking legitimate clients (automation-derived UAs, stripped/short UAs
+ * from proxies) and fed the IP-ban machinery that banned shared school
+ * NATs. CSRF, rate limits, and schema validation remain the real guards.
  */
-export function validateRequestSecurity(req: Request) {
-  let pathname = "/";
-  try {
-    pathname = new URL(req.url).pathname;
-  } catch {
-    pathname = "/";
-  }
-
-  if (isBlockedAttackPath(pathname)) {
-    return { valid: false as const, error: "Not found" };
-  }
-
-  const bot = classifyClientBot({
-    userAgent: req.headers.get("user-agent"),
-    pathname,
-    method: req.method,
-    authorization: req.headers.get("authorization"),
-  });
-
-  if (bot.block) {
-    return {
-      valid: false as const,
-      error: "Request blocked",
-    };
-  }
-
-  const userAgent = req.headers.get("user-agent") || "";
-  // Trusted mobile okhttp may be short ("okhttp/4.9.2") — already allowed above when Bearer is set.
-  if (!userAgent || userAgent.length < 8) {
-    return { valid: false as const, error: "Invalid User-Agent" };
-  }
-
-  return { valid: true as const };
+export function validateRequestSecurity(
+  _req: Request,
+): { valid: true } | { valid: false; error: string } {
+  return { valid: true };
 }
