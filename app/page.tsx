@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef } from "react";
 import { ChevronRight, Menu, X } from "lucide-react";
 
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -258,13 +258,20 @@ function Cross() {
 }
 
 export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Native <details> powers the mobile drawer so navigation works even
+  // before React hydration completes on slow 3G/4G connections.
+  const mobileNavRef = useRef<HTMLDetailsElement>(null);
+  const closeMobileNav = () => {
+    if (mobileNavRef.current?.open) {
+      mobileNavRef.current.removeAttribute("open");
+    }
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 antialiased selection:bg-sky-600 selection:text-white">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+          <Link href="/" className="flex min-h-[44px] min-w-0 items-center gap-2.5 py-1 sm:gap-3">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200 sm:h-10 sm:w-10">
               <Image
                 src="/icon.png"
@@ -288,25 +295,25 @@ export default function HomePage() {
           </Link>
 
           <nav className="hidden items-center gap-6 lg:flex">
-            <Link href="#platforms" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#platforms" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Web & Android
             </Link>
-            <Link href="#architecture" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#architecture" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Architecture
             </Link>
-            <Link href="#modules" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#modules" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Modules
             </Link>
-            <Link href="#compare" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#compare" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Comparison
             </Link>
-            <Link href="#pricing" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#pricing" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Pricing
             </Link>
-            <Link href="#leadership" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#leadership" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               Leadership
             </Link>
-            <Link href="#faq" className="text-sm font-medium text-slate-600 transition hover:text-sky-700">
+            <Link href="#faq" className="min-h-[44px] inline-flex items-center text-sm font-medium text-slate-600 transition hover:text-sky-700">
               FAQ
             </Link>
           </nav>
@@ -314,62 +321,62 @@ export default function HomePage() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex"
+              className="hidden min-h-[44px] items-center rounded-xl px-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:inline-flex"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="hidden items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95 sm:inline-flex"
+              className="hidden min-h-[44px] items-center justify-center rounded-xl bg-sky-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95 sm:inline-flex"
             >
               Free Setup
             </Link>
 
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileMenuOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 lg:hidden"
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            {/* Mobile drawer: native <details> so it opens without JS. */}
+            <details className="group relative lg:hidden" ref={mobileNavRef}>
+              <summary
+                className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden"
+                aria-label="Toggle navigation menu"
+              >
+                <Menu className="h-5 w-5 group-open:hidden" />
+                <X className="hidden h-5 w-5 group-open:block" />
+              </summary>
+
+              <div className="absolute inset-x-0 top-full z-50 mt-2 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+                <nav className="flex flex-col" aria-label="Mobile navigation">
+                  {mobileNavLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={closeMobileNav}
+                      className="flex min-h-[48px] items-center justify-between gap-3 border-b border-slate-100 py-2.5 text-sm font-semibold text-slate-700 transition last:border-b-0 hover:text-sky-700 active:text-sky-700"
+                    >
+                      {link.label}
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                    </Link>
+                  ))}
+                </nav>
+
+                <div className="mt-3 grid grid-cols-2 gap-2.5 pb-1">
+                  <Link
+                    href="/login"
+                    onClick={closeMobileNav}
+                    className="flex min-h-[48px] items-center justify-center rounded-xl border border-slate-300 bg-white text-center text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={closeMobileNav}
+                    className="flex min-h-[48px] items-center justify-center rounded-xl bg-sky-600 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
+                  >
+                    Start School
+                  </Link>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
-
-        {mobileMenuOpen ? (
-          <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
-            <nav className="flex flex-col">
-              {mobileNavLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="border-b border-slate-100 py-3 text-sm font-semibold text-slate-700 transition last:border-b-0 hover:text-sky-700 active:text-sky-700"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mt-3 grid grid-cols-2 gap-2.5 pb-1">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center rounded-xl border border-slate-300 bg-white py-3.5 text-center text-sm font-bold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center rounded-xl bg-sky-600 py-3.5 text-center text-sm font-bold text-white shadow-sm transition hover:bg-sky-700 active:scale-95"
-              >
-                Start School
-              </Link>
-            </div>
-          </div>
-        ) : null}
       </header>
 
       <main>
@@ -382,7 +389,7 @@ export default function HomePage() {
                   <span className="leading-snug">Backed by ZenityCore Technologies · Zambian Education OS</span>
                 </div>
 
-                <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-900 break-words sm:text-4xl lg:text-[3.25rem] lg:leading-[1.12]">
+                <h1 className="mt-5 text-[clamp(1.75rem,6.5vw,2.5rem)] font-black leading-[1.15] tracking-tight text-slate-900 break-words lg:text-[3.25rem] lg:leading-[1.12]">
                   Run your entire school{" "}
                   <span className="bg-gradient-to-r from-sky-600 to-emerald-500 bg-clip-text text-transparent">
                     from your phone
@@ -665,7 +672,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-10 hidden overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm sm:block">
+            <div className="mt-10 hidden overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] rounded-3xl border border-slate-200 bg-white shadow-sm sm:block">
               <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-200 bg-slate-50 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-600 sm:px-6 sm:text-sm">
                 <div>Capability</div>
                 <div className="text-slate-500">Legacy / Paper</div>

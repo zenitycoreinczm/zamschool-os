@@ -8,9 +8,9 @@
  *   data when school networks drop.
  * - Credentials/auth endpoints (/api/auth/*) bypass cache for security.
  */
-const STATIC_CACHE = "zamschool-static-v7";
-const ROUTE_CACHE = "zamschool-routes-v7";
-const API_CACHE = "zamschool-api-v7";
+const STATIC_CACHE = "zamschool-static-v8";
+const ROUTE_CACHE = "zamschool-routes-v8";
+const API_CACHE = "zamschool-api-v8";
 
 /** Self-contained HTML — no Tailwind / Next CSS dependency. */
 const OFFLINE_SHELL = "/offline.html";
