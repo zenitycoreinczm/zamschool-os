@@ -173,3 +173,52 @@ export function isCsrfFailureStatus(status: number, body?: unknown): boolean {
       : "";
   return /csrf/i.test(error) || error === "Invalid CSRF token";
 }
+
+/**
+ * Mutation fetch that always carries the CSRF double-submit header and
+ * self-heals once when the token is missing/stale (bootstrap + retry).
+ *
+ * Used by authenticated browser flows (e.g. MFA enroll/challenge/verify)
+ * that are subject to middleware CSRF validation.
+ */
+export async function fetchWithCsrf(
+  input: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const method = String(init.method || "GET").toUpperCase();
+
+  const buildHeaders = (): Headers => {
+    const headers = new Headers(init.headers || {});
+    applyCsrfHeader(headers, method);
+    return headers;
+  };
+
+  const first = await fetch(input, {
+    ...init,
+    headers: buildHeaders(),
+    credentials: "include",
+  });
+
+  if (first.status !== 403) {
+    captureCsrfFromResponse(first);
+    return first;
+  }
+
+  const body = await first.clone().json().catch(() => null);
+  if (!isCsrfFailureStatus(first.status, body)) {
+    return first;
+  }
+
+  // Token was missing/expired: mint a fresh one and retry a single time.
+  try {
+    await ensureCsrfTokenAvailable();
+  } catch {
+    return first;
+  }
+
+  return fetch(input, {
+    ...init,
+    headers: buildHeaders(),
+    credentials: "include",
+  });
+}

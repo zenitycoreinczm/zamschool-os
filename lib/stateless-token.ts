@@ -9,19 +9,22 @@
  */
 import crypto from "crypto";
 
-/** Derive a stable HMAC secret from existing env vars. */
+/**
+ * Dedicated HMAC secret for stateless tokens.
+ *
+ * SECURITY: this must NEVER fall back to service-role keys, SMTP credentials,
+ * or any other shared secret. Reusing those would let anyone who leaks one
+ * secret forge password-reset tokens for arbitrary accounts. Fail closed.
+ */
 function getTokenSecret(): string {
-  const seed =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SMTP_PASS ||
-    process.env.RESET_TOKEN_SECRET;
-  if (!seed) {
+  const secret = process.env.RESET_TOKEN_SECRET;
+  if (!secret || secret.trim().length < 32) {
     throw new Error(
-      "Security Error: Cannot mint reset token - no HMAC secret available. " +
-        "Set SUPABASE_SERVICE_ROLE_KEY, SMTP_PASS, or RESET_TOKEN_SECRET.",
+      "Security Error: RESET_TOKEN_SECRET is missing or too short (< 32 chars). " +
+        "Generate one with `openssl rand -base64 32` and set it in the environment.",
     );
   }
-  return crypto.createHash("sha256").update(seed).digest("hex");
+  return crypto.createHash("sha256").update(secret).digest("hex");
 }
 
 const TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes

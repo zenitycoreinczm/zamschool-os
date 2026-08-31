@@ -173,10 +173,17 @@ async function validateJwt(token: string, env: Env): Promise<JwtPayload | null> 
   }
 
   if (alg === "HS256") {
-    if (secret) {
-      const valid = await verifyHs256Signature(secret, signedContent, signaturePart);
-      return valid ? payload : null;
+    // SECURITY (H-13): an HS256 token without a configured secret must
+    // fail closed in every environment - never fall through to the
+    // insecure-decode escape hatch.
+    if (!secret) {
+      console.error(
+        "[auth] CRITICAL: HS256 token received but SUPABASE_JWT_SECRET is not set - rejecting",
+      );
+      return null;
     }
+    const valid = await verifyHs256Signature(secret, signedContent, signaturePart);
+    return valid ? payload : null;
   } else {
     // Unknown algorithm - do not accept unless insecure decode is explicitly allowed.
     if (

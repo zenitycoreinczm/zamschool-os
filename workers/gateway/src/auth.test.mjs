@@ -189,7 +189,7 @@ test("verifyAuth rejects decode mode without ALLOW_INSECURE_JWT_DECODE", async (
   assert.equal(session, null);
 });
 
-test("verifyAuth allows decode mode only with explicit insecure flag", async () => {
+test("verifyAuth fails closed for HS256 token when SUPABASE_JWT_SECRET is unset", async () => {
   const exp = Math.floor(Date.now() / 1000) + 3600;
   const token = await signTestJwt(TEST_SECRET, {
     sub: "user-2",
@@ -197,6 +197,43 @@ test("verifyAuth allows decode mode only with explicit insecure flag", async () 
     exp,
     user_metadata: { school_id: "school-2" },
   });
+
+  // SECURITY (H-13): even with decode mode + the explicit insecure flag,
+  // an HS256 token must never pass without a configured secret.
+  const env = createEnv({
+    SUPABASE_JWT_SECRET: "",
+    JWT_VERIFY_MODE: "decode",
+    ALLOW_INSECURE_JWT_DECODE: "true",
+  });
+
+  const session = await verifyAuth(
+    new Request("https://gateway.test/api/student/dashboard", {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    env
+  );
+
+  assert.equal(session, null);
+});
+
+test("verifyAuth allows decode mode only with explicit insecure flag", async () => {
+  const exp = Math.floor(Date.now() / 1000) + 3600;
+
+  // Unverifiable algorithm ("none") - decode mode path, not HS256.
+  const header = bytesToBase64Url(
+    new TextEncoder().encode(JSON.stringify({ alg: "none", typ: "JWT" })),
+  );
+  const payload = bytesToBase64Url(
+    new TextEncoder().encode(
+      JSON.stringify({
+        sub: "user-3",
+        aud: "authenticated",
+        exp,
+        user_metadata: { school_id: "school-3" },
+      }),
+    ),
+  );
+  const token = `${header}.${payload}.`;
 
   const env = createEnv({
     SUPABASE_JWT_SECRET: "",
@@ -212,7 +249,7 @@ test("verifyAuth allows decode mode only with explicit insecure flag", async () 
   );
 
   assert.ok(session);
-  assert.equal(session.userId, "user-2");
+  assert.equal(session.userId, "user-3");
 });
 
 function bytesToBase64Url(bytes) {

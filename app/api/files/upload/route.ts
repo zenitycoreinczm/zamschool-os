@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { validateBufferMagicBytes } from "@/lib/image-optimization";
 import { uploadFile } from "@/lib/r2-client";
 import { safeErrorMessage } from "@/lib/server-guards";
+import {
+  authorizeUploadRequest,
+  authorizeUploadSchema,
+} from "@/lib/upload-authorization";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,57 +21,39 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const authorizeUrl = new URL("/api/files/authorize-upload", req.url);
-    const authHeader =
-      req.headers.get("authorization") || req.headers.get("Authorization");
-    const authorizeHeaders = new Headers({
-      "Content-Type": "application/json",
+    // SECURITY (H-11): authorize inline instead of self-fetching the
+    // authorize endpoint. The request object is used directly, so no
+    // Host-header reinterpretation is possible, and the tenant-scoped key
+    // is minted by the same shared code path.
+    const payload = authorizeUploadSchema.parse({
+      filename: file.name,
+      contentType: file.type || "application/octet-stream",
+      size: file.size,
+      entityType,
     });
-    if (authHeader) {
-      authorizeHeaders.set("Authorization", authHeader);
-    }
 
-    const authorizeResponse = await fetch(
-      new Request(authorizeUrl.toString(), {
-        method: "POST",
-        headers: authorizeHeaders,
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type || "application/octet-stream",
-          size: file.size,
-          entityType,
-        }),
-      }),
-    );
+    const authorization = await authorizeUploadRequest(req, payload);
+    if (!authorization.ok) return authorization.response;
+    const key = authorization.key;
 
-    if (!authorizeResponse.ok) {
-      const errorBody = await authorizeResponse.json().catch(() => null);
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // SECURITY (H-02): re-validate the actual bytes. The declared
+    // Content-Type is client-controlled; magic bytes must corroborate it.
+    const magic = validateBufferMagicBytes(buffer, file.type || "application/octet-stream");
+    if (!magic.valid) {
       return NextResponse.json(
-        { error: errorBody?.error || "Upload authorization failed" },
-        { status: authorizeResponse.status },
+        { error: magic.error || "File contents failed validation." },
+        { status: 400 },
       );
     }
 
-    const authorization = (await authorizeResponse.json()) as {
-      bucket?: string;
-      key?: string;
-    };
-    const key = String(authorization.key || "").trim();
-    if (!key) {
-      return NextResponse.json(
-        { error: "Upload authorization did not include a storage key" },
-        { status: 502 },
-      );
-    }
-
-    const result = await uploadFile(
-      key,
-      Buffer.from(await file.arrayBuffer()),
-      {
-        bucket: "uploads",
-        contentType: file.type || "application/octet-stream",
-      },
-    );
+    // SECURITY: uploadFile derives the stored ContentType from the key's
+    // extension allow-list and forces Content-Disposition: attachment on
+    // the uploads bucket - never trust the client-declared type.
+    const result = await uploadFile(key, buffer, {
+      bucket: "uploads",
+    });
 
     return NextResponse.json({
       bucket: "uploads" as const,

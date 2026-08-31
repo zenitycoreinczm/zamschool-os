@@ -59,6 +59,34 @@ export function buildKey(
   return `${schoolId}/${entityType}/${userId}/${Date.now()}-${sanitized}`;
 }
 
+/**
+ * SECURITY: the only content types that may ever be stored/served from R2.
+ * The ContentType on write is derived from this map (never from client
+ * input), and keys with any other extension are rejected. This stops a
+ * client from storing HTML/SVG payloads that later render inline.
+ */
+const EXTENSION_CONTENT_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".pdf": "application/pdf",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".csv": "text/csv",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
+/** Resolve the enforced ContentType for a storage key, or null if disallowed. */
+export function enforcedContentTypeForKey(key: string): string | null {
+  const basename = key.split("/").pop() || "";
+  const dot = basename.lastIndexOf(".");
+  if (dot === -1) return null;
+  const ext = basename.slice(dot).toLowerCase();
+  return EXTENSION_CONTENT_TYPES[ext] ?? null;
+}
+
 /** Encodes each path segment of an object key for use in a public URL. */
 export function encodeObjectKeyForUrl(key: string): string {
   const normalized = key.replace(/^\/+/, "");
@@ -151,16 +179,34 @@ export async function uploadFile(
   body: Buffer | Uint8Array | string,
   options?: { bucket?: "assets" | "uploads"; contentType?: string },
 ): Promise<{ url?: string; key: string }> {
-  const bucket = getBucketName(options?.bucket || "assets");
+  const bucketType = options?.bucket || "assets";
+
+  // SECURITY: derive ContentType from the key's extension via the allow-list.
+  // Never persist the client-provided contentType, and reject keys whose
+  // extension is not explicitly allowed.
+  const enforcedContentType = enforcedContentTypeForKey(key);
+  if (!enforcedContentType) {
+    throw new Error(
+      "Upload rejected: file extension is not on the storage allow-list.",
+    );
+  }
+
   await getClient().send(
     new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: getBucketName(bucketType),
       Key: key,
       Body: body,
-      ContentType: options?.contentType,
+      ContentType: enforcedContentType,
+      // Uploaded documents must never render inline in a browser tab - a
+      // stored XSS/HTML payload becomes a download instead of a page.
+      ContentDisposition:
+        bucketType === "uploads"
+          ? "attachment"
+          : options?.contentType === undefined
+            ? undefined
+            : "inline",
     }),
   );
-  const bucketType = options?.bucket || "assets";
   const url = bucketType === "assets" ? getPublicUrl(key, "assets") : undefined;
   return { url, key };
 }

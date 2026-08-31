@@ -5,18 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, ShieldCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { supabase } from "@/lib/supabase";
-
-// Helper to get CSRF token from cookies
-function getCsrfToken() {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split("; csrf-token=");
-  if (parts.length === 2) {
-    return parts.pop()?.split(";").shift() || null;
-  }
-  return null;
-}
 
 type Factor = {
   id: string;
@@ -87,18 +77,11 @@ function MfaChallengeContent() {
   async function handleVerify() {
     if (!activeFactorId || !code) return;
     setVerifying(true);
-    const csrfToken = getCsrfToken();
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (csrfToken) {
-      headers["X-CSRF-Token"] = csrfToken;
-    }
     try {
       // First create challenge
-      const challengeRes = await fetch("/api/auth/mfa/challenge", {
+      const challengeRes = await fetchWithCsrf("/api/auth/mfa/challenge", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ factorId: activeFactorId }),
       });
       if (!challengeRes.ok) {
@@ -109,9 +92,9 @@ function MfaChallengeContent() {
       const challengeId = challengeJson.data.challengeId;
 
       // Then verify
-      const verifyRes = await fetch("/api/auth/mfa/verify", {
+      const verifyRes = await fetchWithCsrf("/api/auth/mfa/verify", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ factorId: activeFactorId, challengeId, code: code.trim() }),
       });
       if (!verifyRes.ok) {

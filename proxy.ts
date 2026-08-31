@@ -229,12 +229,14 @@ export async function proxy(request: NextRequest) {
 
   // RSC prefetch requests (_rsc=…) are speculative: the browser fires them when
   // the user hovers a <Link>, then aborts the request on the next navigation.
-  // Running the full session/CORS/security pipeline on a cancelled prefetch
-  // produces noisy `net::ERR_ABORTED` entries in the console. Serve them as a
-  // plain pass-through so they short-circuit cleanly when aborted.
+  // Serve them as a plain pass-through so they short-circuit cleanly when
+  // aborted - but still attach the full security header set (CSP/HSTS/etc.)
+  // so no response ever leaves the edge without hardened headers (H-15).
   const isRscPrefetch = request.nextUrl.searchParams.has("_rsc");
   if (isRscPrefetch) {
-    return NextResponse.next({ request });
+    const rscResponse = NextResponse.next({ request });
+    applySecurityHeaders(rscResponse, request);
+    return rscResponse;
   }
 
   if (pathname.startsWith("/api/")) {
@@ -262,7 +264,10 @@ export async function proxy(request: NextRequest) {
       // Pre-auth login lockout (Redis) - called before session exists; still rate-limited.
       "/api/auth/login-guard",
       "/api/staff/invitations/accept",
-      "/api/auth/mfa",
+      // NOTE: /api/auth/mfa/* is intentionally NOT listed. MFA mutations
+      // (enroll/challenge/verify/factor-delete) operate on an
+      // authenticated session, so they must carry the CSRF double-submit
+      // token. Clients use fetchWithCsrf() from lib/csrf-client.ts.
     ];
     const isPublicAuthEndpoint = publicAuthPrefixes.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -586,12 +591,14 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     *
+     * NOTE (H-16): static images (png/jpg/svg/...) are intentionally NOT
+     * excluded anymore - they were previously served without CSP/HSTS/
+     * X-Content-Type-Options. The public asset surface is tiny (icon,
+     * landing, ceo, avatar-placeholder) so the middleware cost is minimal.
+     * sw.js + offline.html stay excluded so phones always get them without
+     * middleware work (critical when CSS/cache issues are already present).
      */
-    /*
-     * Skip SW + offline shell so phones always get them without middleware
-     * work (critical when CSS/cache issues are already present).
-     */
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|offline\\.html).*)",
   ],
 };

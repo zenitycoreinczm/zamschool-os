@@ -8,6 +8,7 @@ import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { getECZGrade } from "@/lib/zambia-localization";
+import { sanitizeSpreadsheetGrid } from "@/lib/sheet-sanitize";
 import {
   buildNoDataMessage,
   detectCsvDelimiter,
@@ -613,8 +614,11 @@ async function parseCsvGrid(buffer: Buffer): Promise<string[][]> {
     const e = result.errors[0];
     throw new Error(`CSV error at row ${e.row}: ${e.message}`);
   }
-  return (result.data || []).map((line) =>
-    (Array.isArray(line) ? line : [line]).map((c) => String(c ?? "").trim()),
+  // SECURITY (H-09): neutralize spreadsheet formula payloads before storage.
+  return sanitizeSpreadsheetGrid(
+    (result.data || []).map((line) =>
+      (Array.isArray(line) ? line : [line]).map((c) => String(c ?? "").trim()),
+    ),
   );
 }
 
@@ -642,7 +646,8 @@ function parseExcelGrid(buffer: Buffer): string[][] {
   if (best.filter((r) => r.some(Boolean)).length < 1) {
     throw new Error("Excel file has no data rows on any sheet");
   }
-  return best;
+  // SECURITY (H-09): neutralize spreadsheet formula payloads before storage.
+  return sanitizeSpreadsheetGrid(best);
 }
 
 async function resolveStudentIds(

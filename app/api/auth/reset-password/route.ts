@@ -7,12 +7,13 @@ import {
   validateRequestSecurity,
 } from "@/lib/server-guards";
 import { verifyResetToken } from "@/lib/stateless-token";
+import { passwordSchema } from "@/lib/password-policy";
 import { applyAuthApiRateLimit, authApiRateLimitResponse } from "@/lib/auth-api-rate-limit";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
 });
 
 export async function POST(req: Request) {

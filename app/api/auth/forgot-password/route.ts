@@ -124,11 +124,12 @@ export async function POST(req: Request) {
     });
 
     if (!emailResult.success) {
+      // SECURITY (H-27): never leak whether the email exists via a distinct
+      // error. Log internally, return the generic success envelope. The user
+      // still gets a "check your inbox" page either way, and an attacker
+      // cannot distinguish existing vs non-existing accounts by response.
       console.error("[forgot-password] Custom SMTP failed:", emailResult.error);
-      return NextResponse.json(
-        { error: "Failed to send reset email. Please try again later." },
-        { status: 500 },
-      );
+      return successResponse;
     }
 
     console.log(

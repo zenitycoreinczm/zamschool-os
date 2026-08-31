@@ -9,10 +9,11 @@ import {
 import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
+import { passwordSchema } from "@/lib/password-policy";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+  newPassword: passwordSchema,
 });
 
 export async function POST(req: Request) {

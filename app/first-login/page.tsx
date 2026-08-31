@@ -119,8 +119,12 @@ export default function FirstLoginPage() {
     event.preventDefault();
     setError("");
 
-    if (password.trim().length < 8) {
-      setError("New password must be at least 8 characters.");
+    if (password.trim().length < 12) {
+      setError("New password must be at least 12 characters.");
+      return;
+    }
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError("New password must include an uppercase letter and a number.");
       return;
     }
 

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safe-error";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
@@ -32,16 +33,25 @@ type EnrollData = {
 
 /**
  * Render a TOTP QR from Supabase (raw SVG markup or data:/http(s) URL).
- * next/image rejects large SVG data URLs that end with whitespace/control chars.
+ *
+ * SECURITY (H-10): raw SVG markup is NEVER injected via
+ * dangerouslySetInnerHTML - a crafted SVG can carry <script>/onload
+ * handlers. Encoding it into a data: URL and loading it through <img>
+ * renders it in a restricted image context where scripts never execute.
  */
 function MfaQrCode({ qrCodeUrl }: { qrCodeUrl: string }) {
   const src = qrCodeUrl.trim();
 
   if (src.startsWith("<svg")) {
+    const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(src)))}`;
     return (
-      <div
-        className="h-48 w-48 [&_svg]:h-full [&_svg]:w-full"
-        dangerouslySetInnerHTML={{ __html: src }}
+      // eslint-disable-next-line @next/next/no-img-element -- TOTP QR is a data: URL
+      <img
+        src={dataUrl}
+        alt="Authenticator QR code"
+        width={192}
+        height={192}
+        className="h-48 w-48"
       />
     );
   }
@@ -98,7 +108,7 @@ export function MfaSetup() {
     setEnrollData(null);
     setVerifyCode("");
     try {
-      const res = await fetch("/api/auth/mfa/enroll", { method: "POST" });
+      const res = await fetchWithCsrf("/api/auth/mfa/enroll", { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Failed to start MFA enrollment");
@@ -116,7 +126,7 @@ export function MfaSetup() {
     if (!enrollData || !verifyCode) return;
     setVerifying(true);
     try {
-      const challengeRes = await fetch("/api/auth/mfa/challenge", {
+      const challengeRes = await fetchWithCsrf("/api/auth/mfa/challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ factorId: enrollData.factorId }),
@@ -127,7 +137,7 @@ export function MfaSetup() {
       }
       const challengeJson = await challengeRes.json();
 
-      const verifyRes = await fetch("/api/auth/mfa/verify", {
+      const verifyRes = await fetchWithCsrf("/api/auth/mfa/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -160,7 +170,7 @@ export function MfaSetup() {
 
     setRemoving(factorId);
     try {
-      const res = await fetch(
+      const res = await fetchWithCsrf(
         `/api/auth/mfa/factors?factorId=${encodeURIComponent(factorId)}`,
         { method: "DELETE" },
       );

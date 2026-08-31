@@ -20,7 +20,7 @@ export function isLoopbackOrigin(origin: string): boolean {
   try {
     const url = new URL(origin);
     const hostname = String(url.hostname || "").trim().toLowerCase();
-    return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "0.0.0.0";
+    return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "[::1]" || hostname === "::1";
   } catch {
     return false;
   }
@@ -53,14 +53,25 @@ export function collectConfiguredApiOrigins(): string[] {
         process.env.EXPO_PUBLIC_WEBAPP_PREVIEW_ORIGIN,
       ];
 
-  return [...new Set(sources.flatMap((value) => splitOrigins(value)))];
+  const origins = [...new Set(sources.flatMap((value) => splitOrigins(value)))];
+
+  // SECURITY (H-03/H-17): loopback origins must never be echoed in
+  // production strict mode, even if someone pastes one into the env config.
+  // Local malware pages could otherwise call authenticated APIs.
+  if (strict) {
+    return origins.filter((origin) => !isLoopbackOrigin(origin));
+  }
+
+  return origins;
 }
 
 export function resolveAllowedApiOrigin(requestOrigin: string | null): string | null {
   const normalized = normalizeOrigin(requestOrigin);
   if (!normalized) return null;
 
-  if (isLoopbackOrigin(normalized)) {
+  // Loopback auto-allow is a development convenience only. In production
+  // strict mode the origin must be explicitly configured.
+  if (!isProductionCorsMode() && isLoopbackOrigin(normalized)) {
     return normalized;
   }
 

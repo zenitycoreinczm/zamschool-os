@@ -4,7 +4,14 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 const LOOPBACK_IPS = new Set(["127.0.0.1", "::1", "[::1]"]);
 
 export function requireUnsafeLocalDevRoute(req: Request) {
-  if (process.env.NODE_ENV !== "development" || process.env.ENABLE_UNSAFE_DEV_ROUTES !== "true") {
+  // SECURITY (H-05): these routes shell out to child processes. They must be
+  // unreachable in every deployed environment regardless of env-var drift.
+  const onVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+  if (
+    process.env.NODE_ENV !== "development" ||
+    process.env.ENABLE_UNSAFE_DEV_ROUTES !== "true" ||
+    (onVercel && process.env.VERCEL_ENV !== "development")
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

@@ -36,10 +36,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, x-push-secret',
+/**
+ * SECURITY (H-04): never echo '*' for Access-Control-Allow-Origin. This
+ * function dispatches push notifications with elevated credentials;
+ * browser origins must be explicitly allow-listed via the ALLOWED_ORIGINS
+ * secret (comma-separated origins). Native mobile apps do not enforce
+ * CORS and are unaffected. Unset/unknown origins get no CORS headers.
+ */
+function buildCorsHeaders(req: Request): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type, x-push-secret',
+    'Vary': 'Origin',
+  }
+  const allowed = String(Deno.env.get('ALLOWED_ORIGINS') || '')
+    .split(',')
+    .map((entry) => entry.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+  const origin = req.headers.get('origin') || ''
+  if (origin && allowed.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  return headers
 }
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
@@ -193,6 +211,9 @@ function json(status: number, body: unknown) {
   })
 }
 
+/** Per-request CORS headers (see buildCorsHeaders). */
+let corsHeaders: Record<string, string> = {}
+
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = []
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
@@ -255,6 +276,7 @@ async function sendExpoPush(
 }
 
 serve(async (req) => {
+  corsHeaders = buildCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

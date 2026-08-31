@@ -9,6 +9,7 @@ import {
 } from "@/lib/server-guards";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { getECZGrade } from "@/lib/zambia-localization";
+import { sanitizeSpreadsheetRows } from "@/lib/sheet-sanitize";
 
 /**
  * Mobile mark-sheet extract (parse only — does not save).
@@ -118,13 +119,16 @@ function parseExcel(buffer: Buffer): Record<string, string>[] {
   const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     defval: "",
   });
-  return json.map((row) => {
-    const out: Record<string, string> = {};
-    for (const [k, v] of Object.entries(row)) {
-      out[String(k)] = String(v ?? "");
-    }
-    return out;
-  });
+  // SECURITY (H-09): neutralize spreadsheet formula payloads before use.
+  return sanitizeSpreadsheetRows(
+    json.map((row) => {
+      const out: Record<string, string> = {};
+      for (const [k, v] of Object.entries(row)) {
+        out[String(k)] = String(v ?? "");
+      }
+      return out;
+    }),
+  );
 }
 
 export async function POST(req: NextRequest) {

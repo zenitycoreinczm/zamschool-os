@@ -161,8 +161,12 @@ export function AccountSettingsPage({
       toast.error("New passwords do not match");
       return;
     }
-    if (passwordForm.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+    if (passwordForm.newPassword.length < 12) {
+      toast.error("Password must be at least 12 characters");
+      return;
+    }
+    if (!/[A-Z]/.test(passwordForm.newPassword) || !/[0-9]/.test(passwordForm.newPassword)) {
+      toast.error("Password must include an uppercase letter and a number");
       return;
     }
 

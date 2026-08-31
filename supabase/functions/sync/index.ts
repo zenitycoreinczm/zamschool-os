@@ -1,9 +1,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+/**
+ * SECURITY (H-04): never echo '*' for Access-Control-Allow-Origin. This
+ * function runs with the SERVICE ROLE key; any origin must be explicitly
+ * allow-listed via the ALLOWED_ORIGINS secret (comma-separated origins).
+ * Native mobile apps are unaffected (they do not enforce CORS).
+ * Unset/unknown origins receive no CORS headers at all.
+ */
+function buildCorsHeaders(req: Request): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin',
+  }
+  const allowed = String(Deno.env.get('ALLOWED_ORIGINS') || '')
+    .split(',')
+    .map((entry) => entry.trim().replace(/\/+$/, ''))
+    .filter(Boolean)
+  const origin = req.headers.get('origin') || ''
+  if (origin && allowed.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin
+  }
+  return headers
 }
 
 // Tables a client is allowed to push local changes into via this endpoint.
@@ -92,6 +111,7 @@ async function pullTable(
 // Sync endpoint for WatermelonDB
 // Handles both pull (get changes since last sync) and push (apply local changes)
 serve(async (req) => {
+  const corsHeaders = buildCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
