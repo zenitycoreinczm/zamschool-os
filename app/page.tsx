@@ -915,8 +915,14 @@ export default function HomePage() {
 
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-xl font-black text-white shadow-md sm:h-16 sm:w-16 sm:text-2xl">
-                    IM
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl ring-1 ring-slate-200 sm:h-16 sm:w-16">
+                    <Image
+                      src="/ceo.jpg"
+                      alt="Ison Mumbuna, CEO of ZenityCore Technologies"
+                      width={64}
+                      height={64}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 sm:text-xl">Ison Mumbuna</h3>
