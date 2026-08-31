@@ -31,8 +31,11 @@ const siteUrl =
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f172a",
-  colorScheme: "dark light",
+  // Light-first: the landing page and workspace are white surfaces.
+  // "dark light" made Safari/Firefox render dark form controls + scrollbars
+  // on the light UI in dark mode, which users read as broken CSS.
+  themeColor: "#ffffff",
+  colorScheme: "light",
 };
 
 export const metadata: Metadata = {
