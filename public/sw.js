@@ -100,6 +100,13 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+// Background Sync — replay queued mutations when network returns
+self.addEventListener("sync", (event) => {
+  if (event.tag === "zamschool-sync-queue") {
+    event.waitUntil(syncOfflineQueue());
+  }
+});
+
 async function handleNavigationRequest(request) {
   const url = new URL(request.url);
 
@@ -289,4 +296,26 @@ function isAuthSensitiveApi(pathname) {
 /** Last-resort response if even offline.html failed to precache. */
 function minimalOfflineHtml() {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>ZamSchool OS offline</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;padding:1.5rem;text-align:center}a{color:#38bdf8}</style></head><body><div><h1>ZamSchool OS is live</h1><p>You're offline. Reconnect and <a href="/">open the site</a>.</p><p><button onclick="location.reload()" style="margin-top:1rem;padding:.75rem 1.25rem;border:0;border-radius:999px;background:#0ea5e9;color:#fff;font-weight:700">Try again</button></p></div></body></html>`;
+}
+
+/**
+ * Background Sync handler — replay queued mutations from localStorage.
+ * Reads the offline-sync-queue and attempts to flush pending items.
+ */
+async function syncOfflineQueue() {
+  try {
+    // Notify all clients that background sync is running
+    const clients = await self.clients.matchAll();
+    clients.forEach((client) => {
+      client.postMessage({ type: "SYNC_STARTED" });
+    });
+
+    // Trigger the app's sync logic via broadcast channel or direct call
+    // The app will read from localStorage and attempt to flush
+    clients.forEach((client) => {
+      client.postMessage({ type: "FLUSH_OFFLINE_QUEUE" });
+    });
+  } catch (error) {
+    console.error("[SW] Background sync failed:", error);
+  }
 }

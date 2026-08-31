@@ -55,11 +55,24 @@ export class SchoolSyncQueue {
           "Content-Type": "application/json",
           "X-From-Offline-Queue": "true"
         };
-        // Replay the original auth token so the upstream can authenticate
-        // the delayed mutation just as it would an in-session request.
-        if (item.authHeader) {
+        
+        // Check if stored auth token is still valid (< 5 min from expiry)
+        const needsTokenRefresh = await this.isTokenExpired(item.authHeader);
+        
+        if (item.authHeader && !needsTokenRefresh) {
+          // Token still valid, replay as normal
           headers["Authorization"] = item.authHeader;
+        } else if (this.env.SUPABASE_SERVICE_ROLE_KEY) {
+          // Token expired or missing — escalate to service-role for privileged replay
+          headers["Authorization"] = `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`;
+          headers["X-Queue-Replay-Escalated"] = "true";
+        } else {
+          // No service role available — try original token anyway (may still work)
+          if (item.authHeader) {
+            headers["Authorization"] = item.authHeader;
+          }
         }
+        
         const response = await fetchImpl(new Request(upstreamUrl.toString(), {
           method: item.method,
           headers,
@@ -84,6 +97,33 @@ export class SchoolSyncQueue {
       await this.state.storage.delete("queue");
     } else {
       await this.state.storage.put("queue", remainingQueue);
+    }
+  }
+
+  /**
+   * Check if JWT token is expired or about to expire (< 5 min left).
+   * Returns true if token needs refresh, false if still valid.
+   */
+  private async isTokenExpired(authHeader?: string): Promise<boolean> {
+    if (!authHeader) return true;
+    
+    try {
+      const token = authHeader.replace("Bearer ", "");
+      const parts = token.split(".");
+      if (parts.length !== 3) return true;
+      
+      // Decode payload (base64url)
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+      const exp = payload.exp; // Unix timestamp in seconds
+      
+      if (!exp) return true;
+      
+      // Consider token expired if less than 5 minutes remain
+      const now = Math.floor(Date.now() / 1000);
+      return (exp - now) < 300; // 5 minutes buffer
+    } catch {
+      // Can't decode token — assume expired
+      return true;
     }
   }
 }

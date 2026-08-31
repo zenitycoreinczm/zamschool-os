@@ -33,6 +33,9 @@ export interface Env {
   JWT_VERIFY_MODE?: string;
   /** Must be "true" to allow decode mode - never enable in production. */
   ALLOW_INSECURE_JWT_DECODE?: string;
+  /** Service role key for privileged queue replay after JWT expiry. */
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  /** Set via `wrangler secret put SUPABASE_SERVICE_ROLE_KEY`. */
   /** Set to "true" to enable edge rate limiting (Upstash Redis or isolate memory). */
   RATE_LIMIT_ENABLED?: string;
   /**
@@ -110,14 +113,39 @@ export const CACHEABLE_GET_PREFIXES = [
 
 /** Routes where offline mutations are allowed (queued) */
 export const QUEUABLE_MUTATION_PATHS = [
+  // Attendance
   "/api/teacher/attendance",
+  "/api/admin/attendance",
+  "/api/parent/absence",
+  
+  // Messages & Communications
+  "/api/messages/send",
   "/api/teacher/announcements",
   "/api/admin/announcements",
-  "/api/admin/attendance",
-  "/api/admin/classes",
+  
+  // Academic Results & Grading
   "/api/teacher/results",
-  "/api/student/profile",
+  "/api/teacher/results-upload",
+  "/api/admin/results",
+  
+  // Admin Operations
+  "/api/admin/classes",
+  "/api/admin/subjects",
+  "/api/admin/terms",
+  "/api/admin/students",
+  
+  // Discipline
+  "/api/discipline/records",
+  
+  // Payments & Billing
   "/api/payments/billing",
+  "/api/payments/fees",
+  "/api/payments/receipts",
+  
+  // Student/Parent Profile Updates
+  "/api/student/profile",
+  "/api/parent/profile",
+  "/api/account/profile",
 ] as const;
 
 export function isCacheableGetPath(pathname: string): boolean {

@@ -15,6 +15,10 @@ import {
   getSyncQueueCount,
   processSyncQueue,
 } from "@/lib/offline-sync-queue";
+import {
+  getPendingUploadCount,
+  processPendingUploads,
+} from "@/lib/offline-file-upload";
 
 const OFFLINE_WARMUP_KEY = "zamschool-offline-core-warmed-v3";
 
@@ -32,22 +36,36 @@ export default function OfflineStatusProvider({
     if (isSyncingRef.current || typeof window === "undefined" || !navigator.onLine) {
       return;
     }
-    const pendingCount = getSyncQueueCount();
-    if (pendingCount === 0) return;
-
+    
     isSyncingRef.current = true;
     try {
-      const result = await processSyncQueue();
-      if (result.processed > 0) {
+      // Process mutation queue
+      const syncResult = await processSyncQueue();
+      if (syncResult.processed > 0) {
         toast.success(
-          `Synced ${result.processed} offline change${result.processed > 1 ? "s" : ""} successfully!`,
+          `Synced ${syncResult.processed} offline change${syncResult.processed > 1 ? "s" : ""} successfully!`,
           { id: "offline-sync-success" },
         );
       }
-      if (result.failed > 0) {
+      if (syncResult.failed > 0) {
         toast.error(
-          `${result.failed} offline item${result.failed > 1 ? "s" : ""} failed to sync after retries.`,
+          `${syncResult.failed} offline item${syncResult.failed > 1 ? "s" : ""} failed to sync after retries.`,
           { id: "offline-sync-failed" },
+        );
+      }
+
+      // Process file upload queue
+      const uploadResult = await processPendingUploads();
+      if (uploadResult.processed > 0) {
+        toast.success(
+          `Uploaded ${uploadResult.processed} pending file${uploadResult.processed > 1 ? "s" : ""}!`,
+          { id: "offline-upload-success" },
+        );
+      }
+      if (uploadResult.failed > 0) {
+        toast.error(
+          `${uploadResult.failed} file upload${uploadResult.failed > 1 ? "s" : ""} failed after retries.`,
+          { id: "offline-upload-failed" },
         );
       }
     } catch (err) {

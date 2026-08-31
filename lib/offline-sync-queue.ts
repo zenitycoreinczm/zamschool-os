@@ -47,6 +47,16 @@ export function addToSyncQueue(item: Omit<SyncQueueItem, "id" | "timestamp" | "r
     queue.push(queueItem);
     localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
     notifyListeners();
+    
+    // Register for Background Sync if available (browser will retry when online)
+    if (typeof window !== "undefined" && "serviceWorker" in navigator && "SyncManager" in window) {
+      void navigator.serviceWorker.ready.then((registration) => {
+        return registration.sync.register("zamschool-sync-queue");
+      }).catch((error) => {
+        console.warn("[OfflineSync] Background Sync registration failed:", error);
+      });
+    }
+    
     return queueItem;
   } catch (error) {
     console.error("Failed to add to sync queue:", error);
