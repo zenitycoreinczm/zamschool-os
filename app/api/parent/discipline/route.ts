@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireParentContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
+import { applyPlatformRateLimit, platformRateLimitResponse } from "@/lib/platform-api-guard";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(req: Request) {
@@ -13,6 +14,9 @@ export async function GET(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked" }, { status: 403 });
     }
+
+    const rl = await applyPlatformRateLimit({ scope: "parent-read", schoolId, req, userId, preset: "heavyRead" });
+    if (!rl.allowed) return platformRateLimitResponse(rl);
 
     // Find linked children
     const { data: parent, error: parentError } = await supabaseAdmin
@@ -25,7 +29,7 @@ export async function GET(req: Request) {
     if (parentError) throw parentError;
     if (!parent) {
       const response = NextResponse.json({ success: true, data: [] });
-      return applyEdgeCacheHeaders(response, "noStore");
+      return applyEdgeCacheHeaders(response, "privateRead");
     }
 
     const { data: links, error: linksError } = await supabaseAdmin
@@ -38,7 +42,7 @@ export async function GET(req: Request) {
     const studentIds = (links || []).map((l: any) => l.student_id);
     if (studentIds.length === 0) {
       const response = NextResponse.json({ success: true, data: [] });
-      return applyEdgeCacheHeaders(response, "noStore");
+      return applyEdgeCacheHeaders(response, "privateRead");
     }
 
     const { data, error } = await supabaseAdmin
@@ -90,7 +94,7 @@ export async function GET(req: Request) {
     }));
 
     const response = NextResponse.json({ success: true, data: enriched });
-    return applyEdgeCacheHeaders(response, "noStore");
+    return applyEdgeCacheHeaders(response, "privateRead");
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to load discipline records") },

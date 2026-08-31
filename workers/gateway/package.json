@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/index.test.mjs src/auth.test.mjs src/rate-limit.test.mjs"
   },
+  "dependencies": {
+    "@upstash/redis": "^1.34.3"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260511.1",
     "wrangler": "^4.90.1"

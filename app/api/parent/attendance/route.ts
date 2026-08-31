@@ -4,6 +4,7 @@ import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance/sum
 import { requireParentContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
+import { applyPlatformRateLimit, platformRateLimitResponse } from "@/lib/platform-api-guard";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getParentRecord, getLinkedStudents, getClassesById, buildClassLabel, buildDisplayName } from "@/lib/parent-route-utils";
 
@@ -15,6 +16,10 @@ export async function GET(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked to this account" }, { status: 403 });
     }
+
+    const rl = await applyPlatformRateLimit({ scope: "parent-read", schoolId, req, userId, preset: "heavyRead" });
+    if (!rl.allowed) return platformRateLimitResponse(rl);
+
     const parentIdentityId = profileId || userId;
     const { searchParams } = new URL(req.url);
     const selectedStudentId = searchParams.get("studentId");
@@ -219,7 +224,7 @@ export async function GET(req: Request) {
 }
 
 function jsonResponse(payload: unknown) {
-  return applyEdgeCacheHeaders(NextResponse.json(payload), "noStore");
+  return applyEdgeCacheHeaders(NextResponse.json(payload), "privateRead");
 }
 
 async function getProfilesById(schoolId: string, profileIds: string[]) {

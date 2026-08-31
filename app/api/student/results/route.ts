@@ -4,6 +4,7 @@ import { withPublishedResultsCache } from "@/lib/published-results-read";
 import { requireStudentContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
+import { applyPlatformRateLimit, platformRateLimitResponse } from "@/lib/platform-api-guard";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(req: Request) {
@@ -12,12 +13,15 @@ export async function GET(req: Request) {
     if (!access.ok) return access.response;
     const { userId, schoolId } = access.context;
 
+    const rl = await applyPlatformRateLimit({ scope: "student-read", schoolId, req, userId, preset: "heavyRead" });
+    if (!rl.allowed) return platformRateLimitResponse(rl);
+
     const data = await withPublishedResultsCache(
       `student:${schoolId}:${userId}`,
       () => loadPublishedStudentResults(userId, schoolId)
     );
 
-    return applyEdgeCacheHeaders(NextResponse.json({ success: true, data }), "noStore");
+    return applyEdgeCacheHeaders(NextResponse.json({ success: true, data }), "privateRead");
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to load student results") },

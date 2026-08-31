@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireStudentContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
+import { applyPlatformRateLimit, platformRateLimitResponse } from "@/lib/platform-api-guard";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(req: Request) {
@@ -13,6 +14,9 @@ export async function GET(req: Request) {
     if (!schoolId) {
       return NextResponse.json({ error: "No school linked" }, { status: 403 });
     }
+
+    const rl = await applyPlatformRateLimit({ scope: "student-read", schoolId, req, userId, preset: "heavyRead" });
+    if (!rl.allowed) return platformRateLimitResponse(rl);
 
     // Find the student record for this user
     const { data: student, error: studentError } = await supabaseAdmin
@@ -25,7 +29,7 @@ export async function GET(req: Request) {
     if (studentError) throw studentError;
     if (!student) {
       const response = NextResponse.json({ success: true, data: [] });
-      return applyEdgeCacheHeaders(response, "noStore");
+      return applyEdgeCacheHeaders(response, "privateRead");
     }
 
     const { data, error } = await supabaseAdmin
@@ -51,7 +55,7 @@ export async function GET(req: Request) {
     if (error) throw error;
 
     const response = NextResponse.json({ success: true, data: data || [] });
-    return applyEdgeCacheHeaders(response, "noStore");
+    return applyEdgeCacheHeaders(response, "privateRead");
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to load discipline records") },

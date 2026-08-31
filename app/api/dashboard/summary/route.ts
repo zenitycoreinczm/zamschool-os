@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     const data = await loadDashboardSummary(schoolId);
     return applyEdgeCacheHeaders(
       NextResponse.json({ success: true, data }),
-      "noStore",
+      "dashboardRead",
     );
   } catch (error: unknown) {
     return NextResponse.json(
