@@ -171,11 +171,17 @@ html {
     }
 }
 
-/* Mobile nav drawer: vh fallback first, dvh enhancement second. */
+/* Mobile nav drawer: vh fallback first; @supports upgrades to dvh (the
+   duplicate-declaration form is stripped by the build's Lightning CSS). */
 .mobile-nav-panel {
     max-height: calc(100vh - 5rem);
-    max-height: calc(100dvh - 5rem);
     -webkit-overflow-scrolling: touch;
+}
+
+@supports (height: 100dvh) {
+    .mobile-nav-panel {
+        max-height: calc(100dvh - 5rem);
+    }
 }
 
 /* Hamburger summary keeps a visible focus ring for keyboard users. */
@@ -426,16 +432,22 @@ html {
 .zamschool-workspace-shell {
     display: grid;
     width: 100%;
-    /* vh first: dvh is unsupported on iOS < 15.4 / old Android WebView and an
-       unsupported unit drops the whole declaration, cutting the page. */
+    /* vh base: dvh is unsupported on iOS < 15.4 / old Android WebView, and
+       Lightning CSS strips plain duplicate declarations - the @supports
+       block below survives the build and upgrades to dvh where available. */
     height: 100vh;
-    height: 100dvh;
     max-height: 100vh;
-    max-height: 100dvh;
     overflow: hidden;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     background: var(--color-workspace-canvas);
+}
+
+@supports (height: 100dvh) {
+    .zamschool-workspace-shell {
+        height: 100dvh;
+        max-height: 100dvh;
+    }
 }
 
 @media (min-width: 1024px) {
