@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Settings,
   Shield,
+  Star,
   User,
   UserPlus,
   Users,
@@ -671,6 +672,7 @@ export const roleNavSections: Record<WorkspaceRoleKey, WorkspaceNavSection[]> =
         label: "Platform",
         items: [
           { href: "/app/super-admin", label: "Super Admin", icon: Shield },
+          { href: "/app/super-admin/reviews", label: "Site reviews", icon: Star },
         ],
       },
     ],

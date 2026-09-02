@@ -3,10 +3,14 @@ import { z } from "zod";
 import { createHash } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { getClientIdentifier, rateLimitMiddleware } from "@/lib/rate-limit";
+import { emailService } from "@/lib/email";
+import { wrapEmailHtml } from "@/lib/email-templates";
 
 const ratingSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().trim().max(500).optional(),
+  name: z.string().trim().max(80).optional(),
+  school: z.string().trim().max(120).optional(),
   // Internal paths only - never absolute URLs or scheme-relative values.
   page: z
     .string()
@@ -26,6 +30,10 @@ const RATING_RATE_LIMIT = {
 
 // Set RATING_IP_PEPPER in production; fallback keeps dedupe working in dev.
 const IP_PEPPER = process.env.RATING_IP_PEPPER || "zamschool-site-rating-v1";
+
+// Where review notifications are sent. Defaults to the executive desk.
+const REVIEW_NOTIFY_EMAIL =
+  process.env.REVIEW_NOTIFY_EMAIL || "zenitycoreinc@gmail.com";
 
 function hashIp(ip: string): string {
   return createHash("sha256").update(`${ip}:${IP_PEPPER}`).digest("hex");
@@ -49,6 +57,57 @@ function summaryJson(
     "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
   );
   return response;
+}
+
+/** Escape user text for safe interpolation into email HTML. */
+function escapeHtml(value: string): string {
+  return value.replace(/[<>&"]/g, (c) =>
+    c === "<" ? "&lt;" : c === ">" ? "&gt;" : c === '"' ? "&quot;" : "&amp;",
+  );
+}
+
+/** Fire-and-forget admin email for new review comments (never blocks the save). */
+function notifyReviewByEmail(entry: {
+  rating: number;
+  comment?: string;
+  name?: string;
+  school?: string;
+  page?: string;
+}) {
+  if (!entry.comment) return;
+  const who =
+    [entry.name, entry.school]
+      .filter((value): value is string => Boolean(value))
+      .map(escapeHtml)
+      .join(" — ") || "Anonymous visitor";
+  const subject = `New ${entry.rating}-star review on zamschoolos.site`;
+  const appOrigin =
+    process.env.NEXT_PUBLIC_APP_ORIGIN || "https://www.zamschoolos.site";
+
+  const html = wrapEmailHtml(
+    `
+      <p><strong>${entry.rating}/5</strong> from ${who}</p>
+      <blockquote style="border-left:3px solid #0ea5e9;margin:12px 0;padding-left:12px;color:#0f172a">
+        ${escapeHtml(entry.comment)}
+      </blockquote>
+      <p style="color:#64748b;font-size:13px">
+        Approve or hide it in Super Admin &rarr; Reviews:<br />
+        ${appOrigin}/app/super-admin/reviews
+      </p>
+    `,
+    "New site review",
+  );
+
+  void emailService
+    .sendEmail({
+      to: REVIEW_NOTIFY_EMAIL,
+      subject,
+      html,
+      text: `${entry.rating}/5 from ${who}\n\n${entry.comment}\n\nApprove: ${appOrigin}/app/super-admin/reviews`,
+    })
+    .catch(() => {
+      // Notification failures must never surface to the visitor.
+    });
 }
 
 export async function POST(request: NextRequest) {
@@ -102,6 +161,8 @@ export async function POST(request: NextRequest) {
     .insert({
       rating: parsed.data.rating,
       comment: parsed.data.comment || null,
+      name: parsed.data.name || null,
+      school: parsed.data.school || null,
       page: parsed.data.page ?? null,
       ip_hash: ipHash,
     })
@@ -111,6 +172,15 @@ export async function POST(request: NextRequest) {
   if (error || !data) {
     return NextResponse.json({ error: "Failed to save rating" }, { status: 500 });
   }
+
+  // Email the executive desk about comments (fire-and-forget).
+  notifyReviewByEmail({
+    rating: parsed.data.rating,
+    comment: parsed.data.comment,
+    name: parsed.data.name,
+    school: parsed.data.school,
+    page: parsed.data.page,
+  });
 
   return NextResponse.json(
     { success: true },

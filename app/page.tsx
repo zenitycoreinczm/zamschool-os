@@ -9,6 +9,7 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import SystemStatusBadge from "@/components/landing/SystemStatusBadge";
 import CookieConsentBanner from "@/components/landing/CookieConsentBanner";
 import SiteRatingWidget from "@/components/landing/SiteRatingWidget";
+import PublicReviews from "@/components/landing/PublicReviews";
 
 const platformFeatures = {
   web: [
@@ -704,8 +705,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="mt-10 hidden overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] rounded-3xl border border-slate-200 bg-white shadow-sm sm:block">
-              <div className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-200 bg-slate-50 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-600 sm:px-6 sm:text-sm">
+            <div className="mt-8 sm:mt-10 sm:overflow-hidden sm:rounded-3xl sm:border sm:border-slate-200 sm:bg-white sm:shadow-sm">
+              {/* Column headers: desktop/tablet only; mobile cards label each cell inline */}
+              <div className="hidden border-b border-slate-200 bg-slate-50 px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-600 sm:grid sm:grid-cols-[1.1fr_1fr_1.2fr] sm:px-6 sm:text-sm">
                 <div>Capability</div>
                 <div className="text-slate-500">Legacy / Paper</div>
                 <div className="text-sky-700">ZamSchool OS</div>
@@ -714,46 +716,25 @@ export default function HomePage() {
               {comparisonData.map((row) => (
                 <div
                   key={row.aspect}
-                  className="grid grid-cols-[1.1fr_1fr_1.2fr] border-b border-slate-100 px-4 py-4 text-xs last:border-b-0 sm:px-6 sm:text-sm"
+                  className="mb-3.5 grid grid-cols-1 gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left text-xs shadow-sm last:mb-0 sm:mb-0 sm:grid-cols-[1.1fr_1fr_1.2fr] sm:items-start sm:gap-0 sm:rounded-none sm:border-0 sm:border-b sm:border-slate-100 sm:bg-transparent sm:px-6 sm:py-4 sm:shadow-none sm:last:border-b-0 sm:text-sm"
                 >
-                  <div className="font-semibold text-slate-900">{row.aspect}</div>
-                  <div className="flex min-w-0 items-start gap-1.5 text-slate-500">
+                  <p className="text-sm font-bold text-slate-900 sm:font-semibold">{row.aspect}</p>
+                  <div className="flex min-w-0 items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500 sm:gap-1.5 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0">
                     <Cross />
-                    <span className="min-w-0 break-words">{row.legacy}</span>
-                  </div>
-                  <div className="flex min-w-0 items-start gap-1.5 font-medium text-slate-700">
-                    <Check className="bg-emerald-100 text-emerald-700" />
-                    <span className="min-w-0 break-words">{row.zamschool}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 space-y-3.5 sm:hidden">
-              {comparisonData.map((row) => (
-                <div
-                  key={row.aspect}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm"
-                >
-                  <p className="text-sm font-bold text-slate-900">{row.aspect}</p>
-                  <div className="mt-3 space-y-2 text-xs">
-                    <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-500">
-                      <Cross />
-                      <div className="min-w-0">
-                        <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-400">
-                          Legacy / Paper
-                        </span>
-                        <span className="break-words">{row.legacy}</span>
-                      </div>
+                    <div className="min-w-0">
+                      <span className="mb-0.5 block text-[10px] font-semibold uppercase text-slate-400 sm:hidden">
+                        Legacy / Paper
+                      </span>
+                      <span className="break-words">{row.legacy}</span>
                     </div>
-                    <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-800">
-                      <Check className="bg-emerald-200 text-emerald-800" />
-                      <div className="min-w-0">
-                        <span className="mb-0.5 block text-[10px] font-semibold uppercase text-emerald-600">
-                          ZamSchool OS
-                        </span>
-                        <span className="break-words">{row.zamschool}</span>
-                      </div>
+                  </div>
+                  <div className="flex min-w-0 items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-emerald-800 sm:gap-1.5 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:font-medium sm:text-slate-700">
+                    <Check className="bg-emerald-200 text-emerald-800 sm:bg-emerald-100 sm:text-emerald-700" />
+                    <div className="min-w-0">
+                      <span className="mb-0.5 block text-[10px] font-semibold uppercase text-emerald-600 sm:hidden">
+                        ZamSchool OS
+                      </span>
+                      <span className="break-words">{row.zamschool}</span>
                     </div>
                   </div>
                 </div>
@@ -1054,7 +1035,10 @@ export default function HomePage() {
 
       <section className="border-t border-slate-200 bg-slate-50 py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <SiteRatingWidget />
+          <PublicReviews />
+          <div className="mt-10 sm:mt-12">
+            <SiteRatingWidget />
+          </div>
         </div>
       </section>
 

@@ -338,7 +338,7 @@ export default function TeacherAttendancePage() {
 
       if (isQueued && !payload) {
         toast.success(
-          `Roll call queued offline · ${statuses.length} records will sync when online`,
+          `Roll call queued offline Â· ${statuses.length} records will sync when online`,
         );
       } else {
         const savedCount =
@@ -354,11 +354,11 @@ export default function TeacherAttendancePage() {
             ? payload.notificationsQueued
             : 0;
         toast.success(
-          `Roll call saved · ${savedCount} records · ${parentsNotified} parents notified`,
+          `Roll call saved Â· ${savedCount} records Â· ${parentsNotified} parents notified`,
         );
         if (payload?.submittedLate) {
           toast.message(
-            "Submitted after the 10-minute late threshold — Head Teacher was notified.",
+            "Submitted after the 10-minute late threshold â€” Head Teacher was notified.",
           );
         }
         if (parentsNotified === 0) {
@@ -448,7 +448,7 @@ export default function TeacherAttendancePage() {
       {loading ? (
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 py-16 text-sm text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-          Loading lessons and rosters…
+          Loading lessons and rostersâ€¦
         </div>
       ) : lessons.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
@@ -466,7 +466,7 @@ export default function TeacherAttendancePage() {
             <p>
               {submittedCount} of {lessons.length} lessons already have roll call
               saved
-              {exceptionCount > 0 ? ` · ${exceptionCount} exceptions staged` : ""}
+              {exceptionCount > 0 ? ` Â· ${exceptionCount} exceptions staged` : ""}
             </p>
           </div>
 
@@ -516,7 +516,7 @@ export default function TeacherAttendancePage() {
                         ) : (
                           <Clock className="h-3 w-3" />
                         )}
-                        {win?.label || "—"}
+                        {win?.label || "â€”"}
                       </span>
                       {lesson.hasSubmission ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
@@ -526,8 +526,8 @@ export default function TeacherAttendancePage() {
                       ) : null}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {lesson.className} · {lesson.startTime?.slice(0, 5)}–
-                      {lesson.endTime?.slice(0, 5)} · {lesson.roster.length}{" "}
+                      {lesson.className} Â· {lesson.startTime?.slice(0, 5)}â€“
+                      {lesson.endTime?.slice(0, 5)} Â· {lesson.roster.length}{" "}
                       students
                     </p>
                     {win?.message ? (
@@ -540,7 +540,7 @@ export default function TeacherAttendancePage() {
                         return (
                           <p className="mt-1 flex items-center gap-1 text-[11px] text-amber-600">
                             <AlertTriangle className="h-3 w-3" />
-                            No parents linked — notifications won't be sent
+                            No parents linked â€” notifications won&apos;t be sent
                           </p>
                         );
                       } else if (health && health.linkedParents < health.totalStudents) {
@@ -593,7 +593,7 @@ export default function TeacherAttendancePage() {
                             className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
                             title="Quick mark 1 student absent"
                           >
-                            −1 Absent
+                            âˆ’1 Absent
                           </button>
                           <button
                             type="button"
@@ -601,7 +601,7 @@ export default function TeacherAttendancePage() {
                             className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
                             title="Quick mark 2 students absent"
                           >
-                            −2 Absent
+                            âˆ’2 Absent
                           </button>
                           <button
                             type="button"
@@ -609,7 +609,7 @@ export default function TeacherAttendancePage() {
                             className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
                             title="Quick mark 3 students absent"
                           >
-                            −3 Absent
+                            âˆ’3 Absent
                           </button>
                         </>
                       )}
@@ -731,7 +731,7 @@ export default function TeacherAttendancePage() {
                               {saving === lesson.id ? (
                                 <>
                                   <Loader2 className="h-4 w-4 animate-spin" />
-                                  Saving…
+                                  Savingâ€¦
                                 </>
                               ) : locked ? (
                                 <>
@@ -756,7 +756,7 @@ export default function TeacherAttendancePage() {
                             )}
                             {!locked && willNotifyCount === 0 && totalCount > 0 && (
                               <span className="text-xs text-amber-700">
-                                No parents linked — link in admin first
+                                No parents linked â€” link in admin first
                               </span>
                             )}
                           </div>
