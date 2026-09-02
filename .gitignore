@@ -61,6 +61,11 @@ nul
 token_env.sh
 supa_token.txt
 
+# Root-level debug/log dumps (should never be committed)
+/test_output*.txt
+/vercel-deploy-*.txt
+/zamschool-os-*-log-export-*.json
+
 # MCP and agent configs
 .mcp.json
 .agents/

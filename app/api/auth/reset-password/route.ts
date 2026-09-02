@@ -9,6 +9,7 @@ import {
 import { verifyResetToken } from "@/lib/stateless-token";
 import { passwordSchema } from "@/lib/password-policy";
 import { applyAuthApiRateLimit, authApiRateLimitResponse } from "@/lib/auth-api-rate-limit";
+import { maskEmail } from "@/lib/logger";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
     }
 
     console.log(
-      `[reset-password] Password reset successful for ${normalizedEmail}`,
+      `[reset-password] Password reset successful for ${maskEmail(normalizedEmail)}`,
     );
     return NextResponse.json({
       success: true,

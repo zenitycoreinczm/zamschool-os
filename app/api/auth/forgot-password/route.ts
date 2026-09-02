@@ -11,6 +11,7 @@ import { getAppOrigin } from "@/lib/app-origin";
 import { wrapEmailHtml, emailButton } from "@/lib/email-templates";
 import { createResetToken } from "@/lib/stateless-token";
 import { applyAuthApiRateLimit, authApiRateLimitResponse } from "@/lib/auth-api-rate-limit";
+import { maskEmail } from "@/lib/logger";
 import {
   findUserByEmail,
   type SupabaseAdminLike,
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
     }
 
     console.log(
-      `[forgot-password] Reset link sent to ${normalizedEmail} via custom SMTP`,
+      `[forgot-password] Reset link sent to ${maskEmail(normalizedEmail)} via custom SMTP`,
     );
     return successResponse;
   } catch (error: unknown) {

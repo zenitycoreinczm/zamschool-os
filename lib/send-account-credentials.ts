@@ -2,6 +2,7 @@ import { emailButton, wrapEmailHtml } from "@/lib/email-templates";
 import { getAppOrigin } from "@/lib/app-origin";
 import { getRoleDisplayLabel } from "@/lib/roles";
 import { emailService } from "@/lib/email";
+import { maskEmail } from "@/lib/logger";
 
 export async function sendAccountCredentialsEmail(input: {
   to: string;
@@ -11,7 +12,7 @@ export async function sendAccountCredentialsEmail(input: {
   acceptUrl?: string;
 }) {
   console.log(
-    `[sendAccountCredentialsEmail] Preparing email for ${input.to} (role=${input.role})`,
+    `[sendAccountCredentialsEmail] Preparing email for ${maskEmail(input.to)} (role=${input.role})`,
   );
   const appOrigin = getAppOrigin();
   const loginUrl = `${appOrigin}/login`;

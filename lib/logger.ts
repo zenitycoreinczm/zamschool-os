@@ -47,6 +47,13 @@ function shouldLog(level: LogLevel): boolean {
   return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[getMinLevel()];
 }
 
+/** Mask an email for logging: "j***@example.com" (single-char local parts are fully redacted) */
+export function maskEmail(email: string): string {
+  const at = email.indexOf("@");
+  if (at <= 1) return "[REDACTED_EMAIL]";
+  return `${email[0]}***${email.slice(at)}`;
+}
+
 function sanitizeContext(ctx: LogContext): LogContext {
   const sanitized: LogContext = {};
   for (const [key, value] of Object.entries(ctx)) {
@@ -58,9 +65,7 @@ function sanitizeContext(ctx: LogContext): LogContext {
     ) {
       sanitized[key] = "[REDACTED]";
     } else if (/email/i.test(key) && typeof value === "string") {
-      const at = value.indexOf("@");
-      sanitized[key] =
-        at > 1 ? `${value[0]}***${value.slice(at)}` : "[REDACTED_EMAIL]";
+      sanitized[key] = maskEmail(value);
     } else if (value instanceof Error) {
       sanitized[key] = String(value.message || value.name).slice(0, 500);
     } else if (typeof value === "string" && value.length > 500) {

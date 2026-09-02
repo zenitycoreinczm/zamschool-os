@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { emailButton, wrapEmailHtml } from "@/lib/email-templates";
+import { maskEmail } from "@/lib/logger";
 
 interface EmailConfig {
   host: string;
@@ -50,7 +51,7 @@ class EmailService {
       this.transporter = nodemailer.createTransport(this.config);
       this.configured = true;
       console.log(
-        `[EmailService] SMTP configured - host=${this.config.host}:${this.config.port} user=${this.config.auth.user} from=${process.env.SMTP_FROM || this.config.auth.user}`,
+        `[EmailService] SMTP configured - host=${this.config.host}:${this.config.port} user=${maskEmail(this.config.auth.user)} from=${maskEmail(process.env.SMTP_FROM || this.config.auth.user)}`,
       );
     } catch (error) {
       console.error("Failed to initialize email transporter:", error);
@@ -72,7 +73,7 @@ class EmailService {
       const fromAddress =
         options.from || process.env.SMTP_FROM || this.config.auth.user;
       console.log(
-        `[EmailService] Sending email - to=${options.to} subject="${options.subject}" from=${fromAddress}`,
+        `[EmailService] Sending email - to=${maskEmail(options.to)} subject="${options.subject}" from=${maskEmail(fromAddress)}`,
       );
 
       const result = await this.transporter.sendMail({

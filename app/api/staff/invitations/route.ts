@@ -22,6 +22,7 @@ import { createAuditLog } from "@/lib/audit-log";
 import { canActorCreateSchoolRole } from "@/lib/account-create-policy";
 import { sendAccountCredentialsEmail } from "@/lib/send-account-credentials";
 import { invalidateActorCaches } from "@/lib/invalidate-actor-caches";
+import { maskEmail } from "@/lib/logger";
 import {
   createOrUpdateAuthUserWithTemporaryPassword,
   findAuthUserByEmail,
@@ -378,7 +379,7 @@ export async function POST(req: Request) {
       emailPromise
         .then((result) => {
           console.log(
-            `[invite] Credentials email sent to ${email} - messageId=${result.messageId || "N/A"}`,
+            `[invite] Credentials email sent to ${maskEmail(email)} - messageId=${result.messageId || "N/A"}`,
           );
         })
         .catch((err) => {

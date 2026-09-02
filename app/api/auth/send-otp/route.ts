@@ -11,6 +11,7 @@ import {
   authApiRateLimitResponse,
 } from "@/lib/auth-api-rate-limit";
 import { checkOtpSendThrottle } from "@/lib/redis/temp";
+import { maskEmail } from "@/lib/logger";
 import {
   assertOtpRequestMatchesUser,
   OtpAuthError,
@@ -144,11 +145,4 @@ async function loadOtpTarget(userId: string, requestedEmail: string) {
     userId: lookup.data.user.id,
     email: resolvedEmail,
   };
-}
-
-/** Mask an email for logging: "j***@example.com" */
-function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!local || !domain) return "***";
-  return `${local[0]}***@${domain}`;
 }
