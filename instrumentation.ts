@@ -42,9 +42,8 @@ async function setup() {
       }
     }
 
-    const { installSupabaseFetchGuard } = await import(
-      "./lib/supabase-fetch-guard"
-    );
+    const { installSupabaseFetchGuard, getSupabaseFetchGuardLimit } =
+      await import("./lib/supabase-fetch-guard");
     installSupabaseFetchGuard();
 
     const { checkSupabaseConnectivity } = await import(
@@ -76,7 +75,9 @@ async function setup() {
       );
     }
 
-    console.log("[Instrumentation] Supabase fetch guard installed - 25 req/s limit enforced.");
+    console.log(
+      `[Instrumentation] Supabase fetch guard installed - ${getSupabaseFetchGuardLimit()} req/s per device limit enforced.`,
+    );
   } catch (error) {
     console.error(
       "[Instrumentation] Failed to install server security / Supabase guard:",

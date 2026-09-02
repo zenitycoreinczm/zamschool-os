@@ -67,6 +67,11 @@ export function tempOtpThrottleKey(email: string) {
   return `${REDIS_KEY_PREFIX.temp}otp:throttle:${hashRedisIdentifier(email)}`;
 }
 
+/** Access-code verification attempts per submitted code (hashed, opaque). */
+export function tempAccessCodeThrottleKey(code: string) {
+  return `${REDIS_KEY_PREFIX.temp}code:throttle:${hashRedisIdentifier(code)}`;
+}
+
 export function tempTokenKey(kind: string, id: string) {
   return `${REDIS_KEY_PREFIX.temp}${kind}:${String(id || "").trim()}`;
 }

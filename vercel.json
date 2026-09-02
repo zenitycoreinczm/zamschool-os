@@ -10,6 +10,18 @@
     },
     "app/api/**/*.js": {
       "maxDuration": 10
+    },
+    "app/api/auth/register-school/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/staff/invitations/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/admin/school-backup/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/admin/school-backup/download/route.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [

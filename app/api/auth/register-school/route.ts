@@ -26,9 +26,11 @@ import {
   hasOtpVerificationAttestation,
 } from "@/lib/principal-email-verified";
 import {
-  validateSchoolAccessCode,
-  consumeSchoolAccessCode,
+  claimAccessCode,
+  releaseAccessCodeClaim,
+  type AccessCodeClaim,
 } from "@/lib/school-access-code";
+import { checkAccessCodeAttemptThrottle } from "@/lib/redis/temp";
 import {
   normalizeOptionalZambianPhone,
   zambianPhoneValidationError,
@@ -106,6 +108,11 @@ const registerSchoolSchema = z
   });
 
 export async function POST(req: Request) {
+  // Set on successful atomic claim; read by the catch block to roll the
+  // claim back if school creation fails afterwards (fail-closed: the code
+  // stays consumed if the rollback itself loses a race).
+  let accessCodeClaim: { code: string; claim: AccessCodeClaim } | null = null;
+
   try {
     const ip = getClientIp(req);
     const auth = await resolveRegistrationUser(req);
@@ -224,18 +231,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── 1. Validate the access code ─────────────────────────────────────────
-    const codeValidation = await validateSchoolAccessCode(accessCode, {
-      schoolDetails: { province, district, schoolType, ownershipType },
-    });
-    if (!codeValidation.ok) {
-      return NextResponse.json(
-        { error: codeValidation.error },
-        { status: codeValidation.status },
-      );
-    }
-
-    // ── 2. Check for existing school membership ──────────────────────────────
+    // ── 1. Check for existing school membership ──────────────────────────────
     const { data: existingProfile, error: existingProfileError } =
       await fetchProfileByIdentity<{
         id?: string;
@@ -260,7 +256,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── 3. Normalize school code ─────────────────────────────────────────────
+    // ── 2. Normalize school code ─────────────────────────────────────────────
     const normalizedCode = String(schoolCode || "")
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, "")
@@ -283,6 +279,29 @@ export async function POST(req: Request) {
     if (existing) {
       finalCode = `${normalizedCode.slice(0, 8)}${nanoid(4).toUpperCase()}`;
     }
+
+    // ── 3. Atomically claim the access code ──────────────────────────────────
+    // Conditional update (guarded on use_count/used_at) so concurrent
+    // registrations with the same single-use code cannot both proceed.
+    const codeThrottled = !(await checkAccessCodeAttemptThrottle(accessCode));
+    if (codeThrottled) {
+      return NextResponse.json(
+        { error: "Too many attempts for this access code. Please try again later." },
+        { status: 429 },
+      );
+    }
+
+    const codeClaim = await claimAccessCode(accessCode, {
+      claimerEmail: email,
+      schoolDetails: { province, district, schoolType, ownershipType },
+    });
+    if (!codeClaim.ok) {
+      return NextResponse.json(
+        { error: codeClaim.error },
+        { status: codeClaim.status },
+      );
+    }
+    accessCodeClaim = { code: accessCode, claim: codeClaim.claim };
 
     // ── 4. Create school ─────────────────────────────────────────────────────
     const { data: school, error: schoolError } = await supabaseAdmin
@@ -350,6 +369,7 @@ export async function POST(req: Request) {
         schoolId: school.id,
       });
       await supabaseAdmin.from("schools").delete().eq("id", school.id);
+      await releaseAccessCodeClaim(accessCode, accessCodeClaim.claim);
       throw new Error("Failed to create Head Teacher profile");
     }
 
@@ -401,9 +421,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── 7. Mark access code as used ──────────────────────────────────────────
-    await consumeSchoolAccessCode(accessCode, email);
-
+    // ── 7. Audit log (access code was claimed atomically in step 3) ──────────
     await createAuditLog({
       schoolId: school.id,
       userId,
@@ -426,6 +444,14 @@ export async function POST(req: Request) {
       initialization,
     });
   } catch (error: unknown) {
+    // Roll back the atomic claim if school creation failed after it.
+    // Best-effort: if the CAS release loses a race, the code stays consumed.
+    if (accessCodeClaim) {
+      await releaseAccessCodeClaim(
+        accessCodeClaim.code,
+        accessCodeClaim.claim,
+      );
+    }
     // Server log only - never echo SQL / schema / stack to the client.
     const { logServerError, publicErrorBody } = await import("@/lib/safe-error");
     logServerError("register-school", error);

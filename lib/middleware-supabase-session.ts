@@ -41,6 +41,22 @@ function clearSupabaseAuthCookies(
   }
 }
 
+/**
+ * Log dead-refresh-token failures at most once per minute per process.
+ * These fire per-request otherwise and would flood production logs;
+ * the throttled signal is enough to measure frequency (masked: no PII,
+ * no tokens - only the Supabase error message).
+ */
+let lastRefreshFailureLogAt = 0;
+function warnRefreshTokenFailureOncePerMinute(message: string): void {
+  const now = Date.now();
+  if (now - lastRefreshFailureLogAt < 60_000) return;
+  lastRefreshFailureLogAt = now;
+  console.warn(
+    `[middleware-session] Dead/invalid refresh token cleared (throttled log): ${message}`,
+  );
+}
+
 export type VerifiedMiddlewareSession = {
   userId: string;
   /** From `profiles.role` only - never from user_metadata. */
@@ -115,6 +131,9 @@ export async function resolveVerifiedMiddlewareSession(
         .toLowerCase()
         .includes("refresh token")
     ) {
+      warnRefreshTokenFailureOncePerMinute(
+        String((thrown as { message?: string }).message),
+      );
       clearSupabaseAuthCookies(request, response);
       return null;
     }

@@ -4,7 +4,11 @@ import {
   redisIncr,
   redisSet,
 } from "@/lib/redis/client";
-import { tempOtpThrottleKey, tempTokenKey } from "@/lib/redis/keys";
+import {
+  tempAccessCodeThrottleKey,
+  tempOtpThrottleKey,
+  tempTokenKey,
+} from "@/lib/redis/keys";
 import { REDIS_TTL } from "@/lib/redis/ttl";
 
 /** Throttle OTP email sends per address (complements DB-stored hashed OTP). */
@@ -18,6 +22,22 @@ export async function checkOtpSendThrottle(
   const count = await redisIncr(key, REDIS_TTL.otpThrottleSec);
   if (count === null) return true;
   return count <= maxPerHour;
+}
+
+/**
+ * Throttle access-code verification attempts per submitted code value
+ * (brute-force friction on the 6-digit space; complements per-IP limits).
+ */
+export async function checkAccessCodeAttemptThrottle(
+  code: string,
+  maxPerWindow = 10,
+): Promise<boolean> {
+  if (!isRedisConfigured()) return true;
+
+  const key = tempAccessCodeThrottleKey(code);
+  const count = await redisIncr(key, REDIS_TTL.accessCodeThrottleSec);
+  if (count === null) return true;
+  return count <= maxPerWindow;
 }
 
 /** Store a short-lived verification or reset token payload (small JSON string). */

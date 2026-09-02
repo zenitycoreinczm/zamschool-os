@@ -28,10 +28,20 @@ import { recordRequest } from "./supabase-request-budget";
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const SUPABASE_HOST_PATTERN = /\.supabase\.co/i;
-const MAX_REQUESTS_PER_SECOND_PER_USER = 25;
 const WINDOW_MS = 1000;
 const SLOW_QUERY_THRESHOLD_MS = 1_000;
 const DEVICE_ID_KEY = "zamschool_device_id";
+
+/**
+ * Per-device budget (req/s). Dial via NEXT_PUBLIC_SUPABASE_FETCH_GUARD_LIMIT
+ * (client + server readable), clamped to 10–200; default 25 keeps free-tier
+ * protection. NEXT_PUBLIC_ prefix so browser and server agree on one limit.
+ */
+export function getSupabaseFetchGuardLimit(): number {
+  const raw = Number(process.env.NEXT_PUBLIC_SUPABASE_FETCH_GUARD_LIMIT || "");
+  if (!Number.isFinite(raw) || raw <= 0) return 25;
+  return Math.max(10, Math.min(200, Math.round(raw)));
+}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -118,7 +128,7 @@ async function waitForBudget(deviceId: string): Promise<void> {
   const maxWaitMs = 5_000;
   const started = Date.now();
 
-  while (currentRate(deviceId) >= MAX_REQUESTS_PER_SECOND_PER_USER) {
+  while (currentRate(deviceId) >= getSupabaseFetchGuardLimit()) {
     if (Date.now() - started > maxWaitMs) {
       console.warn(
         `[SupabaseFetchGuard] Device ${deviceId.slice(0, 12)}... budget wait timed out.`
@@ -311,7 +321,7 @@ export function getFetchGuardTelemetry(): {
   const deviceId = getDeviceId();
   return {
     currentRps: currentRate(deviceId),
-    maxRps: MAX_REQUESTS_PER_SECOND_PER_USER,
+    maxRps: getSupabaseFetchGuardLimit(),
     installed: guardInstalled,
     activeDevices: perDeviceTimestamps.size,
   };

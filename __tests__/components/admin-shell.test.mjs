@@ -10,35 +10,45 @@ const headerPath = resolve(
   "workspace",
   "WorkspaceShellHeader.tsx",
 );
+// Role shells delegate to the shared WorkspaceShell; the search wiring
+// lives there after the refactor.
+const workspaceShellPath = resolve(
+  process.cwd(),
+  "components",
+  "workspace",
+  "WorkspaceShell.tsx",
+);
 
 test("admin shell turns the top search field into an interactive workspace search", async () => {
   const source = await readFile(shellPath, "utf8");
   const headerSource = await readFile(headerPath, "utf8");
+  const workspaceSource = await readFile(workspaceShellPath, "utf8");
 
   assert.doesNotMatch(source, /readOnly/);
   assert.match(headerSource, /WorkspaceGlobalSearch/);
-  assert.match(source, /workspacePageItems/);
-  assert.match(source, /pageItems=\{workspacePageItems\}/);
+  assert.match(workspaceSource, /workspacePageItems/);
+  assert.match(workspaceSource, /pageItems=\{workspacePageItems\}/);
 });
 
 test("admin shell wires unread message and notification counts into the header shortcuts", async () => {
-  const source = await readFile(shellPath, "utf8");
+  const workspaceSource = await readFile(workspaceShellPath, "utf8");
   const headerSource = await readFile(headerPath, "utf8");
 
-  assert.match(source, /useNavBadges/);
-  assert.match(source, /navBadgeCounts/);
-  assert.match(source, /badgeByHref/);
+  // Badge wiring moved into the shared WorkspaceShell during the refactor.
+  assert.match(workspaceSource, /useNavBadges/);
+  assert.match(workspaceSource, /navBadgeCounts/);
+  assert.match(workspaceSource, /badgeByHref/);
   assert.match(headerSource, /WorkspaceInboxCenter/);
 });
 
 test("admin shell wires the header shortcuts and overflow menu to real actions", async () => {
-  const source = await readFile(shellPath, "utf8");
+  const workspaceSource = await readFile(workspaceShellPath, "utf8");
   const headerSource = await readFile(headerPath, "utf8");
 
-  assert.match(source, /MobileDock/);
-  assert.match(source, /badgeByHref/);
+  assert.match(workspaceSource, /MobileDock/);
+  assert.match(workspaceSource, /badgeByHref/);
   assert.match(headerSource, /setOverflowOpen/);
-  assert.match(source, /Sign out/);
+  assert.match(workspaceSource, /Sign out/);
 });
 
 test("admin shell targets the mounted admin and shared workspace route set", async () => {

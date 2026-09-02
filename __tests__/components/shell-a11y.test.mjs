@@ -7,6 +7,12 @@ import { resolve } from "node:path";
 // (docs/AUDIT.md) lists these as invariants and they were re-verified on
 // 2026-06-28. If any shell drops one of these, the test fails and the
 // regression is caught before it ships.
+//
+// 2026-09: role shells were refactored to delegate their chrome to the
+// shared components/workspace/WorkspaceShell.tsx. The a11y invariants now
+// live there once — asserting them against the shared shell (plus a render
+// delegation check per role shell) keeps the same guarantees without
+// duplicating markup in five files.
 
 const shells = [
   { name: "AdminShell", file: "components/AdminShell.tsx" },
@@ -16,37 +22,50 @@ const shells = [
   { name: "PaymentsShell", file: "components/PaymentsShell.tsx" },
 ];
 
+const sharedSource = await readFile(
+  resolve(process.cwd(), "components", "workspace", "WorkspaceShell.tsx"),
+  "utf8",
+);
+
 for (const { name, file } of shells) {
   const source = await readFile(resolve(process.cwd(), file), "utf8");
 
-  test(`${name} exposes a skip-to-content link`, () => {
+  test(`${name} renders the shared WorkspaceShell chrome`, () => {
     assert.match(
       source,
+      /WorkspaceShell/,
+      `${name} must delegate its chrome to the shared WorkspaceShell`,
+    );
+  });
+
+  test(`${name} exposes a skip-to-content link (shared chrome)`, () => {
+    assert.match(
+      sharedSource,
       /href="#main"[\s\S]{0,1500}Skip to content/,
-      `${name} must include an sr-only skip-to-content link to #main`,
+      "WorkspaceShell must include an sr-only skip-to-content link to #main",
     );
   });
 
-  test(`${name} marks the sidebar as a navigation region`, () => {
+  test(`${name} marks the sidebar as a navigation region (shared chrome)`, () => {
     assert.match(
-      source,
+      sharedSource,
       /role="navigation"/,
-      `${name} must mark its sidebar with role="navigation"`,
+      'WorkspaceShell must mark its sidebar with role="navigation"',
     );
     assert.match(
-      source,
+      sharedSource,
       /aria-label="Primary"/,
-      `${name} must label its sidebar aria-label="Primary"`,
+      'WorkspaceShell must label its sidebar aria-label="Primary"',
     );
   });
 
-  test(`${name} uses aria-expanded on the sidebar toggle`, () => {
+  test(`${name} uses aria-expanded on the sidebar toggle (shared chrome)`, () => {
     // Either a toggle button (aria-expanded={...}) or a labelled link group
     // counts; we just want a hint to assistive tech that the sidebar opens.
     assert.match(
-      source,
+      sharedSource,
       /aria-expanded=\{open\}/,
-      `${name} must expose aria-expanded tied to the sidebar open state`,
+      "WorkspaceShell must expose aria-expanded tied to the sidebar open state",
     );
   });
 
@@ -55,11 +74,11 @@ for (const { name, file } of shells) {
     //   1. an inline error banner with role="alert"
     //   2. a WorkspaceLoader with aria-live="polite"
     // Both make the workspace state readable to assistive tech.
-    const inlineAlert = /role="alert"/.test(source);
+    const inlineAlert = /role="alert"/.test(source) || /role="alert"/.test(sharedSource);
     const politeLoader =
       /WorkspaceLoader[\s\S]{0,400}aria-live="polite"|aria-live="polite"[\s\S]{0,400}WorkspaceLoader/.test(
         source,
-      );
+      ) || /WorkspaceLoader[\s\S]{0,400}aria-live="polite"|aria-live="polite"[\s\S]{0,400}WorkspaceLoader/.test(sharedSource);
     assert.ok(
       inlineAlert || politeLoader,
       `${name} must expose either role="alert" on its error path or an aria-live="polite" WorkspaceLoader`,

@@ -40,7 +40,11 @@ test("register-school returns 403 when email is not confirmed after self-heal", 
   );
 });
 
-test("register-school validates the access code before creating a school", () => {
-  assert.match(source, /validateSchoolAccessCode/);
-  assert.match(source, /consumeSchoolAccessCode/);
+test("register-school claims the access code atomically and compensates on failure", () => {
+  // Atomic CAS claim (race-safe) replaced the validate -> create -> consume
+  // sequence that burned codes when school creation failed mid-flow.
+  assert.match(source, /claimAccessCode/);
+  assert.match(source, /releaseAccessCodeClaim/);
+  assert.doesNotMatch(source, /consumeSchoolAccessCode/);
+  assert.match(source, /checkAccessCodeAttemptThrottle/);
 });

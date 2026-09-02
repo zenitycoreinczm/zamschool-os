@@ -17,6 +17,9 @@ export const REDIS_TTL = {
   /** OTP send throttle per email. */
   otpThrottleSec: 60 * 60,
 
+  /** Access-code verification attempts per submitted code. */
+  accessCodeThrottleSec: 15 * 60,
+
   /** Password reset / verify / invite token payloads. */
   tempTokenSec: 10 * 60,
 

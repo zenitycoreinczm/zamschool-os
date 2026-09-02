@@ -79,29 +79,17 @@ const invariants = [
   },
   {
     id: "shell-navigation-aria",
-    title: "All five role shells carry role=\"navigation\" aria-label=\"Primary\" on the sidebar",
-    file: null, // checked across multiple files below
+    title:
+      "Role shells delegate to the shared WorkspaceShell, which carries role=\"navigation\" aria-label=\"Primary\" on the sidebar",
+    file: "components/workspace/WorkspaceShell.tsx",
     re: /role="navigation"\s+aria-label="Primary"|aria-label="Primary"\s+role="navigation"/,
-    multi: [
-      "components/AdminShell.tsx",
-      "components/ParentShell.tsx",
-      "components/TeacherShell.tsx",
-      "components/StudentShell.tsx",
-      "components/PaymentsShell.tsx",
-    ],
   },
   {
     id: "shell-skip-to-content",
-    title: "All five role shells expose a skip-to-content link to #main",
-    file: null,
+    title:
+      "Role shells delegate to the shared WorkspaceShell, which exposes a skip-to-content link to #main",
+    file: "components/workspace/WorkspaceShell.tsx",
     re: /href="#main"[\s\S]{0,1500}Skip to content/,
-    multi: [
-      "components/AdminShell.tsx",
-      "components/ParentShell.tsx",
-      "components/TeacherShell.tsx",
-      "components/StudentShell.tsx",
-      "components/PaymentsShell.tsx",
-    ],
   },
   {
     id: "role-page-orchestrators",

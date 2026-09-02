@@ -116,8 +116,7 @@ const nextConfig: NextConfig = {
       remotePatternForHost("*.r2.cloudflarestorage.com"),
     ],
     localPatterns: [
-      { pathname: "/api/account/avatar/**", search: "?**" },
-      { pathname: "/api/public/assets/**", search: "?**" },
+      // Two variants cover every local path: with any query string, and without.
       { pathname: "/**", search: "?**" },
       { pathname: "/**" },
     ],
@@ -125,8 +124,6 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  // Do not leak "Next.js" via X-Powered-By.
-  poweredByHeader: false,
   // Never ship browser source maps in production (path + source leaks).
   productionBrowserSourceMaps: false,
   transpilePackages: ["motion"],
