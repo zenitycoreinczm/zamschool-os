@@ -832,8 +832,8 @@ export function TimetableWorkspace({
           </div>
         ) : (
           <>
-            {/* Desktop: 5 columns */}
-            <div className="hidden md:grid md:grid-cols-5 md:divide-x md:divide-slate-100">
+            {/* Week at a glance: stacked days on mobile, 5 columns at md+ */}
+            <div className="grid grid-cols-1 divide-y divide-slate-100 md:grid-cols-5 md:divide-x md:divide-y-0">
               {weekColumns.map((day) => (
                 <DayColumn
                   key={day.key}
@@ -843,22 +843,6 @@ export function TimetableWorkspace({
                   readOnly={readOnly}
                   onView={(id) => setDetailLessonId(id)}
                   onDelete={(id) => void deleteLesson(id)}
-                />
-              ))}
-            </div>
-
-            {/* Mobile: stacked days, only those with lessons first + empty compact */}
-            <div className="divide-y divide-slate-100 md:hidden">
-              {weekColumns.map((day) => (
-                <DayColumn
-                  key={day.key}
-                  day={day}
-                  isToday={day.key === todayKey}
-                  lens={cardLens}
-                  readOnly={readOnly}
-                  onView={(id) => setDetailLessonId(id)}
-                  onDelete={(id) => void deleteLesson(id)}
-                  stacked
                 />
               ))}
             </div>
@@ -1025,7 +1009,6 @@ function DayColumn({
   readOnly,
   onView,
   onDelete,
-  stacked = false,
 }: {
   day: {
     key: number;
@@ -1038,22 +1021,15 @@ function DayColumn({
   readOnly: boolean;
   onView: (id: string) => void;
   onDelete: (id: string) => void;
-  stacked?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "min-h-0",
+        "min-h-0 px-3 py-2 md:px-0 md:py-0",
         isToday && "bg-emerald-50/40",
-        stacked && "px-3 py-2",
       )}
     >
-      <div
-        className={cn(
-          "sticky top-0 z-[1] flex items-center justify-between gap-1 border-b border-slate-100 bg-inherit px-2 py-1.5",
-          stacked && "static border-0 px-0 pb-1.5 pt-0",
-        )}
-      >
+      <div className="static flex items-center justify-between gap-1 px-0 pb-1.5 pt-0 md:sticky md:top-0 md:z-[1] md:border-b md:border-slate-100 md:bg-inherit md:px-2 md:py-1.5">
         <div className="flex items-center gap-1.5">
           <span
             className={cn(
@@ -1061,7 +1037,8 @@ function DayColumn({
               isToday ? "text-emerald-800" : "text-slate-800",
             )}
           >
-            {stacked ? day.fullLabel : day.label}
+            <span className="md:hidden">{day.fullLabel}</span>
+            <span className="hidden md:inline">{day.label}</span>
           </span>
           {isToday ? (
             <span className="rounded bg-emerald-100 px-1 py-px text-[9px] font-bold uppercase tracking-wide text-emerald-700">
@@ -1074,7 +1051,7 @@ function DayColumn({
         </span>
       </div>
 
-      <div className={cn("space-y-1 p-1.5", stacked && "px-0 pb-1 pt-0")}>
+      <div className="space-y-1 px-0 pb-1 pt-0 md:p-1.5">
         {day.lessons.length === 0 ? (
           <p className="px-1 py-3 text-center text-[10px] text-slate-300">
             Free
