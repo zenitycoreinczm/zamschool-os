@@ -11,18 +11,104 @@ interface ConsentPreferences {
   marketing: boolean;
 }
 
+interface StoredConsent {
+  choice: ConsentChoice;
+  preferences: ConsentPreferences;
+  timestamp: string;
+}
+
 const STORAGE_KEY = "zamschool-cookie-consent";
+const COOKIE_KEY = "zs-consent";
+const COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 365; // 1 year
+
+/**
+ * Persist consent in BOTH localStorage and a domain-wide cookie.
+ *
+ * Why the cookie: the site answers on both zamschoolos.site and
+ * www.zamschoolos.site (separate origins = separate localStorage), and
+ * Safari evicts localStorage after ~7 days of disuse. A cookie set with
+ * domain=.zamschoolos.site is shared across both hostnames and survives
+ * far longer, so an accepted choice never re-prompts.
+ */
+function writeConsentCookie(data: StoredConsent) {
+  try {
+    const hostname = window.location.hostname;
+    // Only set a registrable-domain cookie on multi-label production
+    // hostnames; localhost / IPs get a host-only cookie.
+    const parts = hostname.split(".");
+    const registrable =
+      parts.length >= 2 && !/^\d+$/.test(parts[parts.length - 1])
+        ? `.${parts.slice(-2).join(".")}`
+        : "";
+    const expires = new Date(
+      Date.now() + COOKIE_MAX_AGE_SEC * 1000,
+    ).toUTCString();
+    document.cookie = [
+      `${COOKIE_KEY}=${encodeURIComponent(JSON.stringify(data))}`,
+      `expires=${expires}`,
+      `max-age=${COOKIE_MAX_AGE_SEC}`,
+      "path=/",
+      "SameSite=Lax",
+      window.location.protocol === "https:" ? "Secure" : "",
+      registrable ? `domain=${registrable}` : "",
+    ]
+      .filter(Boolean)
+      .join("; ");
+  } catch {
+    // Cookie write failures are non-fatal - localStorage still persists.
+  }
+}
+
+function readConsentCookie(): StoredConsent | null {
+  try {
+    const raw = document.cookie;
+    if (!raw) return null;
+    for (const pair of raw.split(";")) {
+      const trimmed = pair.trim();
+      if (!trimmed.startsWith(`${COOKIE_KEY}=`)) continue;
+      const value = decodeURIComponent(trimmed.slice(COOKIE_KEY.length + 1));
+      const parsed = JSON.parse(value) as StoredConsent;
+      if (parsed && parsed.preferences) return parsed;
+      return null;
+    }
+  } catch {
+    // Corrupted cookie: ignore.
+  }
+  return null;
+}
+
+function readConsentLocalStorage(): StoredConsent | null {
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as StoredConsent;
+    return parsed && parsed.preferences ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Read persisted consent from any storage tier. */
+function readStoredConsent(): StoredConsent | null {
+  const fromCookie = readConsentCookie();
+  const fromLocal = readConsentLocalStorage();
+  if (fromCookie && fromLocal) return fromCookie;
+  if (fromCookie) {
+    // Backfill localStorage so other components can read it too.
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(fromCookie));
+    } catch {
+      // ignore
+    }
+    return fromCookie;
+  }
+  return fromLocal;
+}
 
 export default function CookieConsentBanner() {
   const [visible, setVisible] = useState(() => {
     if (typeof window === "undefined") return false;
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      return !(stored && JSON.parse(stored)?.preferences);
-    } catch {
-      // Corrupted consent storage: show the banner.
-      return true;
-    }
+    return readStoredConsent() === null;
   });
   const [showSelected, setShowSelected] = useState(false);
   const [preferences, setPreferences] = useState<ConsentPreferences>({
@@ -32,12 +118,17 @@ export default function CookieConsentBanner() {
   });
 
   const saveAndDismiss = useCallback((choice: ConsentChoice, prefs?: ConsentPreferences) => {
-    const data = {
+    const data: StoredConsent = {
       choice,
       preferences: prefs ?? { essential: true, analytics: false, marketing: false },
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {
+      // Storage full / private mode: cookie tier still persists.
+    }
+    writeConsentCookie(data);
     setVisible(false);
   }, []);
 
@@ -110,7 +201,7 @@ export default function CookieConsentBanner() {
               <label className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
                 <input type="checkbox" checked disabled className="h-4 w-4 rounded border-slate-300" />
                 <span>
-                  <span className="font-semibold text-slate-700">Essential</span> — Required for site functionality
+                  <span className="font-semibold text-slate-700">Essential</span>. Required for site functionality
                 </span>
               </label>
               <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm transition hover:border-sky-300">
@@ -121,7 +212,7 @@ export default function CookieConsentBanner() {
                   className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 />
                 <span>
-                  <span className="font-semibold text-slate-900">Analytics</span> — Help us understand usage patterns
+                  <span className="font-semibold text-slate-900">Analytics</span>. Help us understand usage patterns
                 </span>
               </label>
               <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm transition hover:border-sky-300">
@@ -132,7 +223,7 @@ export default function CookieConsentBanner() {
                   className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 />
                 <span>
-                  <span className="font-semibold text-slate-900">Marketing</span> — Personalized content and ads
+                  <span className="font-semibold text-slate-900">Marketing</span>. Personalized content and ads
                 </span>
               </label>
             </fieldset>

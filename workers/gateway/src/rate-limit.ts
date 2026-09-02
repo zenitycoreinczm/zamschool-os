@@ -165,6 +165,12 @@ async function checkCacheRateLimit(
   
   // Use Cache API with a fake URL as key
   const cacheKey = `https://zamschool-gateway/ratelimit/${config.keyPrefix}/${key}/${Math.floor(windowStart / 1000)}`;
+
+  // The Cloudflare Cache API (`caches`) does not exist in Node test
+  // runtimes - fall back to the memory limiter instead of throwing.
+  if (typeof caches === "undefined" || !caches?.default) {
+    return null;
+  }
   const cache = caches.default;
 
   try {

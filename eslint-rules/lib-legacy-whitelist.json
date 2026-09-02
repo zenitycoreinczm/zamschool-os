@@ -164,5 +164,7 @@
   "password-policy.ts",
   "sheet-sanitize.ts",
   "upload-authorization.ts",
-  "auth-aal-guard.ts"
+  "auth-aal-guard.ts",
+  "offline-file-upload.ts",
+  "supabase-connection-pool.ts"
 ]

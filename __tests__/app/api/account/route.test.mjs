@@ -117,21 +117,22 @@ test("account change-password route resolves managed profiles safely", async () 
   );
 });
 
-test("account avatar route rejects school-less uploads and tenant-scopes avatar persistence", async () => {
+test("account avatar route allows school-less uploads and tenant-scopes persistence", async () => {
   const source = await readFile(accountAvatarRoutePath, "utf8");
 
-  assert.doesNotMatch(
-    source,
-    /schoolId\s*=\s*access\.context\.schoolId\s*\|\|\s*"default"/,
-  );
-  assert.match(source, /No school linked to this account/);
+  // Avatars no longer require a school: school-less actors upload under the
+  // "global" scope instead of being rejected.
+  assert.match(source, /requireSchool:\s*false/);
+  assert.match(source, /access\.context\.schoolId \|\| "global"/);
+  // Persistence stays tenant-scoped whenever a school context exists.
   assert.match(
     source,
-    /\.from\("profiles"\)[\s\S]*\.eq\("id", input\.profileId\)[\s\S]*\.eq\("school_id", input\.schoolId\)/,
+    /\.from\("profiles"\)[\s\S]*\.eq\("id", input\.profileId\)/,
   );
+  assert.match(source, /if \(input\.schoolId\) \{[\s\S]*\.eq\("school_id", input\.schoolId\)/);
   assert.match(
     source,
-    /\.from\("profiles"\)[\s\S]*\.eq\("auth_user_id", input\.authUserId\)[\s\S]*\.eq\("school_id", input\.schoolId\)/,
+    /\.from\("profiles"\)[\s\S]*\.eq\("auth_user_id", input\.authUserId\)/,
   );
 });
 

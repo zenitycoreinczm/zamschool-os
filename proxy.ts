@@ -79,6 +79,33 @@ export async function proxy(request: NextRequest) {
     return blocked;
   }
 
+  // ── Canonical host unification ──────────────────────────────────────────
+  // The site answers on both zamschoolos.site and www.zamschoolos.site, which
+  // are SEPARATE origins: split localStorage (cookie banner re-prompting every
+  // visit) and split service workers. canonical/og URLs use www, so send
+  // HTML navigations from the apex permanently to www. Non-navigation
+  // requests (API, static assets, SW) are untouched.
+  const isHtmlNavigation =
+    (request.headers.get("sec-fetch-dest") || "").toLowerCase() === "document" ||
+    String(request.headers.get("accept") || "").includes("text/html");
+  const requestHost = String(hostHeader || "").toLowerCase().split(":")[0];
+  if (
+    isHtmlNavigation &&
+    requestHost === "zamschoolos.site" &&
+    !pathname.startsWith("/api/") &&
+    pathname !== "/sw.js" &&
+    pathname !== "/offline.html" &&
+    pathname !== "/manifest.json" &&
+    !pathname.startsWith("/_next/")
+  ) {
+    const canonicalUrl = new URL(
+      `https://www.zamschoolos.site${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+    const redirect = NextResponse.redirect(canonicalUrl, 308);
+    applySecurityHeaders(redirect, request);
+    return redirect;
+  }
+
   // RSC prefetch requests (_rsc=…) are speculative: the browser fires them when
   // the user hovers a <Link>, then aborts the request on the next navigation.
   // Serve them as a plain pass-through so they short-circuit cleanly when

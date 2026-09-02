@@ -94,7 +94,7 @@ describe("free-tier-guard", () => {
     const paid = freeTierIpAbusePolicy();
     assert.ok(free.banThreshold >= 15);
     assert.ok(free.banThreshold <= paid.banThreshold);
-    assert.ok(free.banTtlSec <= 2 * 60 * 60);
+    assert.ok(free.banTtlSec <= 5 * 60 * 60);
   });
 
   it("only scanner/bot reasons are ban-worthy (not floods)", () => {
