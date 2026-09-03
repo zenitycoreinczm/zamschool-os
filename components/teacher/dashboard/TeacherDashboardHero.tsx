@@ -1,41 +1,25 @@
 import { Loader2, RefreshCw } from "lucide-react";
 
-import { AdminPageHero, type AdminStatCard } from "@/components/admin/AdminPageHero";
+import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { AcademicContextLabel } from "@/components/workspace/AcademicContextLabel";
-
-type Stats = {
-  lessons: number;
-  students: number;
-  completed: number;
-  pending: number;
-};
 
 /**
  * Teacher desk hero, built on the shared AdminPageHero chrome.
- * Stats stay teacher-specific (own lessons and roll-call state).
+ * Greeting banner only — no stat cards.
  */
 export function TeacherDashboardHero({
   schoolName,
   displayName,
   yearTerm,
-  stats,
   refreshing,
   onRefresh,
 }: {
   schoolName: string;
   displayName: string;
   yearTerm: string;
-  stats: Stats;
   refreshing: boolean;
   onRefresh: () => void;
 }) {
-  const statItems: AdminStatCard[] = [
-    { label: "Lessons today", value: stats.lessons },
-    { label: "My students", value: stats.students },
-    { label: "Roll calls done", value: stats.completed },
-    { label: "Still pending", value: stats.pending },
-  ];
-
   return (
     <AdminPageHero
       eyebrow="Classroom desk"
@@ -48,7 +32,6 @@ export function TeacherDashboardHero({
           termClassName="text-slate-400"
         />
       }
-      stats={statItems}
       actions={
         <button
           type="button"

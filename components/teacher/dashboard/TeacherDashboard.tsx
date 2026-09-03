@@ -101,12 +101,6 @@ export default function TeacherDashboard() {
         schoolName={schoolName}
         displayName={displayName}
         yearTerm={yearTerm}
-        stats={{
-          lessons: stats.lessons,
-          students: stats.students,
-          completed: stats.completed,
-          pending: stats.pending,
-        }}
         refreshing={refreshing}
         onRefresh={onRefresh}
       />
