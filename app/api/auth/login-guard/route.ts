@@ -11,6 +11,7 @@ import {
   recordLoginFailure,
 } from "@/lib/redis/login-lockout";
 import { isRedisConfigured } from "@/lib/redis/client";
+import { supabaseAdmin } from "@/lib/supabase";
 import {
   getClientIp,
   parseJsonWithSchema,
@@ -70,6 +71,24 @@ export async function POST(req: Request) {
 
     if (body.outcome === "check") {
       const status = await getLoginLockoutStatus({ email, ip });
+
+      // Removed-from-directory accounts: soft-deleted profiles keep their
+      // auth user, so surface a clear refusal before any sign-in attempt.
+      // Response shape stays constant whether or not the account exists.
+      let accountInactive = false;
+      try {
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("is_active")
+          .eq("email", email)
+          .limit(1)
+          .maybeSingle();
+        accountInactive = profile?.is_active === false;
+      } catch {
+        // Profile lookup is best-effort; middleware still blocks the
+        // session even if this check fails.
+      }
+
       return NextResponse.json({
         ok: true,
         redis,
@@ -78,6 +97,7 @@ export async function POST(req: Request) {
         retryAfterSec: status.retryAfterSec,
         // "ip-ban" means the IP address is hard-banned for 24 hours.
         reason: status.reason ?? null,
+        accountInactive,
       });
     }
 

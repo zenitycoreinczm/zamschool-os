@@ -78,6 +78,13 @@ export async function createUser(payload: Record<string, unknown>) {
   }>;
 }
 
+export async function getUserDetail(profileId: string, role: string) {
+  const body = (await adminGet(
+    `/api/admin/users?profileId=${encodeURIComponent(profileId)}&role=${encodeURIComponent(role)}`,
+  )) as { data?: Record<string, any> };
+  return body.data ?? null;
+}
+
 export async function updateUser(payload: Record<string, unknown>) {
   return adminRequest("/api/admin/users", {
     method: "PUT",

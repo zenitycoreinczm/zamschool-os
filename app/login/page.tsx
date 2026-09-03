@@ -262,7 +262,7 @@ function LoginContent() {
   const callLoginGuard = async (
     email: string,
     outcome: "check" | "failure" | "success",
-  ): Promise<{ locked: boolean; retryAfterSec: number; redis?: boolean; reason?: string | null } | null> => {
+  ): Promise<{ locked: boolean; retryAfterSec: number; redis?: boolean; reason?: string | null; accountInactive?: boolean } | null> => {
     try {
       const headers = new Headers({
         "Content-Type": "application/json",
@@ -289,12 +289,14 @@ function LoginContent() {
         retryAfterSec?: number;
         redis?: boolean;
         reason?: string | null;
+        accountInactive?: boolean;
       };
       return {
         locked: Boolean(body.locked),
         retryAfterSec: Number(body.retryAfterSec || 0),
         redis: body.redis,
         reason: body.reason ?? null,
+        accountInactive: Boolean(body.accountInactive),
       };
     } catch {
       return null;
@@ -332,20 +334,29 @@ function LoginContent() {
       // Server-side Redis lockout (cannot be cleared by wiping localStorage).
       const guard = await callLoginGuard(email, "check");
       if (guard?.locked) {
-        const banSec = guard.retryAfterSec || 900;
-        const cooldown = buildLoginCooldown(banSec);
-        setCooldown({ email, until: cooldown.until });
-        const isIpBan = guard.reason === "ip-ban";
-        setError(
-          isIpBan
-            ? "Access from your network has been temporarily blocked due to repeated failed login attempts. Please try again in 24 hours or contact your school administrator."
-            : `Too many login attempts. Try again in ${Math.max(1, banSec)} seconds.`,
-        );
-        return;
-      }
+          const banSec = guard.retryAfterSec || 900;
+          const cooldown = buildLoginCooldown(banSec);
+          setCooldown({ email, until: cooldown.until });
+          const isIpBan = guard.reason === "ip-ban";
+          setError(
+            isIpBan
+              ? "Access from your network has been temporarily blocked due to repeated failed login attempts. Please try again in 24 hours or contact your school administrator."
+              : `Too many login attempts. Try again in ${Math.max(1, banSec)} seconds.`,
+          );
+          return;
+        }
+
+        // Removed from the school directory (soft-deactivated profile):
+        // refuse before any sign-in attempt with a clear message.
+        if (guard?.accountInactive) {
+          setError(
+            "This account has been removed from your school's directory. Please contact your school administrator if you believe this is a mistake.",
+          );
+          return;
+        }
 
       // Always drop previous role/workspace caches before a new sign-in so a
-      // student → logout → teacher login cannot keep the student shell.
+      // student â†’ logout â†’ teacher login cannot keep the student shell.
       clearClientAuthCaches();
       if (existingSession) {
         await supabase.auth.signOut({ scope: "global" }).catch(async () => {
@@ -659,7 +670,7 @@ function LoginContent() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Signing in…
+                    Signing inâ€¦
                   </>
                 ) : (
                   "Sign in"

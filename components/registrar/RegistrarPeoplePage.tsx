@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  BriefcaseBusiness,
+  ChevronRight,
+  FileUp,
+  GraduationCap,
   Loader2,
+  Mail,
   Pencil,
+  Phone,
   Plus,
   Search,
   Trash2,
-  UserCheck,
+  Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +27,7 @@ import {
   fetchClasses,
   fetchSubjects,
   fetchUsers,
+  getUserDetail,
   postRelationship,
   toClassOptions,
   updateUser,
@@ -68,11 +76,40 @@ const EMPTY_FORM: UserForm = {
 
 const PAGE_SIZE = 10;
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: "students", label: "Students" },
-  { key: "teachers", label: "Teachers" },
-  { key: "parents", label: "Parents" },
+const TABS: Array<{ key: TabKey; label: string; icon: typeof GraduationCap }> = [
+  { key: "students", label: "Students", icon: GraduationCap },
+  { key: "teachers", label: "Teachers", icon: BriefcaseBusiness },
+  { key: "parents", label: "Parents", icon: UsersRound },
 ];
+
+function typeLabel(tab: TabKey) {
+  return tab === "students" ? "students" : tab === "teachers" ? "teachers" : "parents";
+}
+
+function singularTypeLabel(tab: TabKey) {
+  return tab === "students" ? "student" : tab === "teachers" ? "teacher" : "parent";
+}
+
+function initials(row: ProfileRow) {
+  const first = String(row.first_name || "").trim();
+  const last = String(row.last_name || "").trim();
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || "?";
+}
+
+function statusIsActive(row: ProfileRow) {
+  return String(row.status || "ACTIVE").toUpperCase() === "ACTIVE";
+}
+
+function formatDateLabel(value: unknown) {
+  if (!value) return "";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -247,10 +284,10 @@ export default function RegistrarPeoplePage() {
   }, [activeTab, students, teachers, parents, debouncedSearch, classNameById]);
 
   const totalPages = Math.max(1, Math.ceil(currentRows.length / PAGE_SIZE));
+  const currentPage = Math.min(pageByTab[activeTab] || 1, totalPages);
   const paginatedRows = useMemo(() => {
-    const p = pageByTab[activeTab] || 1;
-    return currentRows.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE);
-  }, [currentRows, pageByTab, activeTab]);
+    return currentRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  }, [currentPage, currentRows]);
 
   function openCreate() {
     setEditTarget(null);
@@ -261,7 +298,7 @@ export default function RegistrarPeoplePage() {
     setFormOpen(true);
   }
 
-  function openEdit(row: ProfileRow) {
+  async function openEdit(row: ProfileRow) {
     setEditTarget(row);
     setFormError(null);
     setSelectedSpecSubjectId("");
@@ -286,6 +323,33 @@ export default function RegistrarPeoplePage() {
       occupation: row.occupation ?? "",
     });
     setFormOpen(true);
+
+    if (activeTab !== "teachers") return;
+    try {
+      const detail = await getUserDetail(row.id, "teacher");
+      if (!detail) return;
+      setForm((previous) => ({
+        ...previous,
+        employee_id: detail.employeeId ?? previous.employee_id,
+        department: detail.department ?? previous.department,
+        hire_date: detail.hireDate ?? previous.hire_date,
+        specialization_subject_ids: Array.isArray(detail.specializationSubjectIds)
+          ? detail.specializationSubjectIds
+          : previous.specialization_subject_ids,
+        teaching_assignments: Array.isArray(detail.teachingAssignments)
+          ? detail.teachingAssignments.map((assignment: Record<string, any>) => ({
+              id: newAssignment().id,
+              classId: String(assignment.classId || ""),
+              subjectId: String(assignment.subjectId || ""),
+            }))
+          : previous.teaching_assignments,
+        supervised_class_ids: Array.isArray(detail.supervisedClassIds)
+          ? detail.supervisedClassIds
+          : previous.supervised_class_ids,
+      }));
+    } catch {
+      // The directory row remains editable if the optional detail request fails.
+    }
   }
 
   async function handleSave() {
@@ -374,16 +438,16 @@ export default function RegistrarPeoplePage() {
   }
 
   async function handleDelete(row: ProfileRow) {
-    if (!window.confirm(`Delete ${getDisplayName(row)}? This cannot be undone.`)) return;
+    if (!window.confirm(`Remove ${getDisplayName(row)} from the active directory? Their school history will be preserved.`)) return;
     const role = activeTab === "students" ? "student" : activeTab === "teachers" ? "teacher" : "parent";
     setDeleting(row.id);
-    const t = toast.loading("Deleting…");
+    const t = toast.loading("Removing from directory…");
     try {
       await deleteUser(row.id, role);
       await reload();
-      toast.success("User deleted", { id: t });
+      toast.success("User removed from the active directory", { id: t });
     } catch (err: any) {
-      toast.error(err?.message ?? "Failed to delete user", { id: t });
+      toast.error(err?.message ?? "Failed to remove user", { id: t });
     } finally {
       setDeleting(null);
     }
@@ -440,170 +504,341 @@ export default function RegistrarPeoplePage() {
   }
 
   const counts = { students: students.length, teachers: teachers.length, parents: parents.length };
+  const activeCount = currentRows.filter(statusIsActive).length;
+  const unassignedStudents = students.filter((row) => !row.class_id && !row.class_name).length;
+  const currentTabLabel = typeLabel(activeTab);
+  const currentSingularLabel = singularTypeLabel(activeTab);
 
   return (
-    <div className="space-y-5 pb-8">
-      {/* Header */}
-      <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-700 px-6 py-6 text-white">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Registrar workspace</p>
-        <h1 className="mt-2 text-2xl font-semibold">People</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Add students, parents, and teachers one-by-one or bulk CSV. Office staff
-          (Deputy Head, Bursar, etc.) are invited by the Head Teacher — not here.
-          Link parents to children from the Parents tab.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPageByTab((p) => ({ ...p, [activeTab]: 1 })); }}
-              placeholder="Search directory"
-              className="w-52 rounded-xl border border-white/20 bg-white/10 pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-sky-300/50"
-            />
+    <div className="min-w-0 space-y-5 pb-8">
+      <section className="relative overflow-hidden rounded-workspace-2xl border border-slate-800/40 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-workspace-md">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "22px 22px",
+          }}
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-4 p-4 sm:p-5 md:p-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="ws-eyebrow text-slate-400">Registrar workspace</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-[1.75rem]">
+              People
+            </h1>
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-300 sm:text-sm">
+              Keep your school directory accurate. Add people, place students,
+              and maintain the family links that make communication work.
+            </p>
           </div>
-          <button
-            type="button" onClick={openCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
-          >
-            <Plus className="h-4 w-4" />
-            Add {activeTab === "students" ? "student" : activeTab === "teachers" ? "teacher" : "parent"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setBulkOpen((v) => !v)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
-          >
-            {bulkOpen ? "Hide bulk upload" : "Bulk CSV upload"}
-          </button>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-workspace-lg bg-brand px-3 py-2.5 text-[13px] font-semibold text-white shadow-workspace-xs transition hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              <span className="truncate">Add {currentSingularLabel}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBulkOpen((value) => !value)}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-workspace-lg border border-white/20 bg-white/10 px-3 py-2.5 text-[13px] font-semibold text-white transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:gap-2 sm:px-4 sm:text-sm"
+            >
+              <FileUp className="h-4 w-4" aria-hidden />
+              <span className="truncate">{bulkOpen ? "Close import" : "Import CSV"}</span>
+            </button>
+          </div>
         </div>
-      </div>
+        <div className="relative grid grid-cols-3 border-t border-white/10 bg-black/15">
+          {[
+            { label: "Students", value: counts.students },
+            { label: "Teachers", value: counts.teachers },
+            { label: "Parents", value: counts.parents },
+          ].map((stat) => (
+            <div key={stat.label} className="border-r border-white/10 px-2.5 py-2.5 last:border-r-0 sm:px-4 sm:py-3 md:px-5">
+              <p className="ws-tabular text-lg font-bold leading-none sm:text-xl">{stat.value}</p>
+              <p className="mt-1 truncate text-[11px] font-medium text-slate-300 sm:text-xs">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {bulkOpen ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm">
-          <p className="mb-3 text-sm font-semibold text-slate-900">
-            Bulk import {activeTab}
-          </p>
-          <p className="mb-3 text-xs text-slate-600">
-            Download the template, fill rows, then upload. Temporary passwords are
-            issued for each new account — save the credentials CSV.
-          </p>
-          <BulkImport
-            role={
-              activeTab === "students"
-                ? "STUDENT"
-                : activeTab === "teachers"
-                  ? "TEACHER"
-                  : "PARENT"
-            }
-            onComplete={() => {
-              void reload();
-              toast.success("Directory refreshed after bulk import");
-            }}
-          />
-        </div>
+        <section className="overflow-hidden rounded-workspace-2xl border border-emerald-200 bg-white shadow-workspace-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-emerald-100 bg-emerald-50/60 px-4 py-4 sm:px-5 md:px-6">
+            <div>
+              <p className="ws-eyebrow text-emerald-700">Directory import</p>
+              <h2 className="mt-1 text-base font-semibold text-slate-900">
+                Import {currentTabLabel}
+              </h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600 sm:text-sm">
+                Use the template, upload completed rows, then save the credentials CSV for new accounts.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBulkOpen(false)}
+              className="rounded-workspace-lg p-2 text-slate-400 transition hover:bg-white hover:text-slate-700"
+              aria-label="Close CSV import"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+          <div className="p-4 sm:p-5 md:p-6">
+            <BulkImport
+              role={
+                activeTab === "students"
+                  ? "STUDENT"
+                  : activeTab === "teachers"
+                    ? "TEACHER"
+                    : "PARENT"
+              }
+              onComplete={() => {
+                void reload();
+                toast.success("Directory refreshed after bulk import");
+              }}
+            />
+          </div>
+        </section>
       ) : null}
 
-      {/* Tabs */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-        <div className="grid grid-cols-3 gap-1">
-          {TABS.map((tab) => {
-            const active = tab.key === activeTab;
-            return (
-              <button
-                key={tab.key} type="button"
-                onClick={() => { setActiveTab(tab.key); setSearch(""); }}
-                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm transition-colors ${active ? "bg-emerald-600 font-semibold text-white shadow-sm" : "font-medium text-slate-600 hover:bg-gray-50"}`}
-              >
-                {tab.label}
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                  {counts[tab.key]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <section className="overflow-hidden rounded-workspace-2xl border border-slate-200 bg-white shadow-workspace-sm">
+        <div className="border-b border-slate-200 px-3 pt-4 sm:px-4 md:px-5 md:pt-5">
+          <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-slate-500" aria-hidden />
+                <h2 className="text-lg font-semibold tracking-tight text-slate-950">
+                  School directory
+                </h2>
+              </div>
+              <p className="mt-1 text-[13px] text-slate-500 sm:text-sm">
+                {currentRows.length} {currentTabLabel} found · {activeCount} active
+                {activeTab === "students" && unassignedStudents > 0
+                  ? ` · ${unassignedStudents} unassigned`
+                  : ""}
+              </p>
+            </div>
+            <label className="relative block w-full lg:w-72">
+              <span className="sr-only">Search {currentTabLabel}</span>
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPageByTab((p) => ({ ...p, [activeTab]: 1 }));
+                }}
+                placeholder={`Search ${currentTabLabel}…`}
+                className="w-full rounded-workspace-lg border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200 sm:py-2.5"
+              />
+            </label>
+          </div>
 
-      {/* Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Phone</th>
-                {activeTab === "students" && <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Student No</th>}
-                {activeTab === "students" && <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Class</th>}
-                {activeTab === "teachers" && <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Employee No</th>}
-                {activeTab === "teachers" && <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Department</th>}
-                {activeTab === "parents" && <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Relation</th>}
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRows.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-500">
-                    {debouncedSearch ? "No users match your search." : `No ${activeTab} yet. Use Add to create one.`}
-                  </td>
-                </tr>
-              ) : paginatedRows.map((row) => (
-                <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-slate-800">{getDisplayName(row)}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.email || "-"}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.phone || "-"}</td>
-                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{row.admission_number || "-"}</td>}
-                  {activeTab === "students" && <td className="px-4 py-3 text-slate-600">{classNameById[row.class_id] || row.class_name || "-"}</td>}
-                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.employee_id || "-"}</td>}
-                  {activeTab === "teachers" && <td className="px-4 py-3 text-slate-600">{row.department || "-"}</td>}
-                  {activeTab === "parents" && <td className="px-4 py-3 text-slate-600">{row.relation_type || "-"}</td>}
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${String(row.status || "ACTIVE").toUpperCase() === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
-                      <UserCheck className="w-3.5 h-3.5" />
-                      {String(row.status || "ACTIVE").toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end items-center gap-2">
-                      {activeTab === "parents" && (
-                        <button onClick={() => void openLinkModal(row)} className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-slate-700 hover:bg-gray-50">
-                          Link students
-                        </button>
-                      )}
-                      <button onClick={() => openEdit(row)} className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 grid place-items-center hover:bg-slate-200">
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => void handleDelete(row)} disabled={deleting === row.id} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 grid place-items-center hover:bg-red-100 disabled:opacity-60">
-                        {deleting === row.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-xs text-gray-500">Showing {paginatedRows.length} of {currentRows.length}</p>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setPageByTab((p) => ({ ...p, [activeTab]: Math.max(1, (p[activeTab] || 1) - 1) }))} disabled={(pageByTab[activeTab] || 1) <= 1} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-slate-700 hover:bg-gray-50 disabled:opacity-50">Prev</button>
-            <span className="text-xs text-slate-600">Page {pageByTab[activeTab] || 1} / {totalPages}</span>
-            <button onClick={() => setPageByTab((p) => ({ ...p, [activeTab]: Math.min(totalPages, (p[activeTab] || 1) + 1) }))} disabled={(pageByTab[activeTab] || 1) >= totalPages} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-slate-700 hover:bg-gray-50 disabled:opacity-50">Next</button>
+          <div className="mt-4 -mb-px grid grid-cols-3 gap-1 overflow-visible" role="tablist" aria-label="Directory type">
+            {TABS.map((tab) => {
+              const active = tab.key === activeTab;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    setSearch("");
+                  }}
+                  className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-1 py-3 text-[12px] transition-colors sm:gap-2 sm:px-4 sm:text-sm ${
+                    active
+                      ? "border-slate-900 font-semibold text-slate-950"
+                      : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-800"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.slice(0, -1)}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
+                      active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {counts[tab.key]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
+
+        <div className="px-3 py-3 sm:px-4 sm:py-3.5 md:px-5">
+          {paginatedRows.length === 0 ? (
+            <div className="rounded-workspace-xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-14 text-center">
+              <Users className="mx-auto h-6 w-6 text-slate-300" aria-hidden />
+              <p className="mt-3 text-sm font-semibold text-slate-800">
+                {debouncedSearch ? `No ${currentTabLabel} match your search` : `No ${currentTabLabel} yet`}
+              </p>
+              <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-slate-500">
+                {debouncedSearch
+                  ? "Try a different name, email, or ID."
+                  : `Add the first ${currentSingularLabel} to start building the directory.`}
+              </p>
+              {!debouncedSearch ? (
+                <button
+                  type="button"
+                  onClick={openCreate}
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-workspace-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Add {currentSingularLabel}
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {paginatedRows.map((row) => {
+                const name = getDisplayName(row);
+                const active = statusIsActive(row);
+                const classLabel =
+                  (row.class_id ? classNameById[row.class_id] : undefined) ||
+                  row.class_name ||
+                  row.class ||
+                  "Unassigned";
+                const secondary =
+                  activeTab === "students"
+                    ? `${row.admission_number || "No student number"} · ${classLabel}`
+                    : activeTab === "teachers"
+                      ? `${row.employee_id || "No employee number"}${row.department ? ` · ${row.department}` : ""}`
+                      : `${row.relation_type || "Parent / guardian"}${row.occupation ? ` · ${row.occupation}` : ""}`;
+                return (
+                  <article
+                    key={row.id}
+                    className="group rounded-workspace-xl border border-slate-200 bg-white p-3.5 transition duration-150 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-workspace-xs sm:p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
+                          {initials(row)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="truncate text-[15px] font-semibold text-slate-950">{name}</h3>
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                active
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-slate-100 text-slate-500"
+                              }`}
+                            >
+                              <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-slate-400"}`} />
+                              {active ? "Active" : String(row.status || "Inactive")}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-[12px] text-slate-600 sm:text-sm">{secondary}</p>
+                          <div className="mt-1.5 flex min-w-0 flex-col gap-1 text-xs text-slate-400 sm:flex-row sm:flex-wrap sm:gap-x-4">
+                            {row.email ? (
+                              <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+                                <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                <span className="truncate">{row.email}</span>
+                              </span>
+                            ) : null}
+                            {row.phone ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                {row.phone}
+                              </span>
+                            ) : null}
+                            {activeTab === "students" && row.enrollment_date ? (
+                              <span>Joined {formatDateLabel(row.enrollment_date)}</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                        {activeTab === "parents" ? (
+                          <button
+                            type="button"
+                            onClick={() => void openLinkModal(row)}
+                            className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-workspace-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
+                          >
+                            <Users className="h-3.5 w-3.5" aria-hidden />
+                            Link students
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(row)}
+                          className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-workspace-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:flex-none"
+                        >
+                          <Pencil className="h-3.5 w-3.5" aria-hidden />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(row)}
+                          disabled={deleting === row.id}
+                          className="inline-flex min-h-10 w-10 shrink-0 items-center justify-center rounded-workspace-lg border border-rose-200 bg-rose-50 p-2 text-rose-600 transition hover:bg-rose-100 disabled:opacity-60"
+                          aria-label={`Delete ${name}`}
+                        >
+                          {deleting === row.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          ) : (
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          )}
+                        </button>
+                        <ChevronRight className="hidden h-4 w-4 text-slate-300 md:block" aria-hidden />
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {currentRows.length > 0 ? (
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 md:px-5">
+            <p className="text-xs text-slate-500">
+              Showing <span className="font-semibold text-slate-700">{(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, currentRows.length)}</span> of <span className="font-semibold text-slate-700">{currentRows.length}</span>
+            </p>
+            <div className="flex w-full items-center justify-between gap-2 sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setPageByTab((p) => ({ ...p, [activeTab]: Math.max(1, currentPage - 1) }))}
+                disabled={currentPage <= 1}
+                className="min-h-10 rounded-workspace-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="ws-tabular min-w-16 text-center text-xs text-slate-500" aria-live="polite">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPageByTab((p) => ({ ...p, [activeTab]: Math.min(totalPages, currentPage + 1) }))}
+                disabled={currentPage >= totalPages}
+                className="min-h-10 rounded-workspace-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       {/* Create / Edit form modal */}
       {formOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 p-3 sm:p-4">
           <div className="flex min-h-full items-start justify-center py-4 sm:items-center">
-            <div role="dialog" aria-modal="true" className="w-full max-w-4xl max-h-[92vh] min-h-0 overflow-hidden rounded-workspace-2xl bg-white border border-slate-200 shadow-2xl flex flex-col">
-              <div className="flex items-start justify-between gap-4 border-b border-slate-100 bg-slate-50 px-6 py-5">
+            <div role="dialog" aria-modal="true" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl min-h-0 flex-col overflow-hidden rounded-workspace-2xl border border-slate-200 bg-white shadow-2xl sm:max-h-[92vh]">
+              <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-4 sm:gap-4 sm:px-6 sm:py-5">
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">
+                  <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">
                     {editTarget ? "Edit" : "Create"} {activeTab === "students" ? "Student" : activeTab === "teachers" ? "Teacher" : "Parent"}
                   </h2>
                   {formError ? (
@@ -615,7 +850,7 @@ export default function RegistrarPeoplePage() {
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 space-y-4">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
                 {/* No classes warning */}
                 {(activeTab === "students" || activeTab === "teachers") && classOptions.length === 0 ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -624,7 +859,7 @@ export default function RegistrarPeoplePage() {
                 ) : null}
 
                 {/* Core fields */}
-                <div className="grid md:grid-cols-2 gap-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   <Field label="First name" value={form.first_name} onChange={(v) => setForm((p) => ({ ...p, first_name: v }))} required />
                   <Field label="Last name" value={form.last_name} onChange={(v) => setForm((p) => ({ ...p, last_name: v }))} required />
                   <Field label="Email" type="email" value={form.email} onChange={(v) => setForm((p) => ({ ...p, email: v }))} required />
@@ -775,10 +1010,10 @@ export default function RegistrarPeoplePage() {
                 ) : null}
               </div>
 
-              <div className="shrink-0 flex justify-end gap-2 border-t border-slate-100 bg-white px-6 py-4">
-                <button type="button" onClick={() => setFormOpen(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</button>
+              <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-slate-100 bg-white px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
+                <button type="button" onClick={() => setFormOpen(false)} className="min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
                 <button type="button" onClick={() => void handleSave()} disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500 text-white font-medium hover:bg-sky-400 disabled:opacity-60">
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-400 disabled:opacity-60">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   {editTarget ? "Save changes" : `Create ${activeTab === "students" ? "student" : activeTab === "teachers" ? "teacher" : "parent"}`}
                 </button>

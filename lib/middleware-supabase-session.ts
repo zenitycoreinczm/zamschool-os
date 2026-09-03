@@ -147,7 +147,20 @@ export async function resolveVerifiedMiddlewareSession(
     return null;
   }
 
-  const role = await resolveMiddlewareProfileRole(user.id, user.email);
+  const profileAccess = await resolveMiddlewareProfileRole(user.id, user.email);
+
+  // Directory removal is a soft delete: the profile (and auth user) stay,
+  // but is_active flips to false. Such accounts must have no working
+  // session anywhere - treat them exactly like signed-out visitors.
+  if (profileAccess.isActive === false) {
+    console.warn(
+      `[middleware-session] Blocked session for deactivated account (masked id ${user.id.slice(0, 6)}…)`,
+    );
+    clearSupabaseAuthCookies(request, response);
+    return null;
+  }
+
+  const role = profileAccess.role;
 
   const appMetadata = user.app_metadata || {};
   const mfaEnrolled =

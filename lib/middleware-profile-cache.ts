@@ -7,7 +7,10 @@ import { SUPABASE_PROTECTION } from "@/lib/supabase-protection";
 /** Edge-safe (middleware cannot use TCP Redis). */
 const ROLE_CACHE_TTL_MS = SUPABASE_PROTECTION.middlewareRoleTtlMs;
 const ROLE_CACHE_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
-const roleCache = new Map<string, { role: KnownRole | null; expiresAt: number }>();
+const roleCache = new Map<
+  string,
+  { role: KnownRole | null; isActive: boolean; expiresAt: number }
+>();
 
 // Periodic cleanup to prevent unbounded memory growth in long-running processes.
 // Expired entries are lazily skipped on read, but without cleanup they accumulate
@@ -25,23 +28,36 @@ if (typeof window === "undefined") {
   if (timer.unref) timer.unref();
 }
 
+export type MiddlewareProfileAccess = {
+  role: ReturnType<typeof normalizeRole>;
+  /** false when the profile was deactivated (removed from directory). */
+  isActive: boolean;
+};
+
 export async function resolveMiddlewareProfileRole(
   userId: string,
   userEmail?: string | null
-): Promise<ReturnType<typeof normalizeRole>> {
+): Promise<MiddlewareProfileAccess> {
   const cached = roleCache.get(userId);
   if (cached && cached.expiresAt > Date.now()) {
-    return cached.role;
+    return { role: cached.role, isActive: cached.isActive };
   }
 
-  const roleRaw = await fetchMiddlewareProfileRole(
+  const fetched = await fetchMiddlewareProfileRole(
     supabaseAdmin as never,
     userId,
     userEmail
   );
-  const role = normalizeRole(roleRaw);
-  roleCache.set(userId, { role, expiresAt: Date.now() + ROLE_CACHE_TTL_MS });
-  return role;
+  const entry = {
+    role: normalizeRole(fetched.role),
+    // Only an explicit is_active === false deactivates; DB errors default
+    // to active so a transient profile-fetch failure cannot lock out a
+    // whole school.
+    isActive: fetched.isActive !== false,
+    expiresAt: Date.now() + ROLE_CACHE_TTL_MS,
+  };
+  roleCache.set(userId, entry);
+  return { role: entry.role, isActive: entry.isActive };
 }
 
 export function invalidateMiddlewareProfileRole(userId: string) {

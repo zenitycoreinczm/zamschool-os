@@ -91,7 +91,7 @@ export async function loadPersonProfile(profileId: string, schoolId: string) {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select(
-      "id, school_id, role, first_name, last_name, email, avatar_url, is_active, created_at, updated_at",
+      "id, school_id, role, first_name, last_name, email, phone, avatar_url, gender, is_active, created_at, updated_at, admission_number, student_number, class_number, employee_id, employee_number, teacher_identifier, department, specialization, enrollment_date, class_id, status",
     )
     .eq("id", profileId)
     .eq("school_id", schoolId)

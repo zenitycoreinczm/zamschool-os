@@ -25,9 +25,11 @@ test("announcements widget resolves APIs and links from mounted workspace routes
   assert.match(source, /"admin"/);
   assert.match(source, /"principal"/);
   assert.match(source, /"super_admin"/);
-  assert.match(source, /\/api\/teacher\/announcements\?limit=3/);
-  assert.match(source, /\/api\/admin\/announcements\?limit=3/);
-  assert.match(source, /\/api\/account\/announcements\?limit=3/);
+  // Limit is a prop (default 3) interpolated into the endpoint query.
+  assert.match(source, /const query = `\?limit=\$\{limit\}`/);
+  assert.match(source, /\/api\/teacher\/announcements\$\{query\}/);
+  assert.match(source, /\/api\/admin\/announcements\$\{query\}/);
+  assert.match(source, /\/api\/account\/announcements\$\{query\}/);
   assert.match(source, /\/app\/teacher\/announcements/);
   assert.match(source, /\/app\/student\/announcements/);
   assert.match(source, /\/app\/parent\/announcements/);

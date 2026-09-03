@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Megaphone, Shield } from "lucide-react";
 
 import Announcements from "@/components/Announcements";
 import { AnnouncementComposer } from "@/components/admin/AnnouncementComposer";
@@ -38,6 +38,27 @@ export default function AppAnnouncementsPage() {
   const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const announcementStats = [
+    {
+      label: "Targeting",
+      value: loadingClasses ? "…" : classOptions.length,
+      hint: "Classes available",
+      tone: "slate" as const,
+    },
+    {
+      label: "Reach",
+      value: "Filtered",
+      hint: "Role-aware delivery",
+      tone: "slate" as const,
+    },
+    {
+      label: "Feed",
+      value: "Live",
+      hint: "Published updates",
+      tone: "slate" as const,
+    },
+  ];
 
   const loadClasses = useCallback(async () => {
     if (!schoolId) {
@@ -124,40 +145,34 @@ export default function AppAnnouncementsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <AdminPageHero
         eyebrow="School communications"
         title="Announcements"
-        description="Publish once - students, parents, and staff see filtered copies in their portals. Compose below, then review the live feed."
+        description="Turn important school news into clear, targeted updates — then see exactly how the community will receive it."
         accent="slate"
-        stats={[
-          {
-            label: "Classes",
-            value: loadingClasses ? "…" : classOptions.length,
-            hint: "Targeting options",
-            tone: "sky",
-          },
-          {
-            label: "Composer",
-            value: "Publish",
-            hint: "New announcement",
-            tone: "sky",
-          },
-          {
-            label: "Feed",
-            value: "Live",
-            hint: "School-wide",
-            tone: "emerald",
-          },
-        ]}
+        stats={announcementStats}
+        actions={
+          canManageAnnouncements && schoolId ? (
+            <a
+              href="#compose-announcement"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+            >
+              <Megaphone className="h-4 w-4" aria-hidden />
+              New announcement
+            </a>
+          ) : null
+        }
       />
 
-      {canManageAnnouncements && schoolId && (
-        <AnnouncementComposer
-          classOptions={classOptions}
-          onPublished={() => setRefreshKey((value) => value + 1)}
-        />
-      )}
+      {canManageAnnouncements && schoolId ? (
+        <section id="compose-announcement" className="scroll-mt-4">
+          <AnnouncementComposer
+            classOptions={classOptions}
+            onPublished={() => setRefreshKey((value) => value + 1)}
+          />
+        </section>
+      ) : null}
 
       {/* Feed must not wait on class targeting - classes only feed the composer. */}
       {workspaceLoading ? (
@@ -172,9 +187,7 @@ export default function AppAnnouncementsPage() {
           Loading workspace…
         </Surface>
       ) : (
-        <Surface variant="default" className="p-4 md:p-6">
-          <Announcements key={refreshKey} />
-        </Surface>
+        <Announcements key={refreshKey} limit={12} />
       )}
     </div>
   );

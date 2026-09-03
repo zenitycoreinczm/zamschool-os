@@ -299,22 +299,22 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
       ) : null}
 
       {!showPreview ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 transition-colors hover:bg-slate-50">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-5 transition-colors hover:bg-slate-50 sm:p-8">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-lamaSky/10">
             <Upload className="h-8 w-8 text-lamaSky" />
           </div>
-          <h3 className="mb-2 text-lg font-bold text-slate-800">
+          <h3 className="mb-2 text-base font-bold text-slate-800 sm:text-lg">
             Bulk Import {role}s
           </h3>
-          <p className="mb-6 max-w-xs text-center text-sm text-slate-500">
+          <p className="mb-5 max-w-xs text-center text-[13px] leading-relaxed text-slate-500 sm:mb-6 sm:text-sm">
             Upload a CSV file to import multiple {role.toLowerCase()}s at once.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex w-full flex-col items-stretch justify-center gap-2 sm:flex-row sm:items-center sm:gap-4">
             <button
               type="button"
               onClick={downloadTemplate}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50"
             >
               <Download className="h-4 w-4" />
               Download Template
@@ -324,7 +324,7 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
               type="button"
               onClick={triggerFileDialog}
               disabled={role === "STUDENT" && classesLoading}
-              className="flex items-center gap-2 rounded-xl bg-lamaSky px-6 py-2 text-sm font-bold text-white shadow-lg shadow-lamaSky/20 transition-all hover:bg-opacity-90 disabled:opacity-60"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lamaSky px-4 py-2 text-sm font-bold text-white shadow-lg shadow-lamaSky/20 transition-all hover:bg-opacity-90 disabled:opacity-60 sm:px-6"
             >
               <FileSpreadsheet className="h-4 w-4" />
               {role === "STUDENT" && classesLoading
@@ -442,11 +442,11 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
             </table>
           </div>
 
-          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 p-4">
+          <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:p-4">
             <button
               type="button"
               onClick={() => setShowPreview(false)}
-              className="rounded-xl px-4 py-2 font-bold text-slate-600 transition-colors hover:bg-slate-100"
+              className="min-h-11 rounded-xl px-4 py-2 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-100"
             >
               Cancel
             </button>
@@ -454,7 +454,7 @@ export default function BulkImport({ role, onComplete }: BulkImportProps) {
               type="button"
               onClick={() => void processImport()}
               disabled={isUploading || errors.length > 0}
-              className="flex items-center gap-2 rounded-xl bg-lamaSky px-6 py-2 font-bold text-white shadow-lg shadow-lamaSky/20 transition-all hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-lamaSky px-4 py-2 text-sm font-bold text-white shadow-lg shadow-lamaSky/20 transition-all hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
             >
               {isUploading ? (
                 <>

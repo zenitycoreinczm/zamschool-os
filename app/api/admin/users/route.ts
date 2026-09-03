@@ -725,61 +725,50 @@ export async function DELETE(req: Request) {
     }
 
     const resolvedRole = role || normalizeRoleValue(profile.role);
-    if (resolvedRole === "parent") {
-      await deleteParentRecords(profileId, schoolId);
-    } else if (resolvedRole === "student") {
-      await supabaseAdmin
-        .from("students")
-        .delete()
-        .eq("school_id", schoolId)
-        .or(`profile_id.eq.${profileId},id.eq.${profileId}`);
-    } else if (resolvedRole === "teacher") {
-      await supabaseAdmin
-        .from("teacher_subject_specializations")
-        .delete()
-        .eq("school_id", schoolId)
-        .eq("teacher_profile_id", profileId);
-      await supabaseAdmin
-        .from("teacher_class_subject_assignments")
-        .delete()
-        .eq("school_id", schoolId)
-        .eq("teacher_profile_id", profileId);
-      await supabaseAdmin
-        .from("classes")
-        .update({ supervisor_id: null })
-        .eq("school_id", schoolId)
-        .eq("supervisor_id", profileId);
-      await supabaseAdmin
-        .from("teachers")
-        .delete()
-        .eq("school_id", schoolId)
-        .or(`profile_id.eq.${profileId},id.eq.${profileId}`);
-    }
+    const deactivatedAt = new Date().toISOString();
 
+    // Directory removal is intentionally a soft delete. Profiles are referenced
+    // by attendance, results, finance, and audit history; hard deletion either
+    // fails on foreign keys or destroys the context of past records.
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .delete()
+      .update({
+        is_active: false,
+        status: "INACTIVE",
+        deactivated_at: deactivatedAt,
+        deactivate_reason: "Removed from active directory",
+      })
       .eq("id", profileId)
       .eq("school_id", schoolId);
 
     if (profileError) throw profileError;
 
-    await invalidateActorCachesForProfile(supabaseAdmin, profileId);
-
-    const authDelete = await supabaseAdmin.auth.admin.deleteUser(profileId);
-    if (
-      authDelete.error &&
-      !String(authDelete.error.message || "")
-        .toLowerCase()
-        .includes("not found")
-    ) {
-      throw authDelete.error;
+    if (resolvedRole === "student") {
+      const { error } = await supabaseAdmin
+        .from("students")
+        .update({ is_active: false })
+        .eq("school_id", schoolId)
+        .or(`profile_id.eq.${profileId},id.eq.${profileId}`);
+      if (error && !String(error.message || "").includes("does not exist")) {
+        throw error;
+      }
+    } else if (resolvedRole === "teacher") {
+      const { error } = await supabaseAdmin
+        .from("teachers")
+        .update({ is_active: false })
+        .eq("school_id", schoolId)
+        .or(`profile_id.eq.${profileId},id.eq.${profileId}`);
+      if (error && !String(error.message || "").includes("does not exist")) {
+        throw error;
+      }
     }
+
+    await invalidateActorCachesForProfile(supabaseAdmin, profileId);
 
     await auditDomainWrite({
       schoolId,
       userId: access.context.userId,
-      action: "user.deleted",
+      action: "user.deactivated",
       entityType: "profiles",
       entityId: profileId,
       oldData: {
@@ -788,11 +777,12 @@ export async function DELETE(req: Request) {
         firstName: profile.first_name,
         lastName: profile.last_name,
       },
+      newData: { is_active: false, status: "INACTIVE" },
       ipAddress: getClientIp(req),
     });
     await invalidateSchoolDashboardCaches(schoolId);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deactivated: true });
   } catch (error: unknown) {
     console.error("Admin users DELETE error", error);
     return NextResponse.json(

@@ -14,12 +14,14 @@ test("dashboard cards do not misuse h1 tag for card titles", () => {
     const source = readFileSync(file, "utf8");
     assert.doesNotMatch(
       source,
-      /<h1\s+className=[^>]*>\s*(Attendance|Students|Announcements|Payments)\s*<\/h1>/i,
+      /<h1\s+className=[^>]*>\s*(Attendance|Students|Announcements|Payments|Live bulletin)\s*<\/h1>/i,
       `${file} should use h2 or h3 instead of h1 for card title`,
     );
+    // Card title must be an h2. The announcements card was retitled
+    // "Live bulletin" in the 2026-09 redesign - same hierarchy level.
     assert.match(
       source,
-      /<h2\s+className=[^>]*>\s*(Attendance|Students|Announcements|Payments)\s*<\/h2>/i,
+      /<h2\s+className=[^>]*>\s*(Attendance|Students|Announcements|Payments|Live bulletin)\s*<\/h2>/i,
       `${file} should use h2 for card title`,
     );
   }
