@@ -18,6 +18,8 @@ type AdminPageHeroProps = {
   eyebrow: string;
   title: string;
   description: string;
+  /** Optional inline node appended to the description (e.g. academic year/term label). */
+  descriptionExtra?: ReactNode;
   stats?: AdminStatCard[];
   actions?: ReactNode;
   accent?: HeroAccent;
@@ -27,6 +29,7 @@ export function AdminPageHero({
   eyebrow,
   title,
   description,
+  descriptionExtra,
   stats,
   actions,
   /** @deprecated Staff chrome is monochrome slate; accent no longer changes the hero. */
@@ -67,7 +70,10 @@ export function AdminPageHero({
           <h1 className="text-2xl font-bold tracking-tight md:text-[1.65rem] lg:text-[1.75rem]">
             {title}
           </h1>
-          <p className="max-w-3xl text-sm leading-relaxed text-slate-300/95">{description}</p>
+          <p className="max-w-3xl text-sm leading-relaxed text-slate-300/95">
+            {description}
+            {descriptionExtra ?? null}
+          </p>
         </div>
         {actions ? (
           <div className="relative flex shrink-0 flex-wrap items-center gap-2">{actions}</div>

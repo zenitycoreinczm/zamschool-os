@@ -20,7 +20,7 @@ export function TeacherAnnouncementsCard({
   return (
     <section
       aria-labelledby="teacher-announcements-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-workspace-2xl border border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -48,7 +48,7 @@ export function TeacherAnnouncementsCard({
           aria-live="polite"
           className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500"
         >
-          Loading latest updates…
+          Loading latest updatesâ€¦
         </div>
       ) : announcements.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
@@ -83,7 +83,7 @@ export function TeacherAnnouncementsCard({
                 <p className="mt-2 line-clamp-2 text-sm text-slate-600">{a.body}</p>
               ) : null}
               <p className="mt-2 text-xs text-slate-400">
-                {a.authorName ? `By ${a.authorName} · ` : ""}
+                {a.authorName ? `By ${a.authorName} Â· ` : ""}
                 {formatDate(a.createdAt)}
               </p>
             </div>

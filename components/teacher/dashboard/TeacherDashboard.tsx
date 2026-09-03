@@ -13,6 +13,7 @@ import { TeacherTeachingProfile } from "@/components/teacher/dashboard/TeacherTe
 import { TeacherTodaySchedule } from "@/components/teacher/dashboard/TeacherTodaySchedule";
 import { TeacherWorkload } from "@/components/teacher/dashboard/TeacherWorkload";
 import { useTeacherDashboardData } from "@/components/teacher/dashboard/useTeacherDashboardData";
+import { PageSkeleton } from "@/components/workspace/PageSkeleton";
 import RoleSetupGuide, {
   useGuideDismissed,
 } from "@/components/workspace/RoleSetupGuide";
@@ -64,16 +65,13 @@ export default function TeacherDashboard() {
   if (workspaceLoading) {
     return (
       <div
-        className="flex min-h-[60vh] items-center justify-center p-4 md:p-6"
+        className="animate-enter-up space-y-5 p-4 pb-8 md:p-6"
         role="status"
         aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading teacher workspace"
       >
-        <section className="grid w-full max-w-lg place-items-center rounded-3xl border border-dashed border-slate-200 bg-white p-16 shadow-sm">
-          <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
-          <p className="text-sm font-medium text-slate-500">
-            Loading your workspace…
-          </p>
-        </section>
+        <PageSkeleton variant="dashboard" className="py-0" label="Loading teacher workspace" />
       </div>
     );
   }
@@ -100,7 +98,7 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="flex flex-col gap-5 p-4 md:gap-6 md:p-6">
+    <div className="animate-enter-up flex flex-col gap-5 p-4 pb-8 md:gap-6 md:p-6">
       <TeacherDashboardHero
         schoolName={schoolName}
         displayName={displayName}

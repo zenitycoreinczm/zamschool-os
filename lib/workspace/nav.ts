@@ -447,17 +447,17 @@ const appTeacherSections: WorkspaceNavSection[] = [
     label: "Today",
     items: [
       { href: "/app/teacher", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/app/messages", label: "Messages", icon: MessageSquare },
+      { href: "/app/teacher/inbox", label: "Inbox", icon: MessageSquare },
       { href: "/app/teacher/teaching", label: "Schedule", icon: CalendarClock },
-      { href: "/app/announcements", label: "Announcements", icon: Megaphone },
-      { href: "/app/events", label: "Events", icon: Calendar },
+      { href: "/app/teacher/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/app/teacher/events", label: "Events", icon: Calendar },
     ],
   },
   {
     label: "Account",
     items: [
-      { href: "/app/profile", label: "Profile", icon: Users },
-      { href: "/app/settings", label: "Settings", icon: Settings },
+      { href: "/app/teacher/profile", label: "Profile", icon: Users },
+      { href: "/app/teacher/settings", label: "Settings", icon: Settings },
     ],
   },
 ];

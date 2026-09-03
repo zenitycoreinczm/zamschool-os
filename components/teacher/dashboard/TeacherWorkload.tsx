@@ -38,7 +38,7 @@ export function TeacherWorkload({ workload }: { workload: TeacherWorkloadSummary
   return (
     <section
       aria-labelledby="teacher-workload-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-workspace-2xl border border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         Workload

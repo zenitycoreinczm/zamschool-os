@@ -15,7 +15,7 @@ export function TeacherTodaySchedule({
   return (
     <section
       aria-labelledby="teacher-today-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-workspace-2xl border border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -30,7 +30,7 @@ export function TeacherTodaySchedule({
           </h2>
           {todayCount > 0 ? (
             <p className="mt-1 text-sm text-slate-500">
-              {todayCount} lesson{todayCount !== 1 ? "s" : ""} · {totalRoster}{" "}
+              {todayCount} lesson{todayCount !== 1 ? "s" : ""} Â· {totalRoster}{" "}
               student{totalRoster !== 1 ? "s" : ""} on roster
             </p>
           ) : null}
@@ -49,7 +49,7 @@ export function TeacherTodaySchedule({
           aria-live="polite"
           className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500"
         >
-          Loading today&apos;s lessons…
+          Loading today&apos;s lessonsâ€¦
         </div>
       ) : lessons.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
@@ -72,7 +72,7 @@ export function TeacherTodaySchedule({
               <p className="mt-0.5 text-sm text-slate-500">{lesson.className}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                 <span>
-                  {lesson.startTime?.slice(0, 5)} – {lesson.endTime?.slice(0, 5)}
+                  {lesson.startTime?.slice(0, 5)} â€“ {lesson.endTime?.slice(0, 5)}
                 </span>
                 <span>{lesson.rosterCount} students</span>
               </div>

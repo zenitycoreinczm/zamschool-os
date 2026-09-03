@@ -34,7 +34,7 @@ export function TeacherTeachingProfile({
 }) {
   if (!teacher) {
     return (
-      <section className="rounded-3xl border border-dashed border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-workspace-2xl border border-dashed border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6">
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <p className="text-sm font-medium text-slate-500">
             Teaching profile not yet configured
@@ -53,7 +53,7 @@ export function TeacherTeachingProfile({
   return (
     <section
       aria-labelledby="teacher-profile-heading"
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-workspace-2xl border border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
         Your profile
