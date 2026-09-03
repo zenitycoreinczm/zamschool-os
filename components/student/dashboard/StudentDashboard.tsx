@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 
 import Announcements from "@/components/Announcements";
 import { AssignmentSubmissionDialog } from "@/components/student/dashboard/AssignmentSubmissionDialog";
-import { StudentStudyTips } from "@/components/student/dashboard/StudentStudyTips";
 import { StudentAttendanceStats } from "@/components/student/dashboard/StudentAttendanceStats";
 import { StudentDashboardHero } from "@/components/student/dashboard/StudentDashboardHero";
 import { StudentPublishedResults } from "@/components/student/dashboard/StudentPublishedResults";
@@ -159,7 +158,6 @@ export default function StudentDashboard() {
         </div>
 
         <div className="space-y-5 md:space-y-6">
-          <StudentStudyTips />
           <Announcements />
         </div>
       </div>

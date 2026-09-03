@@ -356,7 +356,7 @@ function LoginContent() {
         }
 
       // Always drop previous role/workspace caches before a new sign-in so a
-      // student â†’ logout â†’ teacher login cannot keep the student shell.
+      // student -> logout -> teacher login cannot keep the student shell.
       clearClientAuthCaches();
       if (existingSession) {
         await supabase.auth.signOut({ scope: "global" }).catch(async () => {
@@ -670,7 +670,7 @@ function LoginContent() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Signing inâ€¦
+                    Signing in...
                   </>
                 ) : (
                   "Sign in"

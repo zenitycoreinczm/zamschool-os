@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import {
+  BookOpen,
+  CalendarCheck,
+  ChevronRight,
+  GraduationCap,
+  Loader2,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 
 import { useTeacherWorkspace } from "@/components/TeacherWorkspaceProvider";
 import {
   TeacherCard,
-  TeacherEmptyState,
   TeacherPageHeader,
+  TeacherStatCard,
 } from "@/components/teacher/TeacherWorkspaceUI";
-import { cn } from "@/lib/utils";
 
 export default function TeacherClassesPage() {
   const { account, loading, error } = useTeacherWorkspace();
@@ -40,94 +47,136 @@ export default function TeacherClassesPage() {
   const assignedClasses = account?.teacher?.assignedClasses ?? [];
   const assignedSubjects = account?.teacher?.assignedSubjects ?? [];
   const supervisedClasses = account?.teacher?.supervisedClasses ?? [];
+  const supervisedIds = new Set(supervisedClasses.map((c) => c.id));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5 pb-6">
       <TeacherPageHeader
         eyebrow="Teaching"
         title="My Classes"
-        description="A clean overview of your assigned classes, subjects, and supervised classes."
+        description="Quick access to your assigned classes, subject rosters, and attendance."
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <AssignmentCard
-          title="Assigned classes"
-          description="Classes you teach (subject or timetable). You have full student access for these classes - class teacher assignment is not required."
-          items={assignedClasses}
-          empty="No teaching assignments yet. Once a class + subject is assigned to you, the full student roster appears here."
-          href={(id) => `/app/teacher/students?class=${id}`}
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <TeacherStatCard
+          label="Assigned classes"
+          value={assignedClasses.length}
+          hint="Classes you teach"
         />
-
-        <AssignmentCard
-          title="Assigned subjects"
-          description="Subjects you can record results and manage assessments for."
-          items={assignedSubjects}
-          empty="No subjects assigned yet."
-          href={(id) => `/app/teacher/results?subject=${id}`}
+        <TeacherStatCard
+          label="Subjects"
+          value={assignedSubjects.length}
+          hint="Assessment & grading"
+        />
+        <TeacherStatCard
+          label="Supervised"
+          value={supervisedClasses.length}
+          hint="Class teacher role"
         />
       </div>
 
-      {supervisedClasses.length > 0 ? (
-        <AssignmentCard
-          title="Supervised classes"
-          description="Classes where you are the class teacher or supervisor."
-          items={supervisedClasses}
-          empty="No supervised classes."
-        />
-      ) : (
-        <TeacherEmptyState
-          title="No supervised classes"
-          description="Supervised classes will appear here once assigned by the school administrator."
-        />
-      )}
-    </div>
-  );
-}
-
-function AssignmentCard({
-  title,
-  description,
-  items,
-  empty,
-  href,
-}: {
-  title: string;
-  description: string;
-  items: Array<{ id: string; name: string }>;
-  empty: string;
-  href?: (id: string) => string;
-}) {
-  return (
-    <TeacherCard>
-      <div className="min-w-0">
-        <h2 className="text-base font-bold tracking-tight text-slate-950">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm leading-relaxed text-workspace-muted">
-          {description}
-        </p>
-      </div>
-
-      {items.length === 0 ? (
-        <p className="mt-5 text-sm text-workspace-muted">{empty}</p>
-      ) : (
-        <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {items.map((item) => {
-            const className = cn(
-              "rounded-workspace-lg border border-workspace-border bg-slate-50/80 px-3.5 py-3 text-sm font-semibold text-slate-800 shadow-workspace-xs transition hover:-translate-y-0.5 hover:bg-white hover:shadow-workspace-sm",
-            );
-            return href ? (
-              <Link key={item.id} href={href(item.id)} className={className}>
-                {item.name}
-              </Link>
-            ) : (
-              <div key={item.id} className={className}>
-                {item.name}
-              </div>
-            );
-          })}
+      {/* Assigned Classes */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-950">Assigned classes</h2>
+            <p className="text-xs text-slate-500">
+              Classes where you conduct lessons or take roll call.
+            </p>
+          </div>
         </div>
-      )}
-    </TeacherCard>
+
+        {assignedClasses.length === 0 ? (
+          <TeacherCard className="py-10 text-center text-sm text-slate-500">
+            No classes assigned yet. Contact your school administrator to set up your timetable.
+          </TeacherCard>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {assignedClasses.map((cls) => {
+              const isSupervisor = supervisedIds.has(cls.id);
+
+              return (
+                <div
+                  key={cls.id}
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                          <GraduationCap className="h-4 w-4" />
+                        </span>
+                        <h3 className="font-bold text-slate-900">{cls.name}</h3>
+                      </div>
+                      {isSupervisor ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                          <ShieldCheck className="h-3 w-3" />
+                          Supervisor
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
+                    <Link
+                      href={`/app/teacher/students?class=${cls.id}`}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      Roster
+                    </Link>
+                    <Link
+                      href="/app/teacher/attendance"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      <CalendarCheck className="h-3.5 w-3.5" />
+                      Attendance
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Assigned Subjects */}
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-slate-950">Assigned subjects</h2>
+          <p className="text-xs text-slate-500">
+            Subjects you manage assessments, continuous assessment (CA), and exam marks for.
+          </p>
+        </div>
+
+        {assignedSubjects.length === 0 ? (
+          <TeacherCard className="py-8 text-center text-sm text-slate-500">
+            No subjects assigned yet.
+          </TeacherCard>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {assignedSubjects.map((subject) => (
+              <Link
+                key={subject.id}
+                href={`/app/teacher/results?subject=${subject.id}`}
+                className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-900 group-hover:text-white">
+                    <BookOpen className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-slate-900">{subject.name}</p>
+                    <p className="text-xs text-slate-500">Record results</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

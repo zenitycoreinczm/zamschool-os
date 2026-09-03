@@ -283,7 +283,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white text-slate-900 antialiased selection:bg-sky-600 selection:text-white">
       <header className="landing-header sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
+        <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <Link href="/" className="flex min-h-[44px] min-w-0 items-center gap-2.5 py-1 sm:gap-3">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl ring-1 ring-slate-200 sm:h-10 sm:w-10">
               <Image
@@ -347,7 +347,7 @@ export default function HomePage() {
             </Link>
 
             {/* Mobile drawer: native <details> so it opens without JS. */}
-            <details className="group relative lg:hidden" ref={mobileNavRef}>
+            <details className="group lg:hidden" ref={mobileNavRef}>
               <summary
                 className="landing-nav-toggle landing-press flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden"
                 aria-label="Toggle navigation menu"
@@ -356,7 +356,7 @@ export default function HomePage() {
                 <X className="hidden h-5 w-5 group-open:block" />
               </summary>
 
-              <div className="mobile-nav-panel absolute inset-x-0 top-full z-50 mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
+              <div className="mobile-nav-panel absolute left-4 right-4 top-full z-50 mt-2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xl sm:left-6 sm:right-6">
                 <nav className="flex flex-col" aria-label="Mobile navigation">
                   {mobileNavLinks.map((link) => (
                     <Link

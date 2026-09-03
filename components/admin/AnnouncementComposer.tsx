@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import {
   Eye,
+  Info,
   Loader2,
   Megaphone,
   Pin,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -117,7 +117,7 @@ export function AnnouncementComposer({ classOptions = [], onPublished }: Props) 
             </div>
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500">
-            <Sparkles className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            <Info className="h-3.5 w-3.5 text-slate-400" aria-hidden />
             Keep it clear and useful
           </div>
         </div>

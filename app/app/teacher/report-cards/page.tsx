@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles, Check, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
@@ -11,11 +11,9 @@ import {
   TeacherEmptyState,
   TeacherPageHeader,
   teacherInputClass,
-  teacherPillClass,
 } from "@/components/teacher/TeacherWorkspaceUI";
 import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
-import { getECZGrade } from "@/lib/zambia-localization";
 
 type RecentResult = {
   id: string;
@@ -63,20 +61,12 @@ type TeacherStudentsPayload = {
   };
 };
 
-type StudentCommentState = {
-  generating: boolean;
-  comment: string;
-};
-
 export default function TeacherReportCardsPage() {
   const { loading: wsLoading } = useTeacherWorkspace();
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
-  const [comments, setComments] = useState<Record<string, StudentCommentState>>(
-    {},
-  );
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -116,59 +106,6 @@ export default function TeacherReportCardsPage() {
     return { total, highRisk, mediumRisk };
   }, [filtered]);
 
-  const generateComment = async (student: StudentRow) => {
-    setComments((prev) => ({
-      ...prev,
-      [student.id]: { generating: true, comment: "" },
-    }));
-
-    try {
-      const res = await fetch("/api/ai/report-card-comment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: student.displayName,
-          className: student.className,
-          termName: "Current Term",
-          subjects: student.results.recent.map((r) => ({
-            name: r.assessmentType,
-            score: r.percentage ?? r.score,
-            maxScore: 100,
-            grade: r.percentage != null ? getECZGrade(r.percentage).grade : null,
-          })),
-          attendanceRate: student.attendance.rate,
-          flags: student.flags,
-          riskLevel: student.riskLevel,
-        }),
-      });
-      const body = await res.json();
-
-      setComments((prev) => ({
-        ...prev,
-        [student.id]: {
-          generating: false,
-          comment: body.data?.comment ?? "",
-        },
-      }));
-    } catch {
-      setComments((prev) => ({
-        ...prev,
-        [student.id]: {
-          generating: false,
-          comment: "",
-        },
-      }));
-      toast.error("Failed to generate comment");
-    }
-  };
-
-  const copyComment = (text: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => toast.success("Comment copied"),
-      () => toast.error("Failed to copy"),
-    );
-  };
-
   const getGradeColor = (percentage: number | null) => {
     if (percentage == null) return "text-slate-400";
     if (percentage >= 75) return "text-emerald-600";
@@ -192,9 +129,9 @@ export default function TeacherReportCardsPage() {
   return (
     <div className="flex flex-col gap-4">
       <TeacherPageHeader
-        eyebrow="AI-powered"
-        title="Report Card Comments"
-        description="Select a class and generate personalised report card comments for each student using AI."
+        eyebrow="Teacher workspace"
+        title="Report Cards"
+        description="Review student performance, attendance, and recent assessment results by class."
       />
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -222,7 +159,7 @@ export default function TeacherReportCardsPage() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="min-w-0 flex-1">
             <p className="text-sm text-workspace-muted">
-              Select a class to view students and generate comments
+              Select a class to filter students
             </p>
           </div>
           {classNames.length > 1 ? (
@@ -251,7 +188,6 @@ export default function TeacherReportCardsPage() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {filtered.map((student) => {
             const isExpanded = expandedStudent === student.id;
-            const commentState = comments[student.id];
 
             return (
               <Surface
@@ -341,60 +277,6 @@ export default function TeacherReportCardsPage() {
                         No assessment data available
                       </div>
                     )}
-
-                    <div className="border-t border-slate-100 px-4 py-4 md:px-5">
-                      {!commentState ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void generateComment(student);
-                          }}
-                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-amber-600 hover:to-orange-600"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          Generate AI Comment
-                        </button>
-                      ) : commentState.generating ? (
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Generating comment…
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              AI-generated comment
-                            </p>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyComment(commentState.comment);
-                              }}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                              Copy
-                            </button>
-                          </div>
-                          <p className="rounded-xl bg-amber-50/60 px-4 py-3 text-sm leading-relaxed text-slate-800 ring-1 ring-amber-200/40">
-                            {commentState.comment}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void generateComment(student);
-                            }}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700"
-                          >
-                            <Sparkles className="h-3.5 w-3.5" />
-                            Regenerate
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
               </Surface>

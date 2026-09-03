@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
 import Announcements from "@/components/Announcements";
-import { ParentProgressSummary } from "@/components/parent/dashboard/ParentProgressSummary";
 import ParentAttendanceSummary from "@/components/ParentAttendanceSummary";
 import ParentChildAttendanceTable from "@/components/ParentChildAttendanceTable";
 import { ParentDashboardHero } from "@/components/parent/dashboard/ParentDashboardHero";
@@ -134,7 +133,6 @@ export default function ParentDashboard() {
         </div>
 
         <div className="space-y-5 md:space-y-6">
-          <ParentProgressSummary />
           <Announcements />
         </div>
       </div>

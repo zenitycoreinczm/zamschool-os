@@ -4,11 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { useTeacherWorkspace } from "@/components/TeacherWorkspaceProvider";
-import { TeacherAssistant } from "@/components/teacher/TeacherAssistant";
 import { TeacherAttentionBanner } from "@/components/teacher/dashboard/TeacherAttentionBanner";
 import { TeacherAnnouncementsCard } from "@/components/teacher/dashboard/TeacherAnnouncementsCard";
 import { TeacherDashboardHero } from "@/components/teacher/dashboard/TeacherDashboardHero";
-import { TeacherQuickActions } from "@/components/teacher/dashboard/TeacherQuickActions";
 import { TeacherTeachingProfile } from "@/components/teacher/dashboard/TeacherTeachingProfile";
 import { TeacherTodaySchedule } from "@/components/teacher/dashboard/TeacherTodaySchedule";
 import { TeacherWorkload } from "@/components/teacher/dashboard/TeacherWorkload";
@@ -122,9 +120,7 @@ export default function TeacherDashboard() {
         />
       ) : null}
 
-      <TeacherQuickActions />
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
         <div className="space-y-5 md:space-y-6">
           <TeacherTodaySchedule
             lessons={todayLessons}
@@ -133,7 +129,6 @@ export default function TeacherDashboard() {
           <TeacherTeachingProfile teacher={teacher} />
         </div>
         <div className="space-y-5 md:space-y-6">
-          <TeacherAssistant />
           <TeacherWorkload workload={workload} />
           <TeacherAnnouncementsCard
             announcements={announcements}

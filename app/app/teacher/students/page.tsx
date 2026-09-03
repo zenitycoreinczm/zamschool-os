@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Mail, Search } from "lucide-react";
+import { Loader2, Mail, MessageSquare, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
@@ -180,86 +181,108 @@ export default function TeacherStudentsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {filtered.map((student) => (
-            <TeacherCard
-              key={student.id}
-              className="transition hover:-translate-y-0.5 hover:shadow-workspace-md"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-base font-bold tracking-tight text-slate-950">
-                      {student.displayName || "Student"}
-                    </h2>
-                    {student.riskLevel === "high" ? (
-                      <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-                        At risk
+          {filtered.map((student) => {
+            const attRate = student.attendance?.rate;
+            const attTone =
+              attRate == null
+                ? "text-slate-950"
+                : attRate < 75
+                  ? "text-rose-600"
+                  : attRate >= 90
+                    ? "text-emerald-700"
+                    : "text-slate-950";
+
+            return (
+              <TeacherCard
+                key={student.id}
+                className="transition hover:-translate-y-0.5 hover:shadow-workspace-md"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="truncate text-base font-bold tracking-tight text-slate-950">
+                        {student.displayName || "Student"}
+                      </h2>
+                      {student.riskLevel === "high" ? (
+                        <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
+                          At risk
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className={teacherPillClass}>
+                        {student.className || "No class"}
                       </span>
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 shadow-workspace-xs">
+                        {student.admissionNumber || "No admission #"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
+                    <p className="text-xs font-medium text-workspace-muted">
+                      Attendance
+                    </p>
+                    <p className={cn("ws-tabular mt-1 text-lg font-bold", attTone)}>
+                      {attRate == null ? "—" : `${attRate}%`}
+                    </p>
+                    {student.attendance?.total ? (
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        {student.attendance.total} session
+                        {student.attendance.total === 1 ? "" : "s"}
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 text-[11px] text-slate-400">
+                        No roll calls yet
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
+                    <p className="text-xs font-medium text-workspace-muted">
+                      Average score
+                    </p>
+                    <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
+                      {student.results?.averageScore != null
+                        ? `${student.results.averageScore}%`
+                        : "—"}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {student.results?.total ? `${student.results.total} results recorded` : "No results yet"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-workspace-border pt-3">
+                  <div className="flex items-center gap-3">
+                    {student.email ? (
+                      <a
+                        href={`mailto:${student.email}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-slate-900"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        Email
+                      </a>
                     ) : null}
+                    <Link
+                      href="/app/teacher/inbox"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-slate-900"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Message
+                    </Link>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className={teacherPillClass}>
-                      {student.className || "No class"}
+                  {student.flags && student.flags.length > 0 ? (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                      {student.flags.length} signal
+                      {student.flags.length === 1 ? "" : "s"}
                     </span>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-workspace-xs">
-                      {student.admissionNumber || "No admission #"}
-                    </span>
-                  </div>
+                  ) : null}
                 </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
-                  <p className="text-xs font-medium text-workspace-muted">
-                    Attendance
-                  </p>
-                  <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
-                    {student.attendance?.rate == null
-                      ? "—"
-                      : `${student.attendance.rate}%`}
-                  </p>
-                  {student.attendance?.total ? (
-                    <p className="mt-0.5 text-[11px] text-slate-400">
-                      {student.attendance.total} session
-                      {student.attendance.total === 1 ? "" : "s"}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[11px] text-slate-400">
-                      No roll calls yet
-                    </p>
-                  )}
-                </div>
-                <div className="rounded-workspace-lg bg-slate-50/80 p-3 ring-1 ring-workspace-border">
-                  <p className="text-xs font-medium text-workspace-muted">
-                    Average score
-                  </p>
-                  <p className="ws-tabular mt-1 text-lg font-bold text-slate-950">
-                    {student.results?.averageScore ?? "-"}%
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-3 border-t border-workspace-border pt-3">
-                {student.email ? (
-                  <a
-                    href={`mailto:${student.email}`}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-700 hover:text-amber-800"
-                  >
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </a>
-                ) : (
-                  <span className="text-sm text-workspace-muted">No email</span>
-                )}
-                {student.flags && student.flags.length > 0 ? (
-                  <span className="text-xs font-medium text-workspace-muted">
-                    {student.flags.length} signal
-                    {student.flags.length === 1 ? "" : "s"}
-                  </span>
-                ) : null}
-              </div>
-            </TeacherCard>
-          ))}
+              </TeacherCard>
+            );
+          })}
         </div>
       )}
     </div>

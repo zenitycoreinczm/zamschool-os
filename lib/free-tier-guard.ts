@@ -6,8 +6,8 @@
  * still serving a normal school workload.
  *
  * Stack:
- *   Cloudflare (WAF / gateway) â†’ edge memory flood â†’ Upstash distributed
- *   edge limits â†’ route-level Redis limits â†’ Supabase request budget.
+ *   Cloudflare (WAF / gateway) -> edge memory flood -> Upstash distributed
+ *   edge limits -> route-level Redis limits -> Supabase request budget.
  *
  * Opt out only with ZAMSCHOOL_FREE_TIER=false (paid scale-out).
  */
@@ -23,7 +23,7 @@ export function isFreeTierMode(): boolean {
   );
 }
 
-/** Per-IP edge flood ceilings (middleware / proxy) â€” L1 per-isolate. */
+/** Per-IP edge flood ceilings (middleware / proxy) — L1 per-isolate. */
 export function freeTierFloodLimits(): {
   auth: { normal: number; suspicious: number };
   api: { normal: number; suspicious: number };
@@ -38,7 +38,7 @@ export function freeTierFloodLimits(): {
       windowMs: 60_000,
     };
   }
-  // Tight Hobby ceilings â€” legitimate school traffic stays well under these.
+  // Tight Hobby ceilings — legitimate school traffic stays well under these.
   // These are per-isolate; Redis distributed limits (below) close multi-isolate gaps.
   return {
     auth: { normal: 18, suspicious: 6 },
@@ -50,8 +50,8 @@ export function freeTierFloodLimits(): {
 
 /**
  * Distributed (Upstash) edge ceilings shared across all Vercel isolates.
- * Fixed-window INCR â€” cheaper than sliding-window Lua for hot middleware path.
- * Local bypass after a Redis allow cuts Upstash command burn ~3â€“5Ã—.
+ * Fixed-window INCR — cheaper than sliding-window Lua for hot middleware path.
+ * Local bypass after a Redis allow cuts Upstash command burn ~3–5x.
  */
 export function freeTierDistributedEdgeLimits(): {
   auth: { maxRequests: number; windowSec: number };
@@ -179,7 +179,7 @@ export function freeTierGatewayRateLimits(): {
 
 /**
  * IP reputation: temporary bans after *scanner/bot* abuse only.
- * Rate-limit 429s must NOT count toward bans â€” school NATs and login retries
+ * Rate-limit 429s must NOT count toward bans — school NATs and login retries
  * would lock out real principals (seen as super-admin 403).
  */
 export function freeTierIpAbusePolicy(): {
@@ -199,7 +199,7 @@ export function freeTierIpAbusePolicy(): {
 }
 
 /**
- * Reasons that may auto-ban an IP. Flood / rate-limit 429s are excluded â€”
+ * Reasons that may auto-ban an IP. Flood / rate-limit 429s are excluded —
  * those already stop the request without locking the whole school out.
  */
 export function isIpBanWorthyAbuseReason(reason: string): boolean {

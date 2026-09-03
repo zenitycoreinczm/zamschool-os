@@ -48,7 +48,7 @@ export function TeacherAnnouncementsCard({
           aria-live="polite"
           className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500"
         >
-          Loading latest updatesâ€¦
+          Loading latest updates...
         </div>
       ) : announcements.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-slate-200 p-8 text-center">
@@ -83,7 +83,7 @@ export function TeacherAnnouncementsCard({
                 <p className="mt-2 line-clamp-2 text-sm text-slate-600">{a.body}</p>
               ) : null}
               <p className="mt-2 text-xs text-slate-400">
-                {a.authorName ? `By ${a.authorName} Â· ` : ""}
+                {a.authorName ? `By ${a.authorName} · ` : ""}
                 {formatDate(a.createdAt)}
               </p>
             </div>

@@ -24,7 +24,6 @@ import {
   AlertTriangle,
   FileSpreadsheet,
   Upload,
-  WandSparkles,
 } from "lucide-react";
 
 export type WorkspaceNavItem = {
@@ -543,7 +542,7 @@ export const teacherPortalSections: WorkspaceNavSection[] = [
       {
         href: "/app/teacher/report-cards",
         label: "Report Cards",
-        icon: WandSparkles,
+        icon: FileSpreadsheet,
       },
       { href: "/app/teacher/discipline", label: "Conduct", icon: Shield },
     ],
