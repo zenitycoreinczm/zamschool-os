@@ -36,6 +36,26 @@ type AccessCode = {
 
 type Stats = { total: number; active: number; used: number; expired: number };
 
+type SchoolStat = {
+  id: string;
+  name: string;
+  code: string;
+  status: string;
+  created_at: string | null;
+  students: number;
+  parents: number;
+  staff: number;
+  totalUsers: number;
+};
+
+type PlatformTotals = {
+  schools: number;
+  students: number;
+  parents: number;
+  staff: number;
+  totalUsers: number;
+};
+
 type GenerateOpts = {
   expiresInHours: number;
   maxUses: number;
@@ -405,7 +425,35 @@ export default function SuperAdminPage() {
     used: 0,
     expired: 0,
   });
+  const [platformTotals, setPlatformTotals] = useState<PlatformTotals | null>(null);
+  const [schoolStats, setSchoolStats] = useState<SchoolStat[]>([]);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+  const [overviewError, setOverviewError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    setOverviewError(null);
+    try {
+      const json = await adminApiJson<{
+        data?: { totals?: PlatformTotals; schools?: SchoolStat[] };
+      }>("/api/super-admin/overview");
+      if (!mountedRef.current) return;
+      setPlatformTotals(json.data?.totals || null);
+      setSchoolStats(Array.isArray(json.data?.schools) ? json.data!.schools! : []);
+    } catch (err: unknown) {
+      if (!mountedRef.current) return;
+      setOverviewError(err instanceof Error ? err.message : "Failed to load overview");
+      setPlatformTotals(null);
+      setSchoolStats([]);
+    } finally {
+      if (mountedRef.current) setOverviewLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadOverview();
+  }, [loadOverview]);
 
   const loadCodes = useCallback(async () => {
     setLoading(true);
@@ -516,15 +564,118 @@ export default function SuperAdminPage() {
         </div>
         <button
           type="button"
-          onClick={() => void loadCodes()}
-          disabled={loading}
+          onClick={() => {
+            void loadCodes();
+            void loadOverview();
+          }}
+          disabled={loading || overviewLoading}
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 disabled:opacity-50"
           title="Refresh"
-          aria-label="Refresh access codes"
+          aria-label="Refresh dashboard"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`h-4 w-4 ${loading || overviewLoading ? "animate-spin" : ""}`} />
         </button>
       </div>
+
+      {/* Platform overview — schools and users at a glance */}
+      <section aria-label="Platform overview">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
+            Platform overview
+          </h2>
+          {overviewLoading ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+            </span>
+          ) : null}
+        </div>
+        {overviewError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {overviewError}{" "}
+            <button
+              type="button"
+              onClick={() => void loadOverview()}
+              className="font-semibold underline underline-offset-2 hover:text-red-900"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {[
+                { label: "Schools", value: platformTotals?.schools ?? "—" },
+                { label: "Students", value: platformTotals?.students ?? "—" },
+                { label: "Parents", value: platformTotals?.parents ?? "—" },
+                { label: "Staff", value: platformTotals?.staff ?? "—" },
+                { label: "Total users", value: platformTotals?.totalUsers ?? "—" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+                >
+                  <p className="text-2xl font-bold tabular-nums text-slate-900">
+                    {typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-sm font-semibold text-slate-900">Schools</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Users per school — students, parents, staff, and total accounts.
+                </p>
+              </div>
+              {schoolStats.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-slate-400">
+                  {overviewLoading ? "Loading schools…" : "No schools yet."}
+                </p>
+              ) : (
+                <div className="max-h-[420px] overflow-auto">
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                      <tr>
+                        <th scope="col" className="px-4 py-2.5 text-left font-semibold">School</th>
+                        <th scope="col" className="px-4 py-2.5 text-left font-semibold">Code</th>
+                        <th scope="col" className="px-4 py-2.5 text-right font-semibold">Students</th>
+                        <th scope="col" className="px-4 py-2.5 text-right font-semibold">Parents</th>
+                        <th scope="col" className="px-4 py-2.5 text-right font-semibold">Staff</th>
+                        <th scope="col" className="px-4 py-2.5 text-right font-semibold">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {schoolStats.map((school) => (
+                        <tr key={school.id} className="hover:bg-slate-50/60">
+                          <td className="px-4 py-2.5">
+                            <p className="font-medium text-slate-900">{school.name}</p>
+                            <p className="text-xs text-slate-400">{school.status}</p>
+                          </td>
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{school.code}</td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                            {school.students.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                            {school.parents.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                            {school.staff.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                            {school.totalUsers.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </section>
 
       {/* Stats - text only, no decorative icons */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
