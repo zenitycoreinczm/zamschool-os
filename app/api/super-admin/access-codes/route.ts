@@ -34,6 +34,20 @@ export async function GET(req: Request) {
   );
   if (!access.ok) return access.response;
 
+  const ip = getClientIp(req);
+  const rate = await applyRateLimit({
+    key: `list-access-codes:${access.context.userId}:${ip}`,
+    limit: 30,
+    windowMs: 60_000,
+    failOpen: true,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
+    );
+  }
+
   try {
     const { data, error } = await supabaseAdmin
       .from("access_codes")
@@ -156,6 +170,20 @@ export async function DELETE(req: Request) {
     req
   );
   if (!access.ok) return access.response;
+
+  const ip = getClientIp(req);
+  const rate = await applyRateLimit({
+    key: `delete-access-code:${access.context.userId}:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+    failOpen: true,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } }
+    );
+  }
 
   try {
     const { searchParams } = new URL(req.url);

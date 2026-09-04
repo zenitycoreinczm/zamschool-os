@@ -75,6 +75,19 @@ export async function PATCH(req: NextRequest) {
   const access = await requireSuperAdmin(req);
   if (!access.ok) return access.response;
 
+  const limited = await applyRateLimit({
+    key: `super-admin-reviews-mutate:${access.context.userId}:${getClientIp(req)}`,
+    limit: 30,
+    windowMs: 60 * 1000,
+    failOpen: true,
+  });
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429 },
+    );
+  }
+
   try {
     const body = await parseJsonWithSchema(req, mutationSchema);
 
@@ -124,6 +137,19 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const access = await requireSuperAdmin(req);
   if (!access.ok) return access.response;
+
+  const limited = await applyRateLimit({
+    key: `super-admin-reviews-delete:${access.context.userId}:${getClientIp(req)}`,
+    limit: 20,
+    windowMs: 60 * 1000,
+    failOpen: true,
+  });
+  if (!limited.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429 },
+    );
+  }
 
   try {
     const { searchParams } = new URL(req.url);
