@@ -42,7 +42,16 @@ export function useGuideDismissed(storageKey: string) {
     setDismissed(true);
   };
 
-  return [dismissed, dismiss] as const;
+  const reopen = () => {
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // ignore storage access errors (private mode / restricted sandbox)
+    }
+    setDismissed(false);
+  };
+
+  return [dismissed, dismiss, reopen] as const;
 }
 
 export default function RoleSetupGuide({
@@ -79,6 +88,8 @@ export default function RoleSetupGuide({
           <div
             className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200/80"
             role="progressbar"
+            aria-label={`${guide.eyebrow}: core setup progress`}
+            aria-valuetext={`${done} of ${total} core steps complete`}
             aria-valuenow={done}
             aria-valuemin={0}
             aria-valuemax={total}
@@ -97,7 +108,9 @@ export default function RoleSetupGuide({
             <button
               type="button"
               onClick={() => setExpanded((c) => !c)}
-              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+              aria-expanded={expanded}
+              aria-controls="role-setup-guide-details"
             >
               {expanded ? (
                 <>
@@ -113,7 +126,7 @@ export default function RoleSetupGuide({
           <button
             type="button"
             onClick={onDismiss}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-700"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
             aria-label="Dismiss guide"
           >
             <X className="h-4 w-4" />
@@ -152,7 +165,11 @@ export default function RoleSetupGuide({
         ))}
       </ul>
 
-      {expanded && footer ? <div className="mt-3">{footer}</div> : null}
+      {expanded && footer ? (
+        <div id="role-setup-guide-details" className="mt-3">
+          {footer}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -121,16 +121,38 @@ export default function SchoolSetupBanner({
           <p className="mt-1 text-xs leading-5 text-slate-600">
             {guide.description}
           </p>
-          <p className="mt-2 text-xs font-medium text-slate-500">
+          <p
+            className="mt-2 text-xs font-medium text-slate-500"
+            role="status"
+            aria-live="polite"
+          >
             {completedCore}/{coreTotal} core steps complete
           </p>
+          <div
+            className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-slate-200/80"
+            role="progressbar"
+            aria-label="Principal onboarding progress"
+            aria-valuetext={`${completedCore} of ${coreTotal} core steps complete`}
+            aria-valuenow={completedCore}
+            aria-valuemin={0}
+            aria-valuemax={coreTotal}
+          >
+            <div
+              className="h-full rounded-full bg-sky-500 transition-all"
+              style={{
+                width: `${coreTotal > 0 ? Math.round((completedCore / coreTotal) * 100) : 0}%`,
+              }}
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+            aria-expanded={expanded}
+            aria-controls="principal-setup-details"
           >
             {expanded ? (
               <>
@@ -147,7 +169,7 @@ export default function SchoolSetupBanner({
               type="button"
               onClick={onInitialize}
               disabled={initializing || loading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {initializing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -158,7 +180,7 @@ export default function SchoolSetupBanner({
           <button
             type="button"
             onClick={onDismiss}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-700"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-white hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
             aria-label="Dismiss next steps"
           >
             <X className="h-4 w-4" />
@@ -198,7 +220,7 @@ export default function SchoolSetupBanner({
       </ul>
 
       {expanded ? (
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div id="principal-setup-details" className="mt-3 grid gap-2 sm:grid-cols-3">
           <SetupMetric
             label="Departments"
             value={loading ? "…" : String(status?.departments ?? 0)}

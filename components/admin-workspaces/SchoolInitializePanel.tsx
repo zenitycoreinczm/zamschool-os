@@ -85,7 +85,7 @@ export default function SchoolInitializePanel({
                 type="button"
                 onClick={() => setConfirmOpen(true)}
                 disabled={initializing || loading}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {initializing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -103,6 +103,8 @@ export default function SchoolInitializePanel({
             <div
               className="h-2 overflow-hidden rounded-full bg-slate-200/80"
               role="progressbar"
+              aria-label="School initialization progress"
+              aria-valuetext={`${loading ? 0 : progress.percent}% complete`}
               aria-valuenow={loading ? 0 : progress.percent}
               aria-valuemin={0}
               aria-valuemax={100}
@@ -207,7 +209,7 @@ export default function SchoolInitializePanel({
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
+                className="grid h-10 w-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
@@ -235,7 +237,7 @@ export default function SchoolInitializePanel({
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="min-h-11 rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
@@ -243,7 +245,7 @@ export default function SchoolInitializePanel({
                 type="button"
                 onClick={() => void handleConfirm()}
                 disabled={initializing}
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {initializing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Run setup (~1 min)
