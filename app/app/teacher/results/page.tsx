@@ -20,6 +20,7 @@ import {
   UserX,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiFetch, adminApiJson } from "@/lib/admin-browser-api";
@@ -118,6 +119,8 @@ export default function TeacherResultsPage() {
   const [publishing, setPublishing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [previewSearch, setPreviewSearch] = useState("");
+  const [previewFilter, setPreviewFilter] = useState<"all" | "matched" | "unmatched">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved preferences from localStorage
@@ -442,6 +445,27 @@ export default function TeacherResultsPage() {
     [parsedRows],
   );
 
+  const displayRows = useMemo(() => {
+    if (!parsedRows) return [];
+    let list = parsedRows;
+    if (previewFilter === "matched") {
+      list = list.filter((r) => r.studentId);
+    } else if (previewFilter === "unmatched") {
+      list = list.filter((r) => !r.studentId);
+    }
+    if (previewSearch.trim()) {
+      const q = previewSearch.trim().toLowerCase();
+      list = list.filter(
+        (r) =>
+          (r.name && r.name.toLowerCase().includes(q)) ||
+          (r.identifier && r.identifier.toLowerCase().includes(q)) ||
+          (r.admissionNumber && r.admissionNumber.toLowerCase().includes(q)) ||
+          (r.matchedStudent && r.matchedStudent.toLowerCase().includes(q)),
+      );
+    }
+    return list;
+  }, [parsedRows, previewFilter, previewSearch]);
+
   const checkCompleteness = useCallback(async () => {
     if (!selectedClass || !examTitle.trim()) return;
     setLoadingCompleteness(true);
@@ -606,27 +630,87 @@ export default function TeacherResultsPage() {
   }, [students, selectedClass]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 px-4 py-6">
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 px-5 py-6 text-white shadow-lg md:px-7 md:py-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-200/90">
-              Classroom
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight">Exam Results</h1>
-            <p className="mt-1.5 max-w-xl text-sm text-slate-300">
-              Upload subject marks, preview matches, then publish — parents are
-              notified automatically, same flow as roll call.
-            </p>
+    <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-6">
+      <AdminPageHero
+        eyebrow="Classroom"
+        title="Exam Results"
+        description="Upload and verify subject marks, match student rosters, and publish official continuous assessment or exam scores to parents."
+        stats={[
+          {
+            label: "Classes",
+            value: classes.length,
+            hint: "In your teaching scope",
+            tone: "slate",
+          },
+          {
+            label: "Subjects",
+            value: subjects.length,
+            hint: selectedClass ? "For selected class" : "Assigned",
+            tone: "slate",
+          },
+          {
+            label: "Enrolled",
+            value: students.length,
+            hint: "Total students",
+            tone: "slate",
+          },
+          {
+            label: "Workflow",
+            value: "4 steps",
+            hint: "Upload → Preview → Publish",
+            tone: "emerald",
+          },
+        ]}
+        accent="slate"
+      />
+
+      {/* 4-Step Workflow Bar */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          {
+            step: "1",
+            title: "Select Class & Subject",
+            done: !!(selectedClass && selectedSubject),
+          },
+          {
+            step: "2",
+            title: "Choose Sheet / CSV",
+            done: !!file,
+          },
+          {
+            step: "3",
+            title: "Match & Preview",
+            done: !!(uploadResult || (parsedRows && matchedCount > 0)),
+          },
+          {
+            step: "4",
+            title: "Publish to Parents",
+            done: !!(uploadResult?.assignmentId),
+          },
+        ].map((item) => (
+          <div
+            key={item.step}
+            className={cn(
+              "flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 text-xs transition duration-150",
+              item.done
+                ? "border-emerald-200 bg-emerald-50/70 text-emerald-900 font-semibold"
+                : "border-slate-200 bg-white text-slate-500",
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                item.done
+                  ? "bg-emerald-600 text-white"
+                  : "bg-slate-100 text-slate-600",
+              )}
+            >
+              {item.done ? "✓" : item.step}
+            </span>
+            <span className="truncate">{item.title}</span>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm backdrop-blur">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-100/80">
-              Workflow
-            </p>
-            <p className="mt-1 font-medium text-white">Upload → Preview → Publish</p>
-          </div>
-        </div>
-      </section>
+        ))}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
@@ -781,96 +865,149 @@ export default function TeacherResultsPage() {
           )}
 
           {showPreview && parsedRows && parsedRows.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
-                <div className="flex items-center gap-3">
-                  <Eye className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold text-slate-800">
-                    Preview - {parsedRows.length} rows
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                    <Eye className="h-3.5 w-3.5 text-slate-500" />
+                    Preview ({parsedRows.length})
                   </span>
-                  <span className="text-sm text-emerald-600 font-medium">
-                    {matchedCount} matched
-                  </span>
-                  {unmatchedCount > 0 && (
-                    <span className="text-sm text-amber-600 font-medium">
-                      {unmatchedCount} unmatched
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {(["all", "matched", "unmatched"] as const).map((filterKey) => {
+                      const count =
+                        filterKey === "all"
+                          ? parsedRows.length
+                          : filterKey === "matched"
+                            ? matchedCount
+                            : unmatchedCount;
+                      const active = previewFilter === filterKey;
+                      return (
+                        <button
+                          key={filterKey}
+                          type="button"
+                          onClick={() => setPreviewFilter(filterKey)}
+                          className={cn(
+                            "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
+                            active
+                              ? "bg-slate-900 text-white shadow-sm"
+                              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200",
+                          )}
+                        >
+                          {filterKey === "all"
+                            ? "All"
+                            : filterKey === "matched"
+                              ? "Matched"
+                              : "Unmatched"}{" "}
+                          <span className="opacity-75">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative min-w-[12rem]">
+                    <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={previewSearch}
+                      onChange={(e) => setPreviewSearch(e.target.value)}
+                      placeholder="Filter preview…"
+                      className="w-full rounded-xl border border-slate-200 bg-white py-1 pl-8 pr-3 text-xs outline-none focus:border-slate-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(false)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    title="Close preview"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="max-h-72 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-500 uppercase">
+
+              <div className="max-h-80 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50/90 sticky top-0 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                     <tr>
-                      <th className="px-3 py-2.5">Class #</th>
-                      <th className="px-3 py-2.5">Name / Adm</th>
-                      <th className="px-3 py-2.5">Marks</th>
-                      <th className="px-3 py-2.5">Grade</th>
-                      <th className="px-3 py-2.5">Matched student</th>
+                      <th className="px-4 py-2.5">#</th>
+                      <th className="px-4 py-2.5">Name / Identifier</th>
+                      <th className="px-4 py-2.5">Marks</th>
+                      <th className="px-4 py-2.5">Grade</th>
+                      <th className="px-4 py-2.5">Matched Student</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {parsedRows.slice(0, 100).map((row, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50">
-                        <td className="px-3 py-2 font-mono text-xs font-semibold text-slate-800">
-                          {row.classNumber ?? "—"}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-slate-700">
-                          <div className="font-medium">
-                            {row.name || row.identifier}
-                          </div>
-                          {row.admissionNumber ? (
-                            <div className="font-mono text-[11px] text-slate-400">
-                              {row.admissionNumber}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {row.marks ?? "-"}
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {row.grade ?? "-"}
-                        </td>
-                        <td className="px-3 py-2">
-                          {row.matchedStudent ? (
-                            <span className="inline-flex flex-col gap-0.5 text-xs text-emerald-700">
-                              <span className="inline-flex items-center gap-1">
-                                <UserCheck className="h-3 w-3" />
-                                {row.matchedStudent}
-                              </span>
-                              {row.matchMethod ? (
-                                <span className="text-[10px] uppercase tracking-wide text-emerald-600/80">
-                                  via {row.matchMethod.replace("_", " ")}
-                                </span>
-                              ) : null}
-                            </span>
-                          ) : (
-                            <span className="inline-flex flex-col gap-0.5 text-xs text-amber-600">
-                              <span className="inline-flex items-center gap-1">
-                                <UserX className="h-3 w-3" />
-                                No match
-                              </span>
-                              {row.matchWarning ? (
-                                <span className="text-[10px] text-amber-700/80">
-                                  {row.matchWarning}
-                                </span>
-                              ) : null}
-                            </span>
-                          )}
+                    {displayRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-400">
+                          No students match this preview filter.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      displayRows.slice(0, 100).map((row, i) => (
+                        <tr key={i} className="hover:bg-slate-50/60 transition">
+                          <td className="px-4 py-2 font-mono text-[11px] font-bold text-slate-700">
+                            {row.classNumber ?? i + 1}
+                          </td>
+                          <td className="px-4 py-2 text-slate-800">
+                            <div className="font-semibold">
+                              {row.name || row.identifier}
+                            </div>
+                            {row.admissionNumber ? (
+                              <div className="font-mono text-[10px] text-slate-400">
+                                {row.admissionNumber}
+                              </div>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-2 font-medium text-slate-700">
+                            {row.marks ?? "—"}
+                          </td>
+                          <td className="px-4 py-2">
+                            {row.grade ? (
+                              <span className="inline-flex rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-800">
+                                {row.grade}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="px-4 py-2">
+                            {row.matchedStudent ? (
+                              <span className="inline-flex flex-col gap-0.5 text-xs text-emerald-700">
+                                <span className="inline-flex items-center gap-1 font-semibold">
+                                  <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                                  {row.matchedStudent}
+                                </span>
+                                {row.matchMethod ? (
+                                  <span className="text-[10px] text-emerald-600/80">
+                                    via {row.matchMethod.replace("_", " ")}
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : (
+                              <span className="inline-flex flex-col gap-0.5 text-xs text-amber-700">
+                                <span className="inline-flex items-center gap-1 font-semibold">
+                                  <UserX className="h-3.5 w-3.5 text-amber-600" />
+                                  No match
+                                </span>
+                                {row.matchWarning ? (
+                                  <span className="text-[10px] text-amber-800">
+                                    {row.matchWarning}
+                                  </span>
+                                ) : null}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-                {parsedRows.length > 100 && (
+                {displayRows.length > 100 && (
                   <p className="border-t border-slate-100 px-5 py-2 text-center text-xs text-slate-400">
-                    Showing 100 of {parsedRows.length} rows
+                    Showing first 100 of {displayRows.length} rows
                   </p>
                 )}
               </div>

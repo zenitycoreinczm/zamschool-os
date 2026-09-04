@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Mail, MessageSquare, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  Filter,
+  GraduationCap,
+  Loader2,
+  Mail,
+  MessageSquare,
+  Search,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { adminApiJson } from "@/lib/admin-browser-api";
@@ -119,11 +128,15 @@ export default function TeacherStudentsPage() {
         <TeacherStatCard
           label="Total students"
           value={summary?.totalStudents ?? students.length}
+          tone="slate"
+          icon={Users}
           hint="In your teaching scope"
         />
         <TeacherStatCard
           label="Classes"
           value={summary?.classes ?? classNames.length}
+          tone="sky"
+          icon={GraduationCap}
           hint="Assigned or supervised"
         />
         <TeacherStatCard
@@ -132,11 +145,20 @@ export default function TeacherStudentsPage() {
             summary?.highRiskStudents ??
             students.filter((s) => s.riskLevel === "high").length
           }
+          tone={
+            (summary?.highRiskStudents ??
+              students.filter((s) => s.riskLevel === "high").length) > 0
+              ? "rose"
+              : "slate"
+          }
+          icon={AlertTriangle}
           hint="Needs attention"
         />
         <TeacherStatCard
           label="Showing"
           value={filtered.length}
+          tone="slate"
+          icon={Filter}
           hint="After filters"
         />
       </div>

@@ -22,7 +22,15 @@ type EventRow = {
   location: string | null;
 };
 
-export default function EventCalendar() {
+type EventCalendarProps = {
+  endpoint?: string;
+  targetHref?: string;
+};
+
+export default function EventCalendar({
+  endpoint = "/api/admin/events?upcomingOnly=true&limit=60",
+  targetHref = "/app/events",
+}: EventCalendarProps = {}) {
   const router = useRouter();
   const [value, onChange] = useState<Value>(new Date());
   const [loading, setLoading] = useState(true);
@@ -33,9 +41,7 @@ export default function EventCalendar() {
 
     const loadEvents = async () => {
       try {
-        const body = await adminApiJson<{ data?: any[] }>(
-          "/api/admin/events?upcomingOnly=true&limit=60",
-        );
+        const body = await adminApiJson<{ data?: any[] }>(endpoint);
         if (cancelled) return;
 
         setEvents(
@@ -120,7 +126,7 @@ export default function EventCalendar() {
               type="button"
               className="rounded-workspace-xl border-2 border-slate-100 bg-white px-5 py-5 odd:border-t-lamaSkyLight even:border-t-lamaPurpleLight shadow-workspace-sm"
               key={event.id}
-              onClick={() => router.push("/app/events")}
+              onClick={() => router.push(targetHref)}
             >
               <div className="flex items-center justify-between gap-3">
                 <h2 className="font-semibold text-slate-600">{event.title}</h2>

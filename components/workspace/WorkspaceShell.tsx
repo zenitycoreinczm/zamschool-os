@@ -232,14 +232,14 @@ export default function WorkspaceShell({
         )}
       >
         <div className="flex h-full min-h-0 flex-col">
-          <div className="flex items-center justify-between border-b border-slate-200/80 px-4 py-4">
-            <Link href={homeHref} className="flex min-w-0 items-center gap-3">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
+          <div className="flex h-16 items-center justify-between border-b border-slate-200/80 px-4 py-3">
+            <Link href={homeHref} className="flex min-w-0 items-center gap-2.5">
+              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200/80">
                 <Image
                   src="/icon.png"
                   alt="ZamSchool OS"
-                  width={40}
-                  height={40}
+                  width={32}
+                  height={32}
                   className="h-full w-full object-cover"
                   priority
                 />

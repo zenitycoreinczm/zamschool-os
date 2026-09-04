@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Bell,
   CalendarDays,
   Check,
   ChevronDown,
@@ -10,6 +11,7 @@ import {
   Clock,
   Loader2,
   Lock,
+  Search,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -21,6 +23,8 @@ import {
   mergeRollCallStateOnRefresh,
 } from "@/lib/attendance/rollcall-state";
 import { DateOnlyPicker } from "@/components/forms/DateTimePicker";
+import { AdminPageHero } from "@/components/admin/AdminPageHero";
+import { Surface } from "@/components/workspace/Surface";
 import { cn } from "@/lib/utils";
 
 type LessonRoster = {
@@ -65,30 +69,45 @@ type Lesson = {
 
 type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
 
-const EXCEPTION_OPTIONS: AttendanceStatus[] = ["ABSENT", "LATE", "EXCUSED"];
+const ALL_STATUSES: AttendanceStatus[] = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
 
-const SESSION_TYPES = ["Morning", "Midday", "Afternoon", "Evening"] as const;
+// Session type labels used for display — must include all timetable session types
+// (Morning, Afternoon, Evening) so evening lessons resolve a matching dropdown option.
+const SESSION_TYPES = ["Morning", "Afternoon", "Evening"] as const;
 
-const STATUS_COLORS: Record<string, string> = {
-  PRESENT: "bg-emerald-500 text-white shadow-sm",
-  ABSENT: "bg-rose-500 text-white shadow-sm",
-  LATE: "bg-amber-500 text-white shadow-sm",
-  EXCUSED: "bg-sky-500 text-white shadow-sm",
-};
-
-function windowTone(status?: RollCallWindow["status"]) {
+function windowBadge(status?: RollCallWindow["status"]) {
   switch (status) {
     case "open":
-      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+      return {
+        badge: "border-emerald-200 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300/40",
+        label: "Window open",
+        icon: Clock,
+      };
     case "late":
-      return "border-amber-200 bg-amber-50 text-amber-900";
+      return {
+        badge: "border-amber-300 bg-amber-50 text-amber-900 ring-1 ring-amber-400/40",
+        label: "Late window",
+        icon: AlertTriangle,
+      };
     case "upcoming":
-      return "border-sky-200 bg-sky-50 text-sky-800";
+      return {
+        badge: "border-sky-200 bg-sky-50 text-sky-800",
+        label: "Upcoming",
+        icon: Clock,
+      };
     case "closed":
     case "wrong_day":
-      return "border-slate-200 bg-slate-100 text-slate-600";
+      return {
+        badge: "border-slate-200 bg-slate-100 text-slate-600",
+        label: "Window closed",
+        icon: Lock,
+      };
     default:
-      return "border-slate-200 bg-slate-50 text-slate-600";
+      return {
+        badge: "border-slate-200 bg-slate-50 text-slate-600",
+        label: "Scheduled",
+        icon: Clock,
+      };
   }
 }
 
@@ -227,7 +246,7 @@ export default function TeacherAttendancePage() {
     [parentLinkHealth],
   );
 
-  const toggleException = (
+  const setStudentStatus = (
     lessonId: string,
     studentId: string,
     status: AttendanceStatus,
@@ -235,7 +254,7 @@ export default function TeacherAttendancePage() {
     setExceptions((prev) => {
       const current = prev[lessonId] || {};
       const next = { ...current };
-      if (next[studentId] === status) {
+      if (status === "PRESENT") {
         delete next[studentId];
       } else {
         next[studentId] = status;
@@ -250,47 +269,26 @@ export default function TeacherAttendancePage() {
       delete next[lessonId];
       return next;
     });
-  };
-
-  // Quick mark: select first N students as absent (common scenario)
-  const quickMarkAbsent = (lessonId: string, count: number) => {
-    const lesson = lessons.find((l) => l.id === lessonId);
-    if (!lesson) return;
-    
-    setExceptions((prev) => {
-      const current = prev[lessonId] || {};
-      const next = { ...current };
-      
-      // Mark first N students as absent
-      for (let i = 0; i < Math.min(count, lesson.roster.length); i++) {
-        next[lesson.roster[i].id] = "ABSENT";
-      }
-      
-      return { ...prev, [lessonId]: next };
-    });
+    toast.success("Marked all students present");
   };
 
   // Keyboard shortcut handler for fast marking
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only when not in input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
-      
-      // Ctrl/Cmd + A = mark all present for first open lesson
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
         const firstOpenLesson = lessons.find((l) => l.window?.canMark);
         if (firstOpenLesson) {
           markAllPresent(firstOpenLesson.id);
-          toast.success(`Marked all present for ${firstOpenLesson.subjectName}`);
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lessons]);
 
   const submitAttendance = async (lesson: Lesson) => {
@@ -381,33 +379,52 @@ export default function TeacherAttendancePage() {
     }
   };
 
+  const heroStats = [
+    {
+      label: "Lessons today",
+      value: lessons.length,
+      hint: `${submittedCount} marked`,
+      tone: "slate" as const,
+    },
+    {
+      label: "Students total",
+      value: totalStudents,
+      hint: "Across all rosters",
+      tone: "slate" as const,
+    },
+    {
+      label: "Open now",
+      value: openCount,
+      hint: openCount > 0 ? "Active period window" : "None right now",
+      tone: openCount > 0 ? ("emerald" as const) : ("slate" as const),
+    },
+    {
+      label: "Late alert",
+      value: lateCount,
+      hint: lateCount > 0 ? "Threshold exceeded" : "On schedule",
+      tone: lateCount > 0 ? ("amber" as const) : ("slate" as const),
+    },
+  ];
+
   return (
-    <div className="space-y-5">
-      {/* Hero */}
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-amber-900 px-5 py-6 text-white shadow-lg md:px-7 md:py-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200/90">
-              Classroom
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight">Roll Call</h1>
-            <p className="mt-1.5 max-w-xl text-sm text-slate-300">
-              Mark attendance only during each lesson window. Head Teacher is
-              alerted if roll call is not started within 10 minutes of the period
-              start.
-            </p>
-            <p className="mt-2 text-xs text-slate-400">
-              <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[11px]">
-                Ctrl+A
-              </kbd>{" "}
-              = mark all present for first open lesson
-            </p>
-          </div>
-          <div className="w-full max-w-[200px] rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur">
-            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-100/80">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Date
-            </p>
+    <div className="space-y-5 p-4 md:p-6">
+      <AdminPageHero
+        eyebrow="Classroom"
+        title="Roll Call"
+        description="Mark attendance for each lesson period during its active window. Notifications are dispatched to linked parents instantly upon submission."
+        descriptionExtra={
+          <span className="ml-2 inline-flex items-center gap-1 text-xs text-slate-300">
+            <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">
+              Ctrl+A
+            </kbd>{" "}
+            marks all present
+          </span>
+        }
+        stats={heroStats}
+        accent="slate"
+        actions={
+          <div className="flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 p-1.5 backdrop-blur">
+            <CalendarDays className="ml-2 h-4 w-4 text-white/80" />
             <DateOnlyPicker
               value={date}
               onChange={setDate}
@@ -415,389 +432,412 @@ export default function TeacherAttendancePage() {
               accent="slate"
             />
           </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatPill label="Lessons" value={lessons.length} />
-          <StatPill label="Students" value={totalStudents} />
-          <StatPill label="Open now" value={openCount} tone="good" />
-          <StatPill
-            label="Late windows"
-            value={lateCount}
-            tone={lateCount > 0 ? "warn" : "neutral"}
-          />
-        </div>
-      </section>
+        }
+      />
 
       {lateCount > 0 ? (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-950 shadow-sm">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <div>
-            <p className="font-semibold">
-              {lateCount} lesson{lateCount === 1 ? "" : "s"} past the 10-minute
-              start threshold
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-amber-900">
+              {lateCount} lesson{lateCount === 1 ? "" : "s"} past the 10-minute start threshold
             </p>
-            <p className="mt-0.5 text-xs text-amber-800/90">
-              Submit roll call now. Head Teacher receives a lateness alert when
-              a period has no roll call after 10 minutes.
+            <p className="mt-0.5 text-xs text-amber-800">
+              Submit roll call now. School leadership receives an automated alert when a period starts without attendance.
             </p>
           </div>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 py-16 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-          Loading lessons and rosters...
-        </div>
+        <Surface
+          variant="dashed"
+          className="flex min-h-48 items-center justify-center gap-3 py-16 text-sm text-slate-500"
+        >
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+          Loading today&apos;s lessons and rosters…
+        </Surface>
       ) : lessons.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 py-16 text-center">
-          <UserCheck className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-3 text-sm font-medium text-slate-600">
+        <Surface variant="dashed" className="py-16 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <UserCheck className="h-6 w-6" />
+          </div>
+          <h3 className="mt-3 text-sm font-bold text-slate-900">
             No lessons scheduled for this date
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            Pick a different date or check your teaching timetable.
           </p>
-          <p className="mt-1 text-xs text-slate-400">
-            Select a different date or check your timetable.
-          </p>
-        </div>
+        </Surface>
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-            <p>
-              {submittedCount} of {lessons.length} lessons already have roll call
-              saved
-              {exceptionCount > 0 ? ` · ${exceptionCount} exceptions staged` : ""}
-            </p>
-          </div>
-
-          {lessons.map((lesson) => {
-            const lessonExceptions = exceptions[lesson.id] || {};
-            const exceptionKeys = Object.keys(lessonExceptions);
-            const isExpanded = expanded.has(lesson.id);
-            const win = lesson.window;
-            const canMark = win?.canMark !== false;
-            const locked = !canMark;
-
-            return (
-              <div
-                key={lesson.id}
-                className={cn(
-                  "overflow-hidden rounded-2xl border bg-white shadow-sm transition",
-                  win?.status === "late"
-                    ? "border-amber-300 ring-1 ring-amber-100"
-                    : win?.status === "open"
-                      ? "border-emerald-200"
-                      : "border-slate-200",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = new Set(expanded);
-                    if (isExpanded) next.delete(lesson.id);
-                    else next.add(lesson.id);
-                    setExpanded(next);
-                  }}
-                  className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left hover:bg-slate-50/80"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900">
-                        {lesson.subjectName}
-                      </p>
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-                          windowTone(win?.status),
-                        )}
-                      >
-                        {win?.status === "closed" || win?.status === "wrong_day" ? (
-                          <Lock className="h-3 w-3" />
-                        ) : (
-                          <Clock className="h-3 w-3" />
-                        )}
-                        {win?.label || "—"}
-                      </span>
-                      {lesson.hasSubmission ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                          <Check className="h-3 w-3" />
-                          Saved
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {lesson.className} · {lesson.startTime?.slice(0, 5)}–
-                      {lesson.endTime?.slice(0, 5)} · {lesson.roster.length}{" "}
-                      students
-                    </p>
-                    {win?.message ? (
-                      <p className="mt-1 text-[11px] text-slate-400">{win.message}</p>
-                    ) : null}
-                    {/* Parent link health indicator */}
-                    {(() => {
-                      const health = getLessonParentHealth(lesson.id);
-                      if (health && !health.hasAnyLinked) {
-                        return (
-                          <p className="mt-1 flex items-center gap-1 text-[11px] text-amber-600">
-                            <AlertTriangle className="h-3 w-3" />
-                            No parents linked — notifications won&apos;t be sent
-                          </p>
-                        );
-                      } else if (health && health.linkedParents < health.totalStudents) {
-                        return (
-                          <p className="mt-1 text-[11px] text-slate-400">
-                            {health.linkedParents}/{health.totalStudents} students have linked parents
-                          </p>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {exceptionKeys.length === 0 ? (
-                      <span className="hidden text-xs font-medium text-emerald-600 sm:inline">
-                        All present
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-amber-600">
-                        {exceptionKeys.length} exception
-                        {exceptionKeys.length !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-slate-400" />
-                    )}
-                  </div>
-                </button>
-
-                {isExpanded ? (
-                  <div className="border-t border-slate-100">
-                    <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5">
-                      <button
-                        type="button"
-                        onClick={() => markAllPresent(lesson.id)}
-                        disabled={locked}
-                        className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Users className="mr-1 inline h-3 w-3" />
-                        Mark All Present
-                      </button>
-                      {/* Quick mark buttons for common scenarios */}
-                      {!locked && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => quickMarkAbsent(lesson.id, 1)}
-                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                            title="Quick mark 1 student absent"
-                          >
-                            -1 Absent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => quickMarkAbsent(lesson.id, 2)}
-                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                            title="Quick mark 2 students absent"
-                          >
-                            -2 Absent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => quickMarkAbsent(lesson.id, 3)}
-                            className="inline-flex min-h-[44px] items-center rounded-md px-3 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                            title="Quick mark 3 students absent"
-                          >
-                            -3 Absent
-                          </button>
-                        </>
-                      )}
-                      {locked ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
-                          <Lock className="h-3 w-3" />
-                          Editing locked outside the period window
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div
-                      className={cn(
-                        "divide-y divide-slate-100",
-                        locked && "pointer-events-none opacity-60",
-                      )}
-                    >
-                      {lesson.roster.map((student) => {
-                        const currentStatus =
-                          lessonExceptions[student.id] || "PRESENT";
-                        const isException = !!lessonExceptions[student.id];
-                        return (
-                          <div
-                            key={student.id}
-                            className="flex flex-wrap items-center justify-between gap-2 px-5 py-2.5"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-slate-900">
-                                {student.displayName}
-                              </p>
-                              <p className="text-xs text-slate-400">
-                                {student.admissionNumber || "-"}
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              {isException ? (
-                                EXCEPTION_OPTIONS.map((status) => {
-                                  const active = currentStatus === status;
-                                  return (
-                                    <button
-                                      key={status}
-                                      type="button"
-                                      onClick={() =>
-                                        toggleException(
-                                          lesson.id,
-                                          student.id,
-                                          status,
-                                        )
-                                      }
-                                      className={`inline-flex min-h-[44px] items-center rounded-lg px-3 text-xs font-semibold transition-all ${
-                                        active
-                                          ? STATUS_COLORS[status]
-                                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                                      }`}
-                                    >
-                                      {formatAttendanceStatusLabel(status)}
-                                    </button>
-                                  );
-                                })
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleException(
-                                      lesson.id,
-                                      student.id,
-                                      "ABSENT",
-                                    )
-                                  }
-                                  className="inline-flex min-h-[44px] items-center rounded-lg bg-emerald-100 px-3 text-xs font-semibold text-emerald-700 transition-all hover:bg-emerald-200"
-                                >
-                                  {formatAttendanceStatusLabel(currentStatus)}
-                                </button>
-                              )}
-                              {isException && currentStatus !== "PRESENT" && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    toggleException(
-                                      lesson.id,
-                                      student.id,
-                                      currentStatus,
-                                    )
-                                  }
-                                  aria-label={`Revert ${student.displayName} to present`}
-                                  title="Revert to Present"
-                                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-emerald-100 hover:text-emerald-600"
-                                >
-                                  <Check className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-3">
-                      {(() => {
-                        const health = getLessonParentHealth(lesson.id);
-                        const willNotifyCount = health?.linkedParents || 0;
-                        const totalCount = health?.totalStudents || lesson.roster.length;
-                        
-                        return (
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <button
-                              type="button"
-                              onClick={() => void submitAttendance(lesson)}
-                              disabled={saving === lesson.id || locked}
-                              className={cn(
-                                "inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60",
-                                locked
-                                  ? "cursor-not-allowed bg-slate-400"
-                                  : win?.status === "late"
-                                    ? "bg-amber-500 hover:bg-amber-400"
-                                    : "bg-emerald-600 hover:bg-emerald-500",
-                              )}
-                            >
-                              {saving === lesson.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Saving...
-                                </>
-                              ) : locked ? (
-                                <>
-                                  <Lock className="h-4 w-4" />
-                                  {win?.status === "upcoming"
-                                    ? "Not open yet"
-                                    : "Window closed"}
-                                </>
-                              ) : (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  Submit Roll Call
-                                </>
-                              )}
-                            </button>
-                            
-                            {/* Parent notification preview */}
-                            {!locked && willNotifyCount > 0 && (
-                              <span className="text-xs text-emerald-700">
-                                Will notify {willNotifyCount} parent{willNotifyCount !== 1 ? 's' : ''}
-                              </span>
-                            )}
-                            {!locked && willNotifyCount === 0 && totalCount > 0 && (
-                              <span className="text-xs text-amber-700">
-                                No parents linked — link in admin first
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+          {lessons.map((lesson) => (
+            <RollCallCard
+              key={lesson.id}
+              lesson={lesson}
+              isExpanded={expanded.has(lesson.id)}
+              onToggleExpand={() => {
+                const next = new Set(expanded);
+                if (next.has(lesson.id)) next.delete(lesson.id);
+                else next.add(lesson.id);
+                setExpanded(next);
+              }}
+              exceptions={exceptions[lesson.id] || {}}
+              onSetStatus={(studentId, status) =>
+                setStudentStatus(lesson.id, studentId, status)
+              }
+              onMarkAllPresent={() => markAllPresent(lesson.id)}
+              onSubmit={() => void submitAttendance(lesson)}
+              isSaving={saving === lesson.id}
+              parentHealth={getLessonParentHealth(lesson.id)}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function StatPill({
-  label,
-  value,
-  tone = "neutral",
+function RollCallCard({
+  lesson,
+  isExpanded,
+  onToggleExpand,
+  exceptions,
+  onSetStatus,
+  onMarkAllPresent,
+  onSubmit,
+  isSaving,
+  parentHealth,
 }: {
-  label: string;
-  value: number;
-  tone?: "neutral" | "good" | "warn";
+  lesson: Lesson;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  exceptions: Record<string, AttendanceStatus>;
+  onSetStatus: (studentId: string, status: AttendanceStatus) => void;
+  onMarkAllPresent: () => void;
+  onSubmit: () => void;
+  isSaving: boolean;
+  parentHealth?: {
+    linkedParents: number;
+    totalStudents: number;
+    hasAnyLinked: boolean;
+  };
 }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | AttendanceStatus>("ALL");
+
+  const win = lesson.window;
+  const canMark = win?.canMark !== false;
+  const locked = !canMark;
+  const badgeInfo = windowBadge(win?.status);
+  const BadgeIcon = badgeInfo.icon;
+
+  // Counts breakdown
+  const counts = useMemo(() => {
+    const summary = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0 };
+    for (const student of lesson.roster) {
+      const st = exceptions[student.id] || "PRESENT";
+      summary[st] = (summary[st] || 0) + 1;
+    }
+    return summary;
+  }, [lesson.roster, exceptions]);
+
+  // Filtered roster
+  const filteredRoster = useMemo(() => {
+    let list = lesson.roster;
+    if (statusFilter !== "ALL") {
+      list = list.filter(
+        (s) => (exceptions[s.id] || "PRESENT") === statusFilter,
+      );
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.displayName.toLowerCase().includes(q) ||
+          (s.admissionNumber && s.admissionNumber.toLowerCase().includes(q)),
+      );
+    }
+    return list;
+  }, [lesson.roster, exceptions, statusFilter, search]);
+
+  const willNotifyCount = parentHealth?.linkedParents ?? 0;
+
   return (
     <div
       className={cn(
-        "rounded-2xl border px-3 py-2.5",
-        tone === "good"
-          ? "border-emerald-400/30 bg-emerald-400/10"
-          : tone === "warn"
-            ? "border-amber-300/40 bg-amber-400/10"
-            : "border-white/10 bg-white/5",
+        "overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-150",
+        win?.status === "late"
+          ? "border-amber-300 ring-1 ring-amber-200"
+          : win?.status === "open"
+            ? "border-emerald-300 ring-1 ring-emerald-100"
+            : "border-slate-200",
       )}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-300">
-        {label}
-      </p>
-      <p className="mt-0.5 text-xl font-bold tabular-nums text-white">{value}</p>
+      {/* Header Button */}
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-slate-50/70 transition"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-bold text-slate-950 text-base leading-snug">
+              {lesson.subjectName}
+            </p>
+            <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+              {lesson.className}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                badgeInfo.badge,
+              )}
+            >
+              <BadgeIcon className="h-3.5 w-3.5" />
+              {win?.label || badgeInfo.label}
+            </span>
+            {lesson.hasSubmission ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                <Check className="h-3 w-3" />
+                Saved
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
+              {(lesson.startTime || "").slice(0, 5)} – {(lesson.endTime || "").slice(0, 5)}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5 text-slate-400" />
+              {lesson.roster.length} students
+            </span>
+            {win?.message ? (
+              <span className="text-slate-400">· {win.message}</span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Status summary pill */}
+          <div className="hidden sm:flex items-center gap-1.5 text-xs">
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
+              {counts.PRESENT} Present
+            </span>
+            {counts.ABSENT > 0 ? (
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
+                {counts.ABSENT} Absent
+              </span>
+            ) : null}
+            {counts.LATE > 0 ? (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                {counts.LATE} Late
+              </span>
+            ) : null}
+            {counts.EXCUSED > 0 ? (
+              <span className="rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-700">
+                {counts.EXCUSED} Excused
+              </span>
+            ) : null}
+          </div>
+
+          {isExpanded ? (
+            <ChevronUp className="h-5 w-5 text-slate-400" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-slate-400" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded Roster Body */}
+      {isExpanded ? (
+        <div className="border-t border-slate-100">
+          {/* Toolbar */}
+          <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Search & Filter pills */}
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <div className="relative min-w-[12rem] flex-1 sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search student or adm #…"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1">
+                {(["ALL", ...ALL_STATUSES] as const).map((st) => {
+                  const active = statusFilter === st;
+                  const count =
+                    st === "ALL" ? lesson.roster.length : counts[st];
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setStatusFilter(st)}
+                      className={cn(
+                        "rounded-lg px-2 py-1 text-[11px] font-semibold transition",
+                        active
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200",
+                      )}
+                    >
+                      {st === "ALL" ? "All" : formatAttendanceStatusLabel(st)}{" "}
+                      <span className="opacity-75">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex items-center gap-2">
+              {!locked ? (
+                <button
+                  type="button"
+                  onClick={onMarkAllPresent}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Mark All Present
+                </button>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                  <Lock className="h-3.5 w-3.5" />
+                  Locked outside period window
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Student Roster Rows */}
+          <div
+            className={cn(
+              "divide-y divide-slate-100 max-h-[32rem] overflow-y-auto",
+              locked && "pointer-events-none opacity-60",
+            )}
+          >
+            {filteredRoster.length === 0 ? (
+              <div className="py-10 text-center text-xs text-slate-400">
+                No students match your filter or search query.
+              </div>
+            ) : (
+              filteredRoster.map((student) => {
+                const currentStatus = exceptions[student.id] || "PRESENT";
+                const initials = student.displayName
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((w) => w[0])
+                  .join("")
+                  .toUpperCase();
+
+                return (
+                  <div
+                    key={student.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition hover:bg-slate-50/50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-semibold text-xs text-slate-600">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-slate-900 truncate">
+                          {student.displayName}
+                        </p>
+                        <p className="text-[11px] font-mono text-slate-400">
+                          {student.admissionNumber || "No adm #"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Segmented Status Selector */}
+                    <div className="flex items-center rounded-xl border border-slate-200/90 bg-slate-50 p-1 gap-1">
+                      {ALL_STATUSES.map((status) => {
+                        const isSelected = currentStatus === status;
+                        let activeColor = "bg-slate-800 text-white shadow-sm";
+                        if (status === "PRESENT") activeColor = "bg-emerald-600 text-white font-bold shadow-sm";
+                        if (status === "ABSENT") activeColor = "bg-rose-600 text-white font-bold shadow-sm";
+                        if (status === "LATE") activeColor = "bg-amber-600 text-white font-bold shadow-sm";
+                        if (status === "EXCUSED") activeColor = "bg-sky-600 text-white font-bold shadow-sm";
+
+                        return (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => onSetStatus(student.id, status)}
+                            disabled={locked}
+                            className={cn(
+                              "rounded-lg px-2.5 py-1 text-xs font-medium transition duration-150 min-w-[3rem]",
+                              isSelected
+                                ? activeColor
+                                : "text-slate-600 hover:bg-white hover:text-slate-900",
+                            )}
+                          >
+                            {status === "PRESENT" ? "Present" : status === "ABSENT" ? "Absent" : status === "LATE" ? "Late" : "Excused"}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Footer with Notification & Submit */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
+            <div className="flex items-center gap-2 text-xs">
+              <Bell className="h-3.5 w-3.5 text-slate-400" />
+              {!locked && willNotifyCount > 0 ? (
+                <span className="text-slate-600">
+                  Will notify <strong className="text-slate-900">{willNotifyCount}</strong> linked parents upon save
+                </span>
+              ) : !locked ? (
+                <span className="text-amber-700 font-medium">
+                  No linked parents found — link parents in admin first
+                </span>
+              ) : (
+                <span className="text-slate-400">Read-only window</span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={isSaving || locked}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-60",
+                locked
+                  ? "cursor-not-allowed bg-slate-400"
+                  : win?.status === "late"
+                    ? "bg-amber-600 hover:bg-amber-500"
+                    : "bg-emerald-600 hover:bg-emerald-500",
+              )}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving roll call…
+                </>
+              ) : locked ? (
+                <>
+                  <Lock className="h-4 w-4" />
+                  {win?.status === "upcoming" ? "Not open yet" : "Window closed"}
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Submit Roll Call
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

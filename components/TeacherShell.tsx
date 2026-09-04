@@ -87,6 +87,7 @@ function TeacherShellContent({ children }: { children: React.ReactNode }) {
         email: account?.profile?.email,
       })}
       sidebarId="teacher-sidebar"
+      sidebarClassName="fixed inset-y-0 left-0 z-40 w-[15.5rem] border-r border-workspace-border bg-workspace-sidebar transition-transform duration-[var(--duration-workspace-normal)] lg:relative"
       homeHref="/app/teacher"
       brandTitle={schoolName}
       brandSubtitle="Teacher"

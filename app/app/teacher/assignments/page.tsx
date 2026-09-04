@@ -1,11 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
   ClipboardList,
+  Clock,
+  FileText,
+  GraduationCap,
   Loader2,
   Plus,
   RefreshCw,
+  Search,
   Trash2,
   X,
 } from "lucide-react";
@@ -67,6 +76,20 @@ function isOverdue(value: string) {
   return date.getTime() < Date.now();
 }
 
+function relativeDue(dueDate: string) {
+  const d = new Date(dueDate);
+  if (Number.isNaN(d.getTime())) return dueDate;
+  const now = new Date();
+  // reset hours to midnight for day calculation
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const diffDays = Math.round((dDay - nowDay) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return `${Math.abs(diffDays)}d overdue`;
+  if (diffDays === 0) return "Due today";
+  if (diffDays === 1) return "Due tomorrow";
+  return `Due in ${diffDays}d`;
+}
+
 export default function TeacherAssignmentsPage() {
   const { account } = useTeacherWorkspace();
   const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
@@ -76,6 +99,7 @@ export default function TeacherAssignmentsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "overdue">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const classOptions = useMemo<NamedOption[]>(() => {
     const map = new Map<string, string>();
@@ -142,16 +166,38 @@ export default function TeacherAssignmentsPage() {
 
   const stats = useMemo(() => {
     const overdue = assignments.filter((row) => isOverdue(row.due_date)).length;
+    const active = assignments.filter((row) => !isOverdue(row.due_date)).length;
     const pendingGrades = assignments.reduce(
       (sum, row) => sum + (row.pendingGrades || 0),
       0,
     );
     return {
       total: assignments.length,
+      active,
       overdue,
       pendingGrades,
     };
   }, [assignments]);
+
+  const filteredAssignments = useMemo(() => {
+    let list = assignments;
+    if (filter === "active") {
+      list = list.filter((a) => !isOverdue(a.due_date));
+    } else if (filter === "overdue") {
+      list = list.filter((a) => isOverdue(a.due_date));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title.toLowerCase().includes(q) ||
+          (a.description && a.description.toLowerCase().includes(q)) ||
+          nestedName(a.classes).toLowerCase().includes(q) ||
+          nestedName(a.subjects).toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [assignments, filter, searchQuery]);
 
   async function createAssignment() {
     if (!form.title.trim()) {
@@ -223,11 +269,11 @@ export default function TeacherAssignmentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-5 p-4 md:p-6">
       <TeacherPageHeader
         eyebrow="Teaching"
         title="Assignments"
-        description="Set classwork and homework for your classes, track due dates, and see grading progress."
+        description="Set classwork and homework for your classes, track due dates, and monitor student completion."
         actions={
           <div className="flex flex-wrap gap-2">
             <button
@@ -255,47 +301,82 @@ export default function TeacherAssignmentsPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <TeacherStatCard label="Assignments" value={stats.total} hint="In this list" />
-        <TeacherStatCard label="Overdue" value={stats.overdue} hint="Past due date" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <TeacherStatCard
+          label="Total assignments"
+          value={stats.total}
+          tone="slate"
+          icon={FileText}
+          hint="Created by you"
+        />
+        <TeacherStatCard
+          label="Upcoming"
+          value={stats.active}
+          tone="emerald"
+          icon={Calendar}
+          hint="Within due date"
+        />
+        <TeacherStatCard
+          label="Overdue"
+          value={stats.overdue}
+          tone="rose"
+          icon={AlertTriangle}
+          hint="Past deadline"
+        />
         <TeacherStatCard
           label="Pending grades"
           value={stats.pendingGrades}
-          hint="Scores still open"
+          tone="amber"
+          icon={GraduationCap}
+          hint="Submissions open"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            ["all", "All"],
-            ["active", "Upcoming"],
-            ["overdue", "Overdue"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setFilter(key)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-              filter === key
-                ? "border-slate-900 bg-slate-900 text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
-            )}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Toolbar: Search + Filter Tabs */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              ["all", `All (${assignments.length})`],
+              ["active", `Upcoming (${stats.active})`],
+              ["overdue", `Overdue (${stats.overdue})`],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFilter(key)}
+              className={cn(
+                "rounded-full border px-3.5 py-1.5 text-xs font-semibold transition duration-150",
+                filter === key
+                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative min-w-[14rem]">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search assignments…"
+            className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-xs outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+          />
+        </div>
       </div>
 
       {formOpen ? (
         <TeacherCard elevated className="space-y-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-bold text-slate-900">
               New assignment
             </h2>
-            <p className="mt-1 text-sm text-workspace-muted">
+            <p className="mt-0.5 text-xs text-slate-500">
               Visible to students in the selected class for the subject you teach.
             </p>
           </div>
@@ -417,65 +498,133 @@ export default function TeacherAssignmentsPage() {
           <Loader2 className="mb-3 h-6 w-6 animate-spin text-slate-500" />
           <p className="text-sm text-workspace-muted">Loading assignments…</p>
         </TeacherCard>
-      ) : assignments.length === 0 ? (
+      ) : filteredAssignments.length === 0 ? (
         <TeacherEmptyState
-          title="No assignments yet"
-          description="Create homework or classwork for your classes. Students will see due dates in their portal."
+          icon={FileText}
+          title={searchQuery ? "No matching assignments" : "No assignments yet"}
+          description={
+            searchQuery
+              ? "Try adjusting your search query or filter."
+              : "Create homework or classwork for your classes. Students will see due dates in their portal."
+          }
+          action={
+            !searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setFormOpen(true)}
+                className={primaryButton("text-xs")}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create first assignment
+              </button>
+            ) : undefined
+          }
         />
       ) : (
-        <div className="grid gap-3">
-          {assignments.map((row) => {
+        <div className="grid gap-3.5">
+          {filteredAssignments.map((row) => {
             const overdue = isOverdue(row.due_date);
+            const dueLabel = relativeDue(row.due_date);
+            const submitted = row.submittedCount ?? 0;
+            const total = row.totalStudents ?? 0;
+            const pct =
+              total > 0 ? Math.min(100, Math.round((submitted / total) * 100)) : 0;
+
             return (
-              <TeacherCard
+              <div
                 key={row.id}
-                className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md sm:flex-row sm:items-center"
               >
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold text-slate-900">
+                    <h3 className="text-base font-bold text-slate-950 leading-snug">
                       {row.title}
                     </h3>
-                    {overdue ? (
-                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700 ring-1 ring-rose-100">
-                        Overdue
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                        Due {formatDue(row.due_date)}
-                      </span>
-                    )}
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                      {nestedName(row.classes)}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                      {nestedName(row.subjects)}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                        overdue
+                          ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200"
+                          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+                      )}
+                    >
+                      {dueLabel}
+                    </span>
                   </div>
-                  <p className="text-sm text-slate-600">
-                    {nestedName(row.classes)} · {nestedName(row.subjects)} ·{" "}
-                    {row.total_marks} marks
-                  </p>
+
                   {row.description ? (
-                    <p className="text-sm text-workspace-muted line-clamp-2">
+                    <p className="text-xs text-slate-600 line-clamp-2 max-w-2xl leading-relaxed">
                       {row.description}
                     </p>
                   ) : null}
-                  <p className="text-xs text-slate-500">
-                    {row.submittedCount ?? 0}/{row.totalStudents ?? 0} submitted
-                    {typeof row.pendingGrades === "number"
-                      ? ` · ${row.pendingGrades} pending grades`
-                      : ""}
-                  </p>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
+                    <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
+                      {row.total_marks} total marks
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      Due {formatDue(row.due_date)}
+                    </span>
+                    {typeof row.pendingGrades === "number" && row.pendingGrades > 0 ? (
+                      <span className="font-semibold text-amber-700">
+                        · {row.pendingGrades} pending review
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* Submission Progress Bar */}
+                  <div className="max-w-md pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                      <span>Submissions: {submitted}/{total}</span>
+                      <span className="font-semibold">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-all duration-300",
+                          pct === 100
+                            ? "bg-emerald-500"
+                            : pct > 50
+                              ? "bg-sky-500"
+                              : "bg-slate-400",
+                        )}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void deleteAssignment(row.id)}
-                  disabled={deletingId === row.id}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
-                >
-                  {deletingId === row.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                  Delete
-                </button>
-              </TeacherCard>
+
+                <div className="flex items-center gap-2 shrink-0 border-t border-slate-100 pt-3 sm:border-0 sm:pt-0">
+                  <Link
+                    href={`/app/teacher/results`}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                  >
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    Record marks
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void deleteAssignment(row.id)}
+                    disabled={deletingId === row.id}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-transparent px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+                  >
+                    {deletingId === row.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                    Delete
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>

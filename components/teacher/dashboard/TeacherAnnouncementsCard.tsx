@@ -64,14 +64,14 @@ export function TeacherAnnouncementsCard({
           {announcements.map((a) => (
             <div
               key={a.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
-                <h3 className="font-semibold text-slate-900">{a.title}</h3>
+                <h3 className="font-semibold text-slate-900 leading-snug">{a.title}</h3>
                 {a.priority && priorityBadge[a.priority] ? (
                   <span
                     className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
                       priorityBadge[a.priority],
                     )}
                   >
@@ -80,12 +80,19 @@ export function TeacherAnnouncementsCard({
                 ) : null}
               </div>
               {a.body ? (
-                <p className="mt-2 line-clamp-2 text-sm text-slate-600">{a.body}</p>
+                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-600">
+                  {a.body}
+                </p>
               ) : null}
-              <p className="mt-2 text-xs text-slate-400">
-                {a.authorName ? `By ${a.authorName} · ` : ""}
-                {formatDate(a.createdAt)}
-              </p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+                {a.authorName ? (
+                  <span className="font-medium text-slate-600">
+                    By {a.authorName}
+                  </span>
+                ) : null}
+                {a.authorName ? <span>·</span> : null}
+                <span>{formatDate(a.createdAt)}</span>
+              </div>
             </div>
           ))}
         </div>

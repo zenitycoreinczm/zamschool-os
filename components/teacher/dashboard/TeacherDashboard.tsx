@@ -114,12 +114,13 @@ export default function TeacherDashboard() {
         />
       ) : null}
 
+      <TeacherTodaySchedule
+        lessons={todayLessons}
+        loading={extraLoading && !todayLessons.length}
+      />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-6">
         <div className="space-y-5 md:space-y-6">
-          <TeacherTodaySchedule
-            lessons={todayLessons}
-            loading={extraLoading && !todayLessons.length}
-          />
           <TeacherTeachingProfile teacher={teacher} />
         </div>
         <div className="space-y-5 md:space-y-6">

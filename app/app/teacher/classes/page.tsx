@@ -62,16 +62,22 @@ export default function TeacherClassesPage() {
         <TeacherStatCard
           label="Assigned classes"
           value={assignedClasses.length}
+          tone="slate"
+          icon={GraduationCap}
           hint="Classes you teach"
         />
         <TeacherStatCard
           label="Subjects"
           value={assignedSubjects.length}
+          tone="sky"
+          icon={BookOpen}
           hint="Assessment & grading"
         />
         <TeacherStatCard
           label="Supervised"
           value={supervisedClasses.length}
+          tone="emerald"
+          icon={ShieldCheck}
           hint="Class teacher role"
         />
       </div>

@@ -265,7 +265,7 @@ export function AccountProfilePage({
   const showTeacherSections = showTeacherDetails && Boolean(teacher);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-[92rem] space-y-5">
       <PageHeader
         eyebrow={eyebrow}
         title={pageTitle}
@@ -287,10 +287,13 @@ export function AccountProfilePage({
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr),400px]">
-        <Surface variant="elevated" className="p-5 md:p-6">
+        <Surface
+          variant="elevated"
+          className="overflow-hidden bg-gradient-to-br from-white via-white to-slate-50/80 p-5 md:p-6"
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-3xl border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200">
                 <ProfileAvatarImage
                   src={form.avatar_url}
                   alt="Profile"
@@ -300,14 +303,14 @@ export function AccountProfilePage({
                   fallback={<User className="h-8 w-8 text-slate-400" />}
                 />
               </div>
-              <div>
-                <p className="font-semibold text-slate-900">
+              <div className="min-w-0">
+                <p className="truncate text-lg font-semibold text-slate-900">
                   {fullName || "Unnamed User"}
                 </p>
-                <p className="text-sm text-slate-500">
+                <p className="mt-0.5 truncate text-sm text-slate-500">
                   {form.email || "No email"}
                 </p>
-                <p className="mt-1 text-xs font-medium tracking-wide text-slate-500">
+                <p className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
                   {roleLabel}
                 </p>
               </div>
@@ -399,7 +402,7 @@ export function AccountProfilePage({
         </Surface>
 
         <div className="space-y-5">
-          <InfoCard title="Account status">
+          <InfoCard title="Account status" className="bg-slate-50/70">
             <InfoRow
               label="Status"
               value={profile?.profile?.status || "Unknown"}
@@ -523,12 +526,14 @@ function Field({
 function InfoCard({
   title,
   children,
+  className,
 }: {
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Surface variant="default" className="p-5 md:p-6">
+    <Surface variant="default" className={cn("p-5 md:p-6", className)}>
       <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-4 space-y-4">{children}</div>
     </Surface>

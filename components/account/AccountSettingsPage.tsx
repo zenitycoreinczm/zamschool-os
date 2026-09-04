@@ -225,7 +225,7 @@ export function AccountSettingsPage({
     : "Not recorded yet";
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto max-w-[92rem] space-y-5">
       {!hideHeader ? (
         <PageHeader
           eyebrow={eyebrow}
@@ -257,7 +257,7 @@ export function AccountSettingsPage({
         />
       ) : null}
 
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <QuickLink
           href={profileHref}
           title="Profile"
@@ -288,7 +288,10 @@ export function AccountSettingsPage({
         />
       </div>
 
-      <Surface variant="elevated" className="p-5 md:p-6">
+      <Surface
+        variant="elevated"
+        className="overflow-hidden bg-gradient-to-br from-white via-white to-slate-50/80 p-5 md:p-6"
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <div
@@ -314,7 +317,7 @@ export function AccountSettingsPage({
               </p>
             </div>
           </div>
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             <span
               className="h-1.5 w-1.5 rounded-full bg-emerald-500"
               aria-hidden

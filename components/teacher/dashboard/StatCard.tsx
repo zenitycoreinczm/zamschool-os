@@ -17,25 +17,34 @@ export function StatCard({
   value,
   hint,
   tone,
+  icon: Icon,
   href,
 }: {
   label: string;
   value: string | number;
   hint?: string;
-  /** @deprecated Decorative icons removed */
   icon?: React.ComponentType<{ className?: string }>;
   tone: StatTone;
   href?: string;
 }) {
   const body = (
-    <div className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300">
       <div
-        className={cn("mb-3 h-1 w-8 rounded-full", statTone[tone])}
+        className={cn("absolute left-0 top-0 h-1 w-full", statTone[tone])}
         aria-hidden
       />
-      <p className="ws-tabular text-2xl font-bold text-slate-900">{value}</p>
-      <p className="mt-0.5 text-xs font-semibold text-slate-500">{label}</p>
-      {hint ? <p className="mt-1 text-[11px] text-slate-400">{hint}</p> : null}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="ws-tabular text-2xl font-bold tracking-tight text-slate-900">{value}</p>
+          <p className="mt-1 text-xs font-semibold text-slate-600">{label}</p>
+          {hint ? <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p> : null}
+        </div>
+        {Icon ? (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+            <Icon className="h-4 w-4" />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
   if (href) {
