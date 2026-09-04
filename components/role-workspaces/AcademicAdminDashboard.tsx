@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarClock,
+  ClipboardList,
+  FileBarChart2,
+  GraduationCap,
+  Loader2,
+  RefreshCw,
+  Scale,
+  Users,
+} from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import { FocusPills } from "@/components/workspace/FocusPills";
@@ -25,38 +35,46 @@ const WORKFLOW = [
   "Publish assignments once classes exist (Registrar owns class creation).",
 ];
 
+// Monochrome slate icon tiles - the registrar quick-action pattern. One
+// accent: the icon inverts to slate-900 on hover. No rainbow tones.
 const MODULES = [
   {
     href: "/app/admin/timetable/classes",
     title: "Class timetable",
     description: "Weekly slots by class.",
+    icon: GraduationCap,
   },
   {
     href: "/app/admin/timetable/teachers",
     title: "Teacher timetable",
     description: "Coverage and conflicts by teacher.",
+    icon: Users,
   },
   {
     href: "/app/admin/academic",
     title: "Years & terms",
     description: "Academic calendar structure.",
+    icon: CalendarClock,
   },
   {
     href: "/app/admin/subjects",
     title: "Subjects",
     description: "Curriculum subject catalogue.",
+    icon: ClipboardList,
   },
   {
     href: "/app/admin/grading-scales",
     title: "Grading scales",
     description: "ECZ-aligned grade bands.",
+    icon: Scale,
   },
   {
     href: "/app/admin/assignments",
     title: "Assignments",
     description: "School-wide assignment overview.",
+    icon: FileBarChart2,
   },
-];
+] as const;
 
 export default function AcademicAdminDashboard() {
   const workspace = useWorkspaceData();
@@ -84,8 +102,7 @@ export default function AcademicAdminDashboard() {
     { tone: "slate" },
   );
 
-  const focusItems =
-    highlights.length > 0 ? highlights : FOCUS_AREAS;
+  const focusItems = highlights.length > 0 ? highlights : FOCUS_AREAS;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -97,7 +114,7 @@ export default function AcademicAdminDashboard() {
   };
 
   return (
-    <div className="space-y-5 p-4 pb-8 md:p-6">
+    <div className="animate-enter-up space-y-5 p-4 pb-8 md:p-6">
       <AdminPageHero
         eyebrow="Academic desk"
         title={schoolName}
@@ -116,14 +133,14 @@ export default function AcademicAdminDashboard() {
             <button
               type="button"
               onClick={() => void onRefresh()}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              aria-label="Refresh metrics"
+              className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/15"
             >
               {refreshing || summaryLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
               )}
-              Refresh
             </button>
           </div>
         }
@@ -131,24 +148,42 @@ export default function AcademicAdminDashboard() {
 
       <FocusPills items={focusItems} accent="slate" />
 
-      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-        {MODULES.map((mod) => (
-          <Link
-            key={mod.href}
-            href={mod.href}
-            className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/50"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-slate-900">{mod.title}</p>
-              <p className="mt-1 text-sm text-slate-500">{mod.description}</p>
-            </div>
-            <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5" />
-          </Link>
-        ))}
-      </div>
+      <section aria-label="Academic modules">
+        <p className="ws-eyebrow text-slate-400">Modules</p>
+        <div className="mt-2.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {MODULES.map((mod) => {
+            const Icon = mod.icon;
+            return (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="group flex items-start gap-3.5 rounded-workspace-2xl border border-slate-200 bg-white p-4 shadow-workspace-xs transition duration-150 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-workspace-md"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-workspace-lg bg-slate-100 text-slate-600 ring-1 ring-slate-200/70 transition-colors duration-150 group-hover:bg-slate-900 group-hover:text-white">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-900">
+                      {mod.title}
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition duration-150 group-hover:translate-x-0.5 group-hover:text-slate-500" />
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                    {mod.description}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Workflow guide</h2>
+      <section className="rounded-workspace-2xl border border-slate-200 bg-white p-5 shadow-workspace-xs sm:p-6">
+        <p className="ws-eyebrow text-slate-400">Workflow</p>
+        <h2 className="mt-1 text-base font-semibold text-slate-900">
+          Term setup sequence
+        </h2>
         <ol className="mt-3 space-y-2">
           {WORKFLOW.map((step, index) => (
             <li
@@ -162,7 +197,7 @@ export default function AcademicAdminDashboard() {
             </li>
           ))}
         </ol>
-      </div>
+      </section>
     </div>
   );
 }
