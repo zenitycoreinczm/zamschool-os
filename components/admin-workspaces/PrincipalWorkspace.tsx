@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import SchoolSetupBanner, {
   persistSetupBannerDismissed,
   readSetupBannerDismissed,
@@ -12,7 +11,6 @@ import SchoolSetupBanner, {
 import SchoolAdminDashboard from "@/components/dashboard/SchoolAdminDashboard";
 import { FocusPills } from "@/components/workspace/FocusPills";
 import { SectionIntro } from "@/components/workspace/SectionIntro";
-import { metricsToStatCards } from "@/components/workspace/metricIcons";
 import { adminApiJson } from "@/lib/admin-browser-api";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import type { WorkspaceMetric } from "@/lib/workspace/summary";
@@ -21,13 +19,6 @@ type InitResults = Record<
   string,
   { status: string; count?: number; error?: string }
 >;
-
-const FALLBACK_METRIC_LABELS = [
-  { label: "Classes", hint: "Active classes" },
-  { label: "Pending Invites", hint: "Awaiting acceptance" },
-  { label: "Attendance", hint: "Present rate (7 days)" },
-  { label: "Outstanding", hint: "Unpaid fee balances" },
-];
 
 const HEAD_TEACHER_FOCUS = [
   "Invite office staff",
@@ -175,27 +166,6 @@ export default function PrincipalWorkspace() {
     }
   };
 
-  // Students/Teachers belong in School pulse cards, not the overview header.
-  const headerMetrics = liveMetrics.filter(
-    (m) => {
-      const label = String(m.label || "").toLowerCase();
-      return label !== "students" && label !== "teachers";
-    },
-  );
-
-  const heroStats =
-    headerMetrics.length > 0
-      ? metricsToStatCards(headerMetrics)
-      : FALLBACK_METRIC_LABELS.map((item, index) => ({
-          label: item.label,
-          value: metricsLoading ? "…" : "0",
-          hint: item.hint,
-          tone: (["sky", "violet", "amber", "emerald"] as const)[index % 4],
-        }));
-
-  const schoolName = workspace?.schoolName || "Your school";
-  const yearTerm = workspace?.yearTerm || "Academic context";
-  const displayName = workspace?.displayName || "Head Teacher";
   const focusItems = highlights.length > 0 ? highlights : HEAD_TEACHER_FOCUS;
   const unreadMessages = workspace?.unread.messages ?? 0;
   const unreadNotifications = workspace?.unread.notifications ?? 0;
@@ -256,23 +226,13 @@ export default function PrincipalWorkspace() {
 
   return (
     <div className="flex flex-col gap-4">
-      <AdminPageHero
-        eyebrow="Head Teacher overview"
-        title={schoolName}
-        description={`Welcome back, ${displayName}. Run the school from here — ${yearTerm}.`}
-        accent="slate"
-        stats={heroStats}
-        actions={
-          <>
-            <HeroAction href="/app/announcements" label="Send announcement" />
-            <HeroAction
-              href="/app/principal/staff"
-              label="Invite staff"
-              variant="secondary"
-            />
-          </>
-        }
-      />
+      <section>
+        <SectionIntro
+          title="School pulse"
+          description="Live counts, attendance, finance, calendar, and announcements."
+        />
+        <SchoolAdminDashboard peopleMode="principal" />
+      </section>
 
       {/* Quick actions — Head Teacher leadership desk */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -382,38 +342,7 @@ export default function PrincipalWorkspace() {
           }}
         />
       ) : null}
-
-      <section>
-        <SectionIntro
-          title="School pulse"
-          description="Live counts, attendance, finance, calendar, and announcements."
-        />
-        <SchoolAdminDashboard peopleMode="principal" />
-      </section>
     </div>
-  );
-}
-
-function HeroAction({
-  href,
-  label,
-  variant = "primary",
-}: {
-  href: string;
-  label: string;
-  variant?: "primary" | "secondary";
-}) {
-  return (
-    <Link
-      href={href}
-      className={
-        variant === "primary"
-          ? "inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100"
-          : "inline-flex items-center gap-1.5 rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
-      }
-    >
-      {label}
-    </Link>
   );
 }
 

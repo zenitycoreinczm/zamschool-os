@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
+import SchoolAdminDashboard from "@/components/dashboard/SchoolAdminDashboard";
 import { FocusPills } from "@/components/workspace/FocusPills";
+import { SectionIntro } from "@/components/workspace/SectionIntro";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
 import { useWorkspaceData } from "@/components/workspace/workspace-context";
 import {
@@ -29,28 +31,28 @@ const QUALITY_MODULES = [
   {
     href: "/app/admin/timetable/classes",
     title: "Class Timetables",
-    description: "Inspect weekly class schedules and period coverage across streams.",
+    description: "Weekly schedules and period coverage.",
     icon: GraduationCap,
     statKey: "classes" as const,
   },
   {
     href: "/app/admin/timetable/teachers",
     title: "Teacher Schedules",
-    description: "Verify teaching allocations, free periods, and prevent workload clashes.",
+    description: "Allocations, free periods, clashes.",
     icon: CalendarClock,
     statKey: "teachers" as const,
   },
   {
     href: "/app/admin/attendance",
     title: "Attendance Signals",
-    description: "Monitor school-wide present rates, lateness patterns, and lesson roll calls.",
+    description: "Present rates, lateness, roll calls.",
     icon: ClipboardList,
     statKey: "absent" as const,
   },
   {
     href: "/app/admin/academic",
     title: "Calendar & Terms",
-    description: "Review academic years, term dates, and official school calendar cycles.",
+    description: "Years, terms, school calendar.",
     icon: Calendar,
     statKey: null,
   },
@@ -60,14 +62,14 @@ const STANDARDS_MODULES = [
   {
     href: "/app/discipline-admin",
     title: "Conduct & Incident Desk",
-    description: "Investigate, resolve, and document student behaviour incidents and actions.",
+    description: "Behaviour cases and actions.",
     icon: Shield,
     badge: "Disciplinary authority",
   },
   {
     href: "/app/admin/classes",
     title: "Classes & Streams",
-    description: "Examine active class streams, student enrollments, and class supervisors.",
+    description: "Streams, enrolments, supervisors.",
     icon: Users,
     badge: "Enrollment oversight",
   },
@@ -77,29 +79,22 @@ const COMMS_MODULES = [
   {
     href: "/app/messages",
     title: "Staff Messages",
-    description: "Direct confidential coordination with teachers, HODs, and Head Teacher.",
+    description: "Coordinate with staff and leadership.",
     icon: MessageSquare,
   },
   {
     href: "/app/announcements",
     title: "School Notices",
-    description: "Broadcast announcements to teachers, parents, and secondary learners.",
+    description: "Broadcast to staff and parents.",
     icon: Megaphone,
   },
   {
     href: "/app/events",
     title: "School Events",
-    description: "Manage assemblies, ECZ testing dates, open days, and extra-curriculars.",
+    description: "Assemblies, exams, open days.",
     icon: Calendar,
   },
 ] as const;
-
-const QUALITY_WORKFLOW = [
-  "Verify class and teacher timetables for complete syllabus coverage and zero period clashes.",
-  "Track daily roll call compliance and investigate classes with unusual absence or lateness spikes.",
-  "Oversee student conduct cases and ensure interventions align with Ministry and school codes.",
-  "Maintain regular liaison with Academic Head and Guidance Counselor via internal messaging.",
-];
 
 export default function DeputyHeadDashboard() {
   const workspace = useWorkspaceData();
@@ -170,9 +165,9 @@ export default function DeputyHeadDashboard() {
   return (
     <div className="space-y-6 p-4 pb-12 md:p-6">
       <AdminPageHero
-        eyebrow="Academic Quality & Standards Desk"
+        eyebrow="Deputy Head overview"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Direct supervision of curriculum delivery, lesson timetables, student conduct, and teacher standards for ${yearTerm}.`}
+        description={`Welcome back, ${displayName}. Your school at a glance — ${yearTerm}.`}
         accent="slate"
         stats={heroStats}
         actions={
@@ -181,14 +176,14 @@ export default function DeputyHeadDashboard() {
               href="/app/admin/timetable/classes"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100"
             >
-              <CalendarClock className="h-4 w-4 text-sky-600" />
+              <CalendarClock className="h-4 w-4 text-slate-600" />
               Review Timetables
             </Link>
             <Link
               href="/app/discipline-admin"
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
             >
-              <Shield className="h-4 w-4 text-amber-300" />
+              <Shield className="h-4 w-4 text-slate-300" />
               Conduct Records
             </Link>
             <button
@@ -207,13 +202,21 @@ export default function DeputyHeadDashboard() {
         }
       />
 
+      <section>
+        <SectionIntro
+          title="School pulse"
+          description="Live counts, attendance, finance, calendar, and announcements."
+        />
+        <SchoolAdminDashboard peopleMode="principal" />
+      </section>
+
       <FocusPills items={focusItems} accent="slate" />
 
       {/* Domain Section 1: Academic Quality & Curriculum Delivery */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sky-700">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
               Curriculum & Coverage
             </p>
             <h2 className="text-lg font-bold text-slate-900">
@@ -222,7 +225,7 @@ export default function DeputyHeadDashboard() {
           </div>
           <Link
             href="/app/admin/timetable/classes"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-700 hover:text-sky-800"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900"
           >
             Open timetable suite
             <ArrowRight className="h-3.5 w-3.5" />
@@ -241,10 +244,10 @@ export default function DeputyHeadDashboard() {
                 className="group flex flex-col justify-between rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
               >
                 <div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sky-700 shadow-sm ring-1 ring-slate-200/80">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
                     <Icon className="h-4.5 w-4.5" />
                   </div>
-                  <p className="mt-3 font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">
+                  <p className="mt-3 font-semibold text-slate-900 transition-colors">
                     {mod.title}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -269,7 +272,7 @@ export default function DeputyHeadDashboard() {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-amber-700">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 School Standards
               </p>
               <h2 className="text-base font-bold text-slate-900">
@@ -278,7 +281,7 @@ export default function DeputyHeadDashboard() {
             </div>
             <Link
               href="/app/discipline-admin"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
             >
               Conduct desk <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -295,14 +298,14 @@ export default function DeputyHeadDashboard() {
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm ring-1 ring-slate-200">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
                         <Icon className="h-4.5 w-4.5" />
                       </div>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                         {mod.badge}
                       </span>
                     </div>
-                    <p className="mt-3 font-semibold text-slate-900 group-hover:text-slate-800">
+                    <p className="mt-3 font-semibold text-slate-900">
                       {mod.title}
                     </p>
                     <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -323,7 +326,7 @@ export default function DeputyHeadDashboard() {
         <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-indigo-700">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                 Coordination
               </p>
               <h2 className="text-base font-bold text-slate-900">
@@ -332,7 +335,7 @@ export default function DeputyHeadDashboard() {
             </div>
             <Link
               href="/app/messages"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
             >
               Open Inbox <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -348,7 +351,7 @@ export default function DeputyHeadDashboard() {
                   className="group flex flex-col justify-between rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 transition hover:border-slate-300 hover:bg-white"
                 >
                   <div>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm">
                       <Icon className="h-4 w-4" />
                     </div>
                     <p className="mt-2.5 font-semibold text-slate-900 text-xs sm:text-sm">
@@ -359,7 +362,7 @@ export default function DeputyHeadDashboard() {
                     </p>
                   </div>
                   <div className="mt-3 text-right">
-                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition" />
+                    <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-400 group-hover:text-slate-900 transition" />
                   </div>
                 </Link>
               );
@@ -368,28 +371,6 @@ export default function DeputyHeadDashboard() {
         </section>
       </div>
 
-      {/* Standards & Oversight Protocol Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-          Deputy Head Quality Protocol
-        </h2>
-        <p className="mt-1 text-xs text-slate-500">
-          Essential supervisory checkpoints for maintaining Zambian educational standards:
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {QUALITY_WORKFLOW.map((step, index) => (
-            <div
-              key={step}
-              className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 text-xs text-slate-700"
-            >
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
-                {index + 1}
-              </span>
-              <p className="leading-relaxed">{step}</p>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
