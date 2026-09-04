@@ -185,6 +185,7 @@ const principalSections: WorkspaceNavSection[] = [
     label: "Governance",
     items: [
       { href: "/app/principal/staff", label: "Invite staff", icon: UserPlus },
+      { href: "/app/discipline-admin", label: "Conduct approvals", icon: Shield },
       { href: "/app/admin/audit", label: "Audit trail", icon: Shield },
       { href: "/app/admin/school", label: "School profile", icon: Building2 },
       {

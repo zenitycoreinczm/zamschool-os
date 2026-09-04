@@ -178,7 +178,10 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
+      // Deputy Head may update lessons for daily operations (substitute
+      // cover, room/time fixes). Creating or deleting timetable structure
+      // stays with Academic Admin - see POST/DELETE below.
+      allowedRoles: ["ACADEMIC_ADMIN", "DEPUTY_HEAD", "SUPER_ADMIN"],
       feature: "timetable",
       featureAction: "update",
       domain: "academic",

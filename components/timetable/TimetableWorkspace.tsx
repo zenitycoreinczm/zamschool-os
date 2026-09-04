@@ -87,10 +87,11 @@ export function TimetableWorkspace({
   const currentUserId = wsData?.userId || null;
   const workspaceSchoolId = String(wsData?.schoolId || "").trim() || null;
   const role = normalizeRole(wsData?.role);
-  // Teachers (self view), Deputy Head, and Head Teacher (review only)
-  // cannot create/edit lessons. Lesson lifecycle belongs to Academic Admin.
-  const readOnly =
-    viewMode === "self" || role === "DEPUTY_HEAD" || role === "PRINCIPAL";
+  // Teachers (self view) and the Head Teacher (review only) cannot edit
+  // lessons. Deputy Head runs daily operations and may fix lessons
+  // (substitute cover, room/time corrections); Academic Admin owns the
+  // full lesson lifecycle. The API enforces the same split.
+  const readOnly = viewMode === "self" || role === "PRINCIPAL";
   const canEdit = !readOnly;
 
   const [loading, setLoading] = useState(true);

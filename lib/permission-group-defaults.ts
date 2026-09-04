@@ -42,17 +42,19 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       full("attendance", false),
       full("grades"),
       full("assignments"),
-      // Head Teacher reviews published timetables but never creates lessons —
-      // the lesson lifecycle belongs to Academic Admin (API enforces
-      // ACADEMIC_ADMIN-only writes; UI mirrors via read-only workspace).
+      // Head Teacher reviews published timetables (incl. exam schedules) but
+      // never creates lessons - the lesson lifecycle belongs to Academic
+      // Admin; Deputy Head may operationally fix/reassign lessons.
       readOnly("timetable"),
       full("grading_scales", false),
       full("academic_years", false),
       full("terms", false),
       full("settings"),
       full("announcements"),
+      full("events"),
       full("messages"),
       full("notifications"),
+      full("discipline"),
       full("finance"),
       full("payments"),
       full("audit"),
@@ -61,7 +63,8 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
   },
   {
     name: "Deputy Head Authority",
-    description: "Academic quality control - review and validate, not create.",
+    description:
+      "Daily operations: attendance monitoring, discipline case handling, timetable fixes and substitute cover, event coordination, and parent communication. Escalates final approvals (expulsions, admissions activation, budget) to the Head Teacher.",
     roles: ["DEPUTY_HEAD"],
     features: [
       readOnly("users"),
@@ -70,11 +73,15 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       full("attendance"),
       full("grades"),
       full("discipline"),
-      readOnly("timetable"),
+      // Deputy fixes operational timetable problems (swaps, substitutes,
+      // room/time corrections) but never creates or deletes lesson
+      // structure - that stays with Academic Admin.
+      updateOnly("timetable"),
       readOnly("grading_scales"),
       readOnly("academic_years"),
       readOnly("terms"),
       full("announcements"),
+      full("events"),
       full("messages"),
       full("notifications"),
     ],
@@ -213,6 +220,25 @@ function writable(featureKey: string, scope = "school"): PermissionFeatureSeed {
   return {
     feature_key: featureKey,
     can_create: true,
+    can_read: true,
+    can_update: true,
+    can_delete: false,
+    scope,
+  };
+}
+
+/**
+ * Read + update only (no create, no delete). Used for operational fix
+ * authority on structures the role does not own - e.g. Deputy Head
+ * correcting timetable lessons / assigning substitute teachers.
+ */
+function updateOnly(
+  featureKey: string,
+  scope = "school",
+): PermissionFeatureSeed {
+  return {
+    feature_key: featureKey,
+    can_create: false,
     can_read: true,
     can_update: true,
     can_delete: false,

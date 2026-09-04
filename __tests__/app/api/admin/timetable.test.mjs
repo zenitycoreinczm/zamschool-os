@@ -64,3 +64,22 @@ test("admin timetable GET requires timetable read permission", async () => {
     /requireFeatureAccess\(access\.context,\s*"timetable",\s*"read"\)/,
   );
 });
+
+test("deputy head may update lessons for cover but never create or delete structure", async () => {
+  const source = await readFile(routePath, "utf8");
+  const putBlock = source.slice(
+    source.indexOf("export async function PUT"),
+    source.indexOf("export async function DELETE"),
+  );
+  const postBlock = source.slice(
+    source.indexOf("export async function POST"),
+    source.indexOf("export async function PUT"),
+  );
+  const deleteBlock = source.slice(source.indexOf("export async function DELETE"));
+
+  // Leadership split: Deputy Head runs daily operations (substitute cover,
+  // room/time fixes); lesson structure belongs to Academic Admin.
+  assert.match(putBlock, /"DEPUTY_HEAD"/);
+  assert.doesNotMatch(postBlock, /"DEPUTY_HEAD"/);
+  assert.doesNotMatch(deleteBlock, /"DEPUTY_HEAD"/);
+});

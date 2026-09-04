@@ -88,6 +88,17 @@ export function canRoleAccessDomain(
     return true;
   }
 
+  // Deputy Head runs daily operations and may FIX lessons (substitute
+  // teacher swaps, room/time corrections) but never create or delete
+  // timetable structure - that stays with Academic Admin.
+  if (
+    normalized === "DEPUTY_HEAD" &&
+    domain === "academic" &&
+    action === "update"
+  ) {
+    return true;
+  }
+
   return domainOwnsRole(domain, normalized);
 }
 

@@ -31,28 +31,28 @@ const QUALITY_MODULES = [
   {
     href: "/app/admin/timetable/classes",
     title: "Class Timetables",
-    description: "Weekly schedules and period coverage.",
+    description: "Fix weekly schedules, swap rooms and times, keep period coverage complete.",
     icon: GraduationCap,
     statKey: "classes" as const,
   },
   {
     href: "/app/admin/timetable/teachers",
     title: "Teacher Schedules",
-    description: "Allocations, free periods, clashes.",
+    description: "Assign substitute cover, resolve clashes, and balance teaching workload.",
     icon: CalendarClock,
     statKey: "teachers" as const,
   },
   {
     href: "/app/admin/attendance",
     title: "Attendance Signals",
-    description: "Present rates, lateness, roll calls.",
+    description: "Monitor school-wide present rates, lateness patterns, and lesson roll calls.",
     icon: ClipboardList,
     statKey: "absent" as const,
   },
   {
     href: "/app/admin/academic",
     title: "Calendar & Terms",
-    description: "Years, terms, school calendar.",
+    description: "Review academic years, term dates, and official school calendar cycles.",
     icon: Calendar,
     statKey: null,
   },
@@ -140,10 +140,10 @@ export default function DeputyHeadDashboard() {
     highlights.length > 0
       ? highlights
       : [
-          "Audit weekly timetable coverage",
+          "Fix timetable clashes & arrange cover",
           "Monitor daily attendance signals",
-          "Review open conduct cases",
-          "Coordinate staff notices",
+          "Handle open conduct cases",
+          "Coordinate events & staff notices",
         ];
 
   const areaStats: Record<string, string> = {
@@ -165,9 +165,9 @@ export default function DeputyHeadDashboard() {
   return (
     <div className="space-y-6 p-4 pb-12 md:p-6">
       <AdminPageHero
-        eyebrow="Deputy Head overview"
+        eyebrow="Daily operations desk"
         title={schoolName}
-        description={`Welcome back, ${displayName}. Your school at a glance — ${yearTerm}.`}
+        description={`Welcome back, ${displayName}. Run the school day: attendance signals, discipline cases, timetable fixes, and staff coordination for ${yearTerm}. Final approvals stay with the Head Teacher.`}
         accent="slate"
         stats={heroStats}
         actions={
@@ -176,8 +176,8 @@ export default function DeputyHeadDashboard() {
               href="/app/admin/timetable/classes"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-100"
             >
-              <CalendarClock className="h-4 w-4 text-slate-600" />
-              Review Timetables
+              <CalendarClock className="h-4 w-4 text-sky-600" />
+              Timetable fixes
             </Link>
             <Link
               href="/app/discipline-admin"
