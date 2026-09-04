@@ -1099,11 +1099,67 @@ export default function TeacherResultsPage() {
               <p className="text-xs text-slate-500">{parseDiagnostics}</p>
             )}
 
+          <div
+            role="status"
+            aria-live="polite"
+            className={cn(
+              "rounded-xl border px-4 py-3 text-sm",
+              !file || !selectedClass || !selectedSubject || !examTitle.trim()
+                ? "border-slate-200 bg-slate-50 text-slate-600"
+                : previewLoading
+                  ? "border-sky-200 bg-sky-50 text-sky-800"
+                  : parsedRows && matchedCount > 0 && unmatchedCount === 0
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : parsedRows && matchedCount > 0
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-slate-200 bg-white text-slate-600",
+            )}
+          >
+            <div className="flex items-start gap-3">
+              {previewLoading ? (
+                <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+              ) : parsedRows && matchedCount > 0 && unmatchedCount === 0 ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              ) : parsedRows && unmatchedCount > 0 ? (
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              ) : (
+                <GraduationCap className="mt-0.5 h-4 w-4 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="font-semibold">
+                  {!selectedClass
+                    ? "Select a class to begin"
+                    : !selectedSubject
+                      ? "Select a subject to continue"
+                      : !examTitle.trim()
+                        ? "Add an exam title to continue"
+                        : !file
+                          ? "Choose a CSV or Excel file"
+                          : previewLoading
+                            ? "Checking your file…"
+                            : parsedRows && matchedCount > 0 && unmatchedCount === 0
+                              ? "Ready to upload"
+                              : parsedRows && matchedCount > 0
+                                ? `${matchedCount} matched · ${unmatchedCount} row${unmatchedCount === 1 ? " needs" : "s need"} review`
+                                : "Preview the file to check student matches"}
+                </p>
+                {parsedRows && matchedCount > 0 ? (
+                  <p className="mt-0.5 text-xs opacity-80">
+                    {matchedCount} result{matchedCount === 1 ? "" : "s"} will be uploaded
+                    {unmatchedCount > 0 ? ` · ${unmatchedCount} unmatched rows will be skipped` : ""}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
           {!showPreview && !previewLoading && (
             <button
               onClick={handleUpload}
               disabled={
                 uploading ||
+                previewLoading ||
+                matchedCount === 0 ||
                 !file ||
                 !selectedClass ||
                 !selectedSubject ||

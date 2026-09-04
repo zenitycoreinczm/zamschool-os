@@ -228,6 +228,7 @@ export default function TeacherInboxPage() {
 
   const canSendToday = quota?.canSend ?? true;
   const isBodyOverLimit = composeForm.body.length > MESSAGE_BODY_MAX;
+  const selectedContact = contacts.find((contact) => contact.id === composeForm.recipientId);
 
   // Group contacts by role for the select dropdown
   const groupedContacts = useMemo(() => {
@@ -311,7 +312,12 @@ export default function TeacherInboxPage() {
                       onClick={() => void handleSendMessage()}
                     />
                   </div>
-                  <MessageCharacterCount value={composeForm.body} />
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                    <MessageCharacterCount value={composeForm.body} />
+                    {quota ? (
+                      <span>{quota.remaining} message{quota.remaining === 1 ? "" : "s"} left today</span>
+                    ) : null}
+                  </div>
                 </>
               }
             >
@@ -323,6 +329,7 @@ export default function TeacherInboxPage() {
                     setComposeForm((prev) => ({ ...prev, recipientId: e.target.value }))
                   }
                   className={messageFieldClass}
+                  aria-describedby="recipient-help"
                 >
                   <option value="">Select recipient...</option>
                   {Object.entries(groupedContacts).map(([groupName, items]) =>
@@ -337,11 +344,15 @@ export default function TeacherInboxPage() {
                     ) : null,
                   )}
                 </select>
-                {contactsLoading ? (
-                  <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
-                    <Loader2 className="h-3 w-3 animate-spin" /> Loading recipients...
-                  </span>
-                ) : null}
+                <span id="recipient-help" className="mt-1 block text-xs text-slate-500">
+                  {contactsLoading
+                    ? "Loading people you can message…"
+                    : selectedContact
+                      ? `Sending to ${selectedContact.label}${selectedContact.role ? ` · ${selectedContact.role}` : ""}`
+                      : contacts.length === 0
+                        ? "No available recipients for your account yet."
+                        : `${contacts.length} school contact${contacts.length === 1 ? "" : "s"} available`}
+                </span>
               </label>
 
               <label className="block">

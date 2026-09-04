@@ -211,13 +211,20 @@ export default function TeacherAttendancePage() {
     [lessons],
   );
 
-  const exceptionCount = useMemo(
+  const stagedChangeCount = useMemo(
     () =>
-      Object.values(exceptions).reduce(
-        (sum, lessonExceptions) => sum + Object.keys(lessonExceptions).length,
-        0,
-      ),
-    [exceptions],
+      lessons.reduce((sum, lesson) => {
+        const staged = exceptions[lesson.id] || {};
+        return (
+          sum +
+          lesson.roster.reduce((studentSum, student) => {
+            const saved = student.status || "PRESENT";
+            const current = staged[student.id] || "PRESENT";
+            return studentSum + (saved !== current ? 1 : 0);
+          }, 0)
+        );
+      }, 0),
+    [lessons, exceptions],
   );
 
   const openCount = lessons.filter((l) => l.window?.canMark).length;
@@ -490,6 +497,11 @@ export default function TeacherAttendancePage() {
               onSubmit={() => void submitAttendance(lesson)}
               isSaving={saving === lesson.id}
               parentHealth={getLessonParentHealth(lesson.id)}
+              stagedChangeCount={lesson.roster.reduce((sum, student) => {
+                const saved = student.status || "PRESENT";
+                const current = (exceptions[lesson.id] || {})[student.id] || "PRESENT";
+                return sum + (saved !== current ? 1 : 0);
+              }, 0)}
             />
           ))}
         </div>
@@ -508,6 +520,7 @@ function RollCallCard({
   onSubmit,
   isSaving,
   parentHealth,
+  stagedChangeCount,
 }: {
   lesson: Lesson;
   isExpanded: boolean;
@@ -522,6 +535,7 @@ function RollCallCard({
     totalStudents: number;
     hasAnyLinked: boolean;
   };
+  stagedChangeCount: number;
 }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | AttendanceStatus>("ALL");
@@ -723,7 +737,17 @@ function RollCallCard({
           >
             {filteredRoster.length === 0 ? (
               <div className="py-10 text-center text-xs text-slate-400">
-                No students match your filter or search query.
+                <p>No students match your filter or search query.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("ALL");
+                  }}
+                  className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  Clear filters
+                </button>
               </div>
             ) : (
               filteredRoster.map((student) => {
@@ -771,7 +795,7 @@ function RollCallCard({
                             onClick={() => onSetStatus(student.id, status)}
                             disabled={locked}
                             className={cn(
-                              "rounded-lg px-2.5 py-1 text-xs font-medium transition duration-150 min-w-[3rem]",
+                              "min-h-9 min-w-[3.75rem] rounded-lg px-2.5 py-1 text-xs font-medium transition duration-150 sm:min-h-8 sm:min-w-[3rem]",
                               isSelected
                                 ? activeColor
                                 : "text-slate-600 hover:bg-white hover:text-slate-900",
@@ -790,8 +814,13 @@ function RollCallCard({
 
           {/* Footer with Notification & Submit */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
-            <div className="flex items-center gap-2 text-xs">
-              <Bell className="h-3.5 w-3.5 text-slate-400" />
+            <div className="flex min-w-0 items-center gap-2 text-xs">
+              <Bell className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              {stagedChangeCount > 0 ? (
+                <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800">
+                  {stagedChangeCount} unsaved change{stagedChangeCount === 1 ? "" : "s"}
+                </span>
+              ) : null}
               {!locked && willNotifyCount > 0 ? (
                 <span className="text-slate-600">
                   Will notify <strong className="text-slate-900">{willNotifyCount}</strong> linked parents upon save
