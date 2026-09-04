@@ -42,7 +42,10 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       full("attendance", false),
       full("grades"),
       full("assignments"),
-      full("timetable"),
+      // Head Teacher reviews published timetables but never creates lessons —
+      // the lesson lifecycle belongs to Academic Admin (API enforces
+      // ACADEMIC_ADMIN-only writes; UI mirrors via read-only workspace).
+      readOnly("timetable"),
       full("grading_scales", false),
       full("academic_years", false),
       full("terms", false),

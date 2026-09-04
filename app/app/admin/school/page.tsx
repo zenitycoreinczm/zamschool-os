@@ -455,14 +455,6 @@ export default function AdminSchoolPage() {
         canEdit={canEditSchoolProfile}
         schoolReady={Boolean(schoolId)}
       />
-
-      <Surface variant="default" className="p-5" as="div">
-        <p className="font-semibold text-slate-800">School identity</p>
-        <p className="mt-1 text-sm text-slate-500">
-          These details appear across admin workspace, communication templates,
-          and reports.
-        </p>
-      </Surface>
     </div>
   );
 }
@@ -490,7 +482,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         required={required}
         aria-required={required || undefined}
-        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-300"
+        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400"
       />
     </label>
   );

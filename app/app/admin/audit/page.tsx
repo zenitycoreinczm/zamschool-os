@@ -86,7 +86,7 @@ export default function AdminAuditPage() {
         <div className="flex flex-col gap-5 xl:flex-row xl:justify-between">
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-600">Oversight</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Oversight</p>
               <h1 className="mt-2 text-2xl font-bold text-slate-900 md:text-3xl">Audit Trail</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Track who changed what, when it happened, and which records were touched across the admin workspace.</p>
             </div>
@@ -120,7 +120,7 @@ export default function AdminAuditPage() {
                   onClick={() => setActionFilter(item)}
                   aria-pressed={actionFilter === item}
                   className={cn(
-                    "rounded-full px-3 py-2 text-xs font-semibold capitalize transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200",
+                    "rounded-full px-3 py-2 text-xs font-semibold capitalize transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300",
                     actionFilter === item
                       ? "bg-slate-900 text-white"
                       : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
