@@ -68,9 +68,15 @@ export function canAccessPath(
   if (pathname.startsWith("/app/ict-admin")) return role === "ICT_ADMIN";
   if (pathname.startsWith("/app/registrar")) return role === "REGISTRAR";
   // Discipline desk: discipline admin owns it; guidance may use the same
-  // records UI for welfare / conduct follow-up (API still enforces feature perms).
+  // records UI for welfare / conduct follow-up; leadership (deputy head / principal) has oversight.
   if (pathname.startsWith("/app/discipline-admin"))
-    return role === "DISCIPLINE_ADMIN" || role === "GUIDANCE_OFFICE";
+    return [
+      "DISCIPLINE_ADMIN",
+      "GUIDANCE_OFFICE",
+      "DEPUTY_HEAD",
+      "PRINCIPAL",
+      "SUPER_ADMIN",
+    ].includes(role);
   // Canonical portals live under /app/*; legacy /teacher|/student|/parent still redirect there.
   if (pathname.startsWith("/app/teacher") || pathname.startsWith("/teacher"))
     return role === "TEACHER";

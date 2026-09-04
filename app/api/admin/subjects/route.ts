@@ -13,15 +13,23 @@ import { auditDomainWrite } from "@/lib/audit-domain";
 import { enforceRouteAccess } from "@/lib/route-enforcement";
 import { invalidateByTag } from "@/lib/enhanced-cache";
 
-const createSubjectSchema = z.object({
+const singleSubjectSchema = z.object({
   name: z.string().min(1),
-  code: z.string().optional(),
+  code: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
 });
+
+const createSubjectSchema = z.union([
+  singleSubjectSchema,
+  z.object({
+    subjects: z.array(singleSubjectSchema).min(1),
+  }),
+]);
 
 const updateSubjectSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
-  code: z.string().optional(),
+  code: z.string().optional().nullable(),
 });
 
 export async function GET(req: Request) {
@@ -50,7 +58,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const access = await enforceRouteAccess(req, {
-      allowedRoles: ["ACADEMIC_ADMIN", "SUPER_ADMIN"],
+      allowedRoles: ["ACADEMIC_ADMIN", "PRINCIPAL", "SUPER_ADMIN"],
       feature: "subjects",
       featureAction: "create",
       domain: "academic",
@@ -73,10 +81,42 @@ export async function POST(req: Request) {
 
     const body = await parseJsonWithSchema(req, createSubjectSchema);
 
+    // Batch insertion branch (zod guarantees subjects is a non-empty array)
+    if ("subjects" in body) {
+      const rows = body.subjects.map((s) => ({
+        school_id: schoolId,
+        name: s.name.trim(),
+        code: s.code?.trim() || null,
+        description: s.description?.trim() || null,
+      }));
+
+      const { data, error } = await supabaseAdmin
+        .from("subjects")
+        .insert(rows)
+        .select();
+
+      if (error) throw error;
+
+      await auditDomainWrite({
+        schoolId,
+        userId: access.context.userId,
+        action: "subjects.batch_create",
+        entityType: "subject",
+        entityId: "batch",
+        newData: { count: rows.length },
+        ipAddress: getClientIp(req),
+      });
+
+      await invalidateByTag("dashboard");
+      return NextResponse.json({ success: true, data, count: rows.length });
+    }
+
+    // Single insertion branch
     const payload: Record<string, any> = {
       school_id: schoolId,
       name: body.name.trim(),
       code: body.code?.trim() || null,
+      description: body.description?.trim() || null,
     };
 
     const { data, error } = await supabaseAdmin
@@ -135,7 +175,7 @@ export async function PUT(req: Request) {
 
     const payload: Record<string, any> = {};
     if (body.name) payload.name = body.name.trim();
-    if (body.code !== undefined) payload.code = body.code.trim() || null;
+    if (body.code !== undefined) payload.code = body.code?.trim() || null;
 
     const { data, error } = await supabaseAdmin
       .from("subjects")

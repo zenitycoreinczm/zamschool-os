@@ -220,17 +220,42 @@ const deputyHeadSections: WorkspaceNavSection[] = [
     }),
   },
   {
-    label: "Academic review",
+    label: "Academic quality",
     items: [
       {
-        href: "/app/admin/timetable",
-        label: "Review timetables",
+        href: "/app/admin/timetable/classes",
+        label: "Class timetables",
         icon: CalendarClock,
       },
       {
+        href: "/app/admin/timetable/teachers",
+        label: "Teacher schedules",
+        icon: Users,
+      },
+      {
         href: "/app/admin/attendance",
-        label: "Attendance trends",
+        label: "Attendance signals",
         icon: ClipboardList,
+      },
+      {
+        href: "/app/admin/academic",
+        label: "Calendar & terms",
+        icon: Calendar,
+      },
+    ],
+  },
+  {
+    label: "Standards & welfare",
+    items: [
+      {
+        href: "/app/discipline-admin",
+        label: "Conduct records",
+        icon: Shield,
+      },
+      {
+        href: "/app/admin/classes",
+        label: "Classes & grades",
+        icon: GraduationCap,
       },
     ],
   },
@@ -305,7 +330,7 @@ const academicAdminSections: WorkspaceNavSection[] = [
     label: "Today",
     items: staffTodayItems({
       homeHref: "/app/academic-admin",
-      homeLabel: "Dashboard",
+      homeLabel: "Academic desk",
     }),
   },
   {
@@ -313,18 +338,13 @@ const academicAdminSections: WorkspaceNavSection[] = [
     items: [
       {
         href: "/app/admin/timetable/classes",
-        label: "Class timetable",
+        label: "Class timetables",
         icon: GraduationCap,
       },
       {
         href: "/app/admin/timetable/teachers",
-        label: "Teacher timetable",
+        label: "Teacher schedules",
         icon: Users,
-      },
-      {
-        href: "/app/admin/academic",
-        label: "Years & terms",
-        icon: Calendar,
       },
     ],
   },
@@ -332,11 +352,21 @@ const academicAdminSections: WorkspaceNavSection[] = [
     label: "Curriculum",
     items: [
       { href: "/app/admin/subjects", label: "Subjects", icon: FileText },
-      { href: "/app/admin/assignments", label: "Assignments", icon: FileText },
       {
         href: "/app/admin/grading-scales",
         label: "Grading scales",
         icon: ClipboardList,
+      },
+      { href: "/app/admin/assignments", label: "Assignments", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Academic calendar",
+    items: [
+      {
+        href: "/app/admin/academic",
+        label: "Years & terms",
+        icon: Calendar,
       },
     ],
   },

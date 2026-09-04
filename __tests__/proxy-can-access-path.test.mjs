@@ -59,4 +59,6 @@ test("deputy head can open quality hub and shared feed", async () => {
   assert.equal(canAccessPath("DEPUTY_HEAD", "/app/messages"), true);
   assert.equal(canAccessPath("DEPUTY_HEAD", "/app/events"), true);
   assert.equal(canAccessPath("DEPUTY_HEAD", "/app/admin/timetable"), true);
+  assert.equal(canAccessPath("DEPUTY_HEAD", "/app/discipline-admin"), true);
+  assert.equal(canAccessPath("PRINCIPAL", "/app/discipline-admin"), true);
 });

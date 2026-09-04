@@ -35,7 +35,10 @@ test("deputy and guidance nav include Today feed + role tools", () => {
   const guidance = roleNavSections.guidance_office.flatMap((s) => s.items);
 
   assert.ok(deputy.some((i) => i.href === "/app/events"));
-  assert.ok(deputy.some((i) => i.href === "/app/admin/timetable"));
+  // Deputy links straight to class timetables (no redirect hop via
+  // /app/admin/timetable, which bounces non-teachers to /classes).
+  assert.ok(deputy.some((i) => i.href === "/app/admin/timetable/classes"));
+  assert.ok(!deputy.some((i) => i.href === "/app/admin/timetable"));
   assert.ok(!deputy.some((i) => i.href === "/app/admin/assignments"));
   assert.ok(guidance.some((i) => i.href === "/app/discipline-admin"));
   assert.ok(guidance.some((i) => i.href === "/app/announcements"));

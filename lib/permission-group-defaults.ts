@@ -66,6 +66,7 @@ export const DEFAULT_PERMISSION_GROUPS: PermissionGroupSeed[] = [
       readOnly("subjects"),
       full("attendance"),
       full("grades"),
+      full("discipline"),
       readOnly("timetable"),
       readOnly("grading_scales"),
       readOnly("academic_years"),
