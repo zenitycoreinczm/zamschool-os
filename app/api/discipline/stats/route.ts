@@ -4,6 +4,7 @@ import { requireAdminContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { supabaseAdmin } from "@/lib/supabase";
+import { withSchoolScope } from "@/lib/tenant/tenant-context";
 
 export async function GET(req: Request) {
   try {
@@ -113,11 +114,17 @@ export async function GET(req: Request) {
 
     let topStudents: Array<{ studentId: string; count: number; name: string }> = [];
     if (topStudentIds.length > 0) {
-      const { data: students } = await supabaseAdmin
-        .from("students")
-        .select("id, profile_id")
-        .in("id", topStudentIds);
+      const { data: students } = await withSchoolScope(
+        supabaseAdmin
+          .from("students")
+          .select("id, profile_id")
+          .in("id", topStudentIds),
+        schoolId,
+      );
 
+      // tenant-scope: derived — profileIds come from the school-scoped students
+      // query above. profiles.school_id is nullable, so an added filter would
+      // drop students whose profile has no school row.
       const profileIds = (students || []).map((s: any) => s.profile_id).filter(Boolean);
       const { data: profiles } = profileIds.length > 0
         ? await supabaseAdmin.from("profiles").select("id, first_name, last_name").in("id", profileIds)

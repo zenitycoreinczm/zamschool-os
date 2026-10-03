@@ -6,6 +6,7 @@ import { applyPlatformRateLimit, platformRateLimitResponse } from "@/lib/platfor
 import { safeErrorMessage } from "@/lib/server-guards";
 import { requireStudentContext } from "@/lib/server-auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { withSchoolScope } from "@/lib/tenant/tenant-context";
 import { resolveLessonDayOfWeek } from "@/lib/lesson-day";
 import { toSchoolDayHoursClientPayload } from "@/lib/school-day-hours";
 import { loadSchoolDayHours } from "@/lib/school-day-hours-server";
@@ -75,7 +76,7 @@ export async function GET(req: Request) {
               parseDashboardClassNumber(profile?.admission_number) ??
               parseDashboardClassNumber(legacyStudent?.studentNumber);
         const [{ classRow, gradeLabel }, schoolDayHoursRaw] = await Promise.all([
-          loadClassContext(classId, profile?.grade_id ?? null),
+          loadClassContext(classId, profile?.grade_id ?? null, schoolId),
           loadSchoolDayHours(schoolId),
         ]);
         const schoolDayHours = toSchoolDayHoursClientPayload(schoolDayHoursRaw);
@@ -391,7 +392,11 @@ function parseDashboardClassNumber(value: unknown): number | null {
   return n > 0 ? n : null;
 }
 
-async function loadClassContext(classId: string | null, gradeId: string | null) {
+async function loadClassContext(
+  classId: string | null,
+  gradeId: string | null,
+  schoolId: string,
+) {
   if (!classId && !gradeId) {
     return {
       classRow: null,
@@ -406,11 +411,13 @@ async function loadClassContext(classId: string | null, gradeId: string | null) 
     };
   }
 
-  const legacyClass = await supabaseAdmin
-    .from("classes")
-    .select("id, name, grade_level")
-    .eq("id", classId)
-    .maybeSingle();
+  const legacyClass = await withSchoolScope(
+    supabaseAdmin
+      .from("classes")
+      .select("id, name, grade_level")
+      .eq("id", classId),
+    schoolId,
+  ).maybeSingle();
 
   if (!legacyClass.error) {
     return {
@@ -423,11 +430,13 @@ async function loadClassContext(classId: string | null, gradeId: string | null) 
     throw legacyClass.error;
   }
 
-  const latestClass = await supabaseAdmin
-    .from("classes")
-    .select("id, name, grade_id")
-    .eq("id", classId)
-    .maybeSingle();
+  const latestClass = await withSchoolScope(
+    supabaseAdmin
+      .from("classes")
+      .select("id, name, grade_id")
+      .eq("id", classId),
+    schoolId,
+  ).maybeSingle();
 
   if (latestClass.error) throw latestClass.error;
 

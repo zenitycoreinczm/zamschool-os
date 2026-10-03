@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireAdminContext, requireTeacherContext } from "@/lib/server-auth";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
+import { withSchoolScope } from "@/lib/tenant/tenant-context";
 import {
   parseJsonWithSchema,
   safeErrorMessage,
@@ -167,25 +168,37 @@ export async function GET(req: Request) {
     const [studentsRes, categoriesRes, actionsRes, reportersRes] =
       await Promise.all([
         studentIds.length
-          ? supabaseAdmin
-              .from("students")
-              .select("id, student_number, profile_id")
-              .in("id", studentIds)
+          ? withSchoolScope(
+              supabaseAdmin
+                .from("students")
+                .select("id, student_number, profile_id")
+                .in("id", studentIds),
+              schoolId,
+            )
           : Promise.resolve({ data: [] as any[] }),
         categoryIds.length
-          ? supabaseAdmin
-              .from("discipline_categories")
-              .select("id, name, severity")
-              .in("id", categoryIds)
+          ? withSchoolScope(
+              supabaseAdmin
+                .from("discipline_categories")
+                .select("id, name, severity")
+                .in("id", categoryIds),
+              schoolId,
+            )
           : Promise.resolve({ data: [] as any[] }),
         recordIds.length
-          ? supabaseAdmin
-              .from("discipline_actions")
-              .select(
-                "id, record_id, action_type, description, action_date, duration_days",
-              )
-              .in("record_id", recordIds)
+          ? withSchoolScope(
+              supabaseAdmin
+                .from("discipline_actions")
+                .select(
+                  "id, record_id, action_type, description, action_date, duration_days",
+                )
+                .in("record_id", recordIds),
+              schoolId,
+            )
           : Promise.resolve({ data: [] as any[] }),
+        // tenant-scope: derived — reporterIds come only from the school-scoped
+        // discipline_records query above. profiles.school_id is nullable, so an
+        // added filter would drop reporters whose profile has no school row.
         reporterIds.length
           ? supabaseAdmin
               .from("profiles")
@@ -225,6 +238,9 @@ export async function GET(req: Request) {
       { first_name: string | null; last_name: string | null }
     >();
     if (studentProfileIds.length > 0) {
+      // tenant-scope: derived — studentProfileIds come from the school-scoped
+      // students query above. profiles.school_id is nullable, so filtering it
+      // would drop students whose profile has no school row.
       const { data: studentProfiles } = await supabaseAdmin
         .from("profiles")
         .select("id, first_name, last_name")

@@ -34,9 +34,53 @@ export function tenantActorRateLimitKey(params: {
   return `${scoped}:ip:${getClientIp(params.req)}`;
 }
 
-export function withTenantFilter<T extends { eq: (column: string, value: string) => T }>(
-  query: T,
-  schoolId: string,
-) {
-  return query.eq("school_id", requireTenantId(schoolId));
+export type TenantScope =
+  | string
+  | null
+  | undefined
+  | { schoolId?: string | null };
+
+function resolveTenantSchoolId(scope: TenantScope): string {
+  return requireTenantId(typeof scope === "string" ? scope : scope?.schoolId);
+}
+
+/**
+ * Minimal shape of a PostgREST query builder. Declared with method syntax on
+ * purpose: supabase-js types `.eq()` against a column-name union, and only
+ * method-style declarations get bivariant parameter checking, so a real
+ * builder satisfies this while a property-style signature would not.
+ */
+type SchoolScopable = {
+  eq(column: string, value: string): unknown;
+};
+
+/**
+ * Appends the tenant filter to a service-role query. Throws rather than
+ * returning an unscoped query, because service-role clients bypass RLS.
+ *
+ * `Q` is intentionally left unconstrained. Constraining it to a structural
+ * `{ eq(...) }` shape makes TypeScript instantiate the whole PostgREST builder
+ * and fail with TS2589 ("excessively deep") at real call sites, so the shape is
+ * asserted internally instead. Supabase's `.eq()` returns the same builder, so
+ * the returned reference stays chainable.
+ *
+ * Do not apply this to `profiles` reads whose ids already came from a
+ * school-scoped query: `profiles.school_id` is nullable, so an added filter
+ * silently drops platform admins and unaccepted invitations.
+ */
+export function withSchoolScope<Q>(query: Q, scope: TenantScope): Q {
+  (query as unknown as SchoolScopable).eq("school_id", resolveTenantSchoolId(scope));
+  return query;
+}
+
+export function withTenantFilter<Q>(query: Q, schoolId: string): Q {
+  return withSchoolScope(query, schoolId);
+}
+
+/**
+ * Fail-closed tenant id for callers that need to append the filter inline
+ * (conditional query builders where wrapping the builder is awkward).
+ */
+export function schoolScopeParam(scope: TenantScope): string {
+  return resolveTenantSchoolId(scope);
 }

@@ -22,14 +22,24 @@ const GLOBAL_TABLES = new Set([
 /** Lookup by primary key after invitation/token flows. */
 const TOKEN_SCOPED_TABLES = new Set(["staff_invitations"]);
 
+/**
+ * Positive tenant-guard signals. Row-identifier filters (`.eq("id", ...)`,
+ * `.in("id", ...)`) are deliberately NOT listed: they scope a row, not a
+ * tenant, and treating them as guards let a cross-tenant IDOR pass --strict.
+ *
+ * Prefer calling withSchoolScope(). `tenant-scope: derived` marks an id list
+ * already produced by a school-scoped query; `tenant-scope: cross-tenant`
+ * marks intentional platform-wide access and must be a deliberate choice.
+ */
 const TENANT_SCOPED_HINT =
-  /school_id|schoolId|school_id:\s*schoolId|requireActorContext|requireAdminContext|requireTeacherContext|requireStudentContext|requireParentContext|requirePaymentsContext|requireFinancial|requireSuperAdminContext|requireSchoolStaffContext|profileIdentityOrFilter|loadNotificationsForUser|getUnreadCountsForUser|countUnreadNotificationsForUser|authenticateAccountPortalRequest|\.eq\("id",|\.in\("id",|\.in\("student_id",|\.eq\("assignment_id",|school_id:\s*access/i;
+  /school_id|schoolId|school_id:\s*schoolId|requireActorContext|requireAdminContext|requireTeacherContext|requireStudentContext|requireParentContext|requirePaymentsContext|requireFinancial|requireSuperAdminContext|requireSchoolStaffContext|profileIdentityOrFilter|loadNotificationsForUser|getUnreadCountsForUser|countUnreadNotificationsForUser|authenticateAccountPortalRequest|withSchoolScope|schoolScopeParam|requireTenantId|tenant-scope:\s*(derived|cross-tenant)|\.in\("student_id",|\.eq\("assignment_id",|school_id:\s*access/i;
 
 const FROM_RE = /supabaseAdmin\s*\.\s*from\s*\(\s*["'`]([^"'`]+)["'`]\s*\)/g;
 
 /** Documented exceptions: cross-tenant lookups that are safe by design. */
 const DOCUMENTED_EXCEPTIONS = [
   { file: "app/api/auth/forgot-password/route.ts", table: "profiles", reason: "Cross-tenant email lookup for password reset (no school context)" },
+  { file: "app/api/auth/login-guard/route.ts", table: "profiles", reason: "Pre-authentication lockout check resolves the account by email only, before any school context exists. Reads a single is_active flag; the session itself is still rejected downstream by auth." },
   { file: "app/api/staff/invitations/route.ts", table: "staff_invitations", reason: "Insert only - scoped via payload's school_id/created_by/invited_by/accepted_by rather than an `.eq()` chain. Heuristic flagged it because its scan window doesn't see the insert payload." },
 ];
 
@@ -81,8 +91,15 @@ function classify(table, windowText, fileRel) {
   if (TENANT_SCOPED_HINT.test(windowText)) {
     return { level: "ok", reason: "tenant guard signal in window" };
   }
+  // Platform routes are not exempt. Intentional cross-tenant access must be
+  // marked at the call site, otherwise a missing school_id filter here reads
+  // exactly like every other unscoped service-role query.
   if (fileRel.includes("super-admin")) {
-    return { level: "review", reason: "super-admin route - verify intentional cross-tenant access" };
+    return {
+      level: STRICT ? "fail" : "review",
+      reason:
+        "no school_id guard in window; if this platform route is intentionally cross-tenant, mark it: tenant-scope: cross-tenant",
+    };
   }
   return { level: STRICT ? "fail" : "review", reason: "no school_id guard detected in scan window" };
 }

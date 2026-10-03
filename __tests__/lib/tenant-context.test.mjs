@@ -13,6 +13,7 @@ const {
   tenantRateLimitScope,
   tenantActorRateLimitKey,
   withTenantFilter,
+  withSchoolScope,
 } = await importTsModule("../../lib/tenant/tenant-context.ts", import.meta.url);
 
 function buildRequest(headers = {}) {
@@ -135,4 +136,45 @@ test("withTenantFilter never issues a query when the tenant id is invalid", () =
   // The critical isolation guarantee: an invalid tenant id must prevent the
   // query from running at all, not silently fall through to an unscoped read.
   assert.deepEqual(query.calls, []);
+});
+
+test("withSchoolScope accepts an actor context object", () => {
+  const query = buildFakeQuery();
+  const result = withSchoolScope(query, { schoolId: "school-9" });
+
+  assert.equal(result, query, "withSchoolScope must return the chained query");
+  assert.deepEqual(query.calls, [["school_id", "school-9"]]);
+});
+
+test("withSchoolScope accepts a bare school id", () => {
+  const query = buildFakeQuery();
+  withSchoolScope(query, "school-9");
+
+  assert.deepEqual(query.calls, [["school_id", "school-9"]]);
+});
+
+// ActorContextSuccess.schoolId is string | null, and requireSuperAdminContext
+// sets requireSchool: false, so a null tenant is a real runtime input rather
+// than a theoretical one. This is the fail-closed guarantee the audit gate
+// depends on.
+for (const scope of [null, undefined, "", "   ", { schoolId: null }, { schoolId: "" }, {}]) {
+  test(`withSchoolScope fails closed instead of building an unscoped query: ${JSON.stringify(
+    scope,
+  )}`, () => {
+    const query = buildFakeQuery();
+
+    assert.throws(() => withSchoolScope(query, scope), /Missing tenant school_id/);
+    assert.deepEqual(query.calls, []);
+  });
+}
+
+test("withTenantFilter delegates to withSchoolScope for the same guarantee", () => {
+  const viaAlias = buildFakeQuery();
+  const viaCanonical = buildFakeQuery();
+
+  withTenantFilter(viaAlias, "school-1");
+  withSchoolScope(viaCanonical, "school-1");
+
+  assert.deepEqual(viaAlias.calls, viaCanonical.calls);
+  assert.throws(() => withTenantFilter(buildFakeQuery(), null), /Missing tenant school_id/);
 });

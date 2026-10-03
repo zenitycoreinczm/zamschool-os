@@ -145,6 +145,9 @@ export async function GET(req: Request) {
 
     let profilesById = new Map<string, any>();
     if (profileIds.length > 0) {
+      // tenant-scope: derived — profileIds come from the school-scoped students
+      // query above. profiles.school_id is nullable, so an added filter would
+      // drop students whose profile has no school row.
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
         .select("id, first_name, last_name")
