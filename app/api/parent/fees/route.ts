@@ -70,6 +70,9 @@ export async function GET(req: Request) {
     const profileIdByStudentId = new Map((studentsResult.data || []).map((row: any) => [row.id, row.profile_id]));
 
     const profileIds = Array.from(new Set((studentsResult.data || []).map((row: any) => row.profile_id).filter(Boolean)));
+    // tenant-scope: derived — profileIds come from the school-scoped students
+    // query above. profiles.school_id is nullable, so an added filter would drop
+    // students whose profile has no school row.
     const { data: profiles } = profileIds.length > 0
       ? await supabaseAdmin.from("profiles").select("id, first_name, last_name, email").in("id", profileIds)
       : { data: [] };
