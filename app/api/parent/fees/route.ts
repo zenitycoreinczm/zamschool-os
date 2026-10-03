@@ -34,54 +34,42 @@ export async function GET(req: Request) {
       return jsonResponse({ success: true, data: { fees: [], summary: emptySummary() } });
     }
 
-    const scopedStudentRowIds = linked.profileIds
-      .map((profileId) => linked.studentRowIdByProfileId?.get(profileId))
-      .filter(Boolean) as string[];
-
-    if (scopedStudentRowIds.length === 0) {
-      return jsonResponse({ success: true, data: { fees: [], summary: emptySummary() } });
-    }
-
     const { data: feeRows, error: feeError } = await supabaseAdmin
       .from("student_fees")
       .select("id, student_id, fee_id, amount_due, amount_paid, status, due_date, billing_month, created_at")
       .eq("school_id", schoolId)
-      .in("student_id", scopedStudentRowIds)
+      .in("student_id", linked.profileIds)
       .order("due_date", { ascending: false });
 
     if (feeError) throw feeError;
 
     const feeIds = Array.from(new Set((feeRows || []).map((row: any) => row.fee_id).filter(Boolean)));
-    const studentIds = Array.from(new Set((feeRows || []).map((row: any) => row.student_id).filter(Boolean)));
+    const billedProfileIds = Array.from(
+      new Set((feeRows || []).map((row: any) => row.student_id).filter(Boolean)),
+    );
 
-    const [feesResult, studentsResult] = await Promise.all([
+    const [feesResult, profilesResult] = await Promise.all([
       feeIds.length > 0
         ? supabaseAdmin.from("fees").select("id, name, description, amount").eq("school_id", schoolId).in("id", feeIds)
         : Promise.resolve({ data: [], error: null }),
-      studentIds.length > 0
-        ? supabaseAdmin.from("students").select("id, profile_id").eq("school_id", schoolId).in("id", studentIds)
+      // Already tenant-bound: these ids are a subset of linked.profileIds, which
+      // was resolved through a school-scoped students query. profiles.school_id is
+      // nullable, so re-filtering here would drop pupils whose profile row has no
+      // school id.
+      billedProfileIds.length > 0
+        ? supabaseAdmin.from("profiles").select("id, first_name, last_name, email").in("id", billedProfileIds)
         : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (feesResult.error) throw feesResult.error;
-    if (studentsResult.error) throw studentsResult.error;
+    if (profilesResult.error) throw profilesResult.error;
 
-    const feeNameById = new Map((feesResult.data || []).map((row: any) => [row.id, row]));
-    const profileIdByStudentId = new Map((studentsResult.data || []).map((row: any) => [row.id, row.profile_id]));
-
-    const profileIds = Array.from(new Set((studentsResult.data || []).map((row: any) => row.profile_id).filter(Boolean)));
-    // tenant-scope: derived — profileIds come from the school-scoped students
-    // query above. profiles.school_id is nullable, so an added filter would drop
-    // students whose profile has no school row.
-    const { data: profiles } = profileIds.length > 0
-      ? await supabaseAdmin.from("profiles").select("id, first_name, last_name, email").in("id", profileIds)
-      : { data: [] };
-    const profileById = new Map((profiles || []).map((row: any) => [row.id, row]));
+    const feeById = new Map((feesResult.data || []).map((row: any) => [row.id, row]));
+    const profileById = new Map((profilesResult.data || []).map((row: any) => [row.id, row]));
 
     const fees = (feeRows || []).map((row: any) => {
-      const fee = feeNameById.get(row.fee_id) as any;
-      const profileId = profileIdByStudentId.get(row.student_id);
-      const profile = profileById.get(profileId || "");
+      const fee = feeById.get(row.fee_id) as any;
+      const profile = profileById.get(row.student_id);
       return {
         id: row.id,
         studentId: row.student_id,
