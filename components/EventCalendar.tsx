@@ -69,7 +69,7 @@ export default function EventCalendar({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [endpoint]);
 
   const selectedDate = Array.isArray(value)
     ? value[0]?.toISOString().slice(0, 10) || ""

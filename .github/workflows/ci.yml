@@ -28,8 +28,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        # `npm run typecheck` runs `tsc --noEmit`. Blocking, so a type error
+        # fails here instead of surfacing only later inside `next build`.
+        run: npm run typecheck
+
       - name: ESLint
-        # `npm run lint` runs `eslint .` over the repo. Fails on any warning or error.
+        # `npm run lint` runs `eslint . --max-warnings 0` over the repo, so any
+        # warning or error fails the gate.
         run: npm run lint
 
       - name: Static-grep test suite
