@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-import { loadSchoolAnnouncements } from "@/lib/announcements-server";
+import {
+  invalidateSchoolAnnouncementsCache,
+  loadSchoolAnnouncements,
+} from "@/lib/announcements-server";
+import {
+  loadAnnouncementSeenIds,
+  recordAnnouncementSeen,
+} from "@/lib/announcements/delivery";
 import { matchesRoleTarget } from "@/lib/role-audience-match";
 import { requireActorContext } from "@/lib/server-auth";
 import { KNOWN_ROLES } from "@/lib/roles";
-import { safeErrorMessage } from "@/lib/server-guards";
+import { parseJsonWithSchema, safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { fetchProfileByIdentity } from "@/lib/profile-lookup";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
@@ -14,6 +22,8 @@ import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 const ANNOUNCEMENT_ALLOWED_ROLES = KNOWN_ROLES.filter(
   (r) => r !== "REGISTRAR",
 );
+
+const markSeenSchema = z.object({ id: z.string().min(1) });
 
 export async function GET(req: Request) {
   try {
@@ -69,28 +79,106 @@ export async function GET(req: Request) {
         : null;
     const rows = await loadSchoolAnnouncements(schoolId, limit);
 
+    const visible = rows.filter((row: {
+      target_audience?: string | null;
+      target_role?: string | null;
+    }) =>
+      matchesRoleTarget(row.target_audience || row.target_role, role, {
+        viewerClassId,
+      }),
+    );
+
+    // Read state is the third thing §13 says must be shared: the same notice is
+    // read on whichever client it was opened on. Computed after the school-wide
+    // cache read so one viewer's state never leaks into another's payload.
+    const seen = await loadAnnouncementSeenIds(
+      schoolId,
+      profile.id,
+      visible.map((row: { id: string }) => String(row.id)),
+    );
+
     return jsonWithPrivateCache({
-      data: rows
-        .filter(
-          (row: {
-            target_audience?: string | null;
-            target_role?: string | null;
-          }) =>
-            matchesRoleTarget(row.target_audience || row.target_role, role, {
-              viewerClassId,
-            }),
-        )
-        .map((row: { body?: string | null; content?: string | null }) => ({
+      data: visible.map(
+        (row: { body?: string | null; content?: string | null; id: string }) => ({
           ...row,
           body: row.body || row.content || "",
           content: row.content || row.body || "",
-        })),
+          seen: seen.has(String(row.id)),
+        }),
+      ),
     });
   } catch (error: unknown) {
     return NextResponse.json(
       {
         error: safeErrorMessage(error, "Failed to fetch account announcements"),
       },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * Mark a notice read for the authenticated actor. The viewer is taken from the
+ * verified session, never from the body, so no client can mark someone else's
+ * read state or write into another school.
+ */
+export async function POST(req: Request) {
+  try {
+    const access = await requireActorContext(
+      {
+        allowedRoles: ANNOUNCEMENT_ALLOWED_ROLES,
+        requireSchool: true,
+      },
+      req,
+    );
+    if (!access.ok) return access.response;
+
+    const body = await parseJsonWithSchema(req, markSeenSchema);
+    const announcementId = String(body.id || "").trim();
+
+    const { data: profile } =
+      await fetchProfileByIdentity<{ id: string; school_id: string }>(
+        supabaseAdmin as never,
+        access.context.userId,
+        "id, school_id",
+      );
+
+    if (!profile?.id || !profile.school_id) {
+      return NextResponse.json(
+        { error: "No school linked to this account" },
+        { status: 403 },
+      );
+    }
+
+    const result = await recordAnnouncementSeen({
+      schoolId: profile.school_id,
+      profileId: profile.id,
+      announcementId,
+    });
+
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            result.error === "not-in-school"
+              ? "That notice does not belong to your school."
+              : "Could not record that you have read this notice.",
+        },
+        { status: result.error === "not-in-school" ? 404 : 500 },
+      );
+    }
+
+    await invalidateSchoolAnnouncementsCache();
+
+    return NextResponse.json({
+      success: true,
+      seen: true,
+      seenCount: result.seenCount,
+    });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      { error: safeErrorMessage(error, "Failed to record announcement read") },
       { status: 500 },
     );
   }

@@ -15,6 +15,7 @@ import {
 import { tenantActorRateLimitKey } from "@/lib/tenant/tenant-context";
 import { requireActorContext, requireAdminContext } from "@/lib/server-auth";
 import { auditDomainWrite } from "@/lib/audit-domain";
+import { notifyAnnouncementAudience } from "@/lib/announcements/delivery";
 import { encodeTargetAudience } from "@/lib/target-audience";
 import { refreshSchoolReadModels } from "@/lib/read-model-refresh";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
@@ -161,19 +162,45 @@ export async function POST(req: Request) {
 
     await invalidateSchoolAnnouncementsCache();
     await refreshSchoolReadModels(schoolId);
+
+    // One announcement record, three surfaces (web, mobile, lock screen). This
+    // was previously done by the mobile app after its own POST, so publishing
+    // from here notified nobody and the same notice behaved differently per
+    // client. The audience is resolved from this actor's school, not from
+    // anything the caller sends.
+    const delivery = await notifyAnnouncementAudience({
+      schoolId,
+      announcementId: String(data?.id || ""),
+      title: String(data?.title || body.title || "School announcement"),
+      content: String(data?.content || body.content || ""),
+      targetAudience: typeof payload.target_audience === "string" ? payload.target_audience : null,
+      targetRole: typeof payload.target_role === "string" ? payload.target_role : null,
+      targetClassId: typeof payload.target_class_id === "string" ? payload.target_class_id : null,
+      publisherId: userId,
+    });
+
     await auditDomainWrite({
       schoolId,
       userId,
       action: "announcement.created",
       entityType: "announcement",
       entityId: data?.id,
-      newData: { title: body.title, target_audience: payload.target_audience },
+      newData: {
+        title: body.title,
+        target_audience: payload.target_audience,
+        notifyRecipients: delivery.recipientCount,
+        notifyQueued: delivery.notificationsQueued,
+        notifyPushSent: delivery.pushSent,
+        notifyAudience: delivery.audience,
+        notifySource: delivery.recipientSource,
+      },
       ipAddress: ip,
     });
 
     return NextResponse.json({
       success: true,
       data: normalizeAnnouncementRow(data),
+      delivery,
     });
   } catch (error: unknown) {
     return NextResponse.json(

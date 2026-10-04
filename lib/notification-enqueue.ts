@@ -16,6 +16,7 @@ export type NotificationPayloadSlice = {
   title: string;
   message: string;
   type: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 const BATCH_SIZE = 100;
@@ -39,6 +40,7 @@ export async function enqueueNotifications(
     message: payload.message,
     type: payload.type || "general",
     is_read: false,
+    ...(payload.metadata ? { metadata: payload.metadata } : {}),
   }));
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {

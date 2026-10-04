@@ -5,16 +5,25 @@ import { matchesRoleTarget } from "@/lib/role-audience-match";
 import { normalizeRole, roleToStoredValue } from "@/lib/roles";
 import { supabaseAdmin } from "@/lib/supabase";
 
-type EventAudienceInput = {
+/**
+ * The part of an audience that decides *who* receives a fan-out. Events and
+ * announcements resolve it through the same function so a class-targeted notice
+ * reaches exactly the same people a class-targeted event does (one school, one
+ * rule, no per-feature recipient logic to drift).
+ */
+export type AudienceScope = {
   schoolId: string;
+  targetRole?: string | null;
+  targetClassId?: string | null;
+};
+
+type EventAudienceInput = AudienceScope & {
   eventId: string;
   title: string;
   description?: string | null;
   eventDate?: string | null;
   startTime?: string | null;
   location?: string | null;
-  targetRole?: string | null;
-  targetClassId?: string | null;
 };
 
 export type EventNotifyResult = {
@@ -49,7 +58,7 @@ export async function notifySchoolEventAudience(
   if (!schoolId || !eventId) return empty;
 
   try {
-    const { ids: recipients, source } = await resolveEventRecipientIds(input);
+    const { ids: recipients, source } = await resolveAudienceRecipients(input);
     if (recipients.length === 0) {
       console.warn("[event-notify] zero recipients", {
         schoolId,
@@ -125,8 +134,8 @@ export async function notifySchoolEventAudience(
   }
 }
 
-async function resolveEventRecipientIds(
-  input: EventAudienceInput,
+export async function resolveAudienceRecipients(
+  input: AudienceScope,
 ): Promise<{ ids: string[]; source: string }> {
   const schoolId = input.schoolId;
   const targetClassId = String(input.targetClassId || "").trim();

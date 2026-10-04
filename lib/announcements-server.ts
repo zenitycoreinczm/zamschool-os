@@ -36,13 +36,16 @@ export async function invalidateSchoolAnnouncementsCache() {
  * timeouts/network errors (those used to cascade into 4×10s waits).
  */
 async function fetchSchoolAnnouncementsFromDb(schoolId: string, limit: number) {
+  // Audience columns stay in every rung of the ladder: the account route decides
+  // who may see a notice from target_audience/target_role, so a fallback select
+  // that drops them would silently widen the audience.
   const selects = [
-    // Matches public.announcements baseline (+ is_pinned).
-    "id, title, content, target_role, created_at, published_at, is_pinned",
+    // Matches public.announcements baseline (+ is_pinned, delivery and read counts).
+    "id, title, content, target_role, target_audience, audience, target_class_id, expires_at, created_at, published_at, is_pinned, delivered_count, seen_count, created_by",
     // Older/partial installs without is_pinned.
-    "id, title, content, target_role, created_at, published_at",
+    "id, title, content, target_role, target_audience, audience, target_class_id, expires_at, created_at, published_at",
     // Legacy installs that used body instead of content.
-    "id, title, body, target_role, created_at, published_at",
+    "id, title, body, target_role, target_audience, created_at, published_at",
   ];
 
   for (let i = 0; i < selects.length; i++) {
