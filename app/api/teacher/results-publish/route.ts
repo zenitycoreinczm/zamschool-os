@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { invalidatePublishedResultsCache } from "@/lib/published-results-read";
-import { syncResultPublishNotifications } from "@/lib/results/sync-notifications";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
 import { requireTeacherContext } from "@/lib/server-auth";
 import {
@@ -13,7 +11,6 @@ import {
 } from "@/lib/server-guards";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { auditDomainWrite } from "@/lib/audit-domain";
-import { refreshSchoolReadModels } from "@/lib/read-model-refresh";
 
 const publishSchema = z
   .object({
@@ -160,83 +157,91 @@ export async function POST(req: Request) {
       );
     }
 
-    // Only publish unpublished drafts (idempotent re-publish of already-published is ok).
-    const toPublish = scopedResults.filter((row: any) => !row.published_at);
-    const alreadyPublished = scopedResults.length - toPublish.length;
-    const publishedAt = new Date().toISOString();
+    // Rows already released by the approval desk stay released: writing
+    // grading_status back to "submitted" here would withdraw results that
+    // parents and pupils can already see.
+    const isReleased = (row: any) =>
+      Boolean(row.published_at) ||
+      ["published", "approved"].includes(String(row.grading_status || "").toLowerCase());
+
+    const toSubmit = scopedResults.filter((row: any) => !isReleased(row));
+    const alreadyReleased = scopedResults.length - toSubmit.length;
+    const actedAt = new Date().toISOString();
     const resultIds = scopedResults.map((row: any) => row.id);
-    const publishIds = (toPublish.length > 0 ? toPublish : scopedResults).map(
-      (row: any) => row.id,
-    );
 
-    // published_by → profiles.id (not auth.users id)
-    const publisherProfileId = access.context.profileId || userId;
+    if (toSubmit.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          submittedCount: 0,
+          alreadyReleased,
+          actedAt,
+          resultIds,
+          parentsNotified: 0,
+          notificationsQueued: 0,
+          pushAttempted: false,
+          linkedParents: 0,
+          notifyReason: "Already released by the approval desk",
+          message: `Already released — ${alreadyReleased} results are with parents.`,
+        },
+      });
+    }
 
-    // Teacher direct publish (roll-call style): parents can see results immediately.
-    // Full multi-stage moderation remains available on the admin results desk.
-    const { error: publishError } = await supabaseAdmin
+    // Releasing results is the head teacher's authority, on this client exactly
+    // as on mobile, where the edge refuses `published` for anyone outside
+    // canApproveFinalResults. A teacher hands the marks over; the approval desk
+    // at /api/admin/results sets published_at/published_by. Writing `published`
+    // from here let any teacher put unverified marks in front of parents and
+    // made the two clients disagree about who owns the final result.
+    const { error: submitError } = await supabaseAdmin
       .from("results")
       .update({
-        grading_status: "published",
-        published_at: publishedAt,
-        published_by: publisherProfileId,
-        submitted_at: publishedAt,
+        grading_status: "submitted",
+        submitted_at: actedAt,
         submitted_by: userId,
       })
-      .in("id", publishIds)
+      .in("id", toSubmit.map((row: any) => row.id))
       .eq("school_id", schoolId);
 
-    if (publishError) {
-      // Some schemas may not have grading_status / submitted_* columns yet.
-      if (isMissingColumnError(publishError)) {
+    if (submitError) {
+      // A deployment whose results table predates the approval columns has no
+      // chain to hold the marks in, so release is the only state it can express.
+      if (isMissingColumnError(submitError)) {
         const fallback = await supabaseAdmin
           .from("results")
           .update({
-            published_at: publishedAt,
-            published_by: publisherProfileId,
+            published_at: actedAt,
+            // published_by → profiles.id (not auth.users id)
+            published_by: access.context.profileId || userId,
           })
-          .in("id", publishIds)
+          .in("id", toSubmit.map((row: any) => row.id))
           .eq("school_id", schoolId);
         if (fallback.error) throw fallback.error;
       } else {
-        throw publishError;
+        throw submitError;
       }
     }
 
-    // Notify parents first (what the teacher is waiting for), then side effects.
-    const notificationDelivery = await syncResultPublishNotifications({
-      schoolId,
-      teacherId: access.context.profileId || userId,
-      publishedAt,
-      rows: scopedResults,
-      mode: body.subjectOnly || body.assignmentId ? "subject" : "exam",
-    }).catch((err) => {
-      console.error("[results] notification fan-out failed:", err);
-      return {
-        parentCount: 0,
-        notificationCount: 0,
-        pushAttempted: false,
-        linkedParents: 0,
-        reason: "Notification fan-out failed",
-      };
-    });
+    // Parents are told when the marks are released, not when a teacher hands
+    // them over; notifying here would announce a result the school has not
+    // approved yet.
+    const notificationDelivery = {
+      parentCount: 0,
+      notificationCount: 0,
+      pushAttempted: false,
+      linkedParents: 0,
+      reason: "Awaiting approval by the head teacher",
+    };
 
-    // Do not block the publish response on cache/read-model refresh.
-    void invalidatePublishedResultsCache().catch(() => {});
-    void refreshSchoolReadModels(schoolId).catch(() => {});
     void auditDomainWrite({
       schoolId,
       userId,
-      action: "results.published",
+      action: "results.submitted",
       entityType: "results",
       newData: {
-        publishedCount: publishIds.length,
-        newlyPublished: toPublish.length,
-        alreadyPublished,
-        publishedAt,
-        parentsNotified: notificationDelivery.parentCount,
-        notificationsQueued: notificationDelivery.notificationCount,
-        pushAttempted: notificationDelivery.pushAttempted,
+        submittedCount: toSubmit.length,
+        alreadyReleased,
+        submittedAt: actedAt,
       },
       ipAddress: ip,
     }).catch(() => {});
@@ -244,22 +249,18 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       data: {
-        publishedCount: publishIds.length,
-        newlyPublished: toPublish.length,
-        alreadyPublished,
-        publishedAt,
+        submittedCount: toSubmit.length,
+        publishedCount: 0,
+        newlyPublished: 0,
+        alreadyReleased,
+        actedAt,
         resultIds,
         parentsNotified: notificationDelivery.parentCount,
         notificationsQueued: notificationDelivery.notificationCount,
         pushAttempted: notificationDelivery.pushAttempted,
         linkedParents: notificationDelivery.linkedParents,
-        notifyReason: notificationDelivery.reason || null,
-        message:
-          notificationDelivery.parentCount > 0
-            ? `Published ${publishIds.length} results · ${notificationDelivery.parentCount} parents notified${
-                notificationDelivery.pushAttempted ? " (push sent)" : ""
-              }`
-            : `Published ${publishIds.length} results. ${notificationDelivery.reason || "No parents notified."}`,
+        notifyReason: notificationDelivery.reason,
+        message: `Sent ${toSubmit.length} results for approval. The head teacher releases them to parents and pupils.`,
       },
     });
   } catch (error: unknown) {

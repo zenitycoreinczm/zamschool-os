@@ -14,6 +14,7 @@ import { createAuditLog } from "@/lib/audit-log";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
 import { invalidatePublishedResultsCache } from "@/lib/published-results-read";
 import { refreshSchoolReadModels } from "@/lib/read-model-refresh";
+import { syncResultPublishNotifications } from "@/lib/results/sync-notifications";
 
 const transitionSchema = z.object({
   resultIds: z.array(z.string().uuid()).min(1),
@@ -117,10 +118,14 @@ export async function POST(req: Request) {
     const body = await parseJsonWithSchema(req, transitionSchema);
     const { resultIds, targetStatus } = body;
 
-    // Fetch current results to validate transitions
+    // Fetch current results to validate transitions. The pupil and assignment
+    // columns are carried because a release must notify the parents of exactly
+    // these rows.
     const { data: results, error: fetchError } = await supabaseAdmin
       .from("results")
-      .select("id, grading_status")
+      .select(
+        "id, grading_status, student_id, assignment_id, assignments(id, title, class_id, subject_id, teacher_id)",
+      )
       .in("id", resultIds)
       .eq("school_id", schoolId);
 
@@ -180,6 +185,42 @@ export async function POST(req: Request) {
 
     if (updateError) throw updateError;
 
+    let releaseDelivery: {
+      parentCount: number;
+      notificationCount: number;
+      pushAttempted: boolean;
+      linkedParents: number;
+      reason?: string;
+    } | null = null;
+
+    // Releasing is the moment a family is told. The teacher endpoint only hands
+    // marks over for approval, so this is the one fan-out for a release made
+    // from either client (plan s13, s27); without it, moving release behind the
+    // approval desk would silently stop parents hearing about results at all.
+    if (targetStatus === "published" && schoolId) {
+      releaseDelivery = await syncResultPublishNotifications({
+        schoolId,
+        // The notifier reads this as a profiles.id, with an auth_user_id
+        // fallback, and resolves the name shown in the alert.
+        teacherId: access.context.profileId || userId,
+        publishedAt: now,
+        rows: results,
+        mode: "exam",
+      }).catch((error: unknown) => {
+        console.error("[results] release notification fan-out failed:", error);
+        return {
+          parentCount: 0,
+          notificationCount: 0,
+          pushAttempted: false,
+          linkedParents: 0,
+          reason: "Notification fan-out failed",
+        };
+      });
+
+      await invalidatePublishedResultsCache();
+      await refreshSchoolReadModels(schoolId);
+    }
+
     await createAuditLog({
       schoolId,
       userId,
@@ -190,15 +231,17 @@ export async function POST(req: Request) {
         targetStatus,
         transitionedBy: userId,
         ...updatePayload,
+        ...(releaseDelivery
+          ? {
+              parentsNotified: releaseDelivery.parentCount,
+              notificationsQueued: releaseDelivery.notificationCount,
+              pushAttempted: releaseDelivery.pushAttempted,
+              notifyReason: releaseDelivery.reason || null,
+            }
+          : {}),
       },
       ipAddress: ip,
     });
-
-    // If publishing, refresh caches and read models
-    if (targetStatus === "published" && schoolId) {
-      await invalidatePublishedResultsCache();
-      await refreshSchoolReadModels(schoolId);
-    }
 
     return NextResponse.json({
       success: true,
@@ -206,6 +249,15 @@ export async function POST(req: Request) {
         transitionedCount: resultIds.length,
         targetStatus,
         transitionedAt: now,
+        ...(releaseDelivery
+          ? {
+              parentsNotified: releaseDelivery.parentCount,
+              notificationsQueued: releaseDelivery.notificationCount,
+              pushAttempted: releaseDelivery.pushAttempted,
+              linkedParents: releaseDelivery.linkedParents,
+              notifyReason: releaseDelivery.reason || null,
+            }
+          : {}),
       },
     });
   } catch (error: unknown) {
