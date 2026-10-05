@@ -101,4 +101,13 @@ export async function invalidateSchoolDashboardCaches(
     invalidateByTag("classes"),
     invalidateByTag("students"),
   ]);
+
+  const { broadcastTenantCacheInvalidation } = await import(
+    "@/lib/realtime/broadcast"
+  );
+  await broadcastTenantCacheInvalidation({
+    schoolId: id,
+    domain: "school",
+    action: "invalidate",
+  });
 }

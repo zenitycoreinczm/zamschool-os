@@ -12,6 +12,7 @@ import {
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { invalidateByTag } from "@/lib/enhanced-cache";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 import { getECZGrade } from "@/lib/zambia-localization";
 import {
   extractIdempotencyKey,
@@ -78,12 +79,19 @@ export async function POST(req: Request) {
     const routeKey = "teacher.results.save";
     const scopeKey = `${schoolId}:${userId}:${body.assignmentId}`;
 
+    // Stable client fields — same hash used for store, checked on load.
+    const saveRequestHash = hashRequestPayload({
+      assignmentId: body.assignmentId,
+      results: body.results,
+    });
+
     if (idempotencyKey) {
       const replay = await loadIdempotentResponse({
         routeKey,
         schoolId,
         scopeKey,
         idempotencyKey,
+        requestHash: saveRequestHash,
       });
       if (replay) return replay;
     }
@@ -249,6 +257,11 @@ export async function POST(req: Request) {
       ipAddress: ip,
     });
     await invalidateByTag("results");
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "results",
+      action: "update",
+    });
 
     const responseBody = {
       success: true,
@@ -262,10 +275,7 @@ export async function POST(req: Request) {
     if (idempotencyKey) {
       await storeIdempotentResponse(
         { routeKey, schoolId, scopeKey, idempotencyKey },
-        hashRequestPayload({
-          assignmentId: body.assignmentId,
-          results: body.results,
-        }),
+        saveRequestHash,
         200,
         responseBody,
       );

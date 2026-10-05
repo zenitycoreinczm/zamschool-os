@@ -23,6 +23,7 @@ import {
 } from "@/lib/discipline-notifications";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
 import { loadTeacherAssignmentScope } from "@/lib/teacher-assignment-scope-server";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 const createRecordSchema = z.object({
   studentId: z.string().uuid(),
@@ -101,7 +102,10 @@ export async function GET(req: Request) {
     // desks). Load rows plain, then enrich related data in parallel.
     let query = supabaseAdmin
       .from("discipline_records")
-      .select("*", { count: "exact" })
+      .select(
+        "id, school_id, student_id, class_id, category_id, reported_by, title, description, incident_date, incident_location, severity, status, resolution_notes, resolved_by, resolved_at, created_at, updated_at",
+        { count: "exact" }
+      )
       .eq("school_id", schoolId)
       .order("incident_date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -410,6 +414,12 @@ export async function POST(req: Request) {
       // Non-critical - don't fail the request
     }
 
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "discipline",
+      action: "insert",
+    });
+
     return NextResponse.json({ success: true, data }, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
@@ -578,6 +588,12 @@ export async function PUT(req: Request) {
         // Non-critical
       }
     }
+
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "discipline",
+      action: "update",
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {

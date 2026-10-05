@@ -8,9 +8,6 @@
  * Integrates with the existing KV/Redis rate limit backoff from rate-limit.ts.
  */
 
-import { isKvConfigured, checkKvRateLimit } from './kv-client';
-import { checkRateLimit } from './rate-limit';
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SUPABASE_MAX_RPS = 30;
@@ -325,55 +322,9 @@ export function resetBudget(): void {
 }
 
 /**
- * Higher-order function that wraps a Supabase client method with budget
- * management: checks budget before the call, records after, and handles
- * KV/Redis rate limit backoff integration.
- *
- * @param fn - The async function to wrap (e.g., supabase.from('...').select)
- * @param options - Optional configuration
+ * NOTE: budget enforcement for live traffic lives in
+ * lib/supabase-fetch-guard.ts (per-device sliding window) + lib/connection-pool.ts
+ * (concurrency cap). The helpers above (checkBudget/waitForBudget/recordRequest)
+ * back lib/batch-query.ts and lib/supabase-guard.ts. Do not add a third
+ * enforcement layer here without removing one of those two.
  */
-export function withBudget<T>(
-  fn: () => Promise<T>,
-  options?: {
-    /** Timeout in ms for waiting on budget (default: 10_000) */
-    timeoutMs?: number;
-    /** Whether to skip the KV/Redis rate limit check (default: false) */
-    skipRateLimit?: boolean;
-    /** Identifier for rate limit tracking */
-    identifier?: string;
-  }
-): () => Promise<T> {
-  const timeoutMs = options?.timeoutMs ?? 10_000;
-  const skipRateLimit = options?.skipRateLimit ?? false;
-  const identifier = options?.identifier ?? 'supabase';
-
-  return async (): Promise<T> => {
-    // 1. Wait for budget availability
-    await waitForBudget(timeoutMs);
-
-    // 2. Check existing KV/Redis rate limiter for backoff signals
-    if (!skipRateLimit && isKvConfigured()) {
-      try {
-        const kvResult = await checkKvRateLimit(identifier, 'api');
-        if (!kvResult.allowed) {
-          const retryAfter = Math.max((kvResult.reset - Date.now()) / 1000, 1);
-          console.warn(
-            `[SupabaseBudget] KV rate limit hit. Backing off ${retryAfter}s.`
-          );
-          await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
-        }
-      } catch {
-        // KV check failed – proceed anyway
-      }
-    }
-
-    // 3. Execute the request
-    try {
-      const result = await fn();
-      return result;
-    } finally {
-      // 4. Always record the request in the budget
-      recordRequest();
-    }
-  };
-}

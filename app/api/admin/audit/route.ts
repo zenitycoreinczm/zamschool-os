@@ -29,7 +29,9 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin
       .from("audit_logs")
-      .select("*")
+      .select(
+        "id, user_id, school_id, action, resource_type, resource_id, details, ip_address, user_agent, created_at, entity_type, entity_id, old_data, new_data"
+      )
       .eq("school_id", schoolId);
 
     if (userId) {

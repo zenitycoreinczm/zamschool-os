@@ -18,6 +18,13 @@ export interface Env {
 
   // Config vars (non-secret - see wrangler.toml / README)
   UPSTREAM_API: string;
+  /**
+   * Optional second origin for idempotent GET reads only (e.g. a preview or
+   * regional deployment). Used by handleCachedProxy when the primary is
+   * unreachable or 5xx. NEVER used for mutations, uploads, or queue replay —
+   * writes stay single-flight to avoid double-apply.
+   */
+  UPSTREAM_API_FALLBACK?: string;
   CORS_ALLOWED_ORIGINS?: string;
   /** Set via `wrangler secret put SUPABASE_JWT_SECRET` when using HS256 legacy secret. */
   SUPABASE_JWT_SECRET?: string;
@@ -33,7 +40,7 @@ export interface Env {
   JWT_VERIFY_MODE?: string;
   /** Must be "true" to allow decode mode - never enable in production. */
   ALLOW_INSECURE_JWT_DECODE?: string;
-  /** Service role key for privileged queue replay after JWT expiry. */
+  /** @deprecated Queue replay never escalates since the re-auth fix — do not set. */
   SUPABASE_SERVICE_ROLE_KEY?: string;
   /** Set via `wrangler secret put SUPABASE_SERVICE_ROLE_KEY`. */
   /** Set to "true" to enable edge rate limiting (Upstash Redis or isolate memory). */

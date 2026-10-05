@@ -12,6 +12,7 @@ import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { auditDomainWrite } from "@/lib/audit-domain";
 import { enforceRouteAccess } from "@/lib/route-enforcement";
 import { invalidateByTag } from "@/lib/enhanced-cache";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 const singleSubjectSchema = z.object({
   name: z.string().min(1),
@@ -138,6 +139,13 @@ export async function POST(req: Request) {
     });
 
     await invalidateByTag("dashboard");
+    if (schoolId) {
+      await broadcastTenantCacheInvalidation({
+        schoolId,
+        domain: "structure",
+        action: "insert",
+      });
+    }
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -198,6 +206,13 @@ export async function PUT(req: Request) {
     });
 
     await invalidateByTag("dashboard");
+    if (schoolId) {
+      await broadcastTenantCacheInvalidation({
+        schoolId,
+        domain: "structure",
+        action: "update",
+      });
+    }
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -246,6 +261,13 @@ export async function DELETE(req: Request) {
     });
 
     await invalidateByTag("dashboard");
+    if (schoolId) {
+      await broadcastTenantCacheInvalidation({
+        schoolId,
+        domain: "structure",
+        action: "delete",
+      });
+    }
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     return NextResponse.json(

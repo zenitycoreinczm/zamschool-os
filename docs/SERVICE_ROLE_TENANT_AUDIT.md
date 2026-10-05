@@ -1,6 +1,6 @@
 # Service-role tenant isolation audit
 
-**Generated:** 2026-10-03  
+**Generated:** 2026-10-05  
 **Command:** `node scripts/security/audit-service-role-tenant.mjs`
 
 This report lists `supabaseAdmin.from(...)` calls where a `school_id` (or documented exception) was **not** detected in the static scan window.

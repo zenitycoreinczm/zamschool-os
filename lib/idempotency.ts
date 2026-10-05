@@ -7,6 +7,12 @@ export type IdempotencyLookup = {
   schoolId: string;
   scopeKey: string;
   idempotencyKey: string;
+  /**
+   * Optional: when provided, a stored row whose request_hash differs is
+   * rejected with 409 (same key + different payload must never last-writer-win).
+   * Compute from stable client fields BEFORE load — never from server-minted values.
+   */
+  requestHash?: string | null;
 };
 
 export function extractIdempotencyKey(req: Request, body?: Record<string, unknown> | null): string | null {
@@ -39,7 +45,7 @@ export async function loadIdempotentResponse(
 
   const { data, error } = await supabaseAdmin
     .from("idempotency_keys")
-    .select("response_json, status_code")
+    .select("response_json, status_code, request_hash")
     .eq("route_key", lookup.routeKey)
     .eq("school_id", lookup.schoolId)
     .eq("scope_key", lookup.scopeKey)
@@ -47,6 +53,18 @@ export async function loadIdempotentResponse(
     .maybeSingle();
 
   if (error || !data) return null;
+
+  // Same key + different payload → REJECT (never last-writer-wins).
+  if (
+    lookup.requestHash != null &&
+    data.request_hash != null &&
+    String(data.request_hash) !== String(lookup.requestHash)
+  ) {
+    return NextResponse.json(
+      { error: "idempotency key was reused with a different payload" },
+      { status: 409 },
+    );
+  }
 
   return NextResponse.json(data.response_json ?? { success: true }, {
     status: Number(data.status_code) || 200,

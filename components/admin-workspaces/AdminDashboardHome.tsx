@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
 import SchoolAdminDashboard from "@/components/dashboard/SchoolAdminDashboard";
+import { SchoolOnboardingChecklist } from "@/components/admin/SchoolOnboardingChecklist";
 import { useWorkspaceContext } from "@/components/workspace/workspace-context";
 import { FocusPills } from "@/components/workspace/FocusPills";
 import { useWorkspaceSummary } from "@/components/workspace/useWorkspaceSummary";
@@ -54,7 +55,7 @@ export default function AdminDashboardHome() {
       />
 
       <FocusPills items={highlights} />
-
+      <SchoolOnboardingChecklist />
       <SchoolAdminDashboard peopleMode="principal" />
     </div>
   );

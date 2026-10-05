@@ -10,6 +10,7 @@ import {
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getParentRecord, getLinkedStudents, buildDisplayName } from "@/lib/parent-route-utils";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 const absenceSchema = z.object({
   studentId: z.string().min(1).max(64),
@@ -172,6 +173,12 @@ export async function POST(req: Request) {
 
       if (insertError) throw insertError;
     }
+
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "attendance",
+      action: "insert",
+    });
 
     return jsonResponse({ success: true, message: "Absence justification submitted" });
   } catch (error: unknown) {

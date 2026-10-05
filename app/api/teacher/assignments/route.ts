@@ -10,6 +10,7 @@ import { validateTeacherManagedAssignmentTarget } from "@/lib/teacher-assignment
 import { requireTeacherContext } from "@/lib/server-auth";
 import { safeErrorMessage } from "@/lib/server-guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 // Schema for assignment validation
 const assignmentSchema = z.object({
@@ -211,6 +212,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create assignment" }, { status: 500 });
     }
 
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "assignment",
+      action: "insert",
+    });
+
     return NextResponse.json({ data: newAssignment }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -298,6 +305,12 @@ export async function PUT(request: NextRequest) {
       console.error("Error updating assignment:", updateError);
       return NextResponse.json({ error: "Failed to update assignment" }, { status: 500 });
     }
+
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "assignment",
+      action: "update",
+    });
 
     return NextResponse.json({ data: updatedAssignment });
   } catch (error) {
@@ -409,6 +422,12 @@ export async function DELETE(request: NextRequest) {
       }
       return NextResponse.json({ error: "Failed to delete assignment" }, { status: 500 });
     }
+
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "assignment",
+      action: "delete",
+    });
 
     return NextResponse.json({ message: "Assignment deleted successfully" });
   } catch (error) {

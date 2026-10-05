@@ -18,6 +18,7 @@ import { auditDomainWrite } from "@/lib/audit-domain";
 import { notifyAnnouncementAudience } from "@/lib/announcements/delivery";
 import { encodeTargetAudience } from "@/lib/target-audience";
 import { refreshSchoolReadModels } from "@/lib/read-model-refresh";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import {
   normalizeAudienceForStorage,
@@ -162,6 +163,12 @@ export async function POST(req: Request) {
 
     await invalidateSchoolAnnouncementsCache();
     await refreshSchoolReadModels(schoolId);
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "announcements",
+      action: "insert",
+      recordId: (data as any)?.id,
+    });
 
     // One announcement record, three surfaces (web, mobile, lock screen). This
     // was previously done by the mobile app after its own POST, so publishing
@@ -260,6 +267,12 @@ export async function PUT(req: Request) {
     );
 
     await invalidateSchoolAnnouncementsCache();
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "announcements",
+      action: "update",
+      recordId: body.id,
+    });
     await auditDomainWrite({
       schoolId,
       userId,
@@ -318,6 +331,12 @@ export async function DELETE(req: Request) {
     if (error) throw error;
 
     await invalidateSchoolAnnouncementsCache();
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "announcements",
+      action: "delete",
+      recordId: id,
+    });
     const ip = getClientIp(req);
     await auditDomainWrite({
       schoolId,

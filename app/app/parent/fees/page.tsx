@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Surface } from "@/components/workspace/Surface";
 import { WorkspaceLoader } from "@/components/workspace/WorkspaceLoader";
-import { CreditCard, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { CreditCard, AlertCircle, CheckCircle, Clock, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatKwacha } from "@/lib/zambia-localization";
+import { FeeReceiptModal, type FeeReceiptData } from "@/components/payments/FeeReceiptModal";
 
 type FeeRow = {
   id: string;
@@ -38,16 +40,10 @@ const statusColors: Record<string, string> = {
   OVERDUE: "border-rose-300 bg-rose-50 text-rose-700",
 };
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
-
 export default function ParentFeesPage() {
   const [fees, setFees] = useState<FeeRow[]>([]);
   const [summary, setSummary] = useState<FeeSummary | null>(null);
+  const [activeReceipt, setActiveReceipt] = useState<FeeReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedChild, setSelectedChild] = useState<string>("");
@@ -126,7 +122,7 @@ export default function ParentFeesPage() {
               <div>
                 <p className="text-xs text-slate-500">Total Due</p>
                 <p className="text-lg font-semibold text-slate-900">
-                  {formatCurrency(summary.totalDue)}
+                  {formatKwacha(summary.totalDue, { symbol: "K" })}
                 </p>
               </div>
             </div>
@@ -139,7 +135,7 @@ export default function ParentFeesPage() {
               <div>
                 <p className="text-xs text-slate-500">Total Paid</p>
                 <p className="text-lg font-semibold text-emerald-600">
-                  {formatCurrency(summary.totalPaid)}
+                  {formatKwacha(summary.totalPaid, { symbol: "K" })}
                 </p>
               </div>
             </div>
@@ -152,7 +148,7 @@ export default function ParentFeesPage() {
               <div>
                 <p className="text-xs text-slate-500">Outstanding</p>
                 <p className="text-lg font-semibold text-amber-600">
-                  {formatCurrency(summary.totalOutstanding)}
+                  {formatKwacha(summary.totalOutstanding, { symbol: "K" })}
                 </p>
               </div>
             </div>
@@ -209,6 +205,9 @@ export default function ParentFeesPage() {
                 <th className="px-4 py-3 text-left font-medium text-slate-600">
                   Status
                 </th>
+                <th className="px-4 py-3 text-right font-medium text-slate-600">
+                  Receipt
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -226,13 +225,13 @@ export default function ParentFeesPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-slate-900">
-                    {formatCurrency(fee.amountDue)}
+                    {formatKwacha(fee.amountDue, { symbol: "K" })}
                   </td>
-                  <td className="px-4 py-3 text-emerald-600">
-                    {formatCurrency(fee.amountPaid)}
+                  <td className="px-4 py-3 text-emerald-600 font-medium">
+                    {formatKwacha(fee.amountPaid, { symbol: "K" })}
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    {formatCurrency(fee.balance)}
+                  <td className="px-4 py-3 font-semibold text-slate-900">
+                    {formatKwacha(fee.balance, { symbol: "K" })}
                   </td>
                   <td className="px-4 py-3 text-slate-500">
                     {fee.dueDate || "-"}
@@ -248,12 +247,44 @@ export default function ParentFeesPage() {
                       {fee.status}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    {fee.amountPaid > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setActiveReceipt({
+                            receiptNumber: `RCP-${fee.id.slice(0, 8).toUpperCase()}`,
+                            studentName: fee.studentName,
+                            amountPaid: fee.amountPaid,
+                            balanceRemaining: fee.balance,
+                            feeDescription: `${fee.feeName}${fee.billingMonth ? ` (${fee.billingMonth})` : ""}`,
+                            status: fee.status,
+                            paidAt: fee.createdAt,
+                            paymentMethod: "Official School Deposit",
+                          })
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                      >
+                        <Receipt className="h-3.5 w-3.5 text-slate-500" />
+                        Receipt
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">No payment</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Official Printable Fee Receipt Modal */}
+      <FeeReceiptModal
+        isOpen={!!activeReceipt}
+        onClose={() => setActiveReceipt(null)}
+        receipt={activeReceipt}
+      />
     </div>
   );
 }

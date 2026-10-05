@@ -55,22 +55,31 @@ export class SchoolSyncQueue {
           "Content-Type": "application/json",
           "X-From-Offline-Queue": "true"
         };
-        
-        // Check if stored auth token is still valid (< 5 min from expiry)
+
+        // Replay with the user's ORIGINAL token only. Never escalate to
+        // service-role: a delayed write must authenticate as the same actor
+        // (upstream enforces school scoping from the JWT), and re-auth is the
+        // client's job when the token has expired.
         const needsTokenRefresh = await this.isTokenExpired(item.authHeader);
-        
+
         if (item.authHeader && !needsTokenRefresh) {
-          // Token still valid, replay as normal
           headers["Authorization"] = item.authHeader;
-        } else if (this.env.SUPABASE_SERVICE_ROLE_KEY) {
-          // Token expired or missing — escalate to service-role for privileged replay
-          headers["Authorization"] = `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`;
-          headers["X-Queue-Replay-Escalated"] = "true";
+        } else if (item.authHeader) {
+          // Expired but present — try it once; upstream 401s are dropped to
+          // the dead-letter log below and the client re-authenticates.
+          headers["Authorization"] = item.authHeader;
+          headers["X-Queue-Replay-Expired-Token"] = "true";
         } else {
-          // No service role available — try original token anyway (may still work)
-          if (item.authHeader) {
-            headers["Authorization"] = item.authHeader;
-          }
+          // No token at all — cannot attribute this write to an actor.
+          // Drop to the dead-letter log instead of writing unattributed data.
+          console.error("Queue item dropped (no auth header, re-auth required):", {
+            id: item.id,
+            schoolId: item.schoolId,
+            userId: item.userId,
+            method: item.method,
+            path: item.path,
+          });
+          continue;
         }
         
         const response = await fetchImpl(new Request(upstreamUrl.toString(), {

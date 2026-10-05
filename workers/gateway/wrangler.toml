@@ -48,6 +48,10 @@ new_sqlite_classes = ["SchoolSyncQueue"]
 # ── Non-secret production configuration ───────────────────────────────────
 [vars]
 UPSTREAM_API = "https://www.zamschoolos.site"
+# Optional second origin for idempotent GET reads only (preview/regional).
+# When set, the gateway tries it once if UPSTREAM_API is unreachable or 5xx.
+# Mutations, uploads, and queue replay never use it (single-flight writes).
+# UPSTREAM_API_FALLBACK = "https://zamschool-preview.vercel.app"
 CORS_ALLOWED_ORIGINS = "https://www.zamschoolos.site,https://zamschoolos.site,http://localhost:3000"
 JWT_VERIFY_MODE = "signature"
 SUPABASE_URL = "https://jnnroitaftfmclegbeac.supabase.co"

@@ -70,6 +70,25 @@ const MAX_RECIPIENTS_PEER = 5
 const RATE_LIMIT_MAX = 30
 const RATE_LIMIT_WINDOW_MS = 60_000
 
+/**
+ * Allowed notifications.type values — public.notifications CHECK constraint
+ * (baseline): announcement | fee_payment | attendance | exam_result |
+ * low_attendance | general. App callers send uppercase variants (MESSAGE,
+ * RESULT, EVENT, …) — map them into the allowed set before insert.
+ */
+const FEED_TYPES = new Set([
+  'announcement', 'fee_payment', 'attendance', 'exam_result', 'low_attendance', 'general',
+])
+
+function toFeedType(raw: unknown): string {
+  const v = String(raw || '').trim().toLowerCase()
+  if (FEED_TYPES.has(v)) return v
+  if (v === 'result' || v === 'results') return 'exam_result'
+  if (v === 'event') return 'announcement'
+  if (v === 'fee' || v === 'payment') return 'fee_payment'
+  return 'general'
+}
+
 /** In-memory per-isolate rate buckets (resets on cold start — defence in depth). */
 const rateBuckets = new Map<string, number[]>()
 
@@ -394,6 +413,11 @@ serve(async (req) => {
     }
 
     let userIds = uniqueStrings(body.userIds || [])
+    // Profile ids (profiles.id) resolved from any caller-supplied id form.
+    // The notification feed insert needs these — its user_id column is an FK
+    // to profiles(id), while userIds mixes profile + auth ids for the
+    // user_devices token lookup.
+    const feedProfileIds = new Set<string>()
     // Raw push tokens bypass all school-scope checks, so only trusted
     // service-role callers (workers/queues) may supply them directly.
     let tokens = isService ? uniqueStrings(body.tokens || []) : []
@@ -441,7 +465,10 @@ serve(async (req) => {
       }
       const { data: roleUsers } = await query
       for (const row of roleUsers || []) {
-        if (row?.id) userIds.push(String(row.id))
+        if (row?.id) {
+          userIds.push(String(row.id))
+          feedProfileIds.add(String(row.id))
+        }
         if (row?.user_id) userIds.push(String(row.user_id))
         if (row?.auth_user_id) userIds.push(String(row.auth_user_id))
       }
@@ -528,7 +555,10 @@ serve(async (req) => {
       }
       const [byId, byAuth] = await Promise.all([byIdQuery, byAuthQuery])
       for (const row of [...(byId.data || []), ...(byAuth.data || [])]) {
-        if (row?.id) userIds.push(String(row.id))
+        if (row?.id) {
+          userIds.push(String(row.id))
+          feedProfileIds.add(String(row.id))
+        }
         if (row?.auth_user_id) userIds.push(String(row.auth_user_id))
         if (row?.user_id) userIds.push(String(row.user_id))
       }
@@ -601,20 +631,41 @@ serve(async (req) => {
     }
 
     // Persist in-app notification feed when requested.
+    // Canonical schema (baseline): user_id → profiles(id) FK, is_read,
+    // metadata jsonb, dedupe_key UNIQUE (school_id, dedupe_key), type CHECK ∈
+    // {announcement, fee_payment, attendance, exam_result, low_attendance,
+    // general}. userIds mixes profile + auth ids (token lookup needs both) —
+    // only profile ids satisfy the FK, so filter via feedProfileIds. A
+    // referenceId yields a dedupe_key so client retries upsert-skip instead
+    // of duplicating feed rows.
     if (body.persist !== false && userIds.length) {
-      const rows = userIds.map((recipient_id) => ({
-        school_id: schoolId,
-        recipient_id,
-        title,
-        message: messageBody,
-        type: String(body.type || data.type || 'GENERAL'),
-        reference_id: body.referenceId != null ? String(body.referenceId) : null,
-        read: false,
-      }))
-      const { error: insertError } = await admin.from('notifications').insert(rows)
-      if (insertError) {
-        // recipient_id may reference auth.users only — soft-fail feed insert.
-        errors.push(`notifications insert: ${insertError.message}`)
+      const feedUserIds = uniqueStrings(userIds.filter((id) => feedProfileIds.has(id)))
+      if (feedUserIds.length) {
+        const feedType = toFeedType(body.type || data.type)
+        const referenceId = body.referenceId != null ? String(body.referenceId) : null
+        const rows = feedUserIds.map((user_id) => ({
+          school_id: schoolId,
+          user_id,
+          ...(referenceId
+            ? { dedupe_key: `${feedType}:${referenceId}:${user_id}`.slice(0, 250) }
+            : {}),
+          title,
+          message: messageBody,
+          type: feedType,
+          is_read: false,
+          metadata: {
+            referenceId,
+            originalType: String(body.type || data.type || 'GENERAL'),
+          },
+        }))
+        const mutation = referenceId
+          ? admin.from('notifications').upsert(rows, { onConflict: 'school_id,dedupe_key', ignoreDuplicates: true })
+          : admin.from('notifications').insert(rows)
+        const { error: insertError } = await mutation
+        if (insertError) {
+          // Soft-fail feed insert — push delivery already succeeded.
+          errors.push(`notifications insert: ${insertError.message}`)
+        }
       }
     }
 

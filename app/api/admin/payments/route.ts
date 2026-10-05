@@ -16,6 +16,7 @@ import { requireFeatureAccess } from "@/lib/feature-permissions";
 import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { createAuditLog } from "@/lib/audit-log";
 import { invalidateByTag } from "@/lib/enhanced-cache";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
 
 const createPaymentSchema = z.object({
@@ -193,6 +194,12 @@ export async function POST(req: Request) {
     });
     await invalidateByTag("fees");
     await invalidateByTag("dashboard");
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "payments",
+      action: "insert",
+      recordId: data.id,
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
@@ -301,6 +308,12 @@ export async function PUT(req: Request) {
     });
     await invalidateByTag("fees");
     await invalidateByTag("dashboard");
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "payments",
+      action: "update",
+      recordId: body.id,
+    });
 
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
@@ -356,6 +369,12 @@ export async function DELETE(req: Request) {
     });
     await invalidateByTag("fees");
     await invalidateByTag("dashboard");
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "payments",
+      action: "delete",
+      recordId: id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

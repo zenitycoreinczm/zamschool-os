@@ -18,9 +18,11 @@ import {
   Download,
   UserCheck,
   UserX,
+  PenLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AdminPageHero } from "@/components/admin/AdminPageHero";
+import { DirectMarksEntryGrid } from "@/components/results/DirectMarksEntryGrid";
 import { cn } from "@/lib/utils";
 import { primaryButton, secondaryButton } from "@/lib/workspace/design";
 import { adminApiFetch, adminApiJson } from "@/lib/admin-browser-api";
@@ -245,13 +247,197 @@ export default function TeacherResultsPage() {
     };
   }, [selectedClass]);
 
+  const [entryMode, setEntryMode] = useState<"direct" | "upload">("direct");
+  const [directMarks, setDirectMarks] = useState<Record<string, string>>({});
+  const [directRemarks, setDirectRemarks] = useState<Record<string, string>>({});
+  const [lastAutosaved, setLastAutosaved] = useState<string | null>(null);
+  const [submittingDirect, setSubmittingDirect] = useState(false);
+
   const studentsInClass = useMemo(
-    () =>
-      selectedClass
-        ? students.filter((s) => s.classId === selectedClass)
-        : [],
+    () => {
+      if (!selectedClass) return [];
+      const list = students.filter((s) => s.classId === selectedClass);
+      return list.sort((a, b) => {
+        if (a.classNumber != null && b.classNumber != null) {
+          return a.classNumber - b.classNumber;
+        }
+        return a.displayName.localeCompare(b.displayName);
+      });
+    },
     [students, selectedClass],
   );
+
+  // Storage key for active class + subject + exam draft
+  const draftStorageKey = useMemo(() => {
+    if (!selectedClass || !selectedSubject || !examTitle.trim()) return null;
+    return `results_draft_${selectedClass}_${selectedSubject}_${examTitle.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+  }, [selectedClass, selectedSubject, examTitle]);
+
+  // Load draft from localStorage when draft key changes
+  useEffect(() => {
+    if (!draftStorageKey) {
+      setDirectMarks({});
+      setDirectRemarks({});
+      setLastAutosaved(null);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.marks && typeof parsed.marks === "object") {
+          setDirectMarks(parsed.marks);
+        }
+        if (parsed.remarks && typeof parsed.remarks === "object") {
+          setDirectRemarks(parsed.remarks);
+        }
+        if (parsed.savedAt) {
+          setLastAutosaved(new Date(parsed.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, [draftStorageKey]);
+
+  // Autosave draft on marks/remarks change
+  useEffect(() => {
+    if (!draftStorageKey) return;
+    const hasAnyMark = Object.values(directMarks).some((m) => m !== "");
+    if (!hasAnyMark) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const now = new Date();
+        localStorage.setItem(
+          draftStorageKey,
+          JSON.stringify({
+            marks: directMarks,
+            remarks: directRemarks,
+            savedAt: now.toISOString(),
+          }),
+        );
+        setLastAutosaved(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      } catch {
+        // ignore storage errors
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [draftStorageKey, directMarks, directRemarks]);
+
+  const handleDirectMarkChange = useCallback((studentId: string, val: string) => {
+    setDirectMarks((prev) => ({ ...prev, [studentId]: val }));
+  }, []);
+
+  const handleDirectRemarkChange = useCallback((studentId: string, val: string) => {
+    setDirectRemarks((prev) => ({ ...prev, [studentId]: val }));
+  }, []);
+
+  const handlePrefillZero = useCallback(() => {
+    setDirectMarks((prev) => {
+      const next = { ...prev };
+      for (const s of studentsInClass) {
+        if (next[s.id] === undefined || next[s.id] === "") {
+          next[s.id] = "0";
+        }
+      }
+      return next;
+    });
+    toast.info("Prefilled 0 for all unentered students");
+  }, [studentsInClass]);
+
+  const handleClearDirectMarks = useCallback(() => {
+    setDirectMarks({});
+    setDirectRemarks({});
+    if (draftStorageKey) {
+      try {
+        localStorage.removeItem(draftStorageKey);
+      } catch {
+        /* ignore */
+      }
+    }
+    setLastAutosaved(null);
+    toast.info("Cleared all entered marks");
+  }, [draftStorageKey]);
+
+  const submitDirectMarks = async () => {
+    if (!selectedClass) {
+      toast.error("Please select a class");
+      return;
+    }
+    if (!selectedSubject) {
+      toast.error("Please select a subject");
+      return;
+    }
+    if (!examTitle.trim()) {
+      toast.error("Please enter an exam title");
+      return;
+    }
+
+    const maxVal = Number(totalMarks) || 100;
+    const marksPayload: Array<{ studentId: string; marks: number | null; remarks?: string | null }> = [];
+
+    for (const student of studentsInClass) {
+      const raw = directMarks[student.id];
+      if (raw !== undefined && raw !== "" && !isNaN(Number(raw))) {
+        const val = Number(raw);
+        if (val < 0 || val > maxVal) {
+          toast.error(`Invalid mark for ${student.displayName}: must be between 0 and ${maxVal}`);
+          return;
+        }
+        marksPayload.push({
+          studentId: student.id,
+          marks: val,
+          remarks: directRemarks[student.id] || null,
+        });
+      }
+    }
+
+    if (marksPayload.length === 0) {
+      toast.error("Please enter at least one student mark before saving.");
+      return;
+    }
+
+    setSubmittingDirect(true);
+    const toastId = toast.loading("Saving exam marks…");
+    try {
+      const res = await adminApiJson<{
+        success?: boolean;
+        data?: UploadResult;
+        error?: string;
+      }>("/api/teacher/results-upload", {
+        method: "POST",
+        body: JSON.stringify({
+          classId: selectedClass,
+          subjectId: selectedSubject,
+          examTitle: examTitle.trim(),
+          totalMarks: maxVal,
+          marks: marksPayload,
+        }),
+      });
+
+      if (res.data) {
+        setUploadResult(res.data);
+        if (draftStorageKey) {
+          try {
+            localStorage.removeItem(draftStorageKey);
+          } catch {
+            /* ignore */
+          }
+        }
+        setLastAutosaved(null);
+        toast.success(
+          `Saved ${res.data.resultsCreated + res.data.resultsUpdated} marks for ${res.data.className}`,
+          { id: toastId },
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save marks", { id: toastId });
+    } finally {
+      setSubmittingDirect(false);
+    }
+  };
 
   const matchIndex = useMemo(
     () => buildStudentMatchIndex(studentsInClass),
@@ -674,8 +860,11 @@ export default function TeacherResultsPage() {
           },
           {
             step: "2",
-            title: "Choose Sheet / CSV",
-            done: !!file,
+            title: "Enter / Upload Marks",
+            done:
+              entryMode === "direct"
+                ? Object.values(directMarks).some((m) => m !== "")
+                : !!file,
           },
           {
             step: "3",
@@ -798,60 +987,127 @@ export default function TeacherResultsPage() {
               </div>
             </div>
 
-            <div className="mt-5">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Result Sheet (CSV or Excel)
-                </label>
-                <button
-                  type="button"
-                  onClick={downloadTemplate}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-700"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download template
-                </button>
-              </div>
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={cn(
-                  "cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors",
-                  dragOver
-                    ? "border-sky-400 bg-sky-50"
-                    : "border-slate-300 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50",
-                )}
-              >
-                <FileSpreadsheet className="mx-auto h-8 w-8 text-slate-400" />
-                {file ? (
-                  <p className="mt-2 text-sm font-medium text-slate-700">
-                    {file.name}
+            {/* Entry Mode Switcher */}
+            <div className="mt-6 border-t border-slate-100 pt-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Marks Entry Method</h3>
+                  <p className="text-xs text-slate-500">
+                    Enter marks student-by-student with auto-saving, or upload a spreadsheet.
                   </p>
-                ) : (
-                  <>
-                    <p className="mt-2 text-sm text-slate-600">
-                      Drop file here or{" "}
-                      <span className="font-medium text-sky-600">browse</span>
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Prefer: Class Number, Name, Marks — avoids duplicate-name
-                      mix-ups
-                    </p>
-                  </>
-                )}
+                </div>
+                <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode("direct")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer",
+                      entryMode === "direct"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:text-slate-900",
+                    )}
+                  >
+                    <PenLine className="h-3.5 w-3.5 text-sky-600" />
+                    In-Browser Grid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEntryMode("upload")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer",
+                      entryMode === "upload"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-600 hover:text-slate-900",
+                    )}
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5 text-slate-500" />
+                    Spreadsheet Upload
+                  </button>
+                </div>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
+
+              {entryMode === "direct" ? (
+                selectedClass ? (
+                  <DirectMarksEntryGrid
+                    students={studentsInClass}
+                    marks={directMarks}
+                    remarks={directRemarks}
+                    onMarkChange={handleDirectMarkChange}
+                    onRemarkChange={handleDirectRemarkChange}
+                    totalMarks={Number(totalMarks) || 100}
+                    onSave={() => void submitDirectMarks()}
+                    isSaving={submittingDirect}
+                    lastAutosaved={lastAutosaved}
+                    onPrefillZero={handlePrefillZero}
+                    onClearAll={handleClearDirectMarks}
+                    subjectName={selectedSubjectName}
+                    className={selectedClassName}
+                  />
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center">
+                    <PenLine className="mx-auto h-8 w-8 text-slate-400" />
+                    <h4 className="mt-2 text-sm font-bold text-slate-900">Select a Class Above</h4>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Choose your class and subject in the form above to load the student roster for direct grading.
+                    </p>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">
+                      Result Sheet (CSV or Excel)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={downloadTemplate}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-700 cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Download template
+                    </button>
+                  </div>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
+                    }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={onDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      "cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors",
+                      dragOver
+                        ? "border-sky-400 bg-sky-50"
+                        : "border-slate-300 bg-slate-50 hover:border-sky-300 hover:bg-sky-50/50",
+                    )}
+                  >
+                    <FileSpreadsheet className="mx-auto h-8 w-8 text-slate-400" />
+                    {file ? (
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {file.name}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="mt-2 text-sm text-slate-600">
+                          Drop file here or{" "}
+                          <span className="font-medium text-sky-600">browse</span>
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Prefer: Class Number, Name, Marks — avoids duplicate-name mix-ups
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

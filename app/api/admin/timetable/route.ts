@@ -25,6 +25,7 @@ import {
   fetchTeacherAssignmentReferences,
   isMissingRelationError,
 } from "@/lib/teacher-assignment-references";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 const createLessonSchema = z.object({
   title: z.string().optional().nullable(),
@@ -157,6 +158,12 @@ export async function POST(req: Request) {
       ipAddress: ip,
     });
 
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "structure",
+      action: "insert",
+    });
+
     // Return UI-ready fields so the client can paint the lesson immediately
     // without waiting on a full list re-fetch / browser cache.
     return NextResponse.json({
@@ -280,6 +287,12 @@ export async function PUT(req: Request) {
       ipAddress: ip,
     });
 
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "structure",
+      action: "update",
+    });
+
     return NextResponse.json({ success: true, data });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -332,6 +345,12 @@ export async function DELETE(req: Request) {
       entityType: "lesson",
       entityId: id,
       ipAddress: ip,
+    });
+
+    await broadcastTenantCacheInvalidation({
+      schoolId,
+      domain: "structure",
+      action: "delete",
     });
 
     return NextResponse.json({ success: true });

@@ -247,6 +247,23 @@ export async function redisSetJson(
   }, false);
 }
 
+/**
+ * Atomic increment with self-healing TTL.
+ *
+ * Single EVAL round-trip (cheaper than INCR then EXPIRE) and it guarantees the
+ * free-tier invariant that every key must expire: the TTL is applied on first
+ * increment AND retroactively healed on any legacy key that was created
+ * without one (older code versions, or a crash between INCR and EXPIRE).
+ * Without this, counter keys could persist forever and bloat the DB.
+ */
+const INCR_WITH_TTL_LUA = `
+local count = redis.call('INCR', KEYS[1])
+if count == 1 or redis.call('TTL', KEYS[1]) == -1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count
+`;
+
 export async function redisIncr(
   key: string,
   ttlSeconds?: number,
@@ -255,11 +272,16 @@ export async function redisIncr(
   const redis = await getRedisClient();
   if (!redis) return null;
   return withCircuitBreaker(async () => {
-    const count = await redis.incr(key);
-    if (count === 1 && ttlSeconds) {
-      await redis.expire(key, clampRedisTtl(ttlSeconds));
+    if (!ttlSeconds) {
+      // No TTL requested - caller owns the key lifecycle (e.g. paired DECR).
+      return redis.incr(key);
     }
-    return count;
+    const count = await redis.eval(
+      INCR_WITH_TTL_LUA,
+      [key],
+      [clampRedisTtl(ttlSeconds)],
+    );
+    return Number(count);
   }, null);
 }
 

@@ -148,9 +148,29 @@ export default function TeacherAttendancePage() {
         const items = await fetchLessons(selectedDate);
         setLessons(items);
         const state = buildInitialRollCallState(items);
-        setExceptions(
-          state.exceptions as Record<string, Record<string, AttendanceStatus>>,
-        );
+        let initialExceptions = state.exceptions as Record<
+          string,
+          Record<string, AttendanceStatus>
+        >;
+
+        // Restore staged draft from localStorage if present
+        try {
+          const draftKey = `zamschool_attendance_draft_${selectedDate}`;
+          const rawDraft = localStorage.getItem(draftKey);
+          if (rawDraft) {
+            const parsed = JSON.parse(rawDraft) as Record<
+              string,
+              Record<string, AttendanceStatus>
+            >;
+            if (parsed && typeof parsed === "object") {
+              initialExceptions = { ...initialExceptions, ...parsed };
+            }
+          }
+        } catch {
+          // ignore draft read failure
+        }
+
+        setExceptions(initialExceptions);
         setExpanded(state.expanded);
       } catch (err: unknown) {
         const message =
@@ -190,6 +210,24 @@ export default function TeacherAttendancePage() {
   useEffect(() => {
     void loadLessons(date);
   }, [date, loadLessons]);
+
+  // Auto-save staged attendance drafts to localStorage whenever exceptions change
+  useEffect(() => {
+    if (!date) return;
+    try {
+      const draftKey = `zamschool_attendance_draft_${date}`;
+      const hasAnyDraft = Object.values(exceptions).some(
+        (lessonMap) => lessonMap && Object.keys(lessonMap).length > 0,
+      );
+      if (hasAnyDraft) {
+        localStorage.setItem(draftKey, JSON.stringify(exceptions));
+      } else {
+        localStorage.removeItem(draftKey);
+      }
+    } catch {
+      // ignore storage quota / private browsing errors
+    }
+  }, [date, exceptions]);
 
   // Refresh window labels every 30s so countdown stays accurate.
   useEffect(() => {
@@ -316,6 +354,7 @@ export default function TeacherAttendancePage() {
         success?: boolean;
         status?: string;
         queued?: boolean;
+        offlineQueued?: boolean;
         error?: string;
         data?: {
           savedCount?: number;
@@ -339,7 +378,32 @@ export default function TeacherAttendancePage() {
       const isQueued =
         body?.status === "queued" ||
         body?.queued === true ||
+        body?.offlineQueued === true ||
         payload?.offline === true;
+
+      // Clear staged exceptions for this submitted lesson
+      setExceptions((prev) => {
+        const next = { ...prev };
+        delete next[lesson.id];
+        return next;
+      });
+
+      // Clear saved draft entry for this lesson from localStorage
+      try {
+        const draftKey = `zamschool_attendance_draft_${date}`;
+        const rawDraft = localStorage.getItem(draftKey);
+        if (rawDraft) {
+          const parsed = JSON.parse(rawDraft);
+          delete parsed[lesson.id];
+          if (Object.keys(parsed).length === 0) {
+            localStorage.removeItem(draftKey);
+          } else {
+            localStorage.setItem(draftKey, JSON.stringify(parsed));
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
 
       if (isQueued && !payload) {
         toast.success(
@@ -762,7 +826,7 @@ function RollCallCard({
                 return (
                   <div
                     key={student.id}
-                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 transition hover:bg-slate-50/50"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3 transition hover:bg-slate-50/50"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 font-semibold text-xs text-slate-600">
@@ -778,8 +842,8 @@ function RollCallCard({
                       </div>
                     </div>
 
-                    {/* Segmented Status Selector */}
-                    <div className="flex items-center rounded-xl border border-slate-200/90 bg-slate-50 p-1 gap-1">
+                    {/* Segmented Status Selector - Responsive grid on mobile, flex on desktop */}
+                    <div className="grid grid-cols-4 sm:flex items-center rounded-xl border border-slate-200/90 bg-slate-50 p-1 gap-1 w-full sm:w-auto">
                       {ALL_STATUSES.map((status) => {
                         const isSelected = currentStatus === status;
                         let activeColor = "bg-slate-800 text-white shadow-sm";
@@ -795,13 +859,18 @@ function RollCallCard({
                             onClick={() => onSetStatus(student.id, status)}
                             disabled={locked}
                             className={cn(
-                              "min-h-9 min-w-[3.75rem] rounded-lg px-2.5 py-1 text-xs font-medium transition duration-150 sm:min-h-8 sm:min-w-[3rem]",
+                              "min-h-10 sm:min-h-8 min-w-0 sm:min-w-[3rem] flex items-center justify-center rounded-lg px-2 sm:px-2.5 py-1.5 sm:py-1 text-xs font-medium transition duration-150 active:scale-95",
                               isSelected
                                 ? activeColor
                                 : "text-slate-600 hover:bg-white hover:text-slate-900",
                             )}
                           >
-                            {status === "PRESENT" ? "Present" : status === "ABSENT" ? "Absent" : status === "LATE" ? "Late" : "Excused"}
+                            <span className="sm:hidden font-semibold">
+                              {status === "PRESENT" ? "Pres" : status === "ABSENT" ? "Abs" : status === "LATE" ? "Late" : "Exc"}
+                            </span>
+                            <span className="hidden sm:inline">
+                              {status === "PRESENT" ? "Present" : status === "ABSENT" ? "Absent" : status === "LATE" ? "Late" : "Excused"}
+                            </span>
                           </button>
                         );
                       })}
@@ -813,12 +882,12 @@ function RollCallCard({
           </div>
 
           {/* Footer with Notification & Submit */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
-            <div className="flex min-w-0 items-center gap-2 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/80 px-4 sm:px-5 py-3.5">
+            <div className="flex min-w-0 items-center gap-2 text-xs flex-wrap">
               <Bell className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               {stagedChangeCount > 0 ? (
-                <span className="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800">
-                  {stagedChangeCount} unsaved change{stagedChangeCount === 1 ? "" : "s"}
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
+                  {stagedChangeCount} draft change{stagedChangeCount === 1 ? "" : "s"} (auto-saved)
                 </span>
               ) : null}
               {!locked && willNotifyCount > 0 ? (
@@ -839,7 +908,7 @@ function RollCallCard({
               onClick={onSubmit}
               disabled={isSaving || locked}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-60",
+                "w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition disabled:opacity-60",
                 locked
                   ? "cursor-not-allowed bg-slate-400"
                   : win?.status === "late"

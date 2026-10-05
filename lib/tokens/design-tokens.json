@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "brand": {
+    "name": "ZamSchool OS",
+    "primary": "#0284c7",
+    "primaryHover": "#0369a1",
+    "primaryLight": "#e0f2fe",
+    "primarySurface": "#f0f9ff",
+    "accent": "#0ea5e9",
+    "accentSoft": "#e0f2fe",
+    "accentStrong": "#0369a1"
+  },
+  "surfaces": {
+    "canvas": "#f4f6f9",
+    "sidebar": "#f8f9fb",
+    "card": "#ffffff",
+    "cardMuted": "#f8fafc",
+    "foreground": "#0f172a",
+    "muted": "#64748b",
+    "border": "#e2e8f0",
+    "borderStrong": "#cbd5e1",
+    "divider": "rgba(148, 163, 184, 0.28)"
+  },
+  "statusBadges": {
+    "attendance": {
+      "present": { "label": "Present", "fg": "#047857", "bg": "#d1fae5", "border": "#a7f3d0" },
+      "absent": { "label": "Absent", "fg": "#be123c", "bg": "#ffe4e6", "border": "#fecdd3" },
+      "late": { "label": "Late", "fg": "#b45309", "bg": "#fef3c7", "border": "#fde68a" },
+      "excused": { "label": "Excused", "fg": "#0369a1", "bg": "#e0f2fe", "border": "#bae6fd" }
+    },
+    "fees": {
+      "paid": { "label": "Paid", "fg": "#047857", "bg": "#d1fae5", "border": "#a7f3d0" },
+      "partial": { "label": "Partial", "fg": "#b45309", "bg": "#fef3c7", "border": "#fde68a" },
+      "unpaid": { "label": "Unpaid", "fg": "#be123c", "bg": "#ffe4e6", "border": "#fecdd3" },
+      "pending": { "label": "Pending", "fg": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb" }
+    },
+    "results": {
+      "published": { "label": "Published", "fg": "#047857", "bg": "#d1fae5", "border": "#a7f3d0" },
+      "approved": { "label": "Approved", "fg": "#0369a1", "bg": "#e0f2fe", "border": "#bae6fd" },
+      "submitted": { "label": "Submitted", "fg": "#6d28d9", "bg": "#ede9fe", "border": "#ddd6fe" },
+      "draft": { "label": "Draft", "fg": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb" },
+      "rejected": { "label": "Rejected", "fg": "#be123c", "bg": "#ffe4e6", "border": "#fecdd3" }
+    },
+    "general": {
+      "success": { "label": "Success", "fg": "#047857", "bg": "#d1fae5", "border": "#a7f3d0" },
+      "warning": { "label": "Warning", "fg": "#b45309", "bg": "#fef3c7", "border": "#fde68a" },
+      "danger": { "label": "Danger", "fg": "#be123c", "bg": "#ffe4e6", "border": "#fecdd3" },
+      "info": { "label": "Info", "fg": "#0369a1", "bg": "#e0f2fe", "border": "#bae6fd" },
+      "neutral": { "label": "Neutral", "fg": "#6b7280", "bg": "#f3f4f6", "border": "#e5e7eb" }
+    }
+  },
+  "roles": {
+    "principal": { "label": "Head Teacher", "singular": "Head Teacher", "plural": "Head Teachers", "category": "leadership", "color": "#4338ca", "bg": "#e0e7ff" },
+    "deputy_head": { "label": "Deputy Head Teacher", "singular": "Deputy Head Teacher", "plural": "Deputy Head Teachers", "category": "leadership", "color": "#4338ca", "bg": "#e0e7ff" },
+    "teacher": { "label": "Teacher", "singular": "Teacher", "plural": "Teachers", "category": "academic", "color": "#b45309", "bg": "#fef3c7" },
+    "student": { "label": "Student", "singular": "Student", "plural": "Students", "category": "learner", "color": "#6d28d9", "bg": "#ede9fe" },
+    "parent": { "label": "Parent / Guardian", "singular": "Parent / Guardian", "plural": "Parents / Guardians", "category": "family", "color": "#c2410c", "bg": "#ffedd5" },
+    "bursar": { "label": "Bursar", "singular": "Bursar", "plural": "Bursars", "category": "finance", "color": "#047857", "bg": "#d1fae5" },
+    "payments": { "label": "Payments Officer", "singular": "Payments Officer", "plural": "Payments Officers", "category": "finance", "color": "#047857", "bg": "#d1fae5" },
+    "registrar": { "label": "Registrar / Admissions", "singular": "Registrar", "plural": "Registrars", "category": "administrative", "color": "#0369a1", "bg": "#e0f2fe" },
+    "academic_admin": { "label": "Academic Dean", "singular": "Academic Administrator", "plural": "Academic Administrators", "category": "academic", "color": "#0369a1", "bg": "#e0f2fe" },
+    "discipline_admin": { "label": "Guidance & Discipline", "singular": "Discipline Administrator", "plural": "Discipline Administrators", "category": "pastoral", "color": "#be123c", "bg": "#ffe4e6" },
+    "ict_admin": { "label": "ICT Administrator", "singular": "ICT Administrator", "plural": "ICT Administrators", "category": "operations", "color": "#0f766e", "bg": "#ccfbf1" },
+    "hr_admin": { "label": "HR Administrator", "singular": "HR Administrator", "plural": "HR Administrators", "category": "operations", "color": "#374151", "bg": "#f3f4f6" },
+    "super_admin": { "label": "Platform Super Admin", "singular": "System Owner", "plural": "System Owners", "category": "platform", "color": "#0f172a", "bg": "#e2e8f0" }
+  },
+  "terminology": {
+    "attendance": "Attendance",
+    "results": "Results",
+    "grades": "Grades",
+    "student": "Student",
+    "guardian": "Parent / Guardian",
+    "fees": "School Fees",
+    "receipt": "Fee Receipt"
+  }
+}

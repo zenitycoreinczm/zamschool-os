@@ -42,15 +42,42 @@ export async function handleCachedProxy(
   }
 
   const fetchImpl = env.fetch || fetch;
-  const upstreamUrl = new URL(url.pathname + url.search, env.UPSTREAM_API);
+  const primaryUrl = new URL(url.pathname + url.search, env.UPSTREAM_API);
+  const fallbackBase = (env.UPSTREAM_API_FALLBACK || "").trim();
+
+  // Single-flight GET with optional fallback origin. Reads are idempotent so
+  // trying the fallback once is safe; mutations never come through here.
+  let servedFromFallback = false;
+  async function fetchUpstream(): Promise<Response> {
+    const init = new Request(primaryUrl.toString(), {
+      method: "GET",
+      headers: req.headers,
+    });
+    try {
+      const primary = await fetchImpl(init);
+      if (primary.ok || primary.status < 500 || !fallbackBase) return primary;
+    } catch {
+      if (!fallbackBase) throw new Error("Upstream error: network failure");
+    }
+    if (!fallbackBase) throw new Error("Upstream error: no fallback configured");
+    const fallbackUrl = new URL(url.pathname + url.search, fallbackBase);
+    servedFromFallback = true;
+    return fetchImpl(
+      new Request(fallbackUrl.toString(), { method: "GET", headers: req.headers }),
+    );
+  }
 
   try {
-    const response = await fetchImpl(
-      new Request(upstreamUrl.toString(), {
-        method: "GET",
-        headers: req.headers,
-      }),
-    );
+    const upstreamResponse = await fetchUpstream();
+    // Tag fallback responses for observability, then handle (and cache)
+    // them exactly like primary responses.
+    const response = servedFromFallback
+      ? new Response(upstreamResponse.body, {
+          status: upstreamResponse.status,
+          statusText: upstreamResponse.statusText,
+          headers: withUpstreamTag(upstreamResponse.headers),
+        })
+      : upstreamResponse;
 
     if (response.ok) {
       const upstreamHeaders = new Headers(response.headers);
@@ -129,8 +156,13 @@ export async function handleCachedProxy(
   }
 }
 
-async function buildAuthenticatedCacheKey(url: URL, authHeader: string): Promise<Request> {
-  const keyUrl = new URL(url.toString());
+function withUpstreamTag(headers: Headers): Headers {
+  const tagged = new Headers(headers);
+  tagged.set("X-Edge-Upstream", "fallback");
+  return tagged;
+}
+
+async function buildAuthenticatedCacheKey(url: URL, authHeader: string): Promise<Request> {  const keyUrl = new URL(url.toString());
   keyUrl.searchParams.set("__zamschool_auth", await sha256(authHeader));
   return new Request(keyUrl.toString(), { method: "GET" });
 }

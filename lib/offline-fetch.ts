@@ -75,6 +75,7 @@ export async function fetchWithOfflineSupport(
     return new Response(
       JSON.stringify({
         ok: true,
+        queued: true,
         offlineQueued: true,
         message: "Saved offline. Changes will automatically sync when you reconnect.",
       }),

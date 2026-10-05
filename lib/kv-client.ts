@@ -152,7 +152,7 @@ export async function checkKvRateLimit(
     return { allowed: true, remaining: 999, reset: 0 };
   }
 
-  const config = LIMITS[category];
+  const config = LIMITS[category] || LIMITS.api;
   if (!config) {
     return { allowed: true, remaining: 999, reset: 0 };
   }

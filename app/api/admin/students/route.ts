@@ -10,6 +10,7 @@ import {
   safeErrorMessage,
 } from "@/lib/server-guards";
 import { createAuditLog } from "@/lib/audit-log";
+import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { requireFeatureAccess } from "@/lib/feature-permissions";
 import {
   assertDomainAccess,
@@ -17,6 +18,7 @@ import {
   type SchoolDomain,
 } from "@/lib/domain-ownership";
 import { authorizeWorkflowTransition } from "@/lib/workflow-states";
+import { invalidateSchoolDashboardCaches } from "@/lib/invalidate-actor-caches";
 
 const transitionSchema = z.object({
   studentId: z.string().uuid(),
@@ -103,23 +105,29 @@ export async function GET(req: Request) {
 
         if (fallbackError) throw fallbackError;
 
-        return NextResponse.json({
-          success: true,
-          data: (fallbackData || []).map((row: any) => ({
-            ...row,
-            admission_status: row.admission_status || "registered",
-          })),
-          hasMore: (fallbackData || []).length >= STUDENT_LIST_PAGE_SIZE,
-        });
+        return applyEdgeCacheHeaders(
+          NextResponse.json({
+            success: true,
+            data: (fallbackData || []).map((row: any) => ({
+              ...row,
+              admission_status: row.admission_status || "registered",
+            })),
+            hasMore: (fallbackData || []).length >= STUDENT_LIST_PAGE_SIZE,
+          }),
+          "privateRead",
+        );
       }
       throw error;
     }
 
-    return NextResponse.json({
-      success: true,
-      data: data || [],
-      hasMore: (data || []).length >= STUDENT_LIST_PAGE_SIZE,
-    });
+    return applyEdgeCacheHeaders(
+      NextResponse.json({
+        success: true,
+        data: data || [],
+        hasMore: (data || []).length >= STUDENT_LIST_PAGE_SIZE,
+      }),
+      "privateRead",
+    );
   } catch (error: unknown) {
     return NextResponse.json(
       {
@@ -291,6 +299,7 @@ export async function POST(req: Request) {
       newData: { admission_status: targetStatus, reason: reason || null },
       ipAddress: ip,
     });
+    await invalidateSchoolDashboardCaches(schoolId);
 
     return NextResponse.json({
       success: true,

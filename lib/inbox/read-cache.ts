@@ -4,7 +4,7 @@ import {
   invalidateInboxHotReads,
   withHotReadCache,
 } from "@/lib/hot-read-cache";
-import { expandMessagingIdentityIds } from "@/lib/messages/participants";
+import { resolveUnreadIdentityIds } from "@/lib/messages/participants";
 import { shellCacheKey, workspaceCacheKey } from "@/lib/redis/keys";
 import { countUnreadNotificationsForUser } from "./queries";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -18,9 +18,10 @@ async function fetchUnreadCountsFromDb(input: {
   userId: string;
   schoolId: string;
 }): Promise<UnreadCounts> {
-  // Messages may store recipient as auth uid or profile id - count both.
-  const recipientIds = await expandMessagingIdentityIds(
-    [input.userId],
+  // Identity mapping (profile id <-> auth uid) is cached 300s, so warm
+  // badge polls skip the 2 profile lookups expandMessagingIdentityIds needed.
+  const recipientIds = await resolveUnreadIdentityIds(
+    input.userId,
     input.schoolId,
   );
   const ids = recipientIds.length > 0 ? recipientIds : [input.userId];

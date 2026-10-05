@@ -76,11 +76,16 @@ async function fetchProfileFromDb<T = Record<string, unknown>>(
 
     if (!byEmail.error && byEmail.data) {
       // Link auth uid to this profile for future fast lookups
-      await client
+      const { error: linkError } = await client
         .from("profiles")
         .update({ auth_user_id: userId })
         .eq("email", userEmail)
         .is("auth_user_id", null);
+      if (!linkError) {
+        // The id<->auth mapping changed: drop cached identity entries so
+        // unread expansion picks up the link immediately.
+        await invalidateCache(`profile:${userId}:`);
+      }
       return { data: byEmail.data as T, error: null };
     }
   }

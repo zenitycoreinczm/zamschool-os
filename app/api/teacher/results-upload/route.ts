@@ -56,20 +56,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No assigned teaching scope found" }, { status: 403 });
     }
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const subjectId = formData.get("subjectId") as string | null;
-    const examTitle = formData.get("examTitle") as string | null;
-    const totalMarksRaw = formData.get("totalMarks") as string | null;
-    const classId = formData.get("classId") as string | null;
+    const contentType = req.headers.get("content-type") || "";
+    const isJson = contentType.includes("application/json");
 
-    if (!file) return NextResponse.json({ error: "File is required" }, { status: 400 });
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB.` },
-        { status: 400 }
-      );
+    let subjectId: string | null = null;
+    let examTitle: string | null = null;
+    let totalMarksRaw: string | number | null = null;
+    let classId: string | null = null;
+    let file: File | null = null;
+    let directMarks: Array<{ studentId: string; marks: number | null; remarks?: string | null }> | null = null;
+
+    if (isJson) {
+      const jsonBody = await req.json();
+      subjectId = jsonBody.subjectId as string | null;
+      examTitle = jsonBody.examTitle as string | null;
+      totalMarksRaw = jsonBody.totalMarks;
+      classId = jsonBody.classId as string | null;
+      directMarks = (jsonBody.marks || []) as Array<{
+        studentId: string;
+        marks: number | null;
+        remarks?: string | null;
+      }>;
+    } else {
+      const formData = await req.formData();
+      file = formData.get("file") as File | null;
+      subjectId = formData.get("subjectId") as string | null;
+      examTitle = formData.get("examTitle") as string | null;
+      totalMarksRaw = formData.get("totalMarks") as string | null;
+      classId = formData.get("classId") as string | null;
+
+      if (!file) return NextResponse.json({ error: "File is required" }, { status: 400 });
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return NextResponse.json(
+          { error: `File too large. Maximum size is ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB.` },
+          { status: 400 }
+        );
+      }
     }
+
     if (!subjectId) return NextResponse.json({ error: "Subject ID is required" }, { status: 400 });
     if (!examTitle?.trim()) return NextResponse.json({ error: "Exam title is required" }, { status: 400 });
     if (!classId) return NextResponse.json({ error: "Class ID is required" }, { status: 400 });
@@ -94,68 +118,13 @@ export async function POST(req: NextRequest) {
     if (!subject) return NextResponse.json({ error: "Subject not found" }, { status: 404 });
     if (!classRow) return NextResponse.json({ error: "Class not found" }, { status: 404 });
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const fileName = file.name.toLowerCase();
-
-    let grid: string[][];
-    try {
-      if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
-        grid = await parseCsvGrid(buffer);
-      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-        grid = parseExcelGrid(buffer);
-      } else {
-        return NextResponse.json(
-          { error: "Unsupported format. Upload CSV or Excel (.xlsx/.xls) files." },
-          { status: 400 }
-        );
-      }
-    } catch (parseError: unknown) {
-      return NextResponse.json(
-        { error: safeErrorMessage(parseError, "Failed to parse file") },
-        { status: 400 },
-      );
-    }
-
-    const sheet = parseResultsGrid(grid, { totalMarks });
-    if (sheet.rows.length === 0) {
-      return NextResponse.json(
-        {
-          error: buildNoDataMessage(sheet),
-          foundColumns: sheet.headers.slice(0, 20),
-          sampleRows: sheet.sampleRows?.slice(0, 5),
-          warnings: sheet.warnings.slice(0, 20),
-        },
-        { status: 400 },
-      );
-    }
-
     const { data: gradingScales } = await supabaseAdmin
       .from("grading_scales")
       .select("min_score, max_score, grade")
       .eq("school_id", schoolId)
       .order("min_score", { ascending: true });
 
-    const warnings: string[] = [...sheet.warnings];
-    const parsed: Array<{
-      identifier: string;
-      classNumber: number | null;
-      admissionNumber: string | null;
-      name: string | null;
-      marks: number | null;
-      grade: string | null;
-    }> = sheet.rows.map((row) => ({
-      identifier: row.identifier.trim(),
-      classNumber: row.classNumber,
-      admissionNumber: row.admissionNumber,
-      name: row.name,
-      marks: row.marks,
-      grade: row.grade || computeGrade(row.marks, gradingScales || []),
-    }));
-
-    const studentIdByIdentifier = await resolveStudentIds(schoolId, classId, parsed);
-
-    const unmatched: string[] = [];
-    const resultsPayload: {
+    let resultsPayload: {
       student_id: string;
       assignment_id: string;
       exam_id: string | null;
@@ -163,44 +132,122 @@ export async function POST(req: NextRequest) {
       grade: string | null;
       school_id: string;
     }[] = [];
+    const unmatched: string[] = [];
+    const warnings: string[] = [];
 
-    for (const row of parsed) {
-      const candidates = [
-        row.classNumber != null ? String(row.classNumber) : null,
-        row.admissionNumber,
-        row.name,
-        row.identifier,
-      ].filter(Boolean) as string[];
-
-      let studentId: string | undefined;
-      for (const candidate of candidates) {
-        const key = candidate.toLowerCase().trim();
-        studentId =
-          studentIdByIdentifier.get(key) ||
-          studentIdByIdentifier.get(key.replace(/[\s_-]/g, ""));
-        if (studentId) break;
+    if (directMarks) {
+      for (const item of directMarks) {
+        if (!item.studentId) continue;
+        if (item.marks === null || item.marks === undefined || isNaN(Number(item.marks))) continue;
+        const numScore = Number(item.marks);
+        resultsPayload.push({
+          student_id: item.studentId,
+          assignment_id: "",
+          exam_id: null,
+          score: numScore,
+          grade: computeGrade(numScore, gradingScales || []),
+          school_id: schoolId,
+        });
       }
-      if (!studentId) {
-        unmatched.push(
-          [
-            row.classNumber != null ? `#${row.classNumber}` : null,
-            row.name,
-            row.admissionNumber,
-            row.identifier,
-          ]
-            .filter(Boolean)
-            .join(" "),
+      if (resultsPayload.length === 0) {
+        return NextResponse.json(
+          { error: "No student marks were provided. Enter at least one mark to save." },
+          { status: 400 }
         );
-        continue;
       }
-      resultsPayload.push({
-        student_id: studentId,
-        assignment_id: "", // filled after assignment is resolved
-        exam_id: null,
-        score: row.marks,
-        grade: row.grade,
-        school_id: schoolId,
-      });
+    } else if (file) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = file.name.toLowerCase();
+
+      let grid: string[][];
+      try {
+        if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
+          grid = await parseCsvGrid(buffer);
+        } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+          grid = parseExcelGrid(buffer);
+        } else {
+          return NextResponse.json(
+            { error: "Unsupported format. Upload CSV or Excel (.xlsx/.xls) files." },
+            { status: 400 }
+          );
+        }
+      } catch (parseError: unknown) {
+        return NextResponse.json(
+          { error: safeErrorMessage(parseError, "Failed to parse file") },
+          { status: 400 },
+        );
+      }
+
+      const sheet = parseResultsGrid(grid, { totalMarks });
+      if (sheet.rows.length === 0) {
+        return NextResponse.json(
+          {
+            error: buildNoDataMessage(sheet),
+            foundColumns: sheet.headers.slice(0, 20),
+            sampleRows: sheet.sampleRows?.slice(0, 5),
+            warnings: sheet.warnings.slice(0, 20),
+          },
+          { status: 400 },
+        );
+      }
+
+      warnings.push(...sheet.warnings);
+      const parsed: Array<{
+        identifier: string;
+        classNumber: number | null;
+        admissionNumber: string | null;
+        name: string | null;
+        marks: number | null;
+        grade: string | null;
+      }> = sheet.rows.map((row) => ({
+        identifier: row.identifier.trim(),
+        classNumber: row.classNumber,
+        admissionNumber: row.admissionNumber,
+        name: row.name,
+        marks: row.marks,
+        grade: row.grade || computeGrade(row.marks, gradingScales || []),
+      }));
+
+      const studentIdByIdentifier = await resolveStudentIds(schoolId, classId, parsed);
+
+      for (const row of parsed) {
+        const candidates = [
+          row.classNumber != null ? String(row.classNumber) : null,
+          row.admissionNumber,
+          row.name,
+          row.identifier,
+        ].filter(Boolean) as string[];
+
+        let studentId: string | undefined;
+        for (const candidate of candidates) {
+          const key = candidate.toLowerCase().trim();
+          studentId =
+            studentIdByIdentifier.get(key) ||
+            studentIdByIdentifier.get(key.replace(/[\s_-]/g, ""));
+          if (studentId) break;
+        }
+        if (!studentId) {
+          unmatched.push(
+            [
+              row.classNumber != null ? `#${row.classNumber}` : null,
+              row.name,
+              row.admissionNumber,
+              row.identifier,
+            ]
+              .filter(Boolean)
+              .join(" "),
+          );
+          continue;
+        }
+        resultsPayload.push({
+          student_id: studentId,
+          assignment_id: "", // filled after assignment is resolved
+          exam_id: null,
+          score: row.marks,
+          grade: row.grade,
+          school_id: schoolId,
+        });
+      }
     }
 
     if (resultsPayload.length === 0) {

@@ -18,11 +18,30 @@ export type ScalePreset = {
   }>;
 };
 
-/** ECZ-style numeric descriptors (common in Zambian schools). */
+/** Official Examinations Council of Zambia (ECZ) 9-point scale. */
+export const ECZ_OFFICIAL_9_POINT_PRESET: ScalePreset = {
+  id: "ecz-official-9point",
+  label: "ECZ Official (1–9 Points)",
+  description:
+    "Official Examinations Council of Zambia Grade 12 / GCE standard scale (Distinction to Unsatisfactory).",
+  bands: [
+    { grade: "1", minScore: 75, maxScore: 100, description: "Distinction" },
+    { grade: "2", minScore: 70, maxScore: 74, description: "Distinction" },
+    { grade: "3", minScore: 65, maxScore: 69, description: "Merit" },
+    { grade: "4", minScore: 60, maxScore: 64, description: "Merit" },
+    { grade: "5", minScore: 55, maxScore: 59, description: "Credit" },
+    { grade: "6", minScore: 50, maxScore: 54, description: "Credit" },
+    { grade: "7", minScore: 45, maxScore: 49, description: "Satisfactory" },
+    { grade: "8", minScore: 40, maxScore: 44, description: "Satisfactory" },
+    { grade: "9", minScore: 0, maxScore: 39, description: "Unsatisfactory" },
+  ],
+};
+
+/** Simplified ECZ numeric scale (1–5). */
 export const ECZ_NUMERIC_PRESET: ScalePreset = {
   id: "ecz-numeric",
   label: "ECZ numeric (1–5)",
-  description: "Distinction through fail using ECZ-style grade points.",
+  description: "Distinction through fail using simplified 5-tier grade points.",
   bands: [
     { grade: "1", minScore: 75, maxScore: 100, description: "Distinction" },
     { grade: "2", minScore: 65, maxScore: 74, description: "Merit" },
@@ -46,7 +65,11 @@ export const LETTER_PERCENT_PRESET: ScalePreset = {
   ],
 };
 
-export const GRADING_PRESETS = [ECZ_NUMERIC_PRESET, LETTER_PERCENT_PRESET];
+export const GRADING_PRESETS = [
+  ECZ_OFFICIAL_9_POINT_PRESET,
+  ECZ_NUMERIC_PRESET,
+  LETTER_PERCENT_PRESET,
+];
 
 export function analyzeScaleCoverage(
   bands: ScaleBandInput[],

@@ -28,11 +28,16 @@ test("logout keeps feed read watermarks while clearing volatile feed caches", as
   assert.doesNotMatch(source, /zamschool:feed-read/);
 });
 
-test("notification unread counts dedupe rows across user_id and recipient_id schemas", async () => {
+test("notification unread counts use the canonical user_id schema (no dead-column fan-out)", async () => {
   const source = await readFile(inboxQueriesPath, "utf8");
 
-  assert.match(source, /const unreadIds = new Set<string>\(\)/);
-  assert.match(source, /unreadIds\.add\(String\(row\.id\)\)/);
+  // Canonical baseline schema: notifications has user_id only — no query may
+  // target the legacy identity/body column variants (each one is a guaranteed
+  // PostgREST 400 that pollutes the Supabase error rate).
+  assert.doesNotMatch(source, /\.(in|eq)\("recipient_id"/);
+  assert.doesNotMatch(source, /select\([^)]*recipient_id/);
+  assert.doesNotMatch(source, /"id, title, body,/);
+  assert.match(source, /count: "exact", head: true/);
   assert.doesNotMatch(source, /Math\.max\(\.\.\.counts\)/);
 });
 

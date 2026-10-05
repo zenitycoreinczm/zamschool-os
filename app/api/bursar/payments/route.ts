@@ -108,12 +108,24 @@ export async function POST(request: NextRequest) {
     const routeKey = "bursar.payments.create";
     const scopeKey = `${schoolId}:${userId}`;
 
+    // Hash stable client fields BEFORE load so same-key+different-payload
+    // is rejected at replay time. Must NOT include minted referenceNumber.
+    const preLoadPaymentHash = hashRequestPayload({
+      studentId: body.studentId,
+      amount: body.amount,
+      paymentMethod: body.method || body.paymentMethod,
+      paymentType: body.paymentType?.trim() || "school_fees",
+      reference:
+        body.referenceNumber?.trim() || body.reference?.trim() || null,
+    });
+
     if (idempotencyKey) {
       const replay = await loadIdempotentResponse({
         routeKey,
         schoolId,
         scopeKey,
         idempotencyKey,
+        requestHash: preLoadPaymentHash,
       });
       if (replay) return replay;
     }
@@ -130,14 +142,6 @@ export async function POST(request: NextRequest) {
     // Store authoritative receipt in reference_number so existing schema works
     // without a migration. Prefer receipt when client had no bank/cheque ref.
     const referenceNumber = clientReference || receiptNumber;
-
-    const requestHash = hashRequestPayload({
-      studentId: body.studentId,
-      amount: body.amount,
-      paymentMethod,
-      paymentType,
-      referenceNumber,
-    });
 
     const { data: transactionResult, error: paymentError } =
       await supabaseAdmin.rpc("record_student_payment_transaction", {
@@ -214,7 +218,8 @@ export async function POST(request: NextRequest) {
     if (idempotencyKey) {
       await storeIdempotentResponse(
         { routeKey, schoolId, scopeKey, idempotencyKey },
-        requestHash,
+        // Same stable hash as the pre-load check — never the minted receipt.
+        preLoadPaymentHash,
         201,
         responseBody,
       );

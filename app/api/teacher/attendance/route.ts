@@ -27,6 +27,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { createAuditLog } from "@/lib/audit-log";
 import { evaluateRollCallWindow } from "@/lib/attendance/window";
 import { notifyHeadTeacherOfLateRollCall } from "@/lib/attendance/late-teacher-alert";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 // Keep in sync with the DB CHECK constraint: present/absent/late/excused.
 const attendanceStatusSchema = z.enum([
@@ -478,6 +479,12 @@ export async function POST(req: Request) {
         date: body.date,
         count: savedRows?.length || rows.length,
       },
+    });
+
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "attendance",
+      action: "update",
     });
 
     // ── Defer notifications (non-blocking) ────────────────────────────────

@@ -196,7 +196,9 @@ async function loadTeacherRecord(profileId: string, schoolId: string) {
   return safeMaybeSingle(
     supabaseAdmin
       .from("teachers")
-      .select("*")
+      .select(
+        "id, profile_id, school_id, employee_id, employee_number, department, specialization, hire_date, is_active"
+      )
       .eq("school_id", schoolId)
       .or(`profile_id.eq.${profileId},id.eq.${profileId}`)
       .limit(1)

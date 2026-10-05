@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyEdgeCacheHeaders } from "@/lib/edge-cache";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
   applyRateLimit,
@@ -86,10 +87,13 @@ export async function GET(req: Request) {
     const requestedRole = normalizeRoleValue(searchParams.get("role"));
 
     if (!profileId) {
-      return NextResponse.json({
-        success: true,
-        data: await loadUserDirectory(schoolId),
-      });
+      return applyEdgeCacheHeaders(
+        NextResponse.json({
+          success: true,
+          data: await loadUserDirectory(schoolId),
+        }),
+        "privateRead",
+      );
     }
 
     const profile = await loadPersonProfile(profileId, schoolId);
@@ -115,27 +119,39 @@ export async function GET(req: Request) {
     };
 
     if (role === "student") {
-      return NextResponse.json({
-        success: true,
-        data: await buildStudentDetail(baseProfile, schoolId),
-      });
+      return applyEdgeCacheHeaders(
+        NextResponse.json({
+          success: true,
+          data: await buildStudentDetail(baseProfile, schoolId),
+        }),
+        "privateRead",
+      );
     }
 
     if (role === "teacher") {
-      return NextResponse.json({
-        success: true,
-        data: await buildTeacherDetail(baseProfile, schoolId),
-      });
+      return applyEdgeCacheHeaders(
+        NextResponse.json({
+          success: true,
+          data: await buildTeacherDetail(baseProfile, schoolId),
+        }),
+        "privateRead",
+      );
     }
 
     if (role === "parent") {
-      return NextResponse.json({
-        success: true,
-        data: await buildParentDetail(baseProfile, schoolId),
-      });
+      return applyEdgeCacheHeaders(
+        NextResponse.json({
+          success: true,
+          data: await buildParentDetail(baseProfile, schoolId),
+        }),
+        "privateRead",
+      );
     }
 
-    return NextResponse.json({ success: true, data: baseProfile });
+    return applyEdgeCacheHeaders(
+      NextResponse.json({ success: true, data: baseProfile }),
+      "privateRead",
+    );
   } catch (error: unknown) {
     return NextResponse.json(
       { error: safeErrorMessage(error, "Failed to load user details") },

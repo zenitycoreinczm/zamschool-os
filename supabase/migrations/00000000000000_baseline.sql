@@ -1,5 +1,5 @@
 -- ============================================================
--- ZamSchool OS — Database Schema Baseline
+-- ZamSchool OS ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Database Schema Baseline
 -- Generated from production database: jnnroitaftfmclegbeac
 -- Date: 2026-06-18
 -- ============================================================
@@ -7,6 +7,12 @@
 -- All future migrations should be added as new files in
 -- supabase/migrations/ with timestamp-prefixed names.
 -- ============================================================
+
+-- Functions are listed in Sections below in alphabetical, not
+-- dependency, order; skip CREATE-time body validation so forward
+-- references (e.g. accessible_class_ids -> current_school_id) resolve
+-- at call time once every function exists.
+SET check_function_bodies = off;
 
 -- Section 1: Extensions
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" SCHEMA "extensions";
@@ -21,7 +27,10 @@ CREATE SCHEMA IF NOT EXISTS "vault";
 CREATE SCHEMA IF NOT EXISTS "private";
 
 -- Section 3: Enum Types
-CREATE TYPE public.behaviour_severity AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+DO $$ BEGIN
+  CREATE TYPE public.behaviour_severity AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Section 4: Tables (92 tables)
 CREATE TABLE IF NOT EXISTS public.academic_terms (
@@ -1126,7 +1135,7 @@ CREATE TABLE IF NOT EXISTS public.student_pulse_metrics (
   engagement_score numeric(5,2) DEFAULT 0.00,
   behavior_score numeric(5,2) DEFAULT 0.00,
   social_interaction numeric(5,2) DEFAULT 0.00,
-  overall_score numeric(5,2) DEFAULT (((((academic_performance * 0.4) + (attendance_rate * 0.2)) + (engagement_score * 0.2)) + (behavior_score * 0.1)) + (social_interaction * 0.1)),
+  overall_score numeric(5,2) DEFAULT 0.00,
   risk_level text DEFAULT 'low'::text,
   risk_factors jsonb DEFAULT '[]'::jsonb,
   academic_trend text DEFAULT 'stable'::text,
@@ -1295,7 +1304,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_performance_metrics (
   student_engagement_average numeric(5,2) DEFAULT 0.00,
   parent_response_rate numeric(5,2) DEFAULT 0.00,
   lesson_plan_completion numeric(5,2) DEFAULT 0.00,
-  overall_performance_score numeric(5,2) DEFAULT (((((attendance_completion_rate * 0.2) + (grading_timeliness_score * 0.25)) + (student_engagement_average * 0.25)) + (parent_response_rate * 0.15)) + (lesson_plan_completion * 0.15)),
+  overall_performance_score numeric(5,2) DEFAULT 0.00,
   performance_trend text DEFAULT 'stable'::text,
   recognition_points integer DEFAULT 0,
   achievements jsonb DEFAULT '{}'::jsonb,
@@ -1426,7 +1435,7 @@ AS $function$
     where p.profile_id = auth.uid()
       and s.class_id is not null
   ) x;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.accessible_student_ids()
@@ -1458,7 +1467,7 @@ AS $function$
     where s.class_id = any(private.accessible_class_ids())
       and (select private.is_teacher())
   ) x;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.assignment_school(p_assignment_id uuid)
@@ -1471,7 +1480,7 @@ AS $function$
   from public.assignments a
   where a.id = p_assignment_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.class_school(p_class_id uuid)
@@ -1484,7 +1493,7 @@ AS $function$
   from public.classes c
   where c.id = p_class_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_parent_id()
@@ -1497,7 +1506,7 @@ AS $function$
   from public.parents p
   where p.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_parent_row_id()
@@ -1510,7 +1519,7 @@ AS $function$
   from public.parents p
   where p.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private."current_role"()
@@ -1523,7 +1532,7 @@ AS $function$
   from public.profiles p
   where p.id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_school_id()
@@ -1536,7 +1545,7 @@ AS $function$
   from public.profiles p
   where p.id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_student_id()
@@ -1549,7 +1558,7 @@ AS $function$
   from public.students s
   where s.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_student_row_id()
@@ -1562,7 +1571,7 @@ AS $function$
   from public.students s
   where s.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_teacher_id()
@@ -1575,7 +1584,7 @@ AS $function$
   from public.teachers t
   where t.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_teacher_row_id()
@@ -1588,7 +1597,7 @@ AS $function$
   from public.teachers t
   where t.profile_id = auth.uid()
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.current_user_id()
@@ -1598,7 +1607,7 @@ CREATE OR REPLACE FUNCTION private.current_user_id()
  SET search_path TO ''
 AS $function$
   select auth.uid();
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.exam_school(p_exam_id uuid)
@@ -1611,7 +1620,7 @@ AS $function$
   from public.exams e
   where e.id = p_exam_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.is_admin()
@@ -1627,7 +1636,7 @@ AS $function$
       and p.role = 'admin'
       and coalesce(p.is_active, true) = true
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.is_parent()
@@ -1643,7 +1652,7 @@ AS $function$
       and p.role = 'parent'
       and coalesce(p.is_active, true) = true
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.is_student()
@@ -1659,7 +1668,7 @@ AS $function$
       and p.role = 'student'
       and coalesce(p.is_active, true) = true
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.is_teacher()
@@ -1675,7 +1684,7 @@ AS $function$
       and p.role = 'teacher'
       and coalesce(p.is_active, true) = true
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.parent_can_access_student(target_student_id uuid)
@@ -1690,7 +1699,7 @@ AS $function$
     where ps.parent_id = private.current_parent_id()
       and ps.student_id = target_student_id
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.parent_school(p_parent_id uuid)
@@ -1703,7 +1712,7 @@ AS $function$
   from public.parents p
   where p.id = p_parent_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.profile_school(p_profile_id uuid)
@@ -1716,7 +1725,7 @@ AS $function$
   from public.profiles p
   where p.id = p_profile_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.set_updated_at()
@@ -1728,7 +1737,7 @@ begin
   new.updated_at = now();
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.student_school(p_student_id uuid)
@@ -1741,7 +1750,7 @@ AS $function$
   from public.students s
   where s.id = p_student_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.subject_school(p_subject_id uuid)
@@ -1754,7 +1763,7 @@ AS $function$
   from public.subjects s
   where s.id = p_subject_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.sync_attendance_dates()
@@ -1778,7 +1787,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.teacher_can_manage_class(p_class_id uuid)
@@ -1801,7 +1810,7 @@ AS $function$
       where cs.class_id = p_class_id
         and t.profile_id = auth.uid()
     );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.teacher_can_manage_class_subject(p_class_id uuid, p_subject_id uuid)
@@ -1825,7 +1834,7 @@ AS $function$
       where c.id = p_class_id
         and c.supervisor_id = auth.uid()
     );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.teacher_has_class(target_class_id uuid)
@@ -1840,7 +1849,7 @@ AS $function$
     where cs.teacher_id = private.current_teacher_id()
       and cs.class_id = target_class_id
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.teacher_has_class_subject(target_class_id uuid, target_subject_id uuid)
@@ -1856,7 +1865,7 @@ AS $function$
       and cs.class_id = target_class_id
       and cs.subject_id = target_subject_id
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.teacher_school(p_teacher_id uuid)
@@ -1869,7 +1878,7 @@ AS $function$
   from public.teachers t
   where t.id = p_teacher_id
   limit 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_assignments_row()
@@ -1893,7 +1902,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_attendance_row()
@@ -1912,7 +1921,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_class_subjects_row()
@@ -1940,7 +1949,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_exams_row()
@@ -1959,7 +1968,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_fee_payments_row()
@@ -1979,7 +1988,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_lessons_row()
@@ -2003,7 +2012,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_messages_row()
@@ -2022,7 +2031,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_parent_students_row()
@@ -2037,7 +2046,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_parents_row()
@@ -2052,7 +2061,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_results_row()
@@ -2077,7 +2086,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_students_row()
@@ -2097,7 +2106,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION private.validate_teachers_row()
@@ -2112,7 +2121,7 @@ begin
 
   return new;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.audit_trigger_function()
@@ -2180,7 +2189,7 @@ BEGIN
     END IF;
     RETURN NULL; -- result is ignored since this is an AFTER trigger
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.calculate_student_average(p_student_id uuid, p_class_id uuid, p_subject_id uuid)
@@ -2211,7 +2220,7 @@ BEGIN
     
     RETURN v_average;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.calculate_student_pulse_score()
@@ -2242,7 +2251,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.can_manage_invitations()
@@ -2252,7 +2261,7 @@ CREATE OR REPLACE FUNCTION public.can_manage_invitations()
  SET search_path TO 'public', 'auth'
 AS $function$
   SELECT public.get_my_role() IN ('head_teacher', 'deputy_head_teacher');
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.check_habitual_absentees(p_school_id uuid)
@@ -2284,7 +2293,7 @@ BEGIN
     ON CONFLICT (school_id, dedupe_key) DO NOTHING;
   END LOOP;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.generate_class_insights()
@@ -2297,7 +2306,7 @@ BEGIN
     -- This would contain complex logic for pattern recognition
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_parent_id()
@@ -2307,7 +2316,7 @@ CREATE OR REPLACE FUNCTION public.get_my_parent_id()
  SET search_path TO ''
 AS $function$
   SELECT id FROM public.parents WHERE profile_id = auth.uid() LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_profile_id()
@@ -2320,7 +2329,7 @@ AS $function$
   FROM public.profiles
   WHERE id = auth.uid() OR auth_user_id = auth.uid()
   LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_role()
@@ -2333,7 +2342,7 @@ AS $function$
     FROM public.profiles
     WHERE id = auth.uid() OR auth_user_id = auth.uid()
     LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_school_id()
@@ -2346,7 +2355,7 @@ AS $function$
     FROM public.profiles
     WHERE id = auth.uid() OR auth_user_id = auth.uid()
     LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_student_id()
@@ -2356,7 +2365,7 @@ CREATE OR REPLACE FUNCTION public.get_my_student_id()
  SET search_path TO ''
 AS $function$
   SELECT id FROM public.students WHERE profile_id = auth.uid() LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_my_teacher_id()
@@ -2366,7 +2375,7 @@ CREATE OR REPLACE FUNCTION public.get_my_teacher_id()
  SET search_path TO ''
 AS $function$
   SELECT id FROM public.teachers WHERE profile_id = auth.uid() LIMIT 1;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_student_exam_questions(p_exam_id uuid)
@@ -2419,7 +2428,7 @@ BEGIN
     SELECT q.id, q.exam_id, q.position, q.question_type, q.question_text, q.options, q.points
     FROM public.exam_questions q WHERE q.exam_id = p_exam_id ORDER BY q.position;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -2431,7 +2440,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.is_admin_role()
@@ -2444,7 +2453,7 @@ AS $function$
         'admin', 'principal', 'super_admin', 'deputy_head',
         'academic_admin', 'hr_admin', 'ict_admin'
     );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.is_financial_context_role()
@@ -2461,7 +2470,7 @@ AS $function$
     'admin',
     'super_admin'
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.is_payments_role()
@@ -2471,7 +2480,7 @@ CREATE OR REPLACE FUNCTION public.is_payments_role()
  SET search_path TO 'public', 'auth'
 AS $function$
   SELECT public.get_my_role() IN ('payments', 'bursar');
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.is_sensitive_role()
@@ -2488,7 +2497,7 @@ AS $function$
     'ict_admin',
     'it_admin'
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.is_super_admin()
@@ -2502,7 +2511,7 @@ AS $function$
     WHERE (id = auth.uid() OR auth_user_id = auth.uid()) 
     AND role = 'super_admin'
   );
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.list_user_conversations(p_profile_id uuid, p_school_id uuid, p_search text DEFAULT NULL::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0)
@@ -2586,7 +2595,7 @@ AS $function$
   order by last_message_at desc
   limit greatest(p_limit, 1)
   offset greatest(p_offset, 0);
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.mark_announcement_seen(p_announcement_id uuid)
@@ -2619,7 +2628,7 @@ begin
 
   return true;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.mark_invite_used(p_code text, p_used_by uuid)
@@ -2658,7 +2667,7 @@ BEGIN
     
     RETURN true;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.mark_message_read(p_message_id uuid)
@@ -2678,7 +2687,7 @@ begin
 
   return true;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.me()
@@ -2711,7 +2720,7 @@ AS $function$
   left join public.teachers t on t.profile_id = p.id
   left join public.parents pr on pr.profile_id = p.id
   where p.id = auth.uid();
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.notify_change()
@@ -2728,7 +2737,7 @@ BEGIN
     )::text);
     RETURN COALESCE(NEW, OLD);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.record_attendance_bulk(p_class_id uuid, p_attendance_date date, p_session_name text DEFAULT 'Morning Roll Call'::text, p_session_time time without time zone DEFAULT '08:00:00'::time without time zone, p_rows jsonb DEFAULT '[]'::jsonb)
@@ -2788,7 +2797,7 @@ begin
     'class_id', p_class_id, 'attendance_date', p_attendance_date, 'session_name', p_session_name
   );
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.revoke_expired_staff_invitations()
@@ -2808,7 +2817,7 @@ BEGIN
   GET DIAGNOSTICS revoked_count = ROW_COUNT;
   RETURN revoked_count;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.rls_auto_enable()
@@ -2839,7 +2848,7 @@ BEGIN
      END IF;
   END LOOP;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.save_gradebook_data(p_class_id uuid, p_subject_id uuid, p_columns jsonb, p_students jsonb, p_teacher_id uuid)
@@ -2972,7 +2981,7 @@ BEGIN
     RETURN QUERY SELECT true, 'Gradebook saved successfully'::TEXT;
     RETURN;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.school_directory(p_role text)
@@ -2995,7 +3004,7 @@ AS $function$
     and coalesce(p.is_active, true) = true
     and (p_role is null or p.role = p_role)
   order by p.first_name, p.last_name;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.seed_default_alert_thresholds(p_school_id uuid)
@@ -3015,7 +3024,7 @@ BEGIN
     (p_school_id, 'fee_collection_rate_min',     60,  'warning')
   ON CONFLICT (school_id, metric) DO NOTHING;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.send_message(p_receiver_id uuid, p_content text)
@@ -3045,7 +3054,7 @@ begin
   returning id into v_message_id;
   return v_message_id;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -3058,7 +3067,7 @@ BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.submit_fee_payment(p_student_id uuid, p_amount numeric, p_payment_method text DEFAULT 'cash'::text, p_reference_number text DEFAULT NULL::text, p_term text DEFAULT NULL::text, p_academic_year text DEFAULT NULL::text, p_notes text DEFAULT NULL::text)
@@ -3099,7 +3108,7 @@ begin
   returning id into v_payment_id;
   return v_payment_id;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_my_profile(p_first_name text, p_last_name text, p_phone text DEFAULT NULL::text, p_address text DEFAULT NULL::text, p_avatar_url text DEFAULT NULL::text, p_gender text DEFAULT NULL::text, p_date_of_birth date DEFAULT NULL::date)
@@ -3126,7 +3135,7 @@ begin
   end if;
   return v_row;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_payment_status()
@@ -3141,7 +3150,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_updated_at()
@@ -3153,7 +3162,7 @@ BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -3166,7 +3175,7 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.upsert_results_bulk(p_exam_id uuid DEFAULT NULL::uuid, p_assignment_id uuid DEFAULT NULL::uuid, p_rows jsonb DEFAULT '[]'::jsonb)
@@ -3246,7 +3255,7 @@ begin
     'exam_id', p_exam_id, 'assignment_id', p_assignment_id
   );
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.validate_invite_code(p_code text)
@@ -3269,7 +3278,7 @@ BEGIN
     FROM school_invites i
     WHERE i.code = p_code;
 END;
-$function$
+$function$;
 
 
 -- Section 6: Views (8 views)
@@ -3895,17 +3904,13 @@ CREATE INDEX idx_admin_actions_actor_id ON public.admin_actions USING btree (act
 CREATE INDEX idx_admin_actions_rollback_of ON public.admin_actions USING btree (rollback_of);
 CREATE INDEX idx_admin_actions_school_actor ON public.admin_actions USING btree (school_id, actor_id, executed_at DESC);
 CREATE INDEX idx_admin_actions_target ON public.admin_actions USING btree (target_entity_type, target_entity_id) WHERE (target_entity_id IS NOT NULL);
-CREATE UNIQUE INDEX admin_role_scopes_school_id_user_id_scope_key ON public.admin_role_scopes USING btree (school_id, user_id, scope);
 CREATE INDEX idx_admin_role_scopes_granted_by ON public.admin_role_scopes USING btree (granted_by);
 CREATE INDEX idx_admin_role_scopes_school_user ON public.admin_role_scopes USING btree (school_id, user_id) WHERE (is_active = true);
 CREATE INDEX idx_admin_role_scopes_user_id ON public.admin_role_scopes USING btree (user_id);
-CREATE UNIQUE INDEX alert_thresholds_school_id_metric_key ON public.alert_thresholds USING btree (school_id, metric);
 CREATE INDEX idx_alert_thresholds_school ON public.alert_thresholds USING btree (school_id) WHERE (is_active = true);
 CREATE INDEX idx_alert_thresholds_updated_by ON public.alert_thresholds USING btree (updated_by);
-CREATE UNIQUE INDEX announcement_seen_announcement_id_profile_id_key ON public.announcement_seen USING btree (announcement_id, profile_id);
 CREATE INDEX idx_announcement_seen_announcement_id ON public.announcement_seen USING btree (announcement_id);
 CREATE INDEX idx_announcement_seen_profile_id ON public.announcement_seen USING btree (profile_id);
-CREATE UNIQUE INDEX announcement_views_announcement_id_viewer_id_key ON public.announcement_views USING btree (announcement_id, viewer_id);
 CREATE INDEX idx_announcement_views_viewer_id ON public.announcement_views USING btree (viewer_id);
 CREATE INDEX idx_announcements_created_by ON public.announcements USING btree (created_by);
 CREATE INDEX idx_announcements_publish_at ON public.announcements USING btree (publish_at);
@@ -3918,12 +3923,10 @@ CREATE INDEX idx_announcements_school_status ON public.announcements USING btree
 CREATE INDEX idx_announcements_status ON public.announcements USING btree (status);
 CREATE INDEX idx_announcements_target_class_id ON public.announcements USING btree (target_class_id);
 CREATE INDEX idx_announcements_target_user_id ON public.announcements USING btree (target_user_id);
-CREATE UNIQUE INDEX assignment_submissions_school_id_assignment_id_student_prof_key ON public.assignment_submissions USING btree (school_id, assignment_id, student_profile_id);
 CREATE INDEX idx_assignment_submissions_assignment_id ON public.assignment_submissions USING btree (assignment_id);
 CREATE INDEX idx_assignment_submissions_school_assignment ON public.assignment_submissions USING btree (school_id, assignment_id);
 CREATE INDEX idx_assignment_submissions_school_student ON public.assignment_submissions USING btree (school_id, student_profile_id);
 CREATE INDEX idx_assignment_submissions_student_profile_id ON public.assignment_submissions USING btree (student_profile_id);
-CREATE UNIQUE INDEX assignments_class_subject_title_unique ON public.assignments USING btree (school_id, class_id, subject_id, title);
 CREATE INDEX idx_assignments_class_id ON public.assignments USING btree (class_id);
 CREATE INDEX idx_assignments_due_date ON public.assignments USING btree (due_date);
 CREATE INDEX idx_assignments_school_id ON public.assignments USING btree (school_id);
@@ -3935,8 +3938,6 @@ CREATE INDEX idx_async_jobs_school_status_available ON public.async_jobs USING b
 CREATE INDEX idx_async_jobs_status_available ON public.async_jobs USING btree (status, available_at);
 CREATE INDEX idx_async_jobs_status_priority_available ON public.async_jobs USING btree (status, priority, available_at);
 CREATE UNIQUE INDEX attendance_idempotent_slot_uq ON public.attendance USING btree (school_id, student_id, class_id, attendance_date);
-CREATE UNIQUE INDEX attendance_roll_call_unique ON public.attendance USING btree (school_id, class_id, student_id, attendance_date, session_name);
-CREATE UNIQUE INDEX attendance_unique ON public.attendance USING btree (student_id, class_id, date, session_name);
 CREATE INDEX idx_attendance_class ON public.attendance USING btree (class_id);
 CREATE INDEX idx_attendance_class_date ON public.attendance USING btree (class_id, attendance_date);
 CREATE UNIQUE INDEX idx_attendance_client_id ON public.attendance USING btree (school_id, client_id) WHERE (client_id IS NOT NULL);
@@ -3948,7 +3949,6 @@ CREATE INDEX idx_attendance_school_student_date ON public.attendance USING btree
 CREATE INDEX idx_attendance_student_date ON public.attendance USING btree (student_id, attendance_date DESC);
 CREATE INDEX idx_attendance_student_id ON public.attendance USING btree (student_id);
 CREATE UNIQUE INDEX idx_attendance_upsert_key ON public.attendance USING btree (student_id, class_id, attendance_date, session_name);
-CREATE UNIQUE INDEX attendance_rollcall_sessions_class_id_subject_id_date_key ON public.attendance_rollcall_sessions USING btree (class_id, subject_id, date);
 CREATE INDEX idx_attendance_rollcall_class_date ON public.attendance_rollcall_sessions USING btree (class_id, date);
 CREATE INDEX idx_attendance_rollcall_sessions_class_id ON public.attendance_rollcall_sessions USING btree (class_id);
 CREATE INDEX idx_attendance_rollcall_sessions_lesson_id ON public.attendance_rollcall_sessions USING btree (lesson_id);
@@ -3977,11 +3977,9 @@ CREATE INDEX idx_class_insights_class_type ON public.class_insights USING btree 
 CREATE INDEX idx_class_insights_school_id ON public.class_insights USING btree (school_id);
 CREATE INDEX idx_class_insights_subject_id ON public.class_insights USING btree (subject_id);
 CREATE INDEX idx_class_insights_teacher_id ON public.class_insights USING btree (teacher_id);
-CREATE UNIQUE INDEX class_subjects_class_id_subject_id_key ON public.class_subjects USING btree (class_id, subject_id);
 CREATE INDEX idx_class_subjects_class_id ON public.class_subjects USING btree (class_id);
 CREATE INDEX idx_class_subjects_subject_id ON public.class_subjects USING btree (subject_id);
 CREATE INDEX idx_class_subjects_teacher_id ON public.class_subjects USING btree (teacher_id);
-CREATE UNIQUE INDEX classes_school_name_unique ON public.classes USING btree (school_id, name);
 CREATE INDEX idx_classes_grade_id ON public.classes USING btree (grade_id);
 CREATE INDEX idx_classes_school_grade ON public.classes USING btree (school_id, grade_level);
 CREATE INDEX idx_classes_school_id ON public.classes USING btree (school_id);
@@ -3995,7 +3993,6 @@ CREATE INDEX idx_classroom_activity_stream_type_status ON public.classroom_activ
 CREATE INDEX idx_discipline_actions_issued_by ON public.discipline_actions USING btree (issued_by);
 CREATE INDEX idx_discipline_actions_record ON public.discipline_actions USING btree (record_id);
 CREATE INDEX idx_discipline_actions_type ON public.discipline_actions USING btree (school_id, action_type);
-CREATE UNIQUE INDEX discipline_categories_school_id_name_key ON public.discipline_categories USING btree (school_id, name);
 CREATE INDEX idx_discipline_records_category_id ON public.discipline_records USING btree (category_id);
 CREATE INDEX idx_discipline_records_class ON public.discipline_records USING btree (class_id);
 CREATE INDEX idx_discipline_records_incident_date ON public.discipline_records USING btree (incident_date);
@@ -4007,7 +4004,6 @@ CREATE INDEX idx_discipline_records_student_id ON public.discipline_records USIN
 CREATE INDEX idx_duty_roster_created_by ON public.duty_roster USING btree (created_by);
 CREATE INDEX idx_duty_roster_school_id ON public.duty_roster USING btree (school_id);
 CREATE INDEX idx_duty_roster_teacher_id ON public.duty_roster USING btree (teacher_id);
-CREATE UNIQUE INDEX email_verifications_user_id_key ON public.email_verifications USING btree (user_id);
 CREATE INDEX idx_events_created_by ON public.events USING btree (created_by);
 CREATE INDEX idx_events_school_date ON public.events USING btree (school_id, event_date);
 CREATE INDEX idx_events_school_id ON public.events USING btree (school_id);
@@ -4024,7 +4020,6 @@ CREATE UNIQUE INDEX exam_submissions_exam_student_uidx ON public.exam_submission
 CREATE INDEX idx_exam_submissions_exam_id ON public.exam_submissions USING btree (exam_id);
 CREATE INDEX idx_exam_submissions_school_id ON public.exam_submissions USING btree (school_id);
 CREATE INDEX idx_exam_submissions_student_id ON public.exam_submissions USING btree (student_id);
-CREATE UNIQUE INDEX exams_class_subject_title_unique ON public.exams USING btree (school_id, class_id, subject_id, title);
 CREATE INDEX idx_exams_class_id ON public.exams USING btree (class_id);
 CREATE INDEX idx_exams_exam_date ON public.exams USING btree (exam_date);
 CREATE INDEX idx_exams_school_class ON public.exams USING btree (school_id, class_id);
@@ -4085,24 +4080,20 @@ CREATE INDEX idx_markbook_columns_published ON public.markbook_columns USING btr
 CREATE INDEX idx_markbook_columns_school ON public.markbook_columns USING btree (school_id);
 CREATE INDEX idx_markbook_columns_sheet ON public.markbook_columns USING btree (sheet_id, order_index);
 CREATE INDEX idx_markbook_columns_subject_id ON public.markbook_columns USING btree (subject_id);
-CREATE UNIQUE INDEX markbook_columns_school_id_class_id_subject_id_name_key ON public.markbook_columns USING btree (school_id, class_id, subject_id, name);
 CREATE INDEX idx_markbook_entries_column_id ON public.markbook_entries USING btree (column_id);
 CREATE INDEX idx_markbook_entries_school_id ON public.markbook_entries USING btree (school_id);
 CREATE INDEX idx_markbook_entries_sheet_student ON public.markbook_entries USING btree (sheet_id, student_id);
 CREATE INDEX idx_markbook_entries_student_id ON public.markbook_entries USING btree (student_id);
-CREATE UNIQUE INDEX markbook_entries_column_id_student_id_key ON public.markbook_entries USING btree (column_id, student_id);
 CREATE INDEX idx_markbook_scores_column_id ON public.markbook_scores USING btree (column_id);
 CREATE INDEX idx_markbook_scores_column_student ON public.markbook_scores USING btree (column_id, student_profile_id);
 CREATE INDEX idx_markbook_scores_graded_by ON public.markbook_scores USING btree (graded_by);
 CREATE INDEX idx_markbook_scores_school ON public.markbook_scores USING btree (school_id);
 CREATE INDEX idx_markbook_scores_student ON public.markbook_scores USING btree (student_profile_id);
-CREATE UNIQUE INDEX markbook_scores_school_id_column_id_student_profile_id_key ON public.markbook_scores USING btree (school_id, column_id, student_profile_id);
 CREATE INDEX idx_markbook_sheets_class_id ON public.markbook_sheets USING btree (class_id);
 CREATE INDEX idx_markbook_sheets_school_class ON public.markbook_sheets USING btree (school_id, class_id);
 CREATE INDEX idx_markbook_sheets_subject_id ON public.markbook_sheets USING btree (subject_id);
 CREATE INDEX idx_markbook_sheets_teacher_profile_id ON public.markbook_sheets USING btree (teacher_profile_id);
 CREATE INDEX idx_markbook_sheets_term_id ON public.markbook_sheets USING btree (term_id);
-CREATE UNIQUE INDEX markbook_sheets_school_id_class_id_subject_id_term_id_key ON public.markbook_sheets USING btree (school_id, class_id, subject_id, term_id);
 CREATE INDEX idx_merit_logs_awarded_by ON public.merit_logs USING btree (awarded_by);
 CREATE INDEX idx_merit_school ON public.merit_logs USING btree (school_id, awarded_at DESC);
 CREATE INDEX idx_merit_student ON public.merit_logs USING btree (student_id);
@@ -4123,13 +4114,11 @@ CREATE INDEX idx_notifications_school_id ON public.notifications USING btree (sc
 CREATE INDEX idx_notifications_school_user_read ON public.notifications USING btree (school_id, user_id, is_read);
 CREATE INDEX idx_notifications_user_id ON public.notifications USING btree (user_id);
 CREATE INDEX idx_notifications_user_unread ON public.notifications USING btree (user_id) WHERE (is_read = false);
-CREATE UNIQUE INDEX notifications_school_dedupe_key_unique ON public.notifications USING btree (school_id, dedupe_key);
 CREATE INDEX idx_outbox_events_school_created ON public.outbox_events USING btree (school_id, created_at DESC);
 CREATE INDEX idx_outbox_events_status_available ON public.outbox_events USING btree (status, available_at);
 CREATE INDEX idx_parent_students_parent_id ON public.parent_students USING btree (parent_id);
 CREATE INDEX idx_parent_students_school_id ON public.parent_students USING btree (school_id);
 CREATE INDEX idx_parent_students_student_id ON public.parent_students USING btree (student_id);
-CREATE UNIQUE INDEX parent_students_parent_id_student_id_key ON public.parent_students USING btree (parent_id, student_id);
 CREATE INDEX idx_parents_profile_id ON public.parents USING btree (profile_id);
 CREATE INDEX idx_parents_school_id ON public.parents USING btree (school_id);
 CREATE UNIQUE INDEX parents_profile_unique ON public.parents USING btree (profile_id) WHERE (profile_id IS NOT NULL);
@@ -4140,15 +4129,11 @@ CREATE INDEX idx_payments_status ON public.payments USING btree (status);
 CREATE INDEX idx_payments_student_id ON public.payments USING btree (student_id);
 CREATE INDEX idx_payments_student_status ON public.payments USING btree (student_id, status);
 CREATE INDEX idx_permission_features_school_id ON public.permission_features USING btree (school_id);
-CREATE UNIQUE INDEX permission_features_group_id_feature_key_key ON public.permission_features USING btree (group_id, feature_key);
 CREATE INDEX idx_permission_group_roles_school_role ON public.permission_group_roles USING btree (school_id, lower(role));
-CREATE UNIQUE INDEX permission_group_roles_group_id_role_key ON public.permission_group_roles USING btree (group_id, role);
-CREATE UNIQUE INDEX permission_groups_school_id_name_key ON public.permission_groups USING btree (school_id, name);
 CREATE INDEX idx_permission_slip_responses_parent_id ON public.permission_slip_responses USING btree (parent_id);
 CREATE INDEX idx_permission_slip_responses_school_id ON public.permission_slip_responses USING btree (school_id);
 CREATE INDEX idx_response_slip ON public.permission_slip_responses USING btree (permission_slip_id);
 CREATE INDEX idx_response_student ON public.permission_slip_responses USING btree (student_id);
-CREATE UNIQUE INDEX unique_student_consent ON public.permission_slip_responses USING btree (permission_slip_id, student_id);
 CREATE INDEX idx_permission_slips_approved_by ON public.permission_slips USING btree (approved_by);
 CREATE INDEX idx_permission_slips_created_by ON public.permission_slips USING btree (created_by);
 CREATE INDEX idx_slip_school ON public.permission_slips USING btree (school_id);
@@ -4163,10 +4148,8 @@ CREATE INDEX idx_question_bank_subject_id ON public.question_bank USING btree (s
 CREATE INDEX idx_report_card_reviews_school_id ON public.report_card_reviews USING btree (school_id);
 CREATE INDEX idx_report_card_reviews_student_id ON public.report_card_reviews USING btree (student_id);
 CREATE INDEX idx_report_review_class ON public.report_card_reviews USING btree (class_id);
-CREATE UNIQUE INDEX unique_student_term_report ON public.report_card_reviews USING btree (student_id, term_id);
 CREATE INDEX idx_report_cards_student_id ON public.report_cards USING btree (student_id);
 CREATE INDEX idx_report_cards_term_id ON public.report_cards USING btree (term_id);
-CREATE UNIQUE INDEX report_cards_school_id_student_id_term_id_key ON public.report_cards USING btree (school_id, student_id, term_id);
 CREATE INDEX idx_results_assignment_id ON public.results USING btree (assignment_id);
 CREATE INDEX idx_results_assignment_school ON public.results USING btree (school_id, assignment_id);
 CREATE INDEX idx_results_exam_id ON public.results USING btree (exam_id);
@@ -4180,26 +4163,19 @@ CREATE UNIQUE INDEX results_assignment_unique ON public.results USING btree (stu
 CREATE UNIQUE INDEX results_assignment_unique_key ON public.results USING btree (school_id, student_id, assignment_id) WHERE (assignment_id IS NOT NULL);
 CREATE UNIQUE INDEX results_exam_unique ON public.results USING btree (student_id, exam_id) WHERE (exam_id IS NOT NULL);
 CREATE UNIQUE INDEX results_exam_unique_key ON public.results USING btree (school_id, student_id, exam_id) WHERE (exam_id IS NOT NULL);
-CREATE UNIQUE INDEX results_student_assignment_unique ON public.results USING btree (student_id, assignment_id);
 CREATE INDEX idx_role_permissions_granted_by ON public.role_permissions USING btree (granted_by);
 CREATE INDEX idx_role_permissions_school_user ON public.role_permissions USING btree (school_id, user_id);
 CREATE INDEX idx_role_permissions_user_id ON public.role_permissions USING btree (user_id);
-CREATE UNIQUE INDEX role_permissions_school_id_user_id_permission_key ON public.role_permissions USING btree (school_id, user_id, permission);
 CREATE INDEX idx_scheduled_broadcasts_created_by ON public.scheduled_broadcasts USING btree (created_by);
 CREATE INDEX idx_scheduled_broadcasts_school ON public.scheduled_broadcasts USING btree (school_id, status);
 CREATE INDEX idx_school_departments_head_of_department ON public.school_departments USING btree (head_of_department);
-CREATE UNIQUE INDEX school_departments_school_id_name_key ON public.school_departments USING btree (school_id, name);
 CREATE INDEX idx_school_emergency_state_activated_by ON public.school_emergency_state USING btree (activated_by);
 CREATE INDEX idx_school_emergency_state_deactivated_by ON public.school_emergency_state USING btree (deactivated_by);
-CREATE UNIQUE INDEX school_emergency_state_school_id_key ON public.school_emergency_state USING btree (school_id);
 CREATE INDEX idx_school_invites_created_by ON public.school_invites USING btree (created_by);
 CREATE INDEX idx_school_invites_expires_at ON public.school_invites USING btree (expires_at);
 CREATE INDEX idx_school_invites_status ON public.school_invites USING btree (status);
 CREATE INDEX idx_school_invites_used_by ON public.school_invites USING btree (used_by);
-CREATE UNIQUE INDEX school_invites_code_key ON public.school_invites USING btree (code);
-CREATE UNIQUE INDEX school_settings_school_id_setting_key_key ON public.school_settings USING btree (school_id, setting_key);
 CREATE INDEX idx_schools_province_district ON public.schools USING btree (province, district);
-CREATE UNIQUE INDEX schools_code_key ON public.schools USING btree (code);
 CREATE UNIQUE INDEX schools_code_unique_ci ON public.schools USING btree (upper(code));
 CREATE UNIQUE INDEX schools_emis_code_key ON public.schools USING btree (emis_code) WHERE (emis_code IS NOT NULL);
 CREATE INDEX idx_staff_invitations_accepted_by ON public.staff_invitations USING btree (accepted_by);
@@ -4209,8 +4185,6 @@ CREATE INDEX idx_staff_invitations_invited_by ON public.staff_invitations USING 
 CREATE INDEX idx_staff_invitations_school_email ON public.staff_invitations USING btree (school_id, email);
 CREATE INDEX idx_staff_invitations_school_role ON public.staff_invitations USING btree (school_id, lower(role));
 CREATE INDEX idx_staff_invitations_school_status ON public.staff_invitations USING btree (school_id, accepted_at, revoked_at);
-CREATE UNIQUE INDEX staff_invitations_invitation_token_key ON public.staff_invitations USING btree (invitation_token);
-CREATE UNIQUE INDEX staff_invitations_token_key ON public.staff_invitations USING btree (token);
 CREATE INDEX idx_staff_meetings_created_by ON public.staff_meetings USING btree (created_by);
 CREATE INDEX idx_staff_meetings_school_id ON public.staff_meetings USING btree (school_id);
 CREATE INDEX idx_student_fees_billing_month ON public.student_fees USING btree (school_id, billing_month);
@@ -4220,14 +4194,12 @@ CREATE INDEX idx_student_fees_school_id ON public.student_fees USING btree (scho
 CREATE INDEX idx_student_fees_status ON public.student_fees USING btree (school_id, status);
 CREATE INDEX idx_student_fees_student_id ON public.student_fees USING btree (student_id);
 CREATE INDEX idx_student_fees_student_status ON public.student_fees USING btree (student_id, status);
-CREATE UNIQUE INDEX student_fees_student_id_fee_id_billing_month_key ON public.student_fees USING btree (student_id, fee_id, billing_month);
 CREATE INDEX idx_student_pulse_metrics_class_id ON public.student_pulse_metrics USING btree (class_id);
 CREATE INDEX idx_student_pulse_metrics_risk_level ON public.student_pulse_metrics USING btree (risk_level, date);
 CREATE INDEX idx_student_pulse_metrics_school_id ON public.student_pulse_metrics USING btree (school_id);
 CREATE INDEX idx_student_pulse_metrics_student_date ON public.student_pulse_metrics USING btree (student_id, date);
 CREATE INDEX idx_student_pulse_metrics_student_id ON public.student_pulse_metrics USING btree (student_id);
 CREATE INDEX idx_student_pulse_metrics_subject_id ON public.student_pulse_metrics USING btree (subject_id);
-CREATE UNIQUE INDEX student_pulse_metrics_student_id_class_id_subject_id_date_key ON public.student_pulse_metrics USING btree (student_id, class_id, subject_id, date);
 CREATE INDEX idx_student_risk_assessments_class_id ON public.student_risk_assessments USING btree (class_id);
 CREATE INDEX idx_student_risk_assessments_school_id ON public.student_risk_assessments USING btree (school_id);
 CREATE INDEX idx_student_risk_assessments_student_id ON public.student_risk_assessments USING btree (student_id);
@@ -4241,9 +4213,7 @@ CREATE INDEX idx_students_school_active ON public.students USING btree (school_i
 CREATE INDEX idx_students_school_id ON public.students USING btree (school_id);
 CREATE UNIQUE INDEX students_number_school_unique ON public.students USING btree (school_id, student_number) WHERE (student_number IS NOT NULL);
 CREATE UNIQUE INDEX students_profile_unique ON public.students USING btree (profile_id) WHERE (profile_id IS NOT NULL);
-CREATE UNIQUE INDEX students_student_number_key ON public.students USING btree (student_number);
 CREATE INDEX idx_subjects_school_id ON public.subjects USING btree (school_id);
-CREATE UNIQUE INDEX subjects_school_code_unique ON public.subjects USING btree (school_id, code);
 CREATE INDEX idx_sync_queue_school_status ON public.sync_queue USING btree (school_id, status);
 CREATE INDEX idx_sync_queue_user_id ON public.sync_queue USING btree (user_id);
 CREATE INDEX idx_system_events_actor_id ON public.system_events USING btree (actor_id);
@@ -4267,7 +4237,6 @@ CREATE INDEX idx_teacher_class_subject_assignments_school_class ON public.teache
 CREATE INDEX idx_teacher_class_subject_assignments_school_teacher ON public.teacher_class_subject_assignments USING btree (school_id, teacher_profile_id);
 CREATE INDEX idx_teacher_class_subject_assignments_subject_id ON public.teacher_class_subject_assignments USING btree (subject_id);
 CREATE INDEX idx_teacher_class_subject_assignments_teacher ON public.teacher_class_subject_assignments USING btree (teacher_profile_id);
-CREATE UNIQUE INDEX teacher_class_subject_assignm_teacher_profile_id_class_id_s_key ON public.teacher_class_subject_assignments USING btree (teacher_profile_id, class_id, subject_id);
 CREATE INDEX teacher_office_hours_school_id_idx ON public.teacher_office_hours USING btree (school_id);
 CREATE INDEX teacher_office_hours_teacher_id_idx ON public.teacher_office_hours USING btree (teacher_id);
 CREATE INDEX idx_teacher_performance_metrics_class_id ON public.teacher_performance_metrics USING btree (class_id);
@@ -4275,17 +4244,13 @@ CREATE INDEX idx_teacher_performance_metrics_school_id ON public.teacher_perform
 CREATE INDEX idx_teacher_performance_metrics_subject_id ON public.teacher_performance_metrics USING btree (subject_id);
 CREATE INDEX idx_teacher_performance_metrics_teacher_date ON public.teacher_performance_metrics USING btree (teacher_id, metric_date);
 CREATE INDEX idx_teacher_performance_metrics_teacher_id ON public.teacher_performance_metrics USING btree (teacher_id);
-CREATE UNIQUE INDEX teacher_performance_metrics_teacher_id_school_id_metric_dat_key ON public.teacher_performance_metrics USING btree (teacher_id, school_id, metric_date, period_type);
 CREATE INDEX idx_teacher_recognition_awarded_by ON public.teacher_recognition USING btree (awarded_by);
 CREATE INDEX idx_teacher_recognition_teacher_id ON public.teacher_recognition USING btree (teacher_id);
-CREATE UNIQUE INDEX teacher_recognition_school_id_award_type_month_year_key ON public.teacher_recognition USING btree (school_id, award_type, month_year);
 CREATE INDEX idx_teacher_subject_specializations_school_teacher ON public.teacher_subject_specializations USING btree (school_id, teacher_profile_id);
 CREATE INDEX idx_teacher_subject_specializations_subject_id ON public.teacher_subject_specializations USING btree (subject_id);
-CREATE UNIQUE INDEX teacher_subject_specializatio_teacher_profile_id_subject_id_key ON public.teacher_subject_specializations USING btree (teacher_profile_id, subject_id);
 CREATE INDEX idx_teachers_profile_id ON public.teachers USING btree (profile_id);
 CREATE INDEX idx_teachers_school_active ON public.teachers USING btree (school_id) WHERE (is_active = true);
 CREATE INDEX idx_teachers_school_id ON public.teachers USING btree (school_id);
-CREATE UNIQUE INDEX teachers_employee_number_key ON public.teachers USING btree (employee_number);
 CREATE UNIQUE INDEX teachers_profile_unique ON public.teachers USING btree (profile_id) WHERE (profile_id IS NOT NULL);
 CREATE INDEX idx_temp_tokens_lookup ON public.temp_tokens USING btree (user_id, expires_at DESC);
 CREATE INDEX idx_terms_academic_year_id ON public.terms USING btree (academic_year_id);
@@ -4396,329 +4361,329 @@ ALTER TABLE IF EXISTS public.terms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.user_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Section 10: RLS Policies (255 policies)
-CREATE POLICY academic_terms_admin_manage ON public.academic_terms FOR ALL AS PERMISSIVE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
-CREATE POLICY academic_terms_same_school_select ON public.academic_terms FOR SELECT AS PERMISSIVE USING ((school_id = private.current_school_id())) ;
-CREATE POLICY academic_years_admin_manage ON public.academic_years FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY academic_years_same_school_read ON public.academic_years FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY access_codes_super_admin_manage ON public.access_codes FOR ALL AS PERMISSIVE USING ((get_my_role() = 'super_admin'::text)) WITH CHECK ((get_my_role() = 'super_admin'::text));
-CREATE POLICY activity_logs_admin_select ON public.activity_logs FOR SELECT AS PERMISSIVE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
-CREATE POLICY activity_logs_no_direct_write ON public.activity_logs FOR ALL AS PERMISSIVE USING (false) WITH CHECK (false);
-CREATE POLICY admin_actions_admin_insert ON public.admin_actions FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY admin_actions_admin_select ON public.admin_actions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY admin_actions_admin_update ON public.admin_actions FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY admin_role_scopes_admin_manage ON public.admin_role_scopes FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY admin_role_scopes_admin_select ON public.admin_role_scopes FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY alert_thresholds_admin_manage ON public.alert_thresholds FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY alert_thresholds_admin_select ON public.alert_thresholds FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY announcement_seen_insert_self ON public.announcement_seen FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((profile_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY announcement_seen_select_self ON public.announcement_seen FOR SELECT AS PERMISSIVE USING ((profile_id = ( SELECT private.current_user_id() AS current_user_id))) ;
-CREATE POLICY "Users can insert their own announcement_views" ON public.announcement_views FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((viewer_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY "Users can view announcement_views of their announcements" ON public.announcement_views FOR SELECT AS PERMISSIVE USING ((EXISTS ( SELECT 1
+CREATE POLICY academic_terms_admin_manage ON public.academic_terms FOR ALL USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
+CREATE POLICY academic_terms_same_school_select ON public.academic_terms FOR SELECT USING ((school_id = private.current_school_id())) ;
+CREATE POLICY academic_years_admin_manage ON public.academic_years FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY academic_years_same_school_read ON public.academic_years FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY access_codes_super_admin_manage ON public.access_codes FOR ALL USING ((get_my_role() = 'super_admin'::text)) WITH CHECK ((get_my_role() = 'super_admin'::text));
+CREATE POLICY activity_logs_admin_select ON public.activity_logs FOR SELECT USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
+CREATE POLICY activity_logs_no_direct_write ON public.activity_logs FOR ALL USING (false) WITH CHECK (false);
+CREATE POLICY admin_actions_admin_insert ON public.admin_actions FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY admin_actions_admin_select ON public.admin_actions FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY admin_actions_admin_update ON public.admin_actions FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY admin_role_scopes_admin_manage ON public.admin_role_scopes FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY admin_role_scopes_admin_select ON public.admin_role_scopes FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY alert_thresholds_admin_manage ON public.alert_thresholds FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY alert_thresholds_admin_select ON public.alert_thresholds FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY announcement_seen_insert_self ON public.announcement_seen FOR INSERT WITH CHECK ((profile_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY announcement_seen_select_self ON public.announcement_seen FOR SELECT USING ((profile_id = ( SELECT private.current_user_id() AS current_user_id))) ;
+CREATE POLICY "Users can insert their own announcement_views" ON public.announcement_views FOR INSERT WITH CHECK ((viewer_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Users can view announcement_views of their announcements" ON public.announcement_views FOR SELECT USING ((EXISTS ( SELECT 1
    FROM announcements a
   WHERE ((a.id = announcement_views.announcement_id) AND (a.created_by = ( SELECT auth.uid() AS uid)))))) ;
-CREATE POLICY announcements_admin_manage ON public.announcements FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY assignment_submissions_admin_delete ON public.assignment_submissions FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY assignment_submissions_select_accessible ON public.assignment_submissions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_student() AND (student_profile_id = private.current_student_row_id())) OR (private.is_parent() AND (student_profile_id IN ( SELECT ps.student_id
+CREATE POLICY announcements_admin_manage ON public.announcements FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY assignment_submissions_admin_delete ON public.assignment_submissions FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY assignment_submissions_select_accessible ON public.assignment_submissions FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_student() AND (student_profile_id = private.current_student_row_id())) OR (private.is_parent() AND (student_profile_id IN ( SELECT ps.student_id
    FROM (parent_students ps
      JOIN parents p ON ((p.id = ps.parent_id)))
   WHERE (p.profile_id = ( SELECT auth.uid() AS uid))))) OR (private.is_teacher() AND (assignment_id IN ( SELECT a.id
    FROM assignments a
   WHERE (a.class_id = ANY (private.accessible_class_ids())))))))) ;
-CREATE POLICY assignment_submissions_student_insert ON public.assignment_submissions FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND private.is_student() AND (student_profile_id = private.current_student_row_id())));
-CREATE POLICY assignment_submissions_teacher_or_admin_update ON public.assignment_submissions FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY assignments_select_accessible ON public.assignments FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (class_id = ANY (private.accessible_class_ids()))))) ;
-CREATE POLICY assignments_teacher_or_admin_delete ON public.assignments FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) ;
-CREATE POLICY assignments_teacher_or_admin_insert ON public.assignments FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
-CREATE POLICY assignments_teacher_or_admin_update ON public.assignments FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
-CREATE POLICY async_jobs_admin_insert ON public.async_jobs FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
-CREATE POLICY async_jobs_admin_select ON public.async_jobs FOR SELECT AS PERMISSIVE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
-CREATE POLICY async_jobs_admin_update ON public.async_jobs FOR UPDATE AS PERMISSIVE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
-CREATE POLICY attendance_select_accessible ON public.attendance FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (class_id = ANY (private.accessible_class_ids())) OR (student_id = ANY (private.accessible_student_ids()))))) ;
-CREATE POLICY attendance_teacher_or_admin_delete ON public.attendance FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) ;
-CREATE POLICY attendance_teacher_or_admin_insert ON public.attendance FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
-CREATE POLICY attendance_teacher_or_admin_update ON public.attendance FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
-CREATE POLICY attendance_rollcall_sessions_admin_delete ON public.attendance_rollcall_sessions FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY attendance_rollcall_sessions_select_accessible ON public.attendance_rollcall_sessions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
-CREATE POLICY attendance_rollcall_sessions_teacher_or_admin_insert ON public.attendance_rollcall_sessions FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
-CREATE POLICY attendance_rollcall_sessions_teacher_or_admin_update ON public.attendance_rollcall_sessions FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
-CREATE POLICY audit_logs_admin_read ON public.audit_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (lower(get_my_role()) = ANY (ARRAY['admin'::text, 'principal'::text, 'super_admin'::text])))) ;
-CREATE POLICY audit_logs_service_insert ON public.audit_logs FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((school_id = get_my_school_id()));
-CREATE POLICY behaviour_followups_admin_delete ON public.behaviour_followups FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY behaviour_followups_staff_insert ON public.behaviour_followups FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY behaviour_followups_staff_or_admin_update ON public.behaviour_followups FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid))))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid)))))));
-CREATE POLICY behaviour_followups_staff_read ON public.behaviour_followups FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid))))))) ;
-CREATE POLICY behaviour_logs_admin_delete ON public.behaviour_logs FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY behaviour_logs_admin_update ON public.behaviour_logs FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY behaviour_logs_parent_own ON public.behaviour_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND private.is_parent() AND private.parent_can_access_student(student_id))) ;
-CREATE POLICY behaviour_logs_staff_insert ON public.behaviour_logs FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY behaviour_logs_staff_read ON public.behaviour_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
-CREATE POLICY behaviour_logs_student_own ON public.behaviour_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id()))) ;
-CREATE POLICY class_insights_admin_manage ON public.class_insights FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY class_insights_select_accessible ON public.class_insights FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
-CREATE POLICY class_subjects_admin_delete ON public.class_subjects FOR DELETE AS PERMISSIVE USING ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
+CREATE POLICY assignment_submissions_student_insert ON public.assignment_submissions FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND private.is_student() AND (student_profile_id = private.current_student_row_id())));
+CREATE POLICY assignment_submissions_teacher_or_admin_update ON public.assignment_submissions FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY assignments_select_accessible ON public.assignments FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (class_id = ANY (private.accessible_class_ids()))))) ;
+CREATE POLICY assignments_teacher_or_admin_delete ON public.assignments FOR DELETE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) ;
+CREATE POLICY assignments_teacher_or_admin_insert ON public.assignments FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
+CREATE POLICY assignments_teacher_or_admin_update ON public.assignments FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
+CREATE POLICY async_jobs_admin_insert ON public.async_jobs FOR INSERT WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
+CREATE POLICY async_jobs_admin_select ON public.async_jobs FOR SELECT USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
+CREATE POLICY async_jobs_admin_update ON public.async_jobs FOR UPDATE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) WITH CHECK (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text)));
+CREATE POLICY attendance_select_accessible ON public.attendance FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (class_id = ANY (private.accessible_class_ids())) OR (student_id = ANY (private.accessible_student_ids()))))) ;
+CREATE POLICY attendance_teacher_or_admin_delete ON public.attendance FOR DELETE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) ;
+CREATE POLICY attendance_teacher_or_admin_insert ON public.attendance FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
+CREATE POLICY attendance_teacher_or_admin_update ON public.attendance FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
+CREATE POLICY attendance_rollcall_sessions_admin_delete ON public.attendance_rollcall_sessions FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY attendance_rollcall_sessions_select_accessible ON public.attendance_rollcall_sessions FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
+CREATE POLICY attendance_rollcall_sessions_teacher_or_admin_insert ON public.attendance_rollcall_sessions FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
+CREATE POLICY attendance_rollcall_sessions_teacher_or_admin_update ON public.attendance_rollcall_sessions FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class(class_id)))));
+CREATE POLICY audit_logs_admin_read ON public.audit_logs FOR SELECT USING (((school_id = get_my_school_id()) AND (lower(get_my_role()) = ANY (ARRAY['admin'::text, 'principal'::text, 'super_admin'::text])))) ;
+CREATE POLICY audit_logs_service_insert ON public.audit_logs FOR INSERT WITH CHECK ((school_id = get_my_school_id()));
+CREATE POLICY behaviour_followups_admin_delete ON public.behaviour_followups FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY behaviour_followups_staff_insert ON public.behaviour_followups FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY behaviour_followups_staff_or_admin_update ON public.behaviour_followups FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid))))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid)))))));
+CREATE POLICY behaviour_followups_staff_read ON public.behaviour_followups FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((assigned_to = ( SELECT auth.uid() AS uid)) OR (created_by = ( SELECT auth.uid() AS uid))))))) ;
+CREATE POLICY behaviour_logs_admin_delete ON public.behaviour_logs FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY behaviour_logs_admin_update ON public.behaviour_logs FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY behaviour_logs_parent_own ON public.behaviour_logs FOR SELECT USING (((school_id = get_my_school_id()) AND private.is_parent() AND private.parent_can_access_student(student_id))) ;
+CREATE POLICY behaviour_logs_staff_insert ON public.behaviour_logs FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY behaviour_logs_staff_read ON public.behaviour_logs FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
+CREATE POLICY behaviour_logs_student_own ON public.behaviour_logs FOR SELECT USING (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id()))) ;
+CREATE POLICY class_insights_admin_manage ON public.class_insights FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY class_insights_select_accessible ON public.class_insights FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
+CREATE POLICY class_subjects_admin_delete ON public.class_subjects FOR DELETE USING ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
    FROM classes c
   WHERE ((c.id = class_subjects.class_id) AND (c.school_id = ( SELECT private.current_school_id() AS current_school_id))))))) ;
-CREATE POLICY class_subjects_admin_insert ON public.class_subjects FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
+CREATE POLICY class_subjects_admin_insert ON public.class_subjects FOR INSERT WITH CHECK ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
    FROM classes c
   WHERE ((c.id = class_subjects.class_id) AND (c.school_id = ( SELECT private.current_school_id() AS current_school_id)))))));
-CREATE POLICY class_subjects_admin_update ON public.class_subjects FOR UPDATE AS PERMISSIVE USING ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
+CREATE POLICY class_subjects_admin_update ON public.class_subjects FOR UPDATE USING ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
    FROM classes c
   WHERE ((c.id = class_subjects.class_id) AND (c.school_id = ( SELECT private.current_school_id() AS current_school_id))))))) WITH CHECK ((( SELECT private.is_admin() AS is_admin) AND (EXISTS ( SELECT 1
    FROM classes c
   WHERE ((c.id = class_subjects.class_id) AND (c.school_id = ( SELECT private.current_school_id() AS current_school_id)))))));
-CREATE POLICY class_subjects_select_same_school ON public.class_subjects FOR SELECT AS PERMISSIVE USING ((EXISTS ( SELECT 1
+CREATE POLICY class_subjects_select_same_school ON public.class_subjects FOR SELECT USING ((EXISTS ( SELECT 1
    FROM classes c
   WHERE ((c.id = class_subjects.class_id) AND (c.school_id = ( SELECT private.current_school_id() AS current_school_id)))))) ;
-CREATE POLICY classes_admin_delete ON public.classes FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY classes_admin_insert ON public.classes FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY classes_admin_update ON public.classes FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY classes_select_accessible ON public.classes FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (id = ANY (private.accessible_class_ids()))))) ;
-CREATE POLICY classroom_activity_stream_select_accessible ON public.classroom_activity_stream FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_student() AND (class_id IN ( SELECT s.class_id
+CREATE POLICY classes_admin_delete ON public.classes FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY classes_admin_insert ON public.classes FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY classes_admin_update ON public.classes FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY classes_select_accessible ON public.classes FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (id = ANY (private.accessible_class_ids()))))) ;
+CREATE POLICY classroom_activity_stream_select_accessible ON public.classroom_activity_stream FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_student() AND (class_id IN ( SELECT s.class_id
    FROM students s
   WHERE (s.profile_id = ( SELECT auth.uid() AS uid)))))))) ;
-CREATE POLICY classroom_activity_stream_teacher_or_admin_delete ON public.classroom_activity_stream FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
-CREATE POLICY classroom_activity_stream_teacher_or_admin_insert ON public.classroom_activity_stream FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
-CREATE POLICY classroom_activity_stream_teacher_or_admin_update ON public.classroom_activity_stream FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
-CREATE POLICY discipline_actions_record_access ON public.discipline_actions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (record_id IN ( SELECT discipline_records.id
+CREATE POLICY classroom_activity_stream_teacher_or_admin_delete ON public.classroom_activity_stream FOR DELETE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
+CREATE POLICY classroom_activity_stream_teacher_or_admin_insert ON public.classroom_activity_stream FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
+CREATE POLICY classroom_activity_stream_teacher_or_admin_update ON public.classroom_activity_stream FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
+CREATE POLICY discipline_actions_record_access ON public.discipline_actions FOR SELECT USING (((school_id = get_my_school_id()) AND (record_id IN ( SELECT discipline_records.id
    FROM discipline_records
   WHERE (discipline_records.school_id = get_my_school_id()))))) ;
-CREATE POLICY discipline_actions_school_access ON public.discipline_actions FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY discipline_categories_school_access ON public.discipline_categories FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY discipline_categories_staff_read ON public.discipline_categories FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY discipline_records_admin_all ON public.discipline_records FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY discipline_records_parent_own ON public.discipline_records FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (student_id IN ( SELECT ps.student_id
+CREATE POLICY discipline_actions_school_access ON public.discipline_actions FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY discipline_categories_school_access ON public.discipline_categories FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY discipline_categories_staff_read ON public.discipline_categories FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY discipline_records_admin_all ON public.discipline_records FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY discipline_records_parent_own ON public.discipline_records FOR SELECT USING (((school_id = get_my_school_id()) AND (student_id IN ( SELECT ps.student_id
    FROM (parent_students ps
      JOIN parents p ON ((p.id = ps.parent_id)))
   WHERE (p.profile_id = ( SELECT auth.uid() AS uid)))))) ;
-CREATE POLICY discipline_records_student_own ON public.discipline_records FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (student_id = ANY (private.accessible_student_ids())))) ;
-CREATE POLICY discipline_records_teacher_insert ON public.discipline_records FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))));
-CREATE POLICY discipline_records_teacher_read ON public.discipline_records FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))) ;
-CREATE POLICY duty_roster_admin_manage ON public.duty_roster FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY duty_roster_school_read ON public.duty_roster FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
-CREATE POLICY email_verifications_own_read ON public.email_verifications FOR SELECT AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY email_verifications_own_update ON public.email_verifications FOR UPDATE AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY events_admin_manage ON public.events FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY exam_questions_admin_teacher_all ON public.exam_questions FOR ALL AS PERMISSIVE USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR ( SELECT private.is_teacher() AS is_teacher)))) WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR ( SELECT private.is_teacher() AS is_teacher))));
-CREATE POLICY exam_submission_answers_admin_delete ON public.exam_submission_answers FOR DELETE AS PERMISSIVE USING ((EXISTS ( SELECT 1
+CREATE POLICY discipline_records_student_own ON public.discipline_records FOR SELECT USING (((school_id = get_my_school_id()) AND (student_id = ANY (private.accessible_student_ids())))) ;
+CREATE POLICY discipline_records_teacher_insert ON public.discipline_records FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))));
+CREATE POLICY discipline_records_teacher_read ON public.discipline_records FOR SELECT USING (((school_id = get_my_school_id()) AND private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))) ;
+CREATE POLICY duty_roster_admin_manage ON public.duty_roster FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY duty_roster_school_read ON public.duty_roster FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
+CREATE POLICY email_verifications_own_read ON public.email_verifications FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY email_verifications_own_update ON public.email_verifications FOR UPDATE USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY events_admin_manage ON public.events FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY exam_questions_admin_teacher_all ON public.exam_questions FOR ALL USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR ( SELECT private.is_teacher() AS is_teacher)))) WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR ( SELECT private.is_teacher() AS is_teacher))));
+CREATE POLICY exam_submission_answers_admin_delete ON public.exam_submission_answers FOR DELETE USING ((EXISTS ( SELECT 1
    FROM exam_submissions es
   WHERE ((es.id = exam_submission_answers.submission_id) AND (es.school_id = get_my_school_id()) AND is_admin_role())))) ;
-CREATE POLICY exam_submission_answers_select_via_submission ON public.exam_submission_answers FOR SELECT AS PERMISSIVE USING ((EXISTS ( SELECT 1
+CREATE POLICY exam_submission_answers_select_via_submission ON public.exam_submission_answers FOR SELECT USING ((EXISTS ( SELECT 1
    FROM exam_submissions es
   WHERE ((es.id = exam_submission_answers.submission_id) AND (es.school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_student() AND (es.student_id = private.current_student_row_id())) OR (private.is_parent() AND private.parent_can_access_student(es.student_id)) OR (private.is_teacher() AND (es.exam_id IN ( SELECT e.id
            FROM exams e
           WHERE (e.class_id = ANY (private.accessible_class_ids())))))))))) ;
-CREATE POLICY exam_submission_answers_student_insert ON public.exam_submission_answers FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((EXISTS ( SELECT 1
+CREATE POLICY exam_submission_answers_student_insert ON public.exam_submission_answers FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
    FROM exam_submissions es
   WHERE ((es.id = exam_submission_answers.submission_id) AND (es.school_id = get_my_school_id()) AND (es.student_id = private.current_student_row_id()) AND private.is_student()))));
-CREATE POLICY exam_submission_answers_teacher_or_admin_update ON public.exam_submission_answers FOR UPDATE AS PERMISSIVE USING ((EXISTS ( SELECT 1
+CREATE POLICY exam_submission_answers_teacher_or_admin_update ON public.exam_submission_answers FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM exam_submissions es
   WHERE ((es.id = exam_submission_answers.submission_id) AND (es.school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))))) WITH CHECK ((EXISTS ( SELECT 1
    FROM exam_submissions es
   WHERE ((es.id = exam_submission_answers.submission_id) AND (es.school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())))));
-CREATE POLICY exam_submissions_admin_delete ON public.exam_submissions FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY exam_submissions_select_accessible ON public.exam_submissions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (exam_id IN ( SELECT e.id
+CREATE POLICY exam_submissions_admin_delete ON public.exam_submissions FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY exam_submissions_select_accessible ON public.exam_submissions FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (exam_id IN ( SELECT e.id
    FROM exams e
   WHERE (e.class_id = ANY (private.accessible_class_ids()))))) OR (private.is_student() AND (student_id = private.current_student_row_id())) OR (private.is_parent() AND private.parent_can_access_student(student_id))))) ;
-CREATE POLICY exam_submissions_student_insert ON public.exam_submissions FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id())));
-CREATE POLICY exam_submissions_teacher_or_admin_update ON public.exam_submissions FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY exams_select_accessible ON public.exams FOR SELECT AS PERMISSIVE USING (((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))) OR (class_id = ANY (private.accessible_class_ids())))) ;
-CREATE POLICY exams_teacher_or_admin_delete ON public.exams FOR DELETE AS PERMISSIVE USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject))))) ;
-CREATE POLICY exams_teacher_or_admin_insert ON public.exams FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject)))));
-CREATE POLICY exams_teacher_or_admin_update ON public.exams FOR UPDATE AS PERMISSIVE USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject))))) WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject)))));
-CREATE POLICY fee_payments_admin_update ON public.fee_payments FOR UPDATE AS PERMISSIVE USING ((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id)))) WITH CHECK ((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))));
-CREATE POLICY fee_payments_delete_financial_context ON public.fee_payments FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY fee_payments_insert_financial_context ON public.fee_payments FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY fee_payments_read_financial_context ON public.fee_payments FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY fee_payments_select_accessible ON public.fee_payments FOR SELECT AS PERMISSIVE USING (((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))) OR (parent_id = ( SELECT private.current_parent_row_id() AS current_parent_row_id)) OR (student_id = ANY (private.accessible_student_ids())))) ;
-CREATE POLICY fee_payments_update_financial_context ON public.fee_payments FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY fees_delete_financial_context ON public.fees FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY fees_insert_financial_context ON public.fees FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY fees_read_financial_context ON public.fees FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY fees_update_financial_context ON public.fees FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY finance_records_delete_financial_context ON public.finance_records FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY finance_records_insert_financial_context ON public.finance_records FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY finance_records_read_financial_context ON public.finance_records FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY finance_records_update_financial_context ON public.finance_records FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY finances_delete_financial_context ON public.finances FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY finances_insert_financial_context ON public.finances FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY finances_read_financial_context ON public.finances FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY finances_update_financial_context ON public.finances FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY grade_publish_history_admin_delete ON public.grade_publish_history FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY grade_publish_history_select_accessible ON public.grade_publish_history FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
-CREATE POLICY grade_publish_history_teacher_or_admin_insert ON public.grade_publish_history FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY gradebook_snapshots_admin_delete ON public.gradebook_snapshots FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY gradebook_snapshots_select_accessible ON public.gradebook_snapshots FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
-CREATE POLICY gradebook_snapshots_teacher_or_admin_insert ON public.gradebook_snapshots FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY grades_admin_all ON public.grades FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY grades_select_same_school ON public.grades FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY grading_scales_admin_manage ON public.grading_scales FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY grading_scales_same_school_read ON public.grading_scales FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY idempotency_keys_no_access ON public.idempotency_keys FOR ALL AS PERMISSIVE USING (false) WITH CHECK (false);
-CREATE POLICY lesson_plans_select_accessible ON public.lesson_plans FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((teacher_id = private.current_teacher_row_id()) OR (is_shared = true)))))) ;
-CREATE POLICY lesson_plans_teacher_or_admin_delete ON public.lesson_plans FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
-CREATE POLICY lesson_plans_teacher_or_admin_insert ON public.lesson_plans FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
-CREATE POLICY lesson_plans_teacher_or_admin_update ON public.lesson_plans FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
-CREATE POLICY lessons_admin_manage ON public.lessons FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY lessons_same_school_read ON public.lessons FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY markbook_columns_select_accessible ON public.markbook_columns FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((class_id = ANY (private.accessible_class_ids())) OR ((sheet_id IS NOT NULL) AND (sheet_id IN ( SELECT ms.id
+CREATE POLICY exam_submissions_student_insert ON public.exam_submissions FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id())));
+CREATE POLICY exam_submissions_teacher_or_admin_update ON public.exam_submissions FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY exams_select_accessible ON public.exams FOR SELECT USING (((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))) OR (class_id = ANY (private.accessible_class_ids())))) ;
+CREATE POLICY exams_teacher_or_admin_delete ON public.exams FOR DELETE USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject))))) ;
+CREATE POLICY exams_teacher_or_admin_insert ON public.exams FOR INSERT WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject)))));
+CREATE POLICY exams_teacher_or_admin_update ON public.exams FOR UPDATE USING (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject))))) WITH CHECK (((school_id = ( SELECT private.current_school_id() AS current_school_id)) AND (( SELECT private.is_admin() AS is_admin) OR (( SELECT private.is_teacher() AS is_teacher) AND ( SELECT private.teacher_can_manage_class_subject(exams.class_id, exams.subject_id) AS teacher_can_manage_class_subject)))));
+CREATE POLICY fee_payments_admin_update ON public.fee_payments FOR UPDATE USING ((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id)))) WITH CHECK ((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))));
+CREATE POLICY fee_payments_delete_financial_context ON public.fee_payments FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY fee_payments_insert_financial_context ON public.fee_payments FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY fee_payments_read_financial_context ON public.fee_payments FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY fee_payments_select_accessible ON public.fee_payments FOR SELECT USING (((( SELECT private.is_admin() AS is_admin) AND (school_id = ( SELECT private.current_school_id() AS current_school_id))) OR (parent_id = ( SELECT private.current_parent_row_id() AS current_parent_row_id)) OR (student_id = ANY (private.accessible_student_ids())))) ;
+CREATE POLICY fee_payments_update_financial_context ON public.fee_payments FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY fees_delete_financial_context ON public.fees FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY fees_insert_financial_context ON public.fees FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY fees_read_financial_context ON public.fees FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY fees_update_financial_context ON public.fees FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY finance_records_delete_financial_context ON public.finance_records FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY finance_records_insert_financial_context ON public.finance_records FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY finance_records_read_financial_context ON public.finance_records FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY finance_records_update_financial_context ON public.finance_records FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY finances_delete_financial_context ON public.finances FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY finances_insert_financial_context ON public.finances FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY finances_read_financial_context ON public.finances FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY finances_update_financial_context ON public.finances FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY grade_publish_history_admin_delete ON public.grade_publish_history FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY grade_publish_history_select_accessible ON public.grade_publish_history FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
+CREATE POLICY grade_publish_history_teacher_or_admin_insert ON public.grade_publish_history FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY gradebook_snapshots_admin_delete ON public.gradebook_snapshots FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY gradebook_snapshots_select_accessible ON public.gradebook_snapshots FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) ;
+CREATE POLICY gradebook_snapshots_teacher_or_admin_insert ON public.gradebook_snapshots FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY grades_admin_all ON public.grades FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY grades_select_same_school ON public.grades FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY grading_scales_admin_manage ON public.grading_scales FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY grading_scales_same_school_read ON public.grading_scales FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY idempotency_keys_no_access ON public.idempotency_keys FOR ALL USING (false) WITH CHECK (false);
+CREATE POLICY lesson_plans_select_accessible ON public.lesson_plans FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((teacher_id = private.current_teacher_row_id()) OR (is_shared = true)))))) ;
+CREATE POLICY lesson_plans_teacher_or_admin_delete ON public.lesson_plans FOR DELETE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) ;
+CREATE POLICY lesson_plans_teacher_or_admin_insert ON public.lesson_plans FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
+CREATE POLICY lesson_plans_teacher_or_admin_update ON public.lesson_plans FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (teacher_id = private.current_teacher_row_id())))));
+CREATE POLICY lessons_admin_manage ON public.lessons FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY lessons_same_school_read ON public.lessons FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY markbook_columns_select_accessible ON public.markbook_columns FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND ((class_id = ANY (private.accessible_class_ids())) OR ((sheet_id IS NOT NULL) AND (sheet_id IN ( SELECT ms.id
    FROM markbook_sheets ms
   WHERE (ms.class_id = ANY (private.accessible_class_ids())))))))))) ;
-CREATE POLICY markbook_columns_teacher_or_admin_manage ON public.markbook_columns FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
-CREATE POLICY markbook_entries_select_accessible ON public.markbook_entries FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
-CREATE POLICY markbook_entries_teacher_or_admin_manage ON public.markbook_entries FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids()))))));
-CREATE POLICY markbook_scores_select_accessible ON public.markbook_scores FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids())))))) ;
-CREATE POLICY markbook_scores_teacher_or_admin_manage ON public.markbook_scores FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids()))))));
-CREATE POLICY markbook_sheets_select_accessible ON public.markbook_sheets FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) ;
-CREATE POLICY markbook_sheets_teacher_or_admin_manage ON public.markbook_sheets FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
-CREATE POLICY merit_logs_admin_delete ON public.merit_logs FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY merit_logs_parent_own ON public.merit_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND private.is_parent() AND private.parent_can_access_student(student_id))) ;
-CREATE POLICY merit_logs_staff_insert ON public.merit_logs FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY merit_logs_staff_read ON public.merit_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
-CREATE POLICY merit_logs_student_own ON public.merit_logs FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id()))) ;
-CREATE POLICY "Teachers can create templates for their school" ON public.message_templates FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id IN ( SELECT profiles.school_id
+CREATE POLICY markbook_columns_teacher_or_admin_manage ON public.markbook_columns FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
+CREATE POLICY markbook_entries_select_accessible ON public.markbook_entries FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
+CREATE POLICY markbook_entries_teacher_or_admin_manage ON public.markbook_entries FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids()))))));
+CREATE POLICY markbook_scores_select_accessible ON public.markbook_scores FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids())))))) ;
+CREATE POLICY markbook_scores_teacher_or_admin_manage ON public.markbook_scores FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_profile_id = ANY (private.accessible_student_ids()))))));
+CREATE POLICY markbook_sheets_select_accessible ON public.markbook_sheets FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) ;
+CREATE POLICY markbook_sheets_teacher_or_admin_manage ON public.markbook_sheets FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND private.teacher_can_manage_class_subject(class_id, subject_id)))));
+CREATE POLICY merit_logs_admin_delete ON public.merit_logs FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY merit_logs_parent_own ON public.merit_logs FOR SELECT USING (((school_id = get_my_school_id()) AND private.is_parent() AND private.parent_can_access_student(student_id))) ;
+CREATE POLICY merit_logs_staff_insert ON public.merit_logs FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY merit_logs_staff_read ON public.merit_logs FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids())))))) ;
+CREATE POLICY merit_logs_student_own ON public.merit_logs FOR SELECT USING (((school_id = get_my_school_id()) AND private.is_student() AND (student_id = private.current_student_row_id()))) ;
+CREATE POLICY "Teachers can create templates for their school" ON public.message_templates FOR INSERT WITH CHECK (((school_id IN ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = ( SELECT auth.uid() AS uid)))) AND (created_by = ( SELECT auth.uid() AS uid))));
-CREATE POLICY "Teachers can delete their own templates" ON public.message_templates FOR DELETE AS PERMISSIVE USING ((created_by = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY "Teachers can update their own templates" ON public.message_templates FOR UPDATE AS PERMISSIVE USING ((created_by = ( SELECT auth.uid() AS uid))) WITH CHECK ((created_by = ( SELECT auth.uid() AS uid)));
-CREATE POLICY "Teachers can view their school's templates" ON public.message_templates FOR SELECT AS PERMISSIVE USING ((school_id IN ( SELECT profiles.school_id
+CREATE POLICY "Teachers can delete their own templates" ON public.message_templates FOR DELETE USING ((created_by = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY "Teachers can update their own templates" ON public.message_templates FOR UPDATE USING ((created_by = ( SELECT auth.uid() AS uid))) WITH CHECK ((created_by = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Teachers can view their school's templates" ON public.message_templates FOR SELECT USING ((school_id IN ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = ( SELECT auth.uid() AS uid))))) ;
-CREATE POLICY messages_admin_manage ON public.messages FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY messages_own_insert ON public.messages FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (sender_id = ( SELECT auth.uid() AS uid))));
-CREATE POLICY messages_own_read ON public.messages FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND ((sender_id = ( SELECT auth.uid() AS uid)) OR (recipient_id = ( SELECT auth.uid() AS uid))))) ;
-CREATE POLICY messages_own_update ON public.messages FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (recipient_id = ( SELECT auth.uid() AS uid)))) WITH CHECK (((school_id = get_my_school_id()) AND (recipient_id = ( SELECT auth.uid() AS uid))));
-CREATE POLICY notifications_admin_manage ON public.notifications FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY notifications_own_read ON public.notifications FOR SELECT AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY notifications_own_update ON public.notifications FOR UPDATE AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY outbox_events_admin_select ON public.outbox_events FOR SELECT AS PERMISSIVE USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
-CREATE POLICY outbox_events_no_access ON public.outbox_events FOR ALL AS PERMISSIVE USING (false) WITH CHECK (false);
-CREATE POLICY parent_students_admin_manage ON public.parent_students FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY parents_admin_manage ON public.parents FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY payments_delete_financial_context ON public.payments FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY payments_insert_financial_context ON public.payments FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY payments_read_financial_context ON public.payments FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY payments_update_financial_context ON public.payments FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY permission_features_school_access ON public.permission_features FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY permission_features_staff_read ON public.permission_features FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY permission_group_roles_school_access ON public.permission_group_roles FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY permission_group_roles_staff_read ON public.permission_group_roles FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY permission_groups_school_access ON public.permission_groups FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY permission_groups_staff_read ON public.permission_groups FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY permission_slip_responses_admin_delete ON public.permission_slip_responses FOR DELETE AS PERMISSIVE USING (is_admin_role()) ;
-CREATE POLICY permission_slip_responses_parent_insert ON public.permission_slip_responses FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((private.is_parent() AND (parent_id = private.current_parent_row_id()) AND private.parent_can_access_student(student_id)));
-CREATE POLICY permission_slip_responses_parent_update ON public.permission_slip_responses FOR UPDATE AS PERMISSIVE USING ((private.is_parent() AND (parent_id = private.current_parent_row_id()))) WITH CHECK ((private.is_parent() AND (parent_id = private.current_parent_row_id())));
-CREATE POLICY permission_slip_responses_select_accessible ON public.permission_slip_responses FOR SELECT AS PERMISSIVE USING (((EXISTS ( SELECT 1
+CREATE POLICY messages_admin_manage ON public.messages FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY messages_own_insert ON public.messages FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (sender_id = ( SELECT auth.uid() AS uid))));
+CREATE POLICY messages_own_read ON public.messages FOR SELECT USING (((school_id = get_my_school_id()) AND ((sender_id = ( SELECT auth.uid() AS uid)) OR (recipient_id = ( SELECT auth.uid() AS uid))))) ;
+CREATE POLICY messages_own_update ON public.messages FOR UPDATE USING (((school_id = get_my_school_id()) AND (recipient_id = ( SELECT auth.uid() AS uid)))) WITH CHECK (((school_id = get_my_school_id()) AND (recipient_id = ( SELECT auth.uid() AS uid))));
+CREATE POLICY notifications_admin_manage ON public.notifications FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY notifications_own_read ON public.notifications FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY notifications_own_update ON public.notifications FOR UPDATE USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY outbox_events_admin_select ON public.outbox_events FOR SELECT USING (((school_id = private.current_school_id()) AND (private."current_role"() = 'admin'::text))) ;
+CREATE POLICY outbox_events_no_access ON public.outbox_events FOR ALL USING (false) WITH CHECK (false);
+CREATE POLICY parent_students_admin_manage ON public.parent_students FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY parents_admin_manage ON public.parents FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY payments_delete_financial_context ON public.payments FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY payments_insert_financial_context ON public.payments FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY payments_read_financial_context ON public.payments FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY payments_update_financial_context ON public.payments FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY permission_features_school_access ON public.permission_features FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY permission_features_staff_read ON public.permission_features FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY permission_group_roles_school_access ON public.permission_group_roles FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY permission_group_roles_staff_read ON public.permission_group_roles FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY permission_groups_school_access ON public.permission_groups FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY permission_groups_staff_read ON public.permission_groups FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY permission_slip_responses_admin_delete ON public.permission_slip_responses FOR DELETE USING (is_admin_role()) ;
+CREATE POLICY permission_slip_responses_parent_insert ON public.permission_slip_responses FOR INSERT WITH CHECK ((private.is_parent() AND (parent_id = private.current_parent_row_id()) AND private.parent_can_access_student(student_id)));
+CREATE POLICY permission_slip_responses_parent_update ON public.permission_slip_responses FOR UPDATE USING ((private.is_parent() AND (parent_id = private.current_parent_row_id()))) WITH CHECK ((private.is_parent() AND (parent_id = private.current_parent_row_id())));
+CREATE POLICY permission_slip_responses_select_accessible ON public.permission_slip_responses FOR SELECT USING (((EXISTS ( SELECT 1
    FROM permission_slips ps
   WHERE ((ps.id = permission_slip_responses.permission_slip_id) AND (ps.school_id = get_my_school_id())))) AND (is_admin_role() OR private.is_teacher() OR (private.is_parent() AND (parent_id = private.current_parent_row_id()))))) ;
-CREATE POLICY permission_slips_select_accessible ON public.permission_slips FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher() OR private.is_parent() OR private.is_student()))) ;
-CREATE POLICY permission_slips_staff_manage ON public.permission_slips FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
-CREATE POLICY profiles_admin_delete ON public.profiles FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY profiles_admin_insert ON public.profiles FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY profiles_admin_update ON public.profiles FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY profiles_select_own_or_admin ON public.profiles FOR SELECT AS PERMISSIVE USING (((id = ( SELECT auth.uid() AS uid)) OR (auth_user_id = ( SELECT auth.uid() AS uid)) OR ((school_id = get_my_school_id()) AND is_admin_role()))) ;
-CREATE POLICY question_bank_select_same_school ON public.question_bank FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) ;
-CREATE POLICY question_bank_teacher_or_admin_manage ON public.question_bank FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (created_by = ( SELECT auth.uid() AS uid)))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (created_by = ( SELECT auth.uid() AS uid))))));
-CREATE POLICY report_card_reviews_admin_delete ON public.report_card_reviews FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY report_card_reviews_select_accessible ON public.report_card_reviews FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) ;
-CREATE POLICY report_card_reviews_teacher_or_admin_insert ON public.report_card_reviews FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
-CREATE POLICY report_card_reviews_teacher_or_admin_update ON public.report_card_reviews FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id())))));
-CREATE POLICY report_cards_admin_manage ON public.report_cards FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY report_cards_select_accessible ON public.report_cards FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id) AND (published = true)) OR (private.is_student() AND (student_id = private.current_student_row_id()) AND (published = true))))) ;
-CREATE POLICY results_admin_manage ON public.results FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY role_permissions_admin_manage ON public.role_permissions FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY role_permissions_admin_select ON public.role_permissions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY scheduled_broadcasts_admin_manage ON public.scheduled_broadcasts FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY scheduled_broadcasts_admin_select ON public.scheduled_broadcasts FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY school_departments_school_access ON public.school_departments FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY school_departments_staff_read ON public.school_departments FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY school_emergency_state_admin_manage ON public.school_emergency_state FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY school_emergency_state_school_read ON public.school_emergency_state FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY school_invites_admin_manage ON public.school_invites FOR ALL AS PERMISSIVE USING (((get_my_role() = 'super_admin'::text) OR ((created_by = ( SELECT auth.uid() AS uid)) AND is_admin_role()))) WITH CHECK (((get_my_role() = 'super_admin'::text) OR is_admin_role()));
-CREATE POLICY school_settings_school_access ON public.school_settings FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY school_settings_staff_read ON public.school_settings FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY schools_admin_update ON public.schools FOR UPDATE AS PERMISSIVE USING (((id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY schools_same_school_read ON public.schools FOR SELECT AS PERMISSIVE USING ((id = get_my_school_id())) ;
-CREATE POLICY staff_invitations_delete_manage ON public.staff_invitations FOR DELETE AS PERMISSIVE USING (((school_id = ( SELECT profiles.school_id
+CREATE POLICY permission_slips_select_accessible ON public.permission_slips FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher() OR private.is_parent() OR private.is_student()))) ;
+CREATE POLICY permission_slips_staff_manage ON public.permission_slips FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher())));
+CREATE POLICY profiles_admin_delete ON public.profiles FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY profiles_admin_insert ON public.profiles FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY profiles_admin_update ON public.profiles FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY profiles_select_own_or_admin ON public.profiles FOR SELECT USING (((id = ( SELECT auth.uid() AS uid)) OR (auth_user_id = ( SELECT auth.uid() AS uid)) OR ((school_id = get_my_school_id()) AND is_admin_role()))) ;
+CREATE POLICY question_bank_select_same_school ON public.question_bank FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR private.is_teacher()))) ;
+CREATE POLICY question_bank_teacher_or_admin_manage ON public.question_bank FOR ALL USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (created_by = ( SELECT auth.uid() AS uid)))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (created_by = ( SELECT auth.uid() AS uid))))));
+CREATE POLICY report_card_reviews_admin_delete ON public.report_card_reviews FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY report_card_reviews_select_accessible ON public.report_card_reviews FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) ;
+CREATE POLICY report_card_reviews_teacher_or_admin_insert ON public.report_card_reviews FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
+CREATE POLICY report_card_reviews_teacher_or_admin_update ON public.report_card_reviews FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id())))));
+CREATE POLICY report_cards_admin_manage ON public.report_cards FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY report_cards_select_accessible ON public.report_cards FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (student_id = ANY (private.accessible_student_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id) AND (published = true)) OR (private.is_student() AND (student_id = private.current_student_row_id()) AND (published = true))))) ;
+CREATE POLICY results_admin_manage ON public.results FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY role_permissions_admin_manage ON public.role_permissions FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY role_permissions_admin_select ON public.role_permissions FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY scheduled_broadcasts_admin_manage ON public.scheduled_broadcasts FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY scheduled_broadcasts_admin_select ON public.scheduled_broadcasts FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY school_departments_school_access ON public.school_departments FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY school_departments_staff_read ON public.school_departments FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY school_emergency_state_admin_manage ON public.school_emergency_state FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY school_emergency_state_school_read ON public.school_emergency_state FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY school_invites_admin_manage ON public.school_invites FOR ALL USING (((get_my_role() = 'super_admin'::text) OR ((created_by = ( SELECT auth.uid() AS uid)) AND is_admin_role()))) WITH CHECK (((get_my_role() = 'super_admin'::text) OR is_admin_role()));
+CREATE POLICY school_settings_school_access ON public.school_settings FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY school_settings_staff_read ON public.school_settings FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY schools_admin_update ON public.schools FOR UPDATE USING (((id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY schools_same_school_read ON public.schools FOR SELECT USING ((id = get_my_school_id())) ;
+CREATE POLICY staff_invitations_delete_manage ON public.staff_invitations FOR DELETE USING (((school_id = ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = get_my_profile_id()))) AND can_manage_invitations() AND (status = 'pending'::text))) ;
-CREATE POLICY staff_invitations_insert_manage ON public.staff_invitations FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = ( SELECT profiles.school_id
+CREATE POLICY staff_invitations_insert_manage ON public.staff_invitations FOR INSERT WITH CHECK (((school_id = ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = get_my_profile_id()))) AND can_manage_invitations()));
-CREATE POLICY staff_invitations_select_own_school ON public.staff_invitations FOR SELECT AS PERMISSIVE USING ((school_id = ( SELECT profiles.school_id
+CREATE POLICY staff_invitations_select_own_school ON public.staff_invitations FOR SELECT USING ((school_id = ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = get_my_profile_id())))) ;
-CREATE POLICY staff_invitations_update_manage ON public.staff_invitations FOR UPDATE AS PERMISSIVE USING (((school_id = ( SELECT profiles.school_id
+CREATE POLICY staff_invitations_update_manage ON public.staff_invitations FOR UPDATE USING (((school_id = ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = get_my_profile_id()))) AND can_manage_invitations() AND (status = 'pending'::text))) WITH CHECK (((school_id = ( SELECT profiles.school_id
    FROM profiles
   WHERE (profiles.id = get_my_profile_id()))) AND can_manage_invitations() AND (status = 'pending'::text)));
-CREATE POLICY staff_meetings_admin_manage ON public.staff_meetings FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY staff_meetings_school_read ON public.staff_meetings FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY admin_bursar_manage_fees ON public.student_fees FOR ALL AS PERMISSIVE USING ((( SELECT profiles.role
+CREATE POLICY staff_meetings_admin_manage ON public.staff_meetings FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY staff_meetings_school_read ON public.staff_meetings FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY admin_bursar_manage_fees ON public.student_fees FOR ALL USING ((( SELECT profiles.role
    FROM profiles
   WHERE (profiles.id = ( SELECT auth.uid() AS uid))) = ANY (ARRAY['admin'::text, 'bursar'::text, 'head_teacher'::text, 'super_admin'::text]))) WITH CHECK ((( SELECT profiles.role
    FROM profiles
   WHERE (profiles.id = ( SELECT auth.uid() AS uid))) = ANY (ARRAY['admin'::text, 'bursar'::text, 'head_teacher'::text, 'super_admin'::text])));
-CREATE POLICY parents_read_children_fees ON public.student_fees FOR SELECT AS PERMISSIVE USING ((student_id IN ( SELECT ps.student_id
+CREATE POLICY parents_read_children_fees ON public.student_fees FOR SELECT USING ((student_id IN ( SELECT ps.student_id
    FROM (parent_students ps
      JOIN parents p ON ((ps.parent_id = p.id)))
   WHERE (p.profile_id = ( SELECT auth.uid() AS uid))))) ;
-CREATE POLICY student_fees_delete_financial_context ON public.student_fees FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY student_fees_insert_financial_context ON public.student_fees FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY student_fees_read_financial_context ON public.student_fees FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
-CREATE POLICY student_fees_update_financial_context ON public.student_fees FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
-CREATE POLICY student_pulse_metrics_admin_manage ON public.student_pulse_metrics FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY student_pulse_metrics_select_accessible ON public.student_pulse_metrics FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) ;
-CREATE POLICY student_risk_assessments_admin_delete ON public.student_risk_assessments FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY student_risk_assessments_select_accessible ON public.student_risk_assessments FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id))))) ;
-CREATE POLICY student_risk_assessments_teacher_or_admin_insert ON public.student_risk_assessments FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
-CREATE POLICY student_risk_assessments_teacher_or_admin_update ON public.student_risk_assessments FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
-CREATE POLICY parents_read_their_children ON public.students FOR SELECT AS PERMISSIVE USING ((id IN ( SELECT ps.student_id
+CREATE POLICY student_fees_delete_financial_context ON public.student_fees FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY student_fees_insert_financial_context ON public.student_fees FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY student_fees_read_financial_context ON public.student_fees FOR SELECT USING (((school_id = get_my_school_id()) AND is_financial_context_role())) ;
+CREATE POLICY student_fees_update_financial_context ON public.student_fees FOR UPDATE USING (((school_id = get_my_school_id()) AND is_financial_context_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_financial_context_role()));
+CREATE POLICY student_pulse_metrics_admin_manage ON public.student_pulse_metrics FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY student_pulse_metrics_select_accessible ON public.student_pulse_metrics FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id)) OR (private.is_student() AND (student_id = private.current_student_row_id()))))) ;
+CREATE POLICY student_risk_assessments_admin_delete ON public.student_risk_assessments FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY student_risk_assessments_select_accessible ON public.student_risk_assessments FOR SELECT USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))) OR (private.is_parent() AND private.parent_can_access_student(student_id))))) ;
+CREATE POLICY student_risk_assessments_teacher_or_admin_insert ON public.student_risk_assessments FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
+CREATE POLICY student_risk_assessments_teacher_or_admin_update ON public.student_risk_assessments FOR UPDATE USING (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids())))))) WITH CHECK (((school_id = get_my_school_id()) AND (is_admin_role() OR (private.is_teacher() AND (class_id = ANY (private.accessible_class_ids()))))));
+CREATE POLICY parents_read_their_children ON public.students FOR SELECT USING ((id IN ( SELECT ps.student_id
    FROM (parent_students ps
      JOIN parents p ON ((ps.parent_id = p.id)))
   WHERE (p.profile_id = ( SELECT auth.uid() AS uid))))) ;
-CREATE POLICY staff_read_students ON public.students FOR SELECT AS PERMISSIVE USING ((( SELECT profiles.role
+CREATE POLICY staff_read_students ON public.students FOR SELECT USING ((( SELECT profiles.role
    FROM profiles
   WHERE (profiles.id = ( SELECT auth.uid() AS uid))) = ANY (ARRAY['teacher'::text, 'admin'::text, 'head_teacher'::text, 'super_admin'::text]))) ;
-CREATE POLICY students_admin_delete ON public.students FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY students_admin_insert ON public.students FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY students_admin_update ON public.students FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY students_read_own_record ON public.students FOR SELECT AS PERMISSIVE USING ((profile_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY students_select_accessible ON public.students FOR SELECT AS PERMISSIVE USING (((is_admin_role() AND (school_id = get_my_school_id())) OR ((school_id = get_my_school_id()) AND (id = ANY (private.accessible_student_ids()))))) ;
-CREATE POLICY subjects_admin_manage ON public.subjects FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY subjects_same_school_read ON public.subjects FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY sync_queue_admin_delete ON public.sync_queue FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY sync_queue_own_insert ON public.sync_queue FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND (user_id = ( SELECT auth.uid() AS uid))));
-CREATE POLICY sync_queue_own_select ON public.sync_queue FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role()))) ;
-CREATE POLICY sync_queue_own_update ON public.sync_queue FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role()))) WITH CHECK (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role())));
-CREATE POLICY "System events insert access" ON public.system_events FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((( SELECT auth.uid() AS uid) IS NOT NULL));
-CREATE POLICY "Teachers can insert their own sessions" ON public.teacher_active_sessions FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
-CREATE POLICY "Teachers can update their own sessions" ON public.teacher_active_sessions FOR UPDATE AS PERMISSIVE USING ((( SELECT auth.uid() AS uid) = teacher_id)) WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
-CREATE POLICY "Teachers can view their own sessions" ON public.teacher_active_sessions FOR SELECT AS PERMISSIVE USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
-CREATE POLICY "Teachers can update their own alerts" ON public.teacher_alerts FOR UPDATE AS PERMISSIVE USING ((( SELECT auth.uid() AS uid) = teacher_id)) WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
-CREATE POLICY "Teachers can view their own alerts" ON public.teacher_alerts FOR SELECT AS PERMISSIVE USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
-CREATE POLICY teacher_class_subject_assignments_admin_manage ON public.teacher_class_subject_assignments FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY teacher_class_subject_assignments_school_read ON public.teacher_class_subject_assignments FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY "Teachers can create their own office hours" ON public.teacher_office_hours FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((teacher_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY "Teachers can delete their own office hours" ON public.teacher_office_hours FOR DELETE AS PERMISSIVE USING ((teacher_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY "Teachers can update their own office hours" ON public.teacher_office_hours FOR ALL AS PERMISSIVE USING ((teacher_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((teacher_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY "Teachers can view their own office hours" ON public.teacher_office_hours FOR SELECT AS PERMISSIVE USING ((teacher_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY "Teachers can view their own performance metrics" ON public.teacher_performance_metrics FOR SELECT AS PERMISSIVE USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
-CREATE POLICY teacher_recognition_admin_manage ON public.teacher_recognition FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY teacher_recognition_school_read ON public.teacher_recognition FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY teacher_subject_specializations_admin_manage ON public.teacher_subject_specializations FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY teacher_subject_specializations_school_read ON public.teacher_subject_specializations FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY teachers_admin_delete ON public.teachers FOR DELETE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY teachers_admin_insert ON public.teachers FOR INSERT AS PERMISSIVE USING (true) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY teachers_admin_update ON public.teachers FOR UPDATE AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY teachers_select_accessible ON public.teachers FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY temp_tokens_own_delete ON public.temp_tokens FOR DELETE AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY temp_tokens_own_insert ON public.temp_tokens FOR INSERT AS PERMISSIVE USING (true) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
-CREATE POLICY temp_tokens_own_select ON public.temp_tokens FOR SELECT AS PERMISSIVE USING ((user_id = ( SELECT auth.uid() AS uid))) ;
-CREATE POLICY terms_admin_manage ON public.terms FOR ALL AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
-CREATE POLICY terms_same_school_read ON public.terms FOR SELECT AS PERMISSIVE USING ((school_id = get_my_school_id())) ;
-CREATE POLICY user_sessions_admin_view ON public.user_sessions FOR SELECT AS PERMISSIVE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
-CREATE POLICY user_sessions_self ON public.user_sessions FOR ALL AS PERMISSIVE USING ((user_id IN ( SELECT profiles.id
+CREATE POLICY students_admin_delete ON public.students FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY students_admin_insert ON public.students FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY students_admin_update ON public.students FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY students_read_own_record ON public.students FOR SELECT USING ((profile_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY students_select_accessible ON public.students FOR SELECT USING (((is_admin_role() AND (school_id = get_my_school_id())) OR ((school_id = get_my_school_id()) AND (id = ANY (private.accessible_student_ids()))))) ;
+CREATE POLICY subjects_admin_manage ON public.subjects FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY subjects_same_school_read ON public.subjects FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY sync_queue_admin_delete ON public.sync_queue FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY sync_queue_own_insert ON public.sync_queue FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND (user_id = ( SELECT auth.uid() AS uid))));
+CREATE POLICY sync_queue_own_select ON public.sync_queue FOR SELECT USING (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role()))) ;
+CREATE POLICY sync_queue_own_update ON public.sync_queue FOR UPDATE USING (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role()))) WITH CHECK (((school_id = get_my_school_id()) AND ((user_id = ( SELECT auth.uid() AS uid)) OR is_admin_role())));
+CREATE POLICY "System events insert access" ON public.system_events FOR INSERT WITH CHECK ((( SELECT auth.uid() AS uid) IS NOT NULL));
+CREATE POLICY "Teachers can insert their own sessions" ON public.teacher_active_sessions FOR INSERT WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
+CREATE POLICY "Teachers can update their own sessions" ON public.teacher_active_sessions FOR UPDATE USING ((( SELECT auth.uid() AS uid) = teacher_id)) WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
+CREATE POLICY "Teachers can view their own sessions" ON public.teacher_active_sessions FOR SELECT USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
+CREATE POLICY "Teachers can update their own alerts" ON public.teacher_alerts FOR UPDATE USING ((( SELECT auth.uid() AS uid) = teacher_id)) WITH CHECK ((( SELECT auth.uid() AS uid) = teacher_id));
+CREATE POLICY "Teachers can view their own alerts" ON public.teacher_alerts FOR SELECT USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
+CREATE POLICY teacher_class_subject_assignments_admin_manage ON public.teacher_class_subject_assignments FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY teacher_class_subject_assignments_school_read ON public.teacher_class_subject_assignments FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY "Teachers can create their own office hours" ON public.teacher_office_hours FOR INSERT WITH CHECK ((teacher_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Teachers can delete their own office hours" ON public.teacher_office_hours FOR DELETE USING ((teacher_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY "Teachers can update their own office hours" ON public.teacher_office_hours FOR ALL USING ((teacher_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((teacher_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY "Teachers can view their own office hours" ON public.teacher_office_hours FOR SELECT USING ((teacher_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY "Teachers can view their own performance metrics" ON public.teacher_performance_metrics FOR SELECT USING ((( SELECT auth.uid() AS uid) = teacher_id)) ;
+CREATE POLICY teacher_recognition_admin_manage ON public.teacher_recognition FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY teacher_recognition_school_read ON public.teacher_recognition FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY teacher_subject_specializations_admin_manage ON public.teacher_subject_specializations FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY teacher_subject_specializations_school_read ON public.teacher_subject_specializations FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY teachers_admin_delete ON public.teachers FOR DELETE USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY teachers_admin_insert ON public.teachers FOR INSERT WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY teachers_admin_update ON public.teachers FOR UPDATE USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY teachers_select_accessible ON public.teachers FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY temp_tokens_own_delete ON public.temp_tokens FOR DELETE USING ((user_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY temp_tokens_own_insert ON public.temp_tokens FOR INSERT WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+CREATE POLICY temp_tokens_own_select ON public.temp_tokens FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid))) ;
+CREATE POLICY terms_admin_manage ON public.terms FOR ALL USING (((school_id = get_my_school_id()) AND is_admin_role())) WITH CHECK (((school_id = get_my_school_id()) AND is_admin_role()));
+CREATE POLICY terms_same_school_read ON public.terms FOR SELECT USING ((school_id = get_my_school_id())) ;
+CREATE POLICY user_sessions_admin_view ON public.user_sessions FOR SELECT USING (((school_id = get_my_school_id()) AND is_admin_role())) ;
+CREATE POLICY user_sessions_self ON public.user_sessions FOR ALL USING ((user_id IN ( SELECT profiles.id
    FROM profiles
   WHERE ((profiles.id = ( SELECT auth.uid() AS uid)) OR (profiles.auth_user_id = ( SELECT auth.uid() AS uid)))))) WITH CHECK ((user_id IN ( SELECT profiles.id
    FROM profiles

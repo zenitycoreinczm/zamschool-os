@@ -17,6 +17,7 @@ import {
   normalizeTargetRoleForStorage,
 } from "@/lib/audience-targeting";
 import { notifySchoolEventAudience } from "@/lib/event-notifications";
+import { broadcastTenantCacheInvalidation } from "@/lib/realtime/broadcast";
 
 const createEventSchema = z.object({
   title: z.string().min(1),
@@ -188,6 +189,13 @@ export async function POST(req: Request) {
       ipAddress: getClientIp(req),
     });
 
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "events",
+      action: "insert",
+      recordId: String(data.id),
+    });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -258,6 +266,13 @@ export async function PUT(req: Request) {
       ipAddress: getClientIp(req),
     });
 
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "events",
+      action: "update",
+      recordId: body.id,
+    });
+
     return NextResponse.json({ success: true, data: normalized });
   } catch (error: unknown) {
     return NextResponse.json(
@@ -309,6 +324,13 @@ export async function DELETE(req: Request) {
       entityType: "event",
       entityId: id,
       ipAddress: getClientIp(req),
+    });
+
+    void broadcastTenantCacheInvalidation({
+      schoolId,
+      table: "events",
+      action: "delete",
+      recordId: id,
     });
 
     return NextResponse.json({ success: true });

@@ -1,4 +1,4 @@
-import { buildAttendanceWindow, summarizeAttendance } from "@/lib/attendance/summary";
+import { buildAttendanceWindow } from "@/lib/attendance/summary";
 import { CACHE_CONFIGS, withCache } from "@/lib/enhanced-cache";
 import { roleDatabaseValues, type KnownRole } from "@/lib/roles";
 import {
@@ -109,10 +109,10 @@ async function buildWorkspaceSummaryUncached(input: {
   const { schoolId, role, userId } = input;
 
   // School-wide rollups: Redis → Supabase (auto-TTL delete in Upstash).
-  // Per-user unread: always lighter / fresher query (not shared cache).
+  // Per-user unread: school-scoped + hot-read cached (not shared cache).
   const [schoolMetrics, unread] = await Promise.all([
     loadSchoolMetricsCached(schoolId),
-    loadUnreadCounts(userId),
+    loadUnreadCounts(schoolId, userId),
   ]);
 
   const profileCounts: ProfileCounts = {
@@ -415,54 +415,59 @@ async function loadProfileCounts(schoolId: string): Promise<ProfileCounts> {
   return counts;
 }
 
-async function loadUnreadCounts(userId: string): Promise<UnreadCounts> {
-  const [messagesResult, notificationsResult] = await Promise.all([
-    supabaseAdmin
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("recipient_id", userId)
-      .eq("is_read", false),
-    supabaseAdmin
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("is_read", false),
-  ]);
-
-  return {
-    messages: messagesResult.count || 0,
-    notifications: notificationsResult.count || 0,
-  };
+async function loadUnreadCounts(
+  schoolId: string,
+  userId: string
+): Promise<UnreadCounts> {
+  // Reuse the school-scoped, hot-read-cached badge pipeline instead of
+  // unscoped direct counts: same numbers, tenant filter enforced, and warm
+  // calls cost 0 Supabase queries.
+  const { getUnreadCountsForUser } = await import("@/lib/inbox/read-cache");
+  try {
+    return await getUnreadCountsForUser({ userId, schoolId });
+  } catch {
+    return { messages: 0, notifications: 0 };
+  }
 }
 
 async function loadAttendanceSnapshot(schoolId: string): Promise<AttendanceSnapshot> {
   const { startDate, endDate } = buildAttendanceWindow("7d", null);
-  const { data, error } = await supabaseAdmin
-    .from("attendance")
-    .select("status")
-    .eq("school_id", schoolId)
-    .gte("date", startDate)
-    .lte("date", endDate)
-    .limit(500);
 
-  if (error) {
-    return { presentRate: 0, absent: 0, late: 0 };
-  }
+  // Constant-cost head counts (indexed, no row transfer) instead of a capped
+  // 500-row scan + in-memory reduce. Statuses are CHECK-constrained to the
+  // four values below (both cases seen in the wild), so the counts match the
+  // previous summarizeAttendance mapping exactly.
+  const statusGroups = [
+    ["PRESENT", ["PRESENT", "present"]],
+    ["ABSENT", ["ABSENT", "absent"]],
+    ["LATE", ["LATE", "late"]],
+    ["EXCUSED", ["EXCUSED", "excused"]],
+  ] as const;
 
-  const summary = summarizeAttendance(
-    (data || []).map((row: { status?: string | null }) => ({
-      status: String(row.status || "ABSENT").toUpperCase(),
-    }))
+  const results = await Promise.all(
+    statusGroups.map(async ([key, variants]) => {
+      const { count, error } = await supabaseAdmin
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("school_id", schoolId)
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .in("status", [...variants]);
+      return { key, value: error ? 0 : count || 0 };
+    })
   );
 
+  const byStatus = Object.fromEntries(
+    results.map((r) => [r.key, r.value])
+  ) as Record<string, number>;
   const total =
-    summary.PRESENT + summary.ABSENT + summary.LATE + summary.EXCUSED;
-  const presentLike = summary.PRESENT + summary.LATE + summary.EXCUSED;
+    byStatus.PRESENT + byStatus.ABSENT + byStatus.LATE + byStatus.EXCUSED;
+  const presentLike = byStatus.PRESENT + byStatus.LATE + byStatus.EXCUSED;
 
   return {
     presentRate: total > 0 ? Math.round((presentLike / total) * 100) : 0,
-    absent: summary.ABSENT,
-    late: summary.LATE,
+    absent: byStatus.ABSENT,
+    late: byStatus.LATE,
   };
 }
 

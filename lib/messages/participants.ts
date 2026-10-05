@@ -63,6 +63,47 @@ export function resolveMessagingIdentityId(
   return String(profile.auth_user_id || profile.id).trim();
 }
 
+/**
+ * Cheap identity expansion for high-frequency badge/unread polls.
+ *
+ * Unlike loadProfilesByIdentityIds (2 batched selects + N fallbacks, all
+ * uncached because display columns include `role`), this resolves only
+ * `id, auth_user_id, school_id` — non-sensitive, so fetchProfileByIdentity
+ * serves it from the 300s shared cache. Warm polls cost 0 DB queries.
+ *
+ * The union always includes the raw input id, so a stale/missing mapping can
+ * only omit an alternate identity for a few minutes — never the primary one.
+ */
+export async function resolveUnreadIdentityIds(
+  userId: string,
+  schoolId: string
+): Promise<string[]> {
+  const normalized = String(userId || "").trim();
+  const school = String(schoolId || "").trim();
+  if (!normalized || !school) return normalized ? [normalized] : [];
+
+  try {
+    const lookup = await fetchProfileByIdentity<{
+      id: string;
+      auth_user_id?: string | null;
+      school_id?: string | null;
+    }>(supabaseAdmin, normalized, "id, auth_user_id, school_id");
+
+    if (lookup.error || !lookup.data) return [normalized];
+    if (String(lookup.data.school_id || "") !== school) return [normalized];
+
+    return Array.from(
+      new Set(
+        [normalized, lookup.data.id, lookup.data.auth_user_id]
+          .map((value) => String(value || "").trim())
+          .filter(Boolean)
+      )
+    );
+  } catch {
+    return [normalized];
+  }
+}
+
 export async function loadRecipientByIdentity(schoolId: string, recipientId: string) {
   const lookup = await fetchProfileByIdentity<MessageParticipantProfile>(
     supabaseAdmin,
